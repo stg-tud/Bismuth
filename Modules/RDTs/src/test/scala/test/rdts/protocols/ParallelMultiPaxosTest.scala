@@ -42,7 +42,7 @@ class ParallelMultiPaxosTest extends munit.FunSuite {
 
   test("Empty State: read on empty state returns empty") {
     val empty  = ParallelMultiPaxos.empty[Int]
-    val result = empty.read(using Participants(Set(id1.uid, id2.uid, id3.uid, id4.uid)))
+    val result = empty.readDecisions(using Participants(Set(id1.uid, id2.uid, id3.uid, id4.uid)))
     assertEquals(result.toList, List())
   }
 
@@ -67,8 +67,8 @@ class ParallelMultiPaxosTest extends munit.FunSuite {
     state = state.merge(state.startLeaderElection(1L)(using id2))
 
     // Check that slot 0 has leader
-    assertEquals(state.log.contains(0L), true)
-    assertEquals(state.log.contains(1L), true)
+    assertEquals(state.rounds.contains(0L), true)
+    assertEquals(state.rounds.contains(1L), true)
   }
 
   // ==================== 3. Parallelism Tests ====================
@@ -149,7 +149,7 @@ class ParallelMultiPaxosTest extends munit.FunSuite {
       state = runUpkeepRound(state)
     }
 
-    val decisions = state.read(using Participants(Set(id1.uid, id2.uid, id3.uid, id4.uid))).toList
+    val decisions = state.readDecisions(using Participants(Set(id1.uid, id2.uid, id3.uid, id4.uid))).toList
     assertEquals(decisions.toList, List(10, 20, 30))
   }
 
@@ -166,7 +166,7 @@ class ParallelMultiPaxosTest extends munit.FunSuite {
     state = state.merge(state.startLeaderElection(1L)(using id1))
     state = runUpkeepRound(state)
 
-    val decisions = state.read(using Participants(Set(id1.uid, id2.uid, id3.uid, id4.uid))).toList
+    val decisions = state.readDecisions(using Participants(Set(id1.uid, id2.uid, id3.uid, id4.uid))).toList
     // Should stop at undecided slot 1
     assertEquals(decisions.size, 1)
   }
@@ -274,9 +274,9 @@ class ParallelMultiPaxosTest extends munit.FunSuite {
     state = runUpkeepRound(state)
 
     // Gap should prevent full read
-    val decisions = state.read(using Participants(Set(id1.uid, id2.uid, id3.uid, id4.uid))).toList
+    val decisions = state.readDecisions(using Participants(Set(id1.uid, id2.uid, id3.uid, id4.uid))).toList
     assertEquals(decisions.size, 1)
-    assertEquals(state.log.size, 1)
+    assertEquals(state.rounds.size, 1)
   }
 
   test("Edge Cases: ballot reuse in parallel slots") {
@@ -294,7 +294,7 @@ class ParallelMultiPaxosTest extends munit.FunSuite {
     state = state.merge(state.proposeIfLeader(1L, 200)(using id1))
     state = runUpkeepRound(state)
 
-    assertEquals(state.log.size, 2)
+    assertEquals(state.rounds.size, 2)
   }
 
   // ==================== 9. Decision Tests ====================
@@ -355,6 +355,53 @@ class ParallelMultiPaxosTest extends munit.FunSuite {
     state = runUpkeepRound(state)
 
     // Verify multiple slots are tracked
-    assertEquals(state.log.size, 3)
+    assertEquals(state.rounds.size, 3)
+  }
+
+  // ======= test re-use of leader election
+  test("proposing as non-leader does nothing") {
+    var state = ParallelMultiPaxos.empty[Int]
+
+    state = state.merge(state.startLeaderElection(0)(using id1))
+    state = runUpkeepRound(state)
+
+    assert(state.rounds(0).currentLeaderElection.exists(_.result.contains(id1.uid)))
+    assert(!state.rounds(0).currentLeaderElection.exists(_.result.contains(id2.uid)))
+
+    // proposeSlot 1 + 2
+    assertEquals(state.proposeIfLeader(10)(using id2), ParallelMultiPaxos())
+  }
+
+  test("leader election is re-used correctly") {
+    var state = ParallelMultiPaxos.empty[Int]
+
+    state = state.merge(state.startLeaderElection(0)(using id1))
+    state = runUpkeepRound(state)
+
+    assert(state.rounds(0).currentLeaderElection.exists(_.result.contains(id1.uid)))
+    assert(!state.rounds(0).currentLeaderElection.exists(_.result.contains(id2.uid)))
+    assertEquals(state.commitIndex, -1L)
+
+    // proposeSlot 1 + 2
+    state = state.merge(state.proposeIfLeader(10)(using id1))
+    state = runUpkeepRound(state)
+    assertEquals(state.decision, Agreement.Decided(List(10)))
+    assertEquals(state.commitIndex, 0L)
+
+    state = state.merge(state.proposeIfLeader(20)(using id1))
+    state = runUpkeepRound(state)
+    assert(state.rounds(0).currentLeaderElection.exists(_.result.contains(id1.uid)))
+    assertEquals(state.decision, Agreement.Decided(List(10, 20)))
+    assertEquals(state.commitIndex, 1L)
+
+    // try to become leader as id2 but for old log index, doesn't do anything because we do not do upkeep in these rounds
+    state = state.merge(state.startLeaderElection(0)(using id2))
+    state = runUpkeepRound(state)
+
+    println(state)
+    assert(state.rounds(1).currentLeaderElection.exists(_.result.contains(id1.uid)))
+    assert(!state.rounds(0).currentLeaderElection.exists(_.result.contains(id2.uid)))
+
+    assertEquals(state.decision, Agreement.Decided(List(10, 20)))
   }
 }

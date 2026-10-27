@@ -4,6 +4,7 @@ import rdts.base.{Bottom, Lattice, ReplicaId, Uid}
 import rdts.protocols.Paxos.given
 import rdts.protocols.Util.*
 import rdts.protocols.Util.Agreement.*
+import rdts.protocols.Participants.participants
 import rdts.protocols.{Consensus, Participants}
 
 // Paxos PRDT
@@ -143,9 +144,12 @@ case class Paxos[A](
       roundHasProposal(currentBallotNum, proposal) &&
       rounds(currentBallotNum).proposals.subsumes(currentProposals)
     ) {
-      Paxos(Map(currentBallotNum -> PaxosRound(
-        proposals = currentProposals.voteFor(proposal)
-      )))
+      val vote = currentProposals.voteFor(proposal)
+      if vote != Voting() then
+        Paxos(Map(currentBallotNum -> PaxosRound(
+          proposals = vote
+        )))
+      else Paxos()
     }
   // api:
   def phase2b(using ReplicaId): Paxos[A] =
@@ -237,18 +241,21 @@ object Paxos {
           }
       extension [A](c: Paxos[A])
           // upkeep can be used to perform the next protocol step automatically
-          override def upkeep()(using replicaId: ReplicaId, participants: Participants): Paxos[A] =
-            // check which phase we are in
-            c.currentRound match
-                case Some(PaxosRound(leaderElection, _)) if leaderElection.result.nonEmpty =>
-                  // we have a leader -> phase 2
-                  if leaderElection.result.get == replicaId.uid then
-                      c.phase2a
-                  else
-                      c.phase2b
-                // we are in the process of electing a new leader
-                case _ =>
-                  c.phase1b
+          override def upkeep()(using replicaId: ReplicaId, participants: Participants): Paxos[A] = {
+            if participants.members.contains(replicaId.uid) then
+                // check which phase we are in
+                c.currentRound match
+                    case Some(PaxosRound(leaderElection, _)) if leaderElection.result.nonEmpty =>
+                      // we have a leader -> phase 2
+                      if leaderElection.result.get == replicaId.uid then
+                          c.phase2a
+                      else
+                          c.phase2b
+                    // we are in the process of electing a new leader
+                    case _ =>
+                      c.phase1b
+            else Paxos()
+          }
 
       override def empty[A]: Paxos[A] = paxosBottom.empty
 

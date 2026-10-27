@@ -4,7 +4,8 @@ import channels.broadcast.PlumtreeMessage
 import channels.broadcast.PlumtreeMessage.Payload
 import rdts.base.{Lattice, ReplicaId, Uid}
 import rdts.datatypes.LastWriterWins
-import rdts.protocols.{MultiPaxos, Participants, Vote, Voting}
+import rdts.protocols.{Participants, Vote, Voting}
+import rdts.protocols.spanner.ParallelMultiPaxos
 
 enum KVOperation[Key, Value] {
   def key: Key
@@ -14,7 +15,7 @@ enum KVOperation[Key, Value] {
 }
 
 type ConnInformation = HeartbeatQuorum
-type ClusterState    = MultiPaxos[ClientCommWrite.WriteReq]
+type ClusterState    = ParallelMultiPaxos[ClientCommWrite.WriteReq]
 
 enum ClientCommRead:
     case ReadReq(id: Uid, kvOperation: KVOperation.Read[String, String])
@@ -24,6 +25,14 @@ enum ClientCommWrite:
     case WriteRes(id: Uid, value: String)
 
 object ClientComm {
+
+  extension (c: ClientCommWrite) {
+    def show: String = {
+      c match
+          case ClientCommWrite.WriteReq(id, kvOperation) => id.show
+          case ClientCommWrite.WriteRes(id, value)       => id.show
+    }
+  }
   given l1: Lattice[Payload[ClientCommWrite]] =
       given Lattice[ClientCommWrite] = Lattice.assertEquals
 

@@ -109,14 +109,15 @@ class ProBenchAdapter extends DB {
   }
 
   override def insert(table: String, key: String, values: Map[String, ByteIterator]): Status = {
-    val v = valsToString(values)
+    val v  = valsToString(values)
+    val id = Uid.gen()
     try
-        val f = syncClient(_.writeWithResult(key, v))
+        val f = syncClient(_.writeWithResult(id, key, v))
         Await.ready(f, operationTimeout)
         Status.OK
     catch
         case exception: concurrent.TimeoutException =>
-          println("failed to write sth")
+          println(s"failed to write id:$id\n$key\n${valsToString(values)}")
           exception.printStackTrace()
           connectToNextEndpoint(): Unit // try with next endpoint
           Status.ERROR
