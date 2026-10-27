@@ -166,17 +166,22 @@ final case class HyParViewStateMachine(
           // Paper forwarded-join random walk: intermediate hops remember the newcomer, optionally add it
           // to the passive view at PRWL, and either forward to another active peer or terminate by
           // initiating a direct Neighbor handshake with the newcomer.
+          // As in the paper, the walk ends without a new connection if the newcomer is already active here;
+          // likewise if a handshake with it is already in flight (e.g. two walks ending here concurrently).
           def sendJoin(nextState: HyParViewStateMachine) =
-            Result(
-              nextState,
-              List(
-                OverlayAction.Connect(
-                  newNode.channelConnectors,
-                  newNode.uid,
-                  Some(Neighbor(self, highPriority = nextState.active.isEmpty))
+            if nextState.activeView.contains(newNode.uid) || nextState.isPending(newNode.uid)
+            then Result(nextState, Nil)
+            else
+                Result(
+                  nextState.copy(pendingConnections = nextState.pendingConnections :+ PendingConnection(newNode)),
+                  List(
+                    OverlayAction.Connect(
+                      newNode.channelConnectors,
+                      newNode.uid,
+                      Some(Neighbor(self, highPriority = nextState.active.isEmpty))
+                    )
+                  )
                 )
-              )
-            )
 
           if newNode.uid == self.uid then Result(this, Nil)
           else if ttl == 0 || active.size <= 1 then
@@ -188,7 +193,8 @@ final case class HyParViewStateMachine(
               then rememberPeer(newNode)
               else this
 
-            val nextHop = choose(withPassive.active.filterNot(_.peer.uid == sender))
+            // never walk back to the sender or to the newcomer itself (it would just drop the walk)
+            val nextHop = choose(withPassive.active.filterNot(p => p.peer.uid == sender || p.peer.uid == newNode.uid))
             nextHop match
                 case Some(target) =>
                   Result(
@@ -308,6 +314,8 @@ final case class HyParViewStateMachine(
     }
   }
 
+  private def isPending(peer: Uid): Boolean = pendingConnections.exists(_.peer.uid == peer)
+
   private def clearPendingPeer(peer: Uid): HyParViewStateMachine =
     copy(pendingConnections = pendingConnections.filterNot(_.peer.uid == peer))
 
@@ -326,7 +334,7 @@ final case class HyParViewStateMachine(
   private def withPromotionIfNeeded(existingActions: List[OverlayAction]): Result =
     if active.size >= config.activeViewSize then Result(this, existingActions)
     else
-        choose(passivePeers.filterNot(peer => pendingConnections.exists(_.peer.uid == peer.uid)).toIndexedSeq) match
+        choose(passivePeers.filterNot(peer => isPending(peer.uid)).toIndexedSeq) match
             case Some(candidate) =>
               Result(
                 copy(pendingConnections = pendingConnections :+ PendingConnection(candidate)),
