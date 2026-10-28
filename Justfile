@@ -113,16 +113,16 @@ websiteServe: websitePrepare
 websiteBuild: websitePrepare
 	cd Website && deno run -A npm:astro build
 
-# the `website` branch (checked out as worktree in website/) is published by github pages from its docs/ folder
+# the `website` branch (checked out as worktree in website-deploy/) is published by github pages from its docs/ folder
 websiteWorktree:
-	if [ ! -e website ]; then \
-		if git show-ref --quiet refs/heads/website; then git worktree add website website; \
-		else git worktree add --orphan -b website website; fi; \
+	if [ ! -e website-deploy ]; then \
+		if git show-ref --quiet refs/heads/website; then git worktree add website-deploy website; \
+		else git worktree add --orphan -b website website-deploy; fi; \
 	fi
 
 # build everything (including the demos) and commit the result to the website branch, push manually
 websiteDeploy: webappsBundle websiteBuild websiteWorktree
-	rm -rf website/docs
-	cp -r Website/dist website/docs
-	touch website/docs/.nojekyll
-	cd website && git add -A docs && git commit -m "deploy website from main $(git -C .. rev-parse --short HEAD)"
+	rm -rf website-deploy/docs
+	cp -r Website/dist website-deploy/docs
+	touch website-deploy/docs/.nojekyll
+	cd website-deploy && git add -A docs && git commit -m "deploy website from main $(git -C .. rev-parse --short HEAD)"

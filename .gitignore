@@ -18,4 +18,4 @@ target/
 webview.h
 yarn.lock
 ycsb-core.jar
-/website/
+/website-deploy/
