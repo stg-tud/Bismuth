@@ -35,7 +35,12 @@ const byId = (id: string) => projects.find((p) => p.id === id)!;
 							{p.related && (
 								<p class="related">
 									Builds on:{" "}
-									{p.related.map((id, i) => <>{i > 0 && ", "}<a href={`#${id}`}>{byId(id).title}</a></>)}
+									{p.related.map((id, i) => (
+										<>
+											{i > 0 && ", "}
+											<a href={`#${id}`} title={byId(id).title}>{byId(id).short}</a>
+										</>
+									))}
 								</p>
 							)}
 							{p.publications.length > 0 && (

@@ -3,8 +3,6 @@ export const site = {
 	description:
 		"Bismuth is the research monorepo of the Programming Foundations for Distributed Systems at the Software Technology Group, TU Darmstadt.",
 	repo: "https://github.com/stg-tud/bismuth",
-	// TODO: point to the actual published scaladoc location
-	scaladoc: "https://javadoc.io/doc/de.tu-darmstadt.stg/rdts_3/latest/index.html",
 };
 
 export interface Publication {
@@ -29,6 +27,8 @@ export interface Project {
 	year: string;
 	tracks: Track[];
 	title: string;
+	/** short name, used in "builds on" references */
+	short: string;
 	summary: string;
 	links?: { label: string; href: string }[];
 	/** ids of other projects this one builds on */
@@ -40,7 +40,8 @@ export interface Project {
 export const projects: Project[] = [
 	{
 		id: "prdts",
-		year: "2025 – 2026",
+		short: "PRDTs",
+		year: "2025 – ongoing",
 		tracks: ["rdt"],
 		title: "Protocol Replicated Data Types",
 		related: ["ardts"],
@@ -49,30 +50,43 @@ export const projects: Project[] = [
 		publications: [{ key: "10.1145/3839522", venue: "OOPSLA 2026", artifact: "HaasPRDTArtifact2026" }],
 	},
 	{
+		id: "overview",
+		short: "Overview",
+		year: "2025",
+		tracks: ["drp", "rdt", "sec"],
+		title: "Overview: A Programming Model for Decentralized Applications",
+		related: ["ardts", "lore", "ardts-security", "prdts"],
+		summary:
+			"An overview of how the research strands combine into one programming model for decentralized software: algebraic replicated data types with authentication and confidentiality, reactive function calls that turn them into convergent distributed dataflows, and automated reasoning that detects where coordination is required. Developers reason locally, while the runtime ensures convergence to a consistent global state.",
+		publications: [{ key: "HaasThinkLocally2025", venue: "IEEE Internet Computing 2025" }],
+	},
+	{
 		id: "access-control",
-		year: "2024 – today",
-		tracks: ["sec"],
-		title: "Byzantine Fault Tolerance and Access Control",
+		short: "Access Control",
+		year: "2024 – ongoing",
+		tracks: ["sec", "rdt"],
+		title: "Decentralized Access Control for Replicated Data Types",
 		related: ["ardts", "ardts-security"],
 		summary:
-			"Local-first replication between parties that do not fully trust each other: replicated data types that stay consistent despite malicious replicas, based on hash DAGs, and decentralized access control that determines who may read and modify which parts of the shared data.",
+			"Access control for replicated data types without a central authority: fine-grained permissions follow the tree structure of ARDTs, and are first-class capabilities that can be delegated and revoked at runtime. The authorization state is itself replicated as a tamper-evident hash DAG, and every replica enforces policies locally when exchanging deltas – guaranteeing confidentiality, integrity, and availability even in the presence of Byzantine replicas.",
 		publications: [],
 	},
 	{
 		id: "lore",
-		year: "2023 – 2025",
+		short: "LoRe",
+		year: "2023 – 2024",
 		tracks: ["drp"],
 		title: "LoRe: Verifiably Safe Local-First Software",
 		related: ["ardts"],
 		summary:
 			"Reactive programming for local-first applications: developers state safety invariants, and LoRe verifies which concurrent interactions may violate them – selectively using coordination only where required.",
 		publications: [
-			{ key: "HaasThinkLocally2025", venue: "IEEE Internet Computing 2025" },
 			{ key: "10.1145/3633769", venue: "TOPLAS 2024", artifact: "HaasLoReArtifact2023" },
 		],
 	},
 	{
 		id: "ardts-security",
+		short: "Secure ARDTs",
 		year: "2023",
 		tracks: ["sec"],
 		title: "Secure Local-First Software",
@@ -83,16 +97,18 @@ export const projects: Project[] = [
 	},
 	{
 		id: "ardts",
-		year: "2021 – today",
+		short: "ARDTs",
+		year: "2021 – ongoing",
 		tracks: ["rdt"],
 		title: "Algebraic Replicated Data Types",
 		summary:
-			"Instead of a fixed catalogue of CRDTs, developers use the algebraic data types they already write for their business logic: every ARDT is a join-semilattice, and merge semantics of products and sums are derived automatically from their components. Causal metadata (dots and contexts) enables deletion and ordering-based types such as lists and maps. ARDTs are the shared foundation of several research threads in Bismuth – LoRe, PRDTs, secure replication, and access control all build on them, and the library keeps evolving with them.",
+			"Instead of a fixed catalogue of CRDTs, developers use the algebraic data types they already write for their business logic: every ARDT is a join-semilattice, and merge semantics of products and sums are derived automatically from their components. ARDTs are the shared foundation of several research threads in Bismuth – LoRe, PRDTs, secure replication, and access control all build on them, and the library keeps evolving with them.",
 		links: [{ label: "documentation", href: "/documentation/rdts/" }],
 		publications: [{ key: "DBLP:conf/ecoop/KuessnerMWM23", venue: "ECOOP 2023", artifact: "KuessnerARDTArtifact2023" }],
 	},
 	{
 		id: "fault-tolerant-rp",
+		short: "Fault-Tolerant RP",
 		year: "2017 – 2021",
 		tracks: ["drp"],
 		title: "Fault-Tolerant Distributed Reactive Programming",
@@ -110,6 +126,7 @@ export const projects: Project[] = [
 	},
 	{
 		id: "rescala",
+		short: "REScala",
 		year: "2013 – 2016",
 		tracks: ["drp"],
 		title: "REScala",
@@ -125,17 +142,53 @@ export const projects: Project[] = [
 
 // Articles built by scitzen (see `just websiteDocs`), rendered at /documentation/<slug>/
 export const manuals = [
+	{ slug: "rdts", title: "Algebraic Replicated Data Types", file: "Algebraic Replicated Data Types.html" },
+	{ slug: "reactives", title: "Reactive Programming Concepts", file: "Reactive Programming Concepts.html" },
+];
+
+const maven = (artifact: string) => `https://index.scala-lang.org/stg-tud/bismuth/artifacts/${artifact}`;
+const scaladoc = (artifact: string) => `https://javadoc.io/doc/de.tu-darmstadt.stg/${artifact}_3/latest/index.html`;
+
+export interface Library {
+	id: string;
+	title: string;
+	artifact: string;
+	summary: string;
+	/** slug of the manual in `manuals` */
+	manual?: string;
+	maven: string;
+	scaladoc: string;
+}
+
+export const libraries: Library[] = [
 	{
-		slug: "rdts",
-		title: "Algebraic Replicated Data Types",
-		file: "Algebraic Replicated Data Types.html",
-		summary: "Lattices, automatic derivation, and the catalogue of predefined replicated data types.",
+		id: "rdts",
+		title: "RDTs",
+		artifact: "rdts",
+		summary:
+			"Algebraic replicated data types: lattices with automatically derived merge for products and sums, causal metadata, and a collection of common replicated data types.",
+		manual: "rdts",
+		maven: maven("rdts"),
+		scaladoc: scaladoc("rdts"),
 	},
 	{
-		slug: "reactives",
-		title: "Reactive Programming Concepts",
-		file: "Reactive Programming Concepts.html",
-		summary: "Signals, events, and transactional propagation with the Reactives library.",
+		id: "reactives",
+		title: "Reactives",
+		artifact: "reactives",
+		summary:
+			"Signals and events in a transactional dataflow graph – the continuation of the REScala library.",
+		manual: "reactives",
+		maven: maven("reactives"),
+		scaladoc: scaladoc("reactives"),
+	},
+	{
+		id: "channels",
+		title: "Channels",
+		artifact: "channels",
+		summary:
+			"A minimal send/receive abstraction over TCP, WebSockets, WebRTC, BroadcastChannel, and more. Channels is an integration project that connects RDTs and Reactives into distributed applications; it is not documented yet.",
+		maven: maven("channels"),
+		scaladoc: scaladoc("channels"),
 	},
 ];
 

@@ -9,10 +9,9 @@ interface Props {
 const { title } = Astro.props;
 const path = Astro.url.pathname;
 const nav = [
-	{ href: url("/"), label: "Projects" },
-	{ href: url("/documentation/"), label: "Documentation" },
+	{ href: url("/"), label: "Research" },
+	{ href: url("/documentation/"), label: "Libraries" },
 	{ href: url("/demos/"), label: "Demos" },
-	{ href: site.scaladoc, label: "API", external: true },
 	{ href: site.repo, label: "Repository", external: true },
 ];
 ---
@@ -65,7 +64,7 @@ const nav = [
 				</div>
 			</div>
 			<div class="bottom">
-				Bismuth is available under the Apache 2 License. © {new Date().getFullYear()} The Bismuth Contributors. This website is lovingly vibe-coded AI slop. The research behind it is the work of many wonderful (and very human) PhD students.
+				Bismuth is available under the Apache 2 License. © {new Date().getFullYear()} The Bismuth Contributors. This website is lovingly vibe-coded with AI. The research behind it is the work of many wonderful (and very human) PhD students.
 			</div>
 		</footer>
 	</body>

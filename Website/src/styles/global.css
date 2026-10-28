@@ -2,6 +2,8 @@
 
 @font-face { font-family: "Barlow"; font-weight: 500; src: url("../fonts/barlow-v5-latin-500.woff2") format("woff2"); }
 @font-face { font-family: "Barlow"; font-weight: 700; src: url("../fonts/barlow-v5-latin-700.woff2") format("woff2"); }
+/* Exo 2 – closest match to the REScala wordmark, only used for the Bismuth wordmark */
+@font-face { font-family: "Exo 2"; font-weight: 700; src: url("../fonts/exo2-latin-700.woff2") format("woff2"); }
 @font-face { font-family: "Roboto"; font-weight: 400; src: url("../fonts/roboto-v20-latin-regular.woff2") format("woff2"); }
 @font-face { font-family: "Roboto"; font-weight: 400; font-style: italic; src: url("../fonts/roboto-v20-latin-italic.woff2") format("woff2"); }
 @font-face { font-family: "Roboto"; font-weight: 700; src: url("../fonts/roboto-v20-latin-700.woff2") format("woff2"); }
@@ -58,7 +60,7 @@ code { background: var(--indigo-100); padding: 0 0.25em; border-radius: 3px; }
 /* Navbar */
 .navbar { padding: 1.25rem 0; }
 .navbar .container { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
-.brand { font-family: "Barlow", sans-serif; font-weight: 700; font-size: 2rem; color: var(--indigo-900); text-decoration: none; letter-spacing: 0.02em; }
+.brand { font-family: "Exo 2", sans-serif; font-weight: 700; font-size: 2rem; color: var(--indigo-900); text-decoration: none; }
 .nav-links { display: flex; align-items: center; gap: 2rem; flex-wrap: wrap; }
 .nav-link { font-family: "Barlow", sans-serif; font-weight: 700; color: var(--indigo-900); text-decoration: none; position: relative; }
 .nav-link::before {
@@ -81,13 +83,6 @@ code { background: var(--indigo-100); padding: 0 0.25em; border-radius: 3px; }
 
 /* Cards */
 .grid { display: grid; gap: 1.5rem; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
-.feature-card {
-	padding: 1.5rem; background: white; border: 1px solid var(--indigo-200); border-radius: 5px;
-	transition: 0.25s ease-in-out; text-decoration: none; color: inherit; display: block;
-}
-.feature-card:hover { border-color: transparent; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); color: inherit; }
-.feature-card h3 { margin-bottom: 0.5rem; }
-.feature-card p { margin: 0; }
 
 /* Hero header with decorative accent instead of images */
 .header { padding: 5rem 0 4rem; background: radial-gradient(60% 80% at 85% 20%, var(--indigo-200) 0%, transparent 70%); }
@@ -125,6 +120,7 @@ footer .cols { display: flex; flex-wrap: wrap; justify-content: space-between; g
 footer .cols div { display: flex; flex-direction: column; gap: 0.4rem; font-size: 14px; }
 footer .cols .about { max-width: 22rem; }
 footer .cols strong { font-family: "Barlow", sans-serif; font-size: 16px; }
+footer .cols .brand-footer { font-family: "Exo 2", sans-serif; font-size: 18px; }
 footer .bottom { background: var(--indigo-800); text-align: center; font-size: 14px; padding: 0.5rem; }
 
 @media (max-width: 768px) {
@@ -149,3 +145,27 @@ footer .bottom { background: var(--indigo-800); text-align: center; font-size: 1
 .pubs .artifact { color: var(--indigo-700); }
 .project .related { font-size: 14px; color: var(--gray-600); margin-top: -0.5rem; }
 .all-pubs { margin: 2.5rem 0 0; font-family: "Barlow", sans-serif; font-weight: 700; }
+.lib-card {
+	display: flex; flex-direction: column; padding: 1.5rem; background: white;
+	border: 1px solid var(--indigo-200); border-radius: 5px;
+}
+.lib-card h3 { margin-bottom: 0.5rem; }
+.lib-card p { margin: 0; }
+.lib-card > p { flex: 1 0 auto; }
+.lib-links { display: flex; flex-direction: column; gap: 0.6rem; margin-top: 1.5rem; }
+.lib-link {
+	display: flex; justify-content: space-between; align-items: baseline; gap: 1rem;
+	padding: 0.7rem 1rem; border-radius: 5px; text-decoration: none; transition: 0.25s ease-in-out;
+	background: var(--indigo-100); color: var(--indigo-900);
+}
+.lib-link > span { font-family: "Barlow", sans-serif; font-weight: 700; font-size: 1.1rem; }
+.lib-link small { font-size: 13px; text-align: right; }
+.lib-link small code { background: none; padding: 0; }
+a.lib-link:hover { background: var(--indigo-200); color: var(--indigo-900); }
+.lib-link.primary { background: var(--yellow-400); color: var(--gray-950); }
+a.lib-link.primary:hover { background: var(--yellow-500); color: var(--gray-950); }
+.lib-link.disabled { background: var(--gray-100); color: var(--gray-600); border: 1px dashed var(--gray-200); }
+.notice {
+	max-width: 42rem; padding: 0.75rem 1rem; border-radius: 5px;
+	background: var(--yellow-100, #fffbea); border-left: 4px solid var(--yellow-500);
+}

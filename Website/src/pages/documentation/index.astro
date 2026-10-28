@@ -1,56 +1,54 @@
 ---
 import { url } from "../../lib/url";
 import Base from "../../layouts/Base.astro";
-import { manuals, site } from "../../data/site";
+import { libraries, manuals, site } from "../../data/site";
+const manualTitle = (slug: string) => manuals.find((m) => m.slug === slug)!.title;
 ---
 
-<Base title="Documentation">
+<Base title="Libraries">
 	<section class="header">
 		<div class="container">
-			<h1>Documentation</h1>
-			<p class="lead">High-level guides to the core libraries, plus the generated API reference.</p>
-		</div>
-	</section>
-	<section class="section">
-		<div class="container">
-			<h2>Libraries</h2>
-			<div class="grid">
-				<a class="feature-card" href={url("/documentation/rdts/")}>
-					<h3>Replicated Data Types</h3>
-					<p>Compose conflict-free replicated data types from products and sums, with derived merge semantics.</p>
-				</a>
-				<a class="feature-card" href={url("/documentation/reactives/")}>
-					<h3>Reactives</h3>
-					<p>Signals and events in a transactional dataflow graph – the successor of REScala.</p>
-				</a>
-				<a class="feature-card" href={`${site.repo}/tree/main/Modules/Channels`}>
-					<h3>Replication & Channels</h3>
-					<p>Exchange state over TCP, WebSockets, WebRTC, and more, on the JVM, JS, and Native.</p>
-				</a>
-			</div>
+			<h1>Libraries</h1>
+			<p class="lead">
+				Besides research prototypes, Bismuth contains libraries that are ready for building local-first applications. They
+				are published separately and can be used individually, on the JVM, in the browser via Scala.js, and natively via Scala Native (group id <code>de.tu-darmstadt.stg</code>). We document the{" "}
+				<b>RDTs</b> (algebraic replicated data types) and <b>Reactives</b> libraries with a hands-on manual each, and all
+				libraries with generated API documentation (Scaladoc). For everything else, the{" "}
+				<a href={site.repo}>repository</a> describes how to build the project and gives an overview of all modules.
+			</p>
 		</div>
 	</section>
 	<section class="section bg-light">
-		<div class="container">
-			<h2>Guides & Reference</h2>
-		</div>
 		<div class="container grid">
 			{
-				manuals.map((m) => (
-					<a class="feature-card" href={url(`/documentation/${m.slug}/`)}>
-						<h3>{m.title}</h3>
-						<p>{m.summary}</p>
-					</a>
+				libraries.map((l) => (
+					<div class="lib-card">
+						<h3>{l.title}</h3>
+						<p>{l.summary}</p>
+						<div class="lib-links">
+							{l.manual ? (
+								<a class="lib-link primary" href={url(`/documentation/${l.manual}/`)}>
+									<span>Manual</span>
+									<small>{manualTitle(l.manual)}</small>
+								</a>
+							) : (
+								<span class="lib-link disabled">
+									<span>Manual</span>
+									<small>not yet available</small>
+								</span>
+							)}
+							<a class="lib-link" href={l.scaladoc}>
+								<span>Scaladoc ↗</span>
+								<small>API reference</small>
+							</a>
+							<a class="lib-link" href={l.maven}>
+								<span>Artifacts ↗</span>
+								<small><code>{l.artifact}</code></small>
+							</a>
+						</div>
+					</div>
 				))
 			}
-			<a class="feature-card" href={site.scaladoc}>
-				<h3>API Reference (Scaladoc)</h3>
-				<p>Generated documentation of all public modules.</p>
-			</a>
-			<a class="feature-card" href={site.repo}>
-				<h3>Source Repository</h3>
-				<p>Getting started with sbt, the module overview, and how to contribute.</p>
-			</a>
 		</div>
 	</section>
 </Base>
