@@ -1,0 +1,1 @@
+/* empty css              */import{t as e}from"./main-BZKZYjVY.js";e(`tabular`);
