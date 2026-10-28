@@ -5,7 +5,7 @@ import path from "node:path";
 import { url } from "./url";
 
 // relative to the Website/ folder (astro runs with Website/ as cwd)
-export const scitzenOut = path.resolve(process.env.SCITZEN_OUT ?? "../scitzen.out/web");
+const scitzenOut = path.resolve(process.env.SCITZEN_OUT ?? "../scitzen.out/web");
 
 export interface ScitzenDoc {
 	title: string;

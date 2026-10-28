@@ -38,6 +38,8 @@ const first = demos[0];
 </Base>
 
 <script>
+	import { url } from "../lib/url";
+
 	const frame = document.getElementById("demo-frame") as HTMLIFrameElement;
 	const open = document.getElementById("demo-open") as HTMLAnchorElement;
 	const summary = document.getElementById("demo-summary")!;
@@ -45,9 +47,9 @@ const first = demos[0];
 		btn.addEventListener("click", () => {
 			document.querySelectorAll(".demo-tabs button").forEach((b) => b.setAttribute("aria-selected", "false"));
 			btn.setAttribute("aria-selected", "true");
-			const url = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/examples/${btn.dataset.demo}.html`;
-			frame.src = url;
-			open.href = url;
+			const demo = url(`/examples/${btn.dataset.demo}.html`);
+			frame.src = demo;
+			open.href = demo;
 			summary.firstChild!.textContent = `${btn.dataset.summary} `;
 		});
 	}

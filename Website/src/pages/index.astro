@@ -26,7 +26,7 @@ const byId = (id: string) => projects.find((p) => p.id === id)!;
 							<div class="year">{p.year}</div>
 							<h3>{p.title}</h3>
 							<div class="tags">
-								{p.tracks.map((t) => <span class:list={["tag", "track", `track-${tracks[t].color}`]}>{tracks[t].title}</span>)}
+								{p.tracks.map((t) => <span class:list={["tag", `track-${tracks[t].color}`]}>{tracks[t].title}</span>)}
 							</div>
 							<p>
 								{p.summary}
@@ -52,7 +52,7 @@ const byId = (id: string) => projects.find((p) => p.id === id)!;
 												<span class="venue">{pub.venue}</span> — {e.url ? <a href={e.url}>{e.title}</a> : e.title}
 												<div class="authors">
 													{e.authors.join(", ")}
-													{pub.artifact && <> · <a class="artifact" href={cite(pub.artifact).url}>research artifact</a></>}
+													{pub.artifact && <> · <a href={cite(pub.artifact).url}>research artifact</a></>}
 												</div>
 											</li>
 										);

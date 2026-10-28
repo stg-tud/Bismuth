@@ -35,14 +35,14 @@
 .doc-content img, .doc-content video { max-width: 100%; height: auto; }
 .doc-content figure { margin: 1.5rem 0; }
 .doc-content blockquote, .doc-content div.note {
-	margin: 1.5rem 0; padding: 0.75rem 1rem; background: var(--yellow-100, #fffbea); border-left: 4px solid var(--yellow-500); border-radius: 5px;
+	margin: 1.5rem 0; padding: 0.75rem 1rem; background: var(--yellow-100); border-left: 4px solid var(--yellow-500); border-radius: 5px;
 }
 .doc-content div.note > :first-child, .doc-content blockquote > :first-child { margin-top: 0; }
 .doc-content div.note > :last-child, .doc-content blockquote > :last-child { margin-bottom: 0; }
 .doc-content table { border-collapse: collapse; margin: 1rem 0; }
 .doc-content :is(td, th) { border: 1px solid var(--indigo-200); padding: 0.3rem 0.6rem; }
 .doc-content *:target { animation: doc-target 1.5s ease-out; }
-@keyframes doc-target { from { background: var(--yellow-300, #fce588); } }
+@keyframes doc-target { from { background: var(--yellow-300); } }
 
 /* citations / bibliography */
 .doc-content .citations a { text-decoration: none; }
