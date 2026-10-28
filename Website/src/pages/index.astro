@@ -1,67 +1,64 @@
 ---
-import { url } from "../lib/url";
 import Base from "../layouts/Base.astro";
-import { projects, site } from "../data/site";
+import { projects, tracks } from "../data/site";
+import { cite } from "../lib/bibliography";
+import { url } from "../lib/url";
+const byId = (id: string) => projects.find((p) => p.id === id)!;
 ---
 
 <Base>
-	<section class="header">
+	<section class="header" id="projects">
 		<div class="container">
 			<h1>Programming foundations for distributed systems</h1>
 			<p class="lead">
-				Bismuth is a collection of Scala libraries and research prototypes for local-first and distributed software:
-				replicated data types, reactive programming, data synchronization, and secure collaboration.
+				Bismuth brings together several research strands of the{" "}
+				<a href="https://www.stg.tu-darmstadt.de/">Software Technology Group</a> at TU Darmstadt –{" "}
+				<span class="strand track-teal">distributed reactive programming</span>,{" "}
+				<span class="strand track-magenta">replicated data types and protocols</span>, and{" "}
+				<span class="strand track-orange">access control and encryption</span>. It contains the Scala
+				implementations alongside the papers that formalize them, often with mechanizations in Lean. Bismuth is the
+				successor of <a href="https://www.rescala-lang.com/">REScala</a>.
 			</p>
-			<div class="buttons">
-				<a class="hero" href={url("/documentation/")}>Get Started</a>
-				<a class="action" href={url("/demos/")}>Try the demos</a>
-				<a class="action" href={site.repo}>View on GitHub</a>
-			</div>
-		</div>
-	</section>
-
-	<section class="section bg-light">
-		<div class="container grid">
-			<a class="feature-card" href={url("/documentation/")}>
-				<h3>Replicated Data Types</h3>
-				<p>Compose conflict-free replicated data types from products and sums, with derived merge semantics.</p>
-			</a>
-			<a class="feature-card" href={url("/documentation/")}>
-				<h3>Reactives</h3>
-				<p>Signals and events in a transactional dataflow graph – the successor of REScala.</p>
-			</a>
-			<a class="feature-card" href={url("/documentation/")}>
-				<h3>Replication & Channels</h3>
-				<p>Exchange state over TCP, WebSockets, WebRTC, and more, on the JVM, JS, and Native.</p>
-			</a>
-		</div>
-	</section>
-
-	<section class="section" id="projects">
-		<div class="container">
-			<h2>Research Projects</h2>
-			<p class="lead muted">Bismuth hosts the code of several research projects and their associated papers.</p>
 			<div class="timeline">
 				{
 					projects.map((p) => (
 						<article class="project" id={p.id}>
 							<div class="year">{p.year}</div>
 							<h3>{p.title}</h3>
-							<div class="tags">{p.modules.map((m) => <span class="tag">{m}</span>)}</div>
-							<p>{p.summary}</p>
+							<div class="tags">
+								{p.tracks.map((t) => <span class:list={["tag", "track", `track-${tracks[t].color}`]}>{tracks[t].title}</span>)}
+							</div>
+							<p>
+								{p.summary}
+								{p.links?.map((l) => <> <a href={l.href.startsWith("/") ? url(l.href) : l.href}>{l.label} ↗</a></>)}
+							</p>
+							{p.related && (
+								<p class="related">
+									Builds on:{" "}
+									{p.related.map((id, i) => <>{i > 0 && ", "}<a href={`#${id}`}>{byId(id).title}</a></>)}
+								</p>
+							)}
 							{p.publications.length > 0 && (
 								<ul class="pubs">
-									{p.publications.map((pub) => (
-										<li>
-											<span class="venue">{pub.venue}</span> — {pub.url ? <a href={pub.url}>{pub.title}</a> : pub.title}
-										</li>
-									))}
+									{p.publications.map((pub) => {
+										const e = cite(pub.key);
+										return (
+											<li>
+												<span class="venue">{pub.venue}</span> — {e.url ? <a href={e.url}>{e.title}</a> : e.title}
+												<div class="authors">
+													{e.authors.join(", ")}
+													{pub.artifact && <> · <a class="artifact" href={cite(pub.artifact).url}>research artifact</a></>}
+												</div>
+											</li>
+										);
+									})}
 								</ul>
 							)}
 						</article>
 					))
 				}
 			</div>
+			<p class="all-pubs"><a href={url("/publications/")}>All publications →</a></p>
 		</div>
 	</section>
 

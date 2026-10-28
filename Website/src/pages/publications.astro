@@ -1,0 +1,31 @@
+---
+// Concise bibliography of src/bibliography/bismuth.bib – intentionally not linked from the navigation (yet).
+import Base from "../layouts/Base.astro";
+import { bibliography } from "../lib/bibliography";
+const entries = [...bibliography].sort((a, b) => b.year.localeCompare(a.year));
+---
+
+<Base title="Publications">
+	<section class="header">
+		<div class="container">
+			<h1>Publications</h1>
+		</div>
+	</section>
+	<section class="section">
+		<div class="container">
+			<ul class="bib-list">
+				{
+					entries.map((e) => (
+						<li id={e.key}>
+							<div class="title">{e.url ? <a href={e.url}>{e.title}</a> : e.title}</div>
+							<div>{e.authors.join(", ")}</div>
+							<div class="meta">
+								{e.venue}, {e.year}
+							</div>
+						</li>
+					))
+				}
+			</ul>
+		</div>
+	</section>
+</Base>

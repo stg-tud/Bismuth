@@ -25,7 +25,7 @@
 	--container: 1140px;
 }
 
-* { box-sizing: border-box; }
+*, *::before, *::after { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 body {
 	margin: 0;
@@ -66,13 +66,7 @@ code { background: var(--indigo-100); padding: 0 0.25em; border-radius: 3px; }
 	background: var(--indigo-900); transition: all 0.4s ease-in-out;
 }
 .nav-link:hover::before, .nav-link.active::before { width: 100%; opacity: 1; }
-.pills { display: inline-flex; }
-.pill-left, .pill-right {
-	font-family: "Barlow", sans-serif; font-weight: 700; color: var(--indigo-900); text-decoration: none; padding: 8px 16px;
-}
-.pill-left { background: var(--indigo-100); border-radius: 50px 0 0 50px; }
-.pill-right { background: var(--indigo-200); border-radius: 0 50px 50px 0; }
-.pill-left:hover, .pill-right:hover { background: var(--indigo-300); color: var(--indigo-900); }
+.nav-link .external { font-size: 0.8em; margin-left: 0.15em; color: var(--indigo-600); }
 
 /* Buttons */
 .hero, .action {
@@ -97,21 +91,21 @@ code { background: var(--indigo-100); padding: 0 0.25em; border-radius: 3px; }
 
 /* Hero header with decorative accent instead of images */
 .header { padding: 5rem 0 4rem; background: radial-gradient(60% 80% at 85% 20%, var(--indigo-200) 0%, transparent 70%); }
-.header h1 { max-width: 14ch; }
+.header h1 { max-width: 24ch; }
 
 /* Project timeline */
 .timeline { position: relative; padding-left: 2rem; border-left: 4px solid var(--indigo-200); }
 .project { position: relative; padding-bottom: 3rem; }
 .project:last-child { padding-bottom: 0; }
 .project::before {
-	content: ""; position: absolute; left: calc(-2rem - 12px); top: 0.4rem; width: 20px; height: 20px;
-	border-radius: 50%; background: var(--yellow-400); border: 4px solid white; box-shadow: 0 0 0 2px var(--indigo-200);
+	content: ""; position: absolute; left: calc(-2rem - 2px - 16px); top: 0; width: 32px; height: 32px;
+	background: white url("../assets/logo.svg") center / 28px no-repeat; border-radius: 50%;
 }
 .project .year { font-family: "Barlow", sans-serif; font-weight: 700; color: var(--indigo-600); font-size: 1.1rem; }
 .project .tags { display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 0.5rem 0; }
 .tag { font-size: 12px; font-weight: 700; padding: 2px 10px; border-radius: 20px; background: var(--indigo-100); color: var(--indigo-900); }
 .pubs { list-style: none; padding: 0; margin: 1rem 0 0; }
-.pubs li { margin-bottom: 0.5rem; padding: 0.75rem 1rem; background: var(--gray-100); border-radius: 5px; border-left: 4px solid var(--indigo-400); }
+.pubs li { margin-bottom: 0.5rem; }
 .pubs .venue { font-weight: 700; color: var(--indigo-800); }
 
 /* Demo embed */
@@ -129,6 +123,7 @@ footer a { color: white; text-decoration: none; }
 footer a:hover { color: var(--indigo-200); }
 footer .cols { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2rem; padding: 3rem 1rem; }
 footer .cols div { display: flex; flex-direction: column; gap: 0.4rem; font-size: 14px; }
+footer .cols .about { max-width: 22rem; }
 footer .cols strong { font-family: "Barlow", sans-serif; font-size: 16px; }
 footer .bottom { background: var(--indigo-800); text-align: center; font-size: 14px; padding: 0.5rem; }
 
@@ -141,3 +136,16 @@ footer .bottom { background: var(--indigo-800); text-align: center; font-size: 1
 .brand img { width: 52px; height: 52px; }
 .brand-footer { display: inline-flex; align-items: center; gap: 0.5rem; }
 .brand-footer img { width: 32px; height: 32px; }
+.pubs .authors { font-size: 14px; color: var(--gray-600); }
+.bib-list { padding-left: 1.25rem; }
+.bib-list li { margin-bottom: 1rem; }
+.bib-list .title { font-weight: 700; }
+.bib-list .meta { color: var(--gray-600); font-size: 14px; }
+/* research strands, colors taken from the logo */
+.strand { padding: 0 0.35em; border-radius: 20px; white-space: nowrap; }
+.track-teal { background: #2e9db0; color: white; }
+.track-magenta { background: #c8458f; color: white; }
+.track-orange { background: #e8a33d; color: var(--gray-950); }
+.pubs .artifact { color: var(--indigo-700); }
+.project .related { font-size: 14px; color: var(--gray-600); margin-top: -0.5rem; }
+.all-pubs { margin: 2.5rem 0 0; font-family: "Barlow", sans-serif; font-weight: 700; }

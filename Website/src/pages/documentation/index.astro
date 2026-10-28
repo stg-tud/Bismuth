@@ -11,7 +11,29 @@ import { manuals, site } from "../../data/site";
 			<p class="lead">High-level guides to the core libraries, plus the generated API reference.</p>
 		</div>
 	</section>
+	<section class="section">
+		<div class="container">
+			<h2>Libraries</h2>
+			<div class="grid">
+				<a class="feature-card" href={url("/documentation/rdts/")}>
+					<h3>Replicated Data Types</h3>
+					<p>Compose conflict-free replicated data types from products and sums, with derived merge semantics.</p>
+				</a>
+				<a class="feature-card" href={url("/documentation/reactives/")}>
+					<h3>Reactives</h3>
+					<p>Signals and events in a transactional dataflow graph – the successor of REScala.</p>
+				</a>
+				<a class="feature-card" href={`${site.repo}/tree/main/Modules/Channels`}>
+					<h3>Replication & Channels</h3>
+					<p>Exchange state over TCP, WebSockets, WebRTC, and more, on the JVM, JS, and Native.</p>
+				</a>
+			</div>
+		</div>
+	</section>
 	<section class="section bg-light">
+		<div class="container">
+			<h2>Guides & Reference</h2>
+		</div>
 		<div class="container grid">
 			{
 				manuals.map((m) => (
