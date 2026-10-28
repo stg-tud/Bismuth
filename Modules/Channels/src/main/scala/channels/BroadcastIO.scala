@@ -110,6 +110,9 @@ class BroadcastIO[State](
 
   def selfConnectionDescriptors: Set[ConnectionDescriptor] = overlay.selfConnectionDescriptors
 
+  /** Ids of all live connections the driver holds (for consistency checks in tests). */
+  private[channels] def connectionIds: Set[ConnId] = lock.synchronized(connections.keySet)
+
   /** The transport connection backing the active edge to `peer`, if any. */
   def connectionTo(peer: Uid): Option[Connection] = lock.synchronized {
     overlay.connectionFor(peer).flatMap(connections.get)
