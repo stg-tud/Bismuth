@@ -1,0 +1,30 @@
+---
+import Base from "../../layouts/Base.astro";
+import { manuals } from "../../data/site";
+import { loadDoc } from "../../lib/scitzen";
+import "../../styles/scitzen.css";
+
+export function getStaticPaths() {
+	return manuals.map((m) => ({ params: { slug: m.slug }, props: { manual: m } }));
+}
+
+const { manual } = Astro.props;
+const slugForFile = (file: string) => manuals.find((m) => m.file === file)?.slug;
+const doc = loadDoc(manual.file, slugForFile);
+---
+
+<Base title={doc.title}>
+	<div class="container doc-layout">
+		{
+			doc.toc && (
+				<aside class="doc-toc">
+					<details open>
+						<summary>Contents</summary>
+						<nav class:list={[{ "numbered-sections": doc.mainClass.includes("numbered-sections") }]} set:html={doc.toc} />
+					</details>
+				</aside>
+			)
+		}
+		<article class:list={["doc-content", doc.mainClass]} set:html={doc.content} />
+	</div>
+</Base>

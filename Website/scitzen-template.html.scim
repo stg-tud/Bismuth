@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<!-- minimal scitzen output, ingested by the Astro website (see src/lib/scitzen.ts) -->
+<html lang=":get{language}">
+<head>
+	<meta charset="UTF-8">
+	<title>:get{title}</title>
+</head>
+<body>
+	:if table of contents
+		<nav id="scitzen-toc">:get{table of contents}</nav>
+	<main id="scitzen-content" class=":if{flag section numbers; numbered-sections} :if{flag hardwrap; hardwrap} :if{flag justify; justify}">
+		:get{template content}
+	</main>
+</body>
+</html>

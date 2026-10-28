@@ -1,0 +1,80 @@
+---
+import { url } from "../lib/url";
+import Base from "../layouts/Base.astro";
+import { projects, site } from "../data/site";
+---
+
+<Base>
+	<section class="header">
+		<div class="container">
+			<h1>Programming foundations for distributed systems</h1>
+			<p class="lead">
+				Bismuth is a collection of Scala libraries and research prototypes for local-first and distributed software:
+				replicated data types, reactive programming, data synchronization, and secure collaboration.
+			</p>
+			<div class="buttons">
+				<a class="hero" href={url("/documentation/")}>Get Started</a>
+				<a class="action" href={url("/demos/")}>Try the demos</a>
+				<a class="action" href={site.repo}>View on GitHub</a>
+			</div>
+		</div>
+	</section>
+
+	<section class="section bg-light">
+		<div class="container grid">
+			<a class="feature-card" href={url("/documentation/")}>
+				<h3>Replicated Data Types</h3>
+				<p>Compose conflict-free replicated data types from products and sums, with derived merge semantics.</p>
+			</a>
+			<a class="feature-card" href={url("/documentation/")}>
+				<h3>Reactives</h3>
+				<p>Signals and events in a transactional dataflow graph – the successor of REScala.</p>
+			</a>
+			<a class="feature-card" href={url("/documentation/")}>
+				<h3>Replication & Channels</h3>
+				<p>Exchange state over TCP, WebSockets, WebRTC, and more, on the JVM, JS, and Native.</p>
+			</a>
+		</div>
+	</section>
+
+	<section class="section" id="projects">
+		<div class="container">
+			<h2>Research Projects</h2>
+			<p class="lead muted">Bismuth hosts the code of several research projects and their associated papers.</p>
+			<div class="timeline">
+				{
+					projects.map((p) => (
+						<article class="project" id={p.id}>
+							<div class="year">{p.year}</div>
+							<h3>{p.title}</h3>
+							<div class="tags">{p.modules.map((m) => <span class="tag">{m}</span>)}</div>
+							<p>{p.summary}</p>
+							{p.publications.length > 0 && (
+								<ul class="pubs">
+									{p.publications.map((pub) => (
+										<li>
+											<span class="venue">{pub.venue}</span> — {pub.url ? <a href={pub.url}>{pub.title}</a> : pub.title}
+										</li>
+									))}
+								</ul>
+							)}
+						</article>
+					))
+				}
+			</div>
+		</div>
+	</section>
+
+	<section class="section bg-indigo">
+		<div class="container">
+			<h2>Get involved</h2>
+			<p class="lead">
+				Bismuth is developed at the Software Technology Group of TU Darmstadt. We offer theses and other opportunities, and
+				anyone is welcome to join our matrix channel.
+			</p>
+			<div class="buttons">
+				<a class="hero" href="https://matrix.to/#/#difosys:matrix.tu-darmstadt.de">Join the chat</a>
+			</div>
+		</div>
+	</section>
+</Base>

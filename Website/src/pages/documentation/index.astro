@@ -1,0 +1,34 @@
+---
+import { url } from "../../lib/url";
+import Base from "../../layouts/Base.astro";
+import { manuals, site } from "../../data/site";
+---
+
+<Base title="Documentation">
+	<section class="header">
+		<div class="container">
+			<h1>Documentation</h1>
+			<p class="lead">High-level guides to the core libraries, plus the generated API reference.</p>
+		</div>
+	</section>
+	<section class="section bg-light">
+		<div class="container grid">
+			{
+				manuals.map((m) => (
+					<a class="feature-card" href={url(`/documentation/${m.slug}/`)}>
+						<h3>{m.title}</h3>
+						<p>{m.summary}</p>
+					</a>
+				))
+			}
+			<a class="feature-card" href={site.scaladoc}>
+				<h3>API Reference (Scaladoc)</h3>
+				<p>Generated documentation of all public modules.</p>
+			</a>
+			<a class="feature-card" href={site.repo}>
+				<h3>Source Repository</h3>
+				<p>Getting started with sbt, the module overview, and how to contribute.</p>
+			</a>
+		</div>
+	</section>
+</Base>

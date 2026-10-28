@@ -1,0 +1,51 @@
+---
+import { url } from "../lib/url";
+import Base from "../layouts/Base.astro";
+import { demos } from "../data/site";
+const first = demos[0];
+---
+
+<Base title="Demos">
+	<section class="header">
+		<div class="container">
+			<h1>Demos</h1>
+			<p class="lead">
+				Case-study web applications built with Bismuth, running fully in your browser. Open a demo in multiple tabs to see
+				replication in action.
+			</p>
+		</div>
+	</section>
+	<section class="section bg-light">
+		<div class="container">
+			<div class="demo-tabs" role="tablist">
+				{
+					demos.map((d) => (
+						<button role="tab" data-demo={d.id} data-summary={d.summary} aria-selected={d === first ? "true" : "false"}>
+							{d.title}
+						</button>
+					))
+				}
+			</div>
+			<p id="demo-summary">
+				{first.summary} <a id="demo-open" href={url(`/examples/${first.id}.html`)} target="_blank">Open in new tab ↗</a>
+			</p>
+			<iframe id="demo-frame" class="demo-frame" src={url(`/examples/${first.id}.html`)} title="Demo" loading="lazy"></iframe>
+		</div>
+	</section>
+</Base>
+
+<script>
+	const frame = document.getElementById("demo-frame") as HTMLIFrameElement;
+	const open = document.getElementById("demo-open") as HTMLAnchorElement;
+	const summary = document.getElementById("demo-summary")!;
+	for (const btn of document.querySelectorAll<HTMLButtonElement>(".demo-tabs button")) {
+		btn.addEventListener("click", () => {
+			document.querySelectorAll(".demo-tabs button").forEach((b) => b.setAttribute("aria-selected", "false"));
+			btn.setAttribute("aria-selected", "true");
+			const url = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/examples/${btn.dataset.demo}.html`;
+			frame.src = url;
+			open.href = url;
+			summary.firstChild!.textContent = `${btn.dataset.summary} `;
+		});
+	}
+</script>

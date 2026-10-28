@@ -49,13 +49,6 @@ webappsWebviewJavaGi: # launch a web app in a java-gi (GTK4 + Libadwaita + WebKi
 webappsDenoDesktopRun: webappsPrepare
 	cd Modules/exWeb && deno desktop --hmr -A .
 
-# Build the exWeb examples and deploy them to the docs/examples folder for static hosting
-deploy-examples: webappsBundle
-	rm -rf docs/examples
-	mkdir -p docs/examples
-	cp -r Modules/exWeb/target/dist/. docs/examples/
-	echo "Examples deployed to docs/examples/"
-
 reformPrepare:
 	if [ ! -f "Modules/Reform/.env" ] && [ -f "Modules/Reform/env.example" ]; then cp "Modules/Reform/env.example" "Modules/Reform/.env"; fi
 	cd "Modules/Reform/" && npm install
@@ -97,3 +90,39 @@ open-in-podman command="fish":
 		{{command}}
 	rm -rf target/out # need to delete out otherwise host sbt will not work
 
+
+# render scitzen articles with the minimal template that the website ingests (output: scitzen.out/web)
+websiteDocs:
+	scitzen compile --html --html-template Website/scitzen-template.html.scim Modules/
+	rm -rf Website/public/documentation
+	mkdir -p Website/public/documentation
+	if [ -d scitzen.out/web/resources ]; then cp -r scitzen.out/web/resources Website/public/documentation/; fi
+
+# copy the exWeb bundle into the website (run `just webappsBundle` before to update it)
+websiteExamples:
+	rm -rf Website/public/examples
+	if [ -d Modules/exWeb/target/dist ]; then cp -r Modules/exWeb/target/dist Website/public/examples; else echo "no exWeb bundle, run just webappsBundle"; fi
+
+websitePrepare: websiteDocs websiteExamples
+	cd Website && deno install --node-modules-dir=auto
+
+websiteServe: websitePrepare
+	cd Website && deno run -A npm:astro dev
+
+# static site in Website/dist
+websiteBuild: websitePrepare
+	cd Website && deno run -A npm:astro build
+
+# the `website` branch (checked out as worktree in website/) is published by github pages from its docs/ folder
+websiteWorktree:
+	if [ ! -e website ]; then \
+		if git show-ref --quiet refs/heads/website; then git worktree add website website; \
+		else git worktree add --orphan -b website website; fi; \
+	fi
+
+# build everything (including the demos) and commit the result to the website branch, push manually
+websiteDeploy: webappsBundle websiteBuild websiteWorktree
+	rm -rf website/docs
+	cp -r Website/dist website/docs
+	touch website/docs/.nojekyll
+	cd website && git add -A docs && git commit -m "deploy website from main $(git -C .. rev-parse --short HEAD)"
