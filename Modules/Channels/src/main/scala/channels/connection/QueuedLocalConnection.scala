@@ -29,7 +29,8 @@ class LocalMessageQueue {
 
   def nonEmpty: Boolean = synchronized(queue.nonEmpty)
 
-  /** Delivers all messages currently queued at method entry.
+  /** Delivers all messages currently queued at method entry, in the order they were enqueued
+    * (so messages on one connection keep their order, e.g. data before close, as with real transports).
     * Messages enqueued while delivering are kept for the next call.
     *
     * @return
@@ -39,7 +40,7 @@ class LocalMessageQueue {
     val toDeliver = synchronized {
       val current = queue
       queue = Nil
-      current
+      current.reverse
     }
 
     toDeliver.foreach { case (receiver, value) =>
