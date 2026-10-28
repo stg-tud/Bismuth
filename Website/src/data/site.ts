@@ -18,7 +18,7 @@ export interface Publication {
 export const tracks = {
 	drp: { title: "Distributed Reactive Programming", color: "teal" },
 	rdt: { title: "Replicated Data Types & Protocols", color: "magenta" },
-	sec: { title: "Access Control & Encryption", color: "orange" },
+	sec: { title: "Trust Without Authority", color: "orange" },
 } as const;
 export type Track = keyof typeof tracks;
 
