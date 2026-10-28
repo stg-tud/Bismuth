@@ -20,7 +20,7 @@ import rdts.base.{ReplicaId, Uid}
   *
   * The test drives that interleaving deterministically (the manual queue delivers LIFO, so b
   * processes a's graft before a's Neighbor — an ordering a reentrant transport can produce), shows
-  * the write being lost, and then shows that the plumtree repair tick — which the todo app's
+  * the write being lost, and then shows that the plumtree repair timer — which the todo app's
   * `ConnectionManager` now drives every 100 ms — recovers it via a graft request + history replay.
   */
 class BroadcastIOOverlayDropTest extends munit.FunSuite {
@@ -77,7 +77,7 @@ class BroadcastIOOverlayDropTest extends munit.FunSuite {
     }
   }
 
-  test("a write racing the overlay setup is lost, and the repair tick recovers it") {
+  test("a write racing the overlay setup is lost, and the repair timer recovers it") {
     val f = new Fixture
     import f.*
 
@@ -101,15 +101,15 @@ class BroadcastIOOverlayDropTest extends munit.FunSuite {
     assertEquals(receivedB, List(Set("v0")))
 
     // … but b's write that raced the setup is gone: it was never announced as IHave,
-    // so without a repair tick nothing can request it back.
+    // so without a repair timer nothing can request it back.
     assertEquals(receivedA, Nil)
 
-    // heal: the same tick the todo app's ConnectionManager now drives every 100 ms.
-    // a has learned b's context (from b's graft); its tick turns that into a graft request,
+    // heal: the repair timer, which the todo app's ConnectionManager runs every 100 ms.
+    // a has learned b's context (from b's graft); its repair timer turns that into a graft request,
     // and b's history replay delivers the lost write.
     (0 until 5).foreach { _ =>
-      a.tick()
-      b.tick()
+      a.fireTimers()
+      b.fireTimers()
       drain()
     }
     assertEquals(receivedA, List(Set("v1")))

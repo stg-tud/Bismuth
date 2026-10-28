@@ -21,3 +21,11 @@ object TestUtil {
             case ex: java.io.EOFException                                                =>
             case ex                                                                      => ex.printStackTrace()
 }
+
+extension (io: BroadcastIO[?]) {
+
+  /** Fire all currently pending timers of a node using [[Timers.Manual]] (the default). */
+  def fireTimers(): Int = io.timers match
+      case manual: Timers.Manual => manual.fireAll()
+      case other                 => throw IllegalStateException(s"timers are not manual: $other")
+}

@@ -1,6 +1,6 @@
 package channels
 
-import channels.broadcast.PlumtreeBroadcast
+import channels.broadcast.{BroadcastTimer, PlumtreeBroadcast}
 import channels.broadcast.PlumtreeBroadcast.Event.Send
 import channels.broadcast.PlumtreeBroadcast.{Event, Peer, PeerRole}
 import channels.broadcast.PlumtreeMessage.*
@@ -100,7 +100,7 @@ class PlumtreeBroadcastTest extends FunSuite {
     assertEquals(events.toList, Nil)
   }
 
-  test("IHave updates remote knowledge and a subsequent graft tick requests repair from a peer that knows more") {
+  test("IHave of unknown knowledge starts the repair timer, which grafts if the knowledge is still missing") {
     val local  = Dots.single(self, 0)
     val remote = local.merge(Dots.single(missing.uid, 0))
     val state  = PlumtreeBroadcast[String](
@@ -108,21 +108,40 @@ class PlumtreeBroadcastTest extends FunSuite {
       localContext = local,
       deltaStorage = NoHistory[String](),
       peerRoles = Map(missing -> PeerRole.Lazy),
-      remoteContextSnapshot = Map(missing -> local)
     )
 
-    val PlumtreeBroadcast.Result(afterIHave, noEvents) = state.handleMessage(missing, IHave(remote))
-    assertEquals(noEvents.toList, Nil)
-    assertEquals(afterIHave.remoteContext(missing), remote, "")
+    val PlumtreeBroadcast.Result(afterIHave, iHaveEvents) = state.handleMessage(missing, IHave(remote))
+    assertEquals(iHaveEvents.toList, List(Event.StartTimer(BroadcastTimer.Repair)))
+    assertEquals(afterIHave.remoteContext(missing), remote)
 
-    val PlumtreeBroadcast.Result(afterFirstTick, firstTickEvents) = afterIHave.tick()
-    assertEquals(afterFirstTick.peerRoles(missing), PeerRole.Lazy, "")
-    assertEquals(firstTickEvents.toList, Nil)
-    assertEquals(afterFirstTick.remoteContextSnapshot, afterIHave.remoteContext)
+    // a second announcement does not start a second timer
+    val PlumtreeBroadcast.Result(afterSecond, secondEvents) = afterIHave.handleMessage(missing, IHave(remote))
+    assertEquals(secondEvents.toList, Nil)
 
-    val PlumtreeBroadcast.Result(afterSecondTick, secondTickEvents) = afterFirstTick.tick()
-    assertEquals(afterSecondTick.peerRoles(missing), PeerRole.Eager, "")
-    assertEquals(secondTickEvents.toList, List(Send(List(missing), Graft(local))))
+    val PlumtreeBroadcast.Result(afterRepair, repairEvents) = afterSecond.timerFired(BroadcastTimer.Repair)
+    assertEquals(afterRepair.peerRoles(missing), PeerRole.Eager)
+    assertEquals(
+      repairEvents.toList,
+      List(Send(List(missing), Graft(local)), Event.StartTimer(BroadcastTimer.Repair)),
+      "still missing, so the timer keeps running"
+    )
+  }
+
+  test("the repair timer does nothing if the missing knowledge arrived in the meantime") {
+    val local  = Dots.single(self, 0)
+    val remote = local.merge(Dots.single(missing.uid, 0))
+    val state  = PlumtreeBroadcast[String](
+      self,
+      localContext = remote,
+      deltaStorage = NoHistory[String](),
+      peerRoles = Map(missing -> PeerRole.Lazy),
+      remoteContext = Map(missing -> remote),
+      repairScheduled = true,
+    )
+
+    val PlumtreeBroadcast.Result(after, events) = state.timerFired(BroadcastTimer.Repair)
+    assertEquals(events.toList, Nil)
+    assertEquals(after.repairScheduled, false)
   }
 
   test("Graft promotes sender back to eager and replays only the payloads missing from knows") {

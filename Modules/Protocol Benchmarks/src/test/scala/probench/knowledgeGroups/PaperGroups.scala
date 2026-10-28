@@ -69,7 +69,11 @@ class PaperGroups extends munit.FunSuite {
 
     systemConfig.knowledgeGroups.map(_.ids).foreach(setupConnections)
     def settle(): Unit =
-      for _ <- 1 to 5 do replicas.values.foreach(_.dataManagers.values.foreach(_.tick()))
+      // run broadcast repair (the data managers use the default manual timers)
+      for _ <- 1 to 5 do
+          replicas.values.foreach(
+            _.dataManagers.values.foreach(_.timers.asInstanceOf[channels.Timers.Manual].fireAll())
+          )
 
     settle()
     assertEquals(replicas(leader).dataManagers.size, 2)
@@ -143,7 +147,11 @@ class PaperGroups extends munit.FunSuite {
 
     systemConfig.knowledgeGroups.map(_.ids).foreach(setupConnections)
     def settle(): Unit =
-      for _ <- 1 to 5 do replicas.values.foreach(_.dataManagers.values.foreach(_.tick()))
+      // run broadcast repair (the data managers use the default manual timers)
+      for _ <- 1 to 5 do
+          replicas.values.foreach(
+            _.dataManagers.values.foreach(_.timers.asInstanceOf[channels.Timers.Manual].fireAll())
+          )
 
     settle()
     replicas(leader).startLeaderElection()

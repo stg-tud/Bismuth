@@ -35,6 +35,8 @@ object BroadcastIO {
       globalAbort: Abort = Abort(),
       broadcast: Option[BroadcastProtocol[State]] = None,
       aead: Aead = Aead.identity,
+      timers: Timers = Timers.Manual(),
+      timerDelays: TimerDelays = TimerDelays(),
   )(using stateCodec: JsonValueCodec[State]): BroadcastIO[State] =
     new BroadcastIO[State](
       replicaId = replicaId,
@@ -46,6 +48,8 @@ object BroadcastIO {
       broadcast =
         broadcast.getOrElse(PlumtreeBroadcast(replicaId.uid, deltaStorage = DiscardingHistory[State](size = 1000))),
       aead = aead,
+      timers = timers,
+      timerDelays = timerDelays,
     )
 
   val executeImmediately: ExecutionContext = new ExecutionContext {
@@ -82,7 +86,9 @@ class BroadcastIO[State](
     sendingActor: ExecutionContext,
     val globalAbort: Abort,
     @volatile private var broadcast: BroadcastProtocol[State],
-    val aead: Aead
+    val aead: Aead,
+    val timers: Timers,
+    timerDelays: TimerDelays,
 )(using val stateCodec: JsonValueCodec[State]) {
 
   val lock: AnyRef                                                                       = new {}
@@ -145,12 +151,10 @@ class BroadcastIO[State](
       removePeer(conn)
   }
 
-  /** Run overlay periodic maintenance (promotion + shuffle) then plumtree graft repair. */
+  /** Run overlay periodic maintenance (shuffle). Broadcast repair runs on its own timer. */
   def tick(): Unit = lock.synchronized {
     applyOverlayResult:
         overlay.tick()
-    applyRoutingResult:
-        broadcast.tick()
   }
 
   /** Register externally discovered peers with the overlay. */
@@ -203,6 +207,10 @@ class BroadcastIO[State](
               Envelope.Broadcast(replicaId.uid, message)
             ))
           )
+        case Event.StartTimer(timer) =>
+          timers.schedule(timerDelays(timer)) { () =>
+            lock.synchronized(applyRoutingResult(broadcast.timerFired(timer)))
+          }
 
   private def applyOverlayResult(result: (next: OverlayController, actions: List[OverlayAction]))
       : Unit = {

@@ -58,13 +58,19 @@ class OverlayStatusProtocolTest extends FunSuite {
     connect(queue, n1, n2, "1-2")
     connect(queue, n2, n3, "2-3")
     drain(queue)
-    nodes.foreach(_.io.tick())
+    nodes.foreach { node =>
+      node.io.tick()
+      node.io.fireTimers()
+    }
     drain(queue)
 
     (1L to 6L).foreach { round =>
       nodes.foreach(_.publishStatus(round))
       drain(queue)
-      nodes.foreach(_.io.tick())
+      nodes.foreach { node =>
+        node.io.tick()
+        node.io.fireTimers()
+      }
       drain(queue)
     }
 
@@ -140,7 +146,10 @@ class OverlayStatusProtocolTest extends FunSuite {
     def settle(rounds: Int): Unit =
       (0 until rounds).foreach { round =>
         drain(queue, limit = 4000)
-        nodes.foreach(_.io.tick())
+        nodes.foreach { node =>
+          node.io.tick()
+          node.io.fireTimers()
+        }
         nodes.foreach(_.publishStatus(round.toLong + 1L))
       }
 

@@ -295,7 +295,7 @@ class BroadcastIOTest extends munit.FunSuite {
                 queue.deliverAll()
                 safety += 1
             val queueWasEmpty = !queue.nonEmpty
-            nodes.foreach(_.dissemination.tick())
+            nodes.foreach(_.dissemination.fireTimers())
             continue = !queueWasEmpty || queue.nonEmpty
         assert(safety < 10000, s"queue did not quiesce, remaining=${queue.size}")
 

@@ -49,7 +49,7 @@ class TodoSignalingIntegrationTest extends FunSuite {
   // Regression note: this used to be flaky when an update raced the connection handshake — the
   // update was both eagerly pushed and replayed by the stale handshake graft, the duplicate
   // pruned both plumtree edges to lazy, and since ConnectionManager never drives
-  // BroadcastIO.tick() nothing repaired the stall. Fixed by adding plumtree peers as lazy and
+  // BroadcastIO.tick() (now: the repair timer) nothing repaired the stall. Fixed by adding plumtree peers as lazy and
   // letting the graft exchange promote them to eager (see channels.BroadcastIOHandshakeRaceTest).
   test("synchronized updates to the same todo keep replicating") {
     val a = new SyncedTodoListCrdt(ReplicaId.gen())

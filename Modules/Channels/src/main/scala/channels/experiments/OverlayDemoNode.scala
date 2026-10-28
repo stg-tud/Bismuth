@@ -6,7 +6,7 @@ import channels.broadcast.PlumtreeMessage.Payload
 import channels.connection.{Abort, ChannelResolver, Connection, ConnectionDescriptor, LatentConnection, PeerConnectInfo}
 import channels.overlay.HyParViewStateMachine
 import channels.overlay.HyParViewStateMachine.HyParViewConfig
-import channels.{BroadcastIO, MergingHistory}
+import channels.{BroadcastIO, MergingHistory, Timers}
 import rdts.base.Lattice.syntax
 import rdts.base.{Bottom, Lattice, ReplicaId, Uid}
 
@@ -57,7 +57,9 @@ class OverlayDemoNode(
         Some(PlumtreeBroadcast(
           localUid.uid,
           deltaStorage = MergingHistory[OverlayStatusProtocol.Status](blockSize = 1000)
-        ))
+        )),
+      // broadcast repair runs on its own timer
+      timers = if runBackgroundTasks then Timers.OnJavaTimer(timer) else Timers.Manual(),
     )
 
   private def startBackgroundTasks(): Unit = {

@@ -42,9 +42,11 @@ class ClusterConsensus extends munit.FunSuite {
     client.write("test", "Hi")
     client.read("test")
 
+    // run broadcast repair (the data managers use the default manual timers)
     nodes.foreach: v =>
-        v.cluster.dataManager.tick()
-        v.cluster.dataManager.tick()
+        val timers = v.cluster.dataManager.timers.asInstanceOf[channels.Timers.Manual]
+        timers.fireAll()
+        timers.fireAll()
 
     assertEquals(nodes(0).cluster.state, nodes(1).cluster.state)
     assertEquals(nodes(1).cluster.state, nodes(2).cluster.state)

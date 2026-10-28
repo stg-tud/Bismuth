@@ -48,6 +48,9 @@ object PlumtreeBroadcast {
   enum Event[+State] {
     case Deliver(payload: Payload[State])
     case Send(peers: List[Peer], message: PlumtreeMessage[State])
+
+    /** Request a [[BroadcastProtocol.timerFired]] callback later. */
+    case StartTimer(timer: BroadcastTimer)
   }
 
   final case class Result[State](
@@ -73,7 +76,7 @@ final case class PlumtreeBroadcast[State](
     remoteContext: Map[Peer, Dots] = Map.empty,
     deltaStorage: DeltaStorage[State] = NoHistory(),
     peerRoles: Map[Peer, PeerRole] = Map.empty,
-    remoteContextSnapshot: Map[Peer, Dots] = Map.empty,
+    repairScheduled: Boolean = false,
 ) extends BroadcastProtocol[State] {
   import PlumtreeBroadcast.*
 
@@ -121,20 +124,27 @@ final case class PlumtreeBroadcast[State](
     next.disseminate(payload, Set.empty)
   }
 
-  /** The paper manages some timeouts after IHave messages, we instead check that the local context catches up between any two tick grafts calls. */
-  def tick(): Result[State] = {
-    // note, this may very well select already active peers, which is done to backfill in case of missing state
-    val haveMissing = remoteContextSnapshot.collect:
-        case (peer, context) if context.inflates(localContext) => peer
-    Random.shuffle(haveMissing).headOption match {
-      case None          => Result(copy(remoteContextSnapshot = remoteContext), Nil)
-      case Some(missing) =>
-        val graft = Send(List(missing), Graft(localContext))
-        val next  = copy(remoteContextSnapshot = remoteContext).withRole(missing, PeerRole.Eager)
-        Result(next, List(graft))
-    }
+  /** Peers that announced knowledge we do not have yet. */
+  private def peersWithMissing: Iterable[Peer] =
+    remoteContext.collect { case (peer, context) if context.inflates(localContext) => peer }
 
-  }
+  /** The paper starts a timer per missing message after an `IHave`. We keep a single repair timer running while
+    * any peer announced knowledge we lack; if the knowledge is still missing when it fires, we graft it.
+    */
+  def timerFired(timer: BroadcastTimer): Result[State] = timer match
+      case BroadcastTimer.Repair =>
+        val unscheduled = copy(repairScheduled = false)
+        // note, this may very well select already eager peers, which is done to backfill in case of missing state
+        Random.shuffle(peersWithMissing.toList).headOption match
+            case None          => Result(unscheduled, Nil)
+            case Some(missing) =>
+              unscheduled.withRole(missing, PeerRole.Eager).scheduleRepairIfNeeded(
+                List(Send(List(missing), Graft(localContext)))
+              )
+
+  private def scheduleRepairIfNeeded(events: Seq[Event[State]]): Result[State] =
+    if repairScheduled || peersWithMissing.isEmpty then Result(this, events)
+    else Result(copy(repairScheduled = true), events :+ Event.StartTimer(BroadcastTimer.Repair))
 
   /** Incoming message handler.
     *
@@ -152,7 +162,7 @@ final case class PlumtreeBroadcast[State](
       case IHave(knows) =>
         // note, in case we dont know `from` we get into a bit inconsistent state, where its not a peer.
         // this means we wont send it any IHave messages ourselves, thats probably fine?
-        Result(withRemoteKnowledge(from, knows), Nil)
+        withRemoteKnowledge(from, knows).scheduleRepairIfNeeded(Nil)
 
       case Graft(knows) =>
         // Repair: promote sender back to eager and replay what it is missing.
@@ -163,7 +173,7 @@ final case class PlumtreeBroadcast[State](
               s"plumtree graft unsatisfied from=$from local=${next.localContext} knows=$knows storage=${next.deltaStorage.getClass.getSimpleName}"
             )
         val replayed = relevant.map(payload => Send(from :: Nil, payload))
-        Result(next, replayed)
+        next.scheduleRepairIfNeeded(replayed)
 
       case payload @ Payload(context, _) =>
         if context <= localContext then

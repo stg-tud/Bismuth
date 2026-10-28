@@ -12,13 +12,13 @@ import rdts.base.{ReplicaId, Uid}
   *
   * Background: when a peer connection is established, both sides add each other as plumtree peers and
   * exchange `Graft(localContext)` to backfill missing history. A broadcast that races this exchange must
-  * still be delivered exactly once and without any repair ticks.
+  * still be delivered exactly once and without any repair timers.
   *
   * Previously [[PlumtreeBroadcast.addPeer]] added the peer as ''eager'', so a payload broadcast while the
   * peer's stale `Graft(∅)` was still in flight was delivered twice: once by the eager push and once by the
   * graft replay. The duplicate was misread as a redundant mesh edge, so both sides pruned the only edge to
   * lazy; subsequent broadcasts were announced as `IHave` only and — since nothing drives
-  * [[BroadcastIO.tick]] in the todo app's `ConnectionManager` — never repaired.
+  * the repair (then `BroadcastIO.tick`) in the todo app's `ConnectionManager` — never repaired.
   *
   * Peers are now added as ''lazy'' and promoted to eager when their graft is processed, which makes such an
   * overlap impossible: before promotion no payloads are pushed eagerly (only `IHave`s), and the graft
@@ -96,7 +96,7 @@ class BroadcastIOHandshakeRaceTest extends munit.FunSuite {
     assertEquals(eagerPeerUids(a), Set(b.replicaId.uid))
     assertEquals(eagerPeerUids(b), Set(a.replicaId.uid))
 
-    // and subsequent updates keep replicating without any repair ticks
+    // and subsequent updates keep replicating without any repair timers
     a.broadcast(Set("edited by a"))
     drain()
     assertEquals(receivedB, List(Set("initial"), Set("edited by a")))

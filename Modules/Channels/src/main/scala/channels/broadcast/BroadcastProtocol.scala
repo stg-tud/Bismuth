@@ -20,7 +20,15 @@ trait BroadcastProtocol[State] {
 
   def broadcast(delta: State): Result[State]
 
-  def tick(): Result[State]
+  /** A timer requested via [[PlumtreeBroadcast.Event.StartTimer]] expired. */
+  def timerFired(timer: BroadcastTimer): Result[State]
 
   def handleMessage(from: Peer, message: PlumtreeMessage[State]): Result[State]
+}
+
+/** Timers carry only their purpose; the driver decides what delay each purpose maps to. */
+enum BroadcastTimer {
+
+  /** Check whether peers announced knowledge we still lack, and graft it. */
+  case Repair
 }

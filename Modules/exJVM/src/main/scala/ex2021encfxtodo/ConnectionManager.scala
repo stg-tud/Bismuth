@@ -2,7 +2,7 @@ package ex2021encfxtodo
 
 import channels.connection.{Abort, ConnectionDescriptor, MessageBuffer, PeerConnectInfo}
 import channels.overlay.FullMeshOverlay
-import channels.{BroadcastIO, NioTCP, NioTcpConnectionDetailsResolver, experiments}
+import channels.{BroadcastIO, NioTCP, NioTcpConnectionDetailsResolver, TimerDelays, Timers, experiments}
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.google.crypto.tink.aead.AeadConfig
 import com.google.crypto.tink.{Aead, CleartextKeysetHandle, JsonKeysetReader, RegistryConfiguration}
@@ -10,6 +10,7 @@ import rdts.base.ReplicaId
 
 import java.nio.ByteBuffer
 import java.util.concurrent.ExecutorService
+import scala.concurrent.duration.DurationInt
 import scala.util.Try
 
 class TinkBasedAead(aead: com.google.crypto.tink.Aead) extends experiments.Aead {
@@ -38,17 +39,12 @@ class ConnectionManager[State: JsonValueCodec](
   private val nioThread: ExecutorService = java.util.concurrent.Executors.newSingleThreadExecutor()
   private val nioResolver                = NioTcpConnectionDetailsResolver(nio)
 
-  // Plumtree relies on periodic repair: a payload broadcast while the peer's overlay connection
+  // Plumtree relies on its repair timer: a payload broadcast while the peer's overlay connection
   // was still being established is dropped (the overlay lacks the peer, so the eager push has
-  // nowhere to go), and `tick()` is what turns the resulting `IHave`/context knowledge into a
-  // `Graft` request that backfills the missing history. Without this the first write of a freshly
+  // nowhere to go), and the repair timer is what turns the resulting `IHave`/context knowledge into a
+  // `Graft` request that backfills the missing history. Without timers the first write of a freshly
   // connected replica is silently lost forever (see channels.BroadcastIOOverlayDropTest).
-  private val tickExecutor: java.util.concurrent.ScheduledExecutorService =
-    java.util.concurrent.Executors.newSingleThreadScheduledExecutor { r =>
-      val t = new Thread(r, s"plumtree-tick-${replicaId.uid}")
-      t.setDaemon(true)
-      t
-    }
+  private val timer = java.util.Timer(s"broadcast-timers-${replicaId.uid}", true)
 
   val dataManager: BroadcastIO[State] =
     BroadcastIO[State](
@@ -58,16 +54,12 @@ class ConnectionManager[State: JsonValueCodec](
       resolver = nioResolver,
       globalAbort = globalAbort,
       aead = TinkBasedAead(aead),
+      timers = Timers.OnJavaTimer(timer),
+      timerDelays = TimerDelays(repair = 100.millis),
     )
 
   dataManager.addServerConnection(nio.listen())
   nioThread.execute(() => nio.loopSelection(dataManager.globalAbort))
-  tickExecutor.scheduleWithFixedDelay(
-    () => dataManager.tick(),
-    100,
-    100,
-    java.util.concurrent.TimeUnit.MILLISECONDS
-  )
 
   def stateChanged(newState: State): Unit =
     dataManager.broadcast(newState)
@@ -86,7 +78,7 @@ class ConnectionManager[State: JsonValueCodec](
     dataManager.globalAbort.closeRequest = true
     nio.selector.wakeup()
     nioThread.shutdownNow()
-    tickExecutor.shutdownNow()
+    timer.cancel()
     ()
   }
 
