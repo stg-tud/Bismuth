@@ -213,7 +213,7 @@ class BroadcastIOTest extends munit.FunSuite {
         io.discover(peers.iterator.map(_.selfInfo).toSet)
 
       def closeConnectionTo(other: Node): Unit =
-        io.overlayController.asInstanceOf[FullMeshOverlay].active.get(other.uid.uid).foreach(_.close())
+        io.connectionTo(other.uid.uid).foreach(_.close())
     }
 
     def drain(maxRounds: Int = 200): Unit = {

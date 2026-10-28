@@ -1,6 +1,7 @@
 package channels
 
 import channels.broadcast.BroadcastTimer
+import channels.overlay.OverlayController.OverlayTimer
 
 import java.util.TimerTask
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
@@ -52,8 +53,14 @@ object Timers {
 
 /** Delays for each timer purpose. */
 final case class TimerDelays(
+    shuffle: FiniteDuration = 5.seconds,
+    handshake: FiniteDuration = 10.seconds,
     repair: FiniteDuration = 1.second,
 ) {
+  def apply(timer: OverlayTimer): FiniteDuration = timer match
+      case OverlayTimer.Shuffle      => shuffle
+      case OverlayTimer.Handshake(_) => handshake
+
   def apply(timer: BroadcastTimer): FiniteDuration = timer match
       case BroadcastTimer.Repair => repair
 }

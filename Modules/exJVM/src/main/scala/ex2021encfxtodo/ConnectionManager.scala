@@ -83,9 +83,7 @@ class ConnectionManager[State: JsonValueCodec](
   }
 
   def remoteAddresses: Set[String] =
-    dataManager.overlayController match
-        case overlay: FullMeshOverlay => overlay.active.keySet.map(_.delegate)
-        case _                        => Set.empty
+    dataManager.overlayController.neighbors.map(_.delegate)
 }
 
 object ConnectionManager {

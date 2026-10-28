@@ -76,10 +76,7 @@ class BroadcastIOIntegrationTest extends munit.FunSuite {
     def settle(ticks: Int): Unit = {
       (0 until ticks).foreach { _ =>
         drainQueue()
-        nodes.foreach { node =>
-          node.io.tick()
-          node.io.fireTimers()
-        }
+        nodes.foreach(_.io.fireTimers())
       }
       drainQueue()
     }

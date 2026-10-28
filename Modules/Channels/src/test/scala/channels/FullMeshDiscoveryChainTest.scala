@@ -1,62 +1,27 @@
 package channels
 
 import channels.BroadcastIO
-import channels.connection.{Connection, ConnectionDescriptor, ConnectionInfo, LocalConnectionRegistry, LocalMessageQueue, MessageBuffer, PeerConnectInfo, QueuedLocalConnection}
+import channels.connection.{ConnectionDescriptor, LocalConnectionRegistry, LocalMessageQueue, PeerConnectInfo, QueuedLocalConnection}
 import channels.experiments.Aead
 import channels.overlay.FullMeshOverlay
-import channels.overlay.OverlayController.{OverlayAction, OverlayMessage}
+import channels.overlay.OverlayController.OverlayMessage
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
-import de.rmgk.delay.Async
 import munit.FunSuite
-import rdts.base.{ReplicaId, Uid}
+import rdts.base.ReplicaId
 
-/** Verifies the simplified full-mesh bootstrap chain:
+/** Verifies the full-mesh discovery chain through the BroadcastIO wiring:
   *
-  *   1. `discover` a peer → overlay emits a bare `Connect` action (no message)
-  *   2. `Connect` triggers `connectAndSend`, which establishes & registers the connection
-  *   3. both sides announce their own peer id via a `Neighbor` on connection activation
-  *   4. each side receives the other's `Neighbor` and reports `ActiveConnectionAdded`
+  *   1. `discover` a peer → overlay emits a `Dial`
+  *   2. the driver establishes the connection and reports `Established` (the other side sees `Incoming`)
+  *   3. both sides announce their own peer id via a `Neighbor`
+  *   4. each side receives the other's `Neighbor` and reports `NeighborUp`
   *
-  * Each step is checked: the overlay action for step 1, and then through the BroadcastIO +
-  * FullMeshOverlay wiring that steps 2-4 really establish a working active link in both directions.
+  * The single overlay steps are covered by [[FullMeshOverlayTest]].
   */
 class FullMeshDiscoveryChainTest extends FunSuite {
 
   given JsonValueCodec[Set[String]] = JsonCodecMaker.make
-
-  final private case class TestConnection(name: String) extends Connection {
-    override def info: ConnectionInfo                           = ConnectionInfo("name" -> name)
-    override def send(message: MessageBuffer): Async[Any, Unit] = Async(())
-    override def close(): Unit                                  = ()
-    override def toString: String                               = s"TestConnection($name)"
-  }
-
-  private val self = PeerConnectInfo(Uid.predefined("self"), Set(ConnectionDescriptor.QueuedLocal("self")))
-  private val peer = PeerConnectInfo(Uid.predefined("peer"), Set(ConnectionDescriptor.QueuedLocal("peer")))
-
-  test("step 1: discoverPassive emits exactly one bare Connect (no message)") {
-    val (_, actions) = FullMeshOverlay(self).discoverPassive(Set(peer))
-    assertEquals(
-      actions,
-      List(
-        OverlayAction.Connect(
-          peer.channelConnectors,
-          peer.uid,
-          None,
-        )
-      )
-    )
-  }
-
-  test("step 3: activating a passive (server) connection emits a Neighbor request") {
-    val conn                   = TestConnection("incoming")
-    val (_, activationActions) = FullMeshOverlay(self).activateConnection(conn, None)
-    assertEquals(
-      activationActions,
-      List(OverlayAction.Send(conn, OverlayMessage.Neighbor(self, highPriority = true)))
-    )
-  }
 
   test("the whole chain: discover leads to a working mutual active link via broadcast protocol") {
     // node `listener` owns a queued connection it is listening on; node `discoverer` learns about it
@@ -82,12 +47,12 @@ class FullMeshDiscoveryChainTest extends FunSuite {
     // listener opens its server transport so it can accept the connection discoverer will dial.
     listener.io.addServerConnection(resolver.queuedServer(listener.selfInfo.channelConnectors.head).get)
 
-    // Step 1+2: discoverer discovers a single peer → bare Connect → connectAndSend dials & registers.
+    // Step 1+2: discoverer discovers a single peer → Dial → the driver establishes the connection.
     discoverer.io.discover(Set(listener.selfInfo))
 
     // debug prints removed
 
-    // Steps 3+4: the connection was established synchronously by connectAndSend (step 2) and both
+    // Steps 3+4: the connection was established synchronously (step 2) and both
     // sides announced themselves on activation, so before anything is delivered the queue must
     // already carry the Neighbor handshakes from both sides.
     val queuedNeighbors = queue.elements.flatMap(mb =>
@@ -125,7 +90,7 @@ class FullMeshDiscoveryChainTest extends FunSuite {
     val listenerOverlay   = listener.io.overlayController.asInstanceOf[FullMeshOverlay]
     val discovererOverlay = discoverer.io.overlayController.asInstanceOf[FullMeshOverlay]
 
-    // Both sides report ActiveConnectionAdded → both have the peer in the broadcast-protocol active view.
+    // Both sides report NeighborUp → both have the peer in the broadcast-protocol active view.
     val listenerPeers = listener.io.plumtreeState.asInstanceOf[channels.broadcast.PlumtreeBroadcast[?]].peerRoles.keySet
     val discovererPeers =
       discoverer.io.plumtreeState.asInstanceOf[channels.broadcast.PlumtreeBroadcast[?]].peerRoles.keySet

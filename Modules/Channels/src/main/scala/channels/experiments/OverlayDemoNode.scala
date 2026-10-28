@@ -58,19 +58,11 @@ class OverlayDemoNode(
           localUid.uid,
           deltaStorage = MergingHistory[OverlayStatusProtocol.Status](blockSize = 1000)
         )),
-      // broadcast repair runs on its own timer
+      // overlay maintenance and broadcast repair run on their own timers
       timers = if runBackgroundTasks then Timers.OnJavaTimer(timer) else Timers.Manual(),
     )
 
-  private def startBackgroundTasks(): Unit = {
-    timer.schedule(
-      new TimerTask {
-        override def run(): Unit =
-          repairTick()
-      },
-      5000L,
-      5000L,
-    )
+  private def startBackgroundTasks(): Unit =
     timer.schedule(
       new TimerTask {
         override def run(): Unit = overlayInfoTick()
@@ -78,7 +70,6 @@ class OverlayDemoNode(
       1000L,
       1000L,
     )
-  }
 
   def start(seeds: List[ConnectionDescriptor] = Nil): Unit = {
     val node = newOverlay()
@@ -93,8 +84,6 @@ class OverlayDemoNode(
     broadcastIO.foreach(_.bootstrapVia(peer))
 
   def selfConnectionDetails: Set[ConnectionDescriptor] = selfDetails
-
-  def repairTick(): Unit = broadcastIO.foreach(_.tick())
 
   def overlayInfoTick(): Unit =
     broadcastIO.foreach { io =>

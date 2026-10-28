@@ -1,100 +1,102 @@
 package channels
 
-import channels.connection.{Connection, ConnectionDescriptor, ConnectionInfo, MessageBuffer, PeerConnectInfo}
-import channels.overlay.FullMeshOverlay
-import channels.overlay.OverlayController.{OverlayAction, OverlayMessage}
-import de.rmgk.delay.Async
+import channels.connection.{ConnectionDescriptor, PeerConnectInfo}
+import channels.overlay.OverlayController.{OverlayAction, OverlayEvent, OverlayMessage}
+import channels.overlay.{AttemptId, ConnId, FullMeshOverlay}
 import munit.FunSuite
 import rdts.base.Uid
 
 class FullMeshOverlayTest extends FunSuite {
 
-  final private case class TestConnection(name: String) extends Connection {
-    override def info: ConnectionInfo                           = ConnectionInfo("name" -> name)
-    override def send(message: MessageBuffer): Async[Any, Unit] = Async(())
-    override def close(): Unit                                  = ()
-    override def toString: String                               = s"TestConnection($name)"
+  private val self  = PeerConnectInfo(Uid.predefined("self"), Set(ConnectionDescriptor.QueuedLocal("self")))
+  private val peer  = PeerConnectInfo(Uid.predefined("peer"), Set(ConnectionDescriptor.QueuedLocal("peer")))
+  private val other = PeerConnectInfo(Uid.predefined("other"), Set(ConnectionDescriptor.QueuedLocal("other")))
+
+  private val c1 = ConnId(1)
+  private val c2 = ConnId(2)
+
+  extension (m: FullMeshOverlay) {
+    def on(event: OverlayEvent): (FullMeshOverlay, List[OverlayAction]) =
+        val (next, actions) = m.step(event)
+        (next.asInstanceOf[FullMeshOverlay], actions)
   }
 
-  private val self = PeerConnectInfo(Uid.predefined("self"), Set(ConnectionDescriptor.QueuedLocal("self")))
-  private val peer = PeerConnectInfo(Uid.predefined("peer"), Set(ConnectionDescriptor.QueuedLocal("peer")))
+  test("a new connection is announced, but the peer only becomes a neighbor once it announces itself") {
+    val (pending, announce) = FullMeshOverlay(self).on(OverlayEvent.Incoming(c1))
+    assertEquals(announce, List(OverlayAction.Send(c1, OverlayMessage.Neighbor(self, highPriority = true))))
+    assertEquals(pending.neighbors, Set.empty)
 
-  test("replacing an active peer connection disconnects the old connection") {
-    val oldConn = TestConnection("old")
-    val newConn = TestConnection("new")
-
-    val (afterFirst0, firstActions) =
-      FullMeshOverlay(self).receiveActions(OverlayMessage.Neighbor(peer, highPriority = true), oldConn)
-    val afterFirst = afterFirst0.asInstanceOf[FullMeshOverlay]
-
-    assertEquals(afterFirst.active.get(peer.uid), Some(oldConn))
-    assertEquals(firstActions, List(OverlayAction.ActiveConnectionAdded(peer.uid)))
-
-    val (afterSecond0, secondActions) =
-      afterFirst.receiveActions(OverlayMessage.Neighbor(peer, highPriority = true), newConn)
-    val afterSecond = afterSecond0.asInstanceOf[FullMeshOverlay]
-
-    assertEquals(afterSecond.active.get(peer.uid), Some(newConn))
-    assertEquals(secondActions, List(OverlayAction.Disconnect(oldConn)))
+    val (active, up) = pending.on(OverlayEvent.Received(c1, OverlayMessage.Neighbor(peer, highPriority = true)))
+    assertEquals(up, List(OverlayAction.NeighborUp(peer.uid)))
+    assertEquals(active.connectionFor(peer.uid), Some(c1))
   }
 
-  test("bootstrap join is answered with known peers; activation happens via the separate Neighbor") {
+  test("of two connections to the same peer, both sides keep the one dialed by the smaller id") {
+    // peer < self: the peer's dial (incoming c2) wins over our own dial (c1), regardless of announcement order
+    def withBoth(firstAnnounced: ConnId, secondAnnounced: ConnId) =
+      FullMeshOverlay(self)
+        .on(OverlayEvent.Discovered(Set(peer)))._1
+        .on(OverlayEvent.Established(AttemptId(0), c1))._1
+        .on(OverlayEvent.Incoming(c2))._1
+        .on(OverlayEvent.Received(firstAnnounced, OverlayMessage.Neighbor(peer, highPriority = true)))._1
+        .on(OverlayEvent.Received(secondAnnounced, OverlayMessage.Neighbor(peer, highPriority = true)))
+
+    val (kept, keptActions) = withBoth(c2, c1)
+    assertEquals(kept.connectionFor(peer.uid), Some(c2))
+    assertEquals(keptActions, List(OverlayAction.Close(c1)))
+
+    // the edge moves to the peer's dial: the broadcast layer restarts its handshake on the new connection
+    val (switched, switchedActions) = withBoth(c1, c2)
+    assertEquals(switched.connectionFor(peer.uid), Some(c2))
+    assertEquals(
+      switchedActions,
+      List(OverlayAction.Close(c1), OverlayAction.NeighborDown(peer.uid), OverlayAction.NeighborUp(peer.uid))
+    )
+  }
+
+  test("Join is answered with the known peers; the answer makes the joiner connect to them") {
     val contact = PeerConnectInfo(Uid.predefined("contact"), Set(ConnectionDescriptor.QueuedLocal("contact")))
-    val other   = PeerConnectInfo(Uid.predefined("other"), Set(ConnectionDescriptor.QueuedLocal("other")))
-    val conn    = TestConnection("contact")
 
-    val seeded                 = FullMeshOverlay(self, known = Map(other.uid -> other))
-    val (joined0, joinActions) = seeded.receiveActions(OverlayMessage.Join(contact), conn)
-    val joined                 = joined0.asInstanceOf[FullMeshOverlay]
-
-    // Join only answers with the known-peer list (self + already known peers).
-    // It does NOT remember/activate the joiner — that is done by the separate Neighbor handshake.
-    assertEquals(joined.active.get(contact.uid), None)
-    assertEquals(joined.known.get(contact.uid), None)
+    val (_, joinActions) = FullMeshOverlay(self, known = Map(other.uid -> other))
+      .on(OverlayEvent.Incoming(c1))._1
+      .on(OverlayEvent.Received(c1, OverlayMessage.Join(contact)))
     assertEquals(
       joinActions,
-      List(OverlayAction.Send(conn, OverlayMessage.ShuffleReply(self.uid, Set(self, other), Set.empty)))
+      List(OverlayAction.Send(c1, OverlayMessage.ShuffleReply(self.uid, Set(self, other), Set.empty)))
     )
 
-    val fresh                     = FullMeshOverlay(self, active = Map(contact.uid -> conn))
-    val (afterInfo0, infoActions) =
-      fresh.receiveActions(OverlayMessage.ShuffleReply(contact.uid, Set(contact, other), Set.empty), conn)
-
-    assertEquals(
-      infoActions,
-      List(OverlayAction.Connect(other.channelConnectors, other.uid, None))
-    )
+    val (_, infoActions) = FullMeshOverlay(self)
+      .on(OverlayEvent.Incoming(c1))._1
+      .on(OverlayEvent.Received(c1, OverlayMessage.ShuffleReply(contact.uid, Set(self, other), Set.empty)))
+    assertEquals(infoActions, List(OverlayAction.Dial(AttemptId(0), other.channelConnectors)))
   }
 
-  test("neighbor info is remembered and removed on disconnect") {
-    val conn                      = TestConnection("peer")
-    val (next0, _)                = FullMeshOverlay(self).receiveActions(OverlayMessage.Neighbor(peer, true), conn)
-    val next                      = next0.asInstanceOf[FullMeshOverlay]
-    val (removed0, removeActions) = next.removeConnection(conn)
-    val removed                   = removed0.asInstanceOf[FullMeshOverlay]
+  test("a closed neighbor connection reports NeighborDown and forgets the peer") {
+    val active = FullMeshOverlay(self)
+      .on(OverlayEvent.Incoming(c1))._1
+      .on(OverlayEvent.Received(c1, OverlayMessage.Neighbor(peer, highPriority = true)))._1
+    assertEquals(active.known.get(peer.uid), Some(peer))
 
-    assertEquals(next.known.get(peer.uid), Some(peer))
-    assertEquals(removed.known.get(peer.uid), None)
-    assertEquals(removeActions, List(OverlayAction.ActiveConnectionRemoved(peer.uid)))
+    val (closed, actions) = active.on(OverlayEvent.Closed(c1))
+    assertEquals(actions, List(OverlayAction.NeighborDown(peer.uid)))
+    assertEquals(closed.known.get(peer.uid), None)
   }
 
-  test("discovering peers only connects without sending, bootstrapping only contacts the bootstrap node") {
+  test("discovering a peer dials it once; bootstrap dials the contact and sends Join once connected") {
     val bootstrap = ConnectionDescriptor.QueuedLocal("bootstrap")
-    val other     = PeerConnectInfo(Uid.predefined("other"), Set(ConnectionDescriptor.QueuedLocal("other")))
 
-    val (discovered0, discoverActions) = FullMeshOverlay(self).discoverPassive(Set(other))
-    val discovered                     = discovered0.asInstanceOf[FullMeshOverlay]
+    val (discovered, discoverActions) = FullMeshOverlay(self).on(OverlayEvent.Discovered(Set(other)))
+    assertEquals(discoverActions, List(OverlayAction.Dial(AttemptId(0), other.channelConnectors)))
+    assertEquals(discovered.on(OverlayEvent.Discovered(Set(other)))._2, Nil, "already dialing")
 
+    val (joining, bootstrapActions) = discovered.on(OverlayEvent.Bootstrap(bootstrap))
+    assertEquals(bootstrapActions, List(OverlayAction.Dial(AttemptId(1), Set(bootstrap))))
     assertEquals(
-      discoverActions,
-      List(OverlayAction.Connect(other.channelConnectors, other.uid, None))
-    )
-    assertEquals(discovered.known.get(other.uid), None)
-
-    val (_, bootstrapActions) = discovered.bootstrapVia(bootstrap)
-    assertEquals(
-      bootstrapActions,
-      List(OverlayAction.Connect(Set(bootstrap), self.uid, Some(OverlayMessage.Join(self))))
+      joining.on(OverlayEvent.Established(AttemptId(1), c1))._2,
+      List(
+        OverlayAction.Send(c1, OverlayMessage.Neighbor(self, highPriority = true)),
+        OverlayAction.Send(c1, OverlayMessage.Join(self))
+      )
     )
   }
 }

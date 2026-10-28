@@ -87,7 +87,7 @@ class BroadcastIOOverlayDropTest extends munit.FunSuite {
     // b has promoted a to eager (from the graft) while b's overlay has no active
     // connection for a yet (Neighbor(a) is still queued) — the eager push below is dropped.
     assertEquals(eagerPeerUids(b), Set(a.replicaId.uid))
-    assert(b.overlayController.connectionFor(a.replicaId.uid).isEmpty, "overlay should not know a yet")
+    assert(b.connectionTo(a.replicaId.uid).isEmpty, "overlay should not know a yet")
 
     b.broadcast(Set("v1")) // dropped: no route to a
 
