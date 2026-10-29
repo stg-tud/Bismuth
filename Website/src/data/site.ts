@@ -212,3 +212,65 @@ export const demos = [
 	{ id: "overlay-graph", title: "Overlay Graph", summary: "Visualization of the overlay network." },
 	{ id: "mini-social", title: "Mini Social", summary: "A tiny replicated social network." },
 ];
+
+export interface TreeEntry {
+	name: string;
+	/** sbt project name(s) */
+	sbt?: string[];
+	summary: string;
+	children?: TreeEntry[];
+	/** shown dimmed, e.g. for the libraries described elsewhere on the page */
+	dim?: boolean;
+}
+
+// rough layout of the repository, see `build.sbt` for the modules
+export const repoTree: TreeEntry[] = [
+	{ name: "build.sbt", summary: "The sbt build with all modules." },
+	{ name: "Justfile", summary: "Common commands." },
+	{
+		name: "Modules/",
+		summary: "One folder per module.",
+		children: [
+			{
+				name: "RDTs/ Reactives/ Channels/",
+				summary: "The libraries described above.",
+				dim: true,
+			},
+			{
+				name: "Lore/",
+				sbt: ["lore", "loreJS"],
+				summary: "LoRe, invariant-based reasoning about where local-first applications need coordination.",
+			},
+			{
+				name: "LoRe Compiler Plugin/",
+				sbt: ["loreCompilerPlugin"],
+				summary: "Verifies LoRe code embedded in Scala by compiling it to Dafny. Currently dormant.",
+			},
+			{
+				name: "Protocol Benchmarks/",
+				sbt: ["proBench"],
+				summary: "Benchmarks for consensus protocols built from replicated data types, compared against etcd.",
+			},
+			{
+				name: "exJVM/",
+				sbt: ["exJVM"],
+				summary: "Case studies and benchmarks on the JVM, from early Swing examples to BFT, access control, and blockchain experiments.",
+			},
+			{
+				name: "exWeb/",
+				sbt: ["exWeb"],
+				summary: "The browser demos, such as the todo list, calendar, and the Tabular spreadsheet.",
+			},
+			{ name: "Webview/", sbt: ["webview"], summary: "Runs the web demos in a native window, using Scala Native." },
+			{
+				name: "Reform/",
+				sbt: ["reform"],
+				summary: "Manages student assistant contracts, with all data stored in the browser and shared peer to peer.",
+			},
+		],
+	},
+	{ name: "Documentation/", summary: "Scitzen project for the manuals." },
+	{ name: "Research Artifacts/", summary: "Evaluation scripts, results, and notebooks of published papers." },
+	{ name: "Scripts/", summary: "Helper scripts." },
+	{ name: "Website/", summary: "This website." },
+];

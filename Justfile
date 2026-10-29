@@ -84,10 +84,10 @@ open-in-podman command="fish":
 # collect website inputs: scitzen articles (rendered with the minimal template the website ingests) and the exWeb demos
 [private]
 websitePrepare: webappsPrepare
-	scitzen compile --html --html-template Website/scitzen-template.html.scim Modules/
+	cd Documentation && scitzen compile --html --html-template ../Website/scitzen-template.html.scim .
 	rm -rf Website/public/documentation Website/public/examples
 	mkdir -p Website/public/documentation
-	cp -r scitzen.out/web/resources Website/public/documentation/
+	cp -r Documentation/scitzen.out/web/resources Website/public/documentation/
 	"Modules/exWeb/node_modules/vite/bin/vite.js" build "Modules/exWeb/" --outDir "$PWD/Website/public/examples" --emptyOutDir
 	cd Website && npm install
 

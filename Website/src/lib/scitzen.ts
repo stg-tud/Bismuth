@@ -4,7 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 // relative to the Website/ folder (astro runs with Website/ as cwd)
-const scitzenOut = path.resolve(process.env.SCITZEN_OUT ?? "../scitzen.out/web");
+const scitzenOut = path.resolve(process.env.SCITZEN_OUT ?? "../Documentation/scitzen.out/web");
 
 export interface ScitzenDoc {
 	title: string;

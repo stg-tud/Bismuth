@@ -1,7 +1,7 @@
 ---
 import { url } from "../../lib/url";
 import Base from "../../layouts/Base.astro";
-import { libraries, manualPath, site } from "../../data/site";
+import { libraries, manualPath, repoTree, site } from "../../data/site";
 ---
 
 <Base title="Libraries">
@@ -12,8 +12,8 @@ import { libraries, manualPath, site } from "../../data/site";
 				Besides research prototypes, Bismuth contains libraries that are ready for building local-first applications. They
 				are published separately and can be used individually, on the JVM, in the browser via Scala.js, and natively via Scala Native (group id <code>de.tu-darmstadt.stg</code>). We document the{" "}
 				<b>RDTs</b> (algebraic replicated data types) and <b>Reactives</b> libraries with a hands-on manual each, and all
-				libraries with generated API documentation (Scaladoc). For everything else, the{" "}
-				<a href={site.repo}>repository</a> describes how to build the project and gives an overview of all modules.
+				libraries with generated API documentation (Scaladoc). To build the code yourself, see{" "}
+				<a href="#development">working with the repository</a> below.
 			</p>
 		</div>
 	</section>
@@ -50,6 +50,108 @@ import { libraries, manualPath, site } from "../../data/site";
 					</div>
 				))
 			}
+		</div>
+	</section>
+	<section class="section" id="development">
+		<div class="container">
+			<h2>Working with the repository</h2>
+			<p class="lead">
+				Bismuth is a single <a href="https://www.scala-sbt.org/">sbt</a> build with many modules. You rarely need all of
+				them, so compile and test only the module you work on.
+			</p>
+
+			<ol class="steps">
+				<li>
+					<h3>Install sbt</h3>
+					<p>
+						Follow the <a href="https://www.scala-sbt.org/download/">official install instructions</a>. You also need
+						Java 21 or newer. Compile everything once to check that it works.
+					</p>
+					<pre><code>sbt compile</code></pre>
+				</li>
+				<li>
+					<h3>Compile and test</h3>
+					<p>
+						Prefix a command with the module name, and use <code>projects</code> to list all modules. The JVM variant has no suffix, the others end in <code>JS</code>{" "}
+						or <code>Native</code>.
+					</p>
+					<pre><code>sbt 'rdts/compile'
+sbt 'reactivesJS/test'</code></pre>
+					<p class="note">Tests of Scala.js modules need npm packages. Run <code>npm install</code> once in the project root.</p>
+				</li>
+			</ol>
+			<p class="hint">
+				The <a href={`${site.repo}/blob/main/Justfile`}>Justfile</a> collects further commands, for example to run the
+				web demos.
+			</p>
+
+			<h3 class="subhead">IDE setup</h3>
+			<p>Both IntelliJ and Metals generally work well with the project. Start sbt once from the command line before importing.</p>
+			<div class="grid ide">
+				<div class="ide-card">
+					<h4><a href="https://www.jetbrains.com/help/idea/get-started-with-scala.html">IntelliJ</a> with the Scala plugin</h4>
+					<p>
+						Open the root folder and use the normal sbt import. Alternatively, choose <b>BSP</b> so IntelliJ compiles and tests
+						through sbt. The BSP importer drops some dependencies of shared test sources (<a href="https://youtrack.jetbrains.com/issue/SCL-23703">SCL-23703</a>).
+						To fix that, close the project after each import and run:
+					</p>
+					<pre><code>just intellij-bsp-import-fix</code></pre>
+				</div>
+				<div class="ide-card">
+					<h4><a href="https://scalameta.org/metals/">Metals</a> language server</h4>
+					<p>
+						Works with VS Code and many other editors. Metals can also use{" "}
+						<a href="https://scalameta.org/metals/docs/build-tools/sbt/#sbt-build-server">sbt as BSP server</a>, but the
+						default import is usually fine.
+					</p>
+				</div>
+			</div>
+
+			<h3 class="subhead">Repository layout</h3>
+			<ul class="tree">
+				{
+					repoTree.map((e) => (
+						<li class:list={{ dim: e.dim }}>
+							<div class="tree-row">
+								<code class="tree-name">{e.name}</code>
+								<span class="tree-summary">
+									{e.summary}
+									{e.sbt && <span class="tree-sbt">{e.sbt.map((p) => <code>{p}</code>)}</span>}
+								</span>
+							</div>
+							{e.children && (
+								<ul>
+									{e.children.map((c) => (
+										<li class:list={{ dim: c.dim }}>
+											<div class="tree-row">
+												<code class="tree-name">{c.name}</code>
+												<span class="tree-summary">
+													{c.summary}
+													{c.sbt && <span class="tree-sbt">{c.sbt.map((p) => <code>{p}</code>)}</span>}
+												</span>
+											</div>
+										</li>
+									))}
+								</ul>
+							)}
+						</li>
+					))
+				}
+			</ul>
+		</div>
+	</section>
+
+	<section class="section bg-indigo">
+		<div class="container">
+			<h2>Questions?</h2>
+			<p class="lead">
+				Join our matrix channel if you run into problems or want to coordinate larger changes. Anyone can join, but
+				messages are only visible to members.
+			</p>
+			<div class="buttons">
+				<a class="hero" href="https://matrix.to/#/#difosys:matrix.tu-darmstadt.de">Join the chat</a>
+				<a class="hero secondary" href="https://element.matrix.tu-darmstadt.de/#/room/#difosys:matrix.tu-darmstadt.de">Join the chat with TU-ID</a>
+			</div>
 		</div>
 	</section>
 </Base>
