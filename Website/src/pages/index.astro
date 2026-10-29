@@ -16,8 +16,8 @@ const byId = (id: string) => projects.find((p) => p.id === id)!;
 				<span class="strand track-teal">distributed reactive programming</span>,{" "}
 				<span class="strand track-magenta">replicated data types and protocols</span>, and{" "}
 				<span class="strand track-orange">trust without a central authority</span>. It contains the Scala
-				implementations alongside the papers that formalize them, often with mechanizations in Lean. Bismuth is the
-				successor of <a href="https://www.rescala-lang.com/">REScala</a>.
+				implementations alongside the papers that formalize them, often with mechanizations in Lean. Bismuth is a continuation
+				of <a href="https://www.rescala-lang.com/">REScala</a>.
 			</p>
 			<div class="summary">
 				<div class="summary-card">
@@ -33,6 +33,35 @@ const byId = (id: string) => projects.find((p) => p.id === id)!;
 					<p>Replicated data types, reactive dataflow, and access control compose. Programs built from them inherit their guarantees.</p>
 				</div>
 			</div>
+			<details class="summary-details">
+				<summary>Research overview</summary>
+				<div class="abstract-body">
+				<p>
+					Most distributed applications today are built in one of two ways. Either developers write the communication
+					themselves, and then also have to work out consistency, fault tolerance, and security for each application. Or
+					they use cloud services, which handle these concerns but decide them for the application, and require all data
+					to pass through the provider.
+				</p>
+				<p>
+					Bismuth explores a third option. Distribution is handled by programming abstractions that developers already
+					know. Replicated data types are ordinary algebraic data types, and the merge of concurrent changes is derived from
+					their structure. Reactive signals describe how values depend on each other, and updates propagate through these
+					dependencies across devices. Access control and encryption are part of the replicated data itself, so no trusted
+					server is needed.
+				</p>
+				<p>
+					Each device works on its local copy and stays usable without a network connection. Changes are synchronized
+					when possible and all copies converge to the same state. Where an application needs stronger guarantees, for
+					example to keep an invariant like a non-negative balance, coordination is added only for the affected operations.
+					Consensus protocols themselves can be built from the same replicated data types.
+				</p>
+				<p>
+					The building blocks are designed to compose. Properties such as convergence or the safety of a protocol are
+					proven for each building block, often mechanized in Lean, and then hold for programs built from them. The
+					timeline below lists the individual projects and papers.
+				</p>
+				</div>
+			</details>
 			<h2 class="timeline-title">Research timeline</h2>
 			<div class="timeline">
 				{

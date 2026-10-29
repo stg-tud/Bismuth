@@ -145,8 +145,7 @@ export const projects: Project[] = [
 	},
 ];
 
-const maven = (artifact: string) => `https://index.scala-lang.org/stg-tud/bismuth/artifacts/${artifact}`;
-const version = "0.39.0";
+export const version = "0.39.0";
 /** published platforms, with the artifact suffix of the cross-built variant */
 const platforms = [
 	{ name: "JVM", suffix: "_3" },
@@ -166,7 +165,6 @@ export interface Library {
 	summary: string;
 	/** article name in `manuals` */
 	manual?: string;
-	maven: string;
 	/** one Scaladoc per platform, the APIs differ slightly between platforms */
 	scaladoc: { platform: string; href: string }[];
 }
@@ -179,7 +177,6 @@ export const libraries: Library[] = [
 		summary:
 			"Algebraic replicated data types: lattices with automatically derived merge for products and sums, causal metadata, and a collection of common replicated data types.",
 		manual: "Algebraic Replicated Data Types",
-		maven: maven("rdts"),
 		scaladoc: scaladoc("rdts"),
 	},
 	{
@@ -189,7 +186,6 @@ export const libraries: Library[] = [
 		summary:
 			"Signals and events in a transactional dataflow graph – the continuation of the REScala library.",
 		manual: "Reactive Programming Concepts",
-		maven: maven("reactives"),
 		scaladoc: scaladoc("reactives"),
 	},
 	{
@@ -198,7 +194,6 @@ export const libraries: Library[] = [
 		artifact: "channels",
 		summary:
 			"A minimal send/receive abstraction over TCP, WebSockets, WebRTC, BroadcastChannel, and more. Channels is an integration project that connects RDTs and Reactives into distributed applications; it is not documented yet.",
-		maven: maven("channels"),
 		scaladoc: scaladoc("channels"),
 	},
 ];

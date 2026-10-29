@@ -1,7 +1,7 @@
 ---
 import { url } from "../../lib/url";
 import Base from "../../layouts/Base.astro";
-import { libraries, manualPath, repoTree, site } from "../../data/site";
+import { libraries, manualPath, repoTree, site, version } from "../../data/site";
 ---
 
 <Base title="Libraries">
@@ -42,14 +42,32 @@ import { libraries, manualPath, repoTree, site } from "../../data/site";
 									{l.scaladoc.map((d) => <a href={d.href}>{d.platform} ↗</a>)}
 								</small>
 							</div>
-							<a class="lib-link" href={l.maven}>
-								<span>Artifacts ↗</span>
-								<small><code>{l.artifact}</code></small>
-							</a>
 						</div>
 					</div>
 				))
 			}
+		</div>
+		<div class="container">
+			<div class="deps">
+				<h3>Using the libraries</h3>
+				<input type="radio" name="dep-tool" id="dep-sbt" checked />
+				<label for="dep-sbt">sbt</label>
+				<input type="radio" name="dep-tool" id="dep-scala-cli" />
+				<label for="dep-scala-cli">scala-cli</label>
+				<input type="radio" name="dep-tool" id="dep-mill" />
+				<label for="dep-mill">mill</label>
+				<pre class="dep-sbt"><code>{`libraryDependencies += "de.tu-darmstadt.stg" %% "rdts" % "${version}"
+libraryDependencies += "de.tu-darmstadt.stg" %% "reactives" % "${version}"
+libraryDependencies += "de.tu-darmstadt.stg" %% "channels" % "${version}"`}</code></pre>
+				<pre class="dep-scala-cli"><code>{`//> using dep de.tu-darmstadt.stg::rdts::${version}
+//> using dep de.tu-darmstadt.stg::reactives::${version}
+//> using dep de.tu-darmstadt.stg::channels::${version}`}</code></pre>
+				<pre class="dep-mill"><code>{`def mvnDeps = Seq(
+  mvn"de.tu-darmstadt.stg::rdts::${version}",
+  mvn"de.tu-darmstadt.stg::reactives::${version}",
+  mvn"de.tu-darmstadt.stg::channels::${version}"
+)`}</code></pre>
+			</div>
 		</div>
 	</section>
 	<section class="section" id="development">
