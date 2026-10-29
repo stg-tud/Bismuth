@@ -10,7 +10,7 @@ object ReactiveExamples {
 = Reactive Programming Concepts
 :flags = -hardwrap
 
-The manual serves as an introduction of the concepts in reactive programming.
+The manual serves as an introduction to the concepts in reactive programming.
 The full API is covered in the scaladoc especially for :m{Signals} and :m{Events}.
 More details can be found in :cite{DBLP:conf/aosd/SalvaneschiHM14; query=REScala: Bridging between object-oriented and functional style in reactive applications} and :cite{DBLP:conf/aosd/GasiunasSMNN11; query=EScala: modular event-driven object interactions in Scala}
 The manual introduces the concepts related to functional reactive programming and event-based programming from a practical perspective.
@@ -131,7 +131,7 @@ Events can be fired with the method :m{fire}, which will start a propagation.
 
     e1.fire(5)
     e2.fire(())
-    e3.fire((false, "Hallo", 5))
+    e3.fire((false, "Hello", 5))
 
     /*:scim
 
@@ -670,7 +670,7 @@ Any attempt to set the value of a signal manually is a mistake.
 
 ## Side effects in signal expressions
 
-Signal expressions should be pure. i.e. they should not modify external variables.
+Signal expressions should be pure, i.e., they should not modify external variables.
 For example the following code is conceptually wrong because the variable
 :m[cSide] is imperatively assigned from inside the signal expression.
 
@@ -778,8 +778,8 @@ the var is reevaluated.
 
     /*:scim
 
-Alternatively, one can still use mutable objects but assign again the
-var to force the reevaluation. However this style of programming is
+Alternatively, one can still use mutable objects but assign the var
+again to force the reevaluation. However this style of programming is
 confusing for the reader and should be avoided when possible.
 
      */
@@ -837,7 +837,7 @@ has a constant value 2 and is not updated when the var changes.
     /*:scim
 
 The following solution is syntactically correct and the signal
-:m{sFunc} is updated every time the var :m{aFunc} is updated.
+:m{sFunc2} is updated every time the var :m{aFunc2} is updated.
 
      */
 
@@ -859,16 +859,16 @@ This work builds on ideas originally developed in EScala :cite{query=EScala: mod
 – which supports event combination and implicit events.
 Other reactive languages directly represent time-changing values and remove
 inversion of control.
-Among the others, we mention
-FrTime :cite{DBLP:conf/esop/CooperK06; query=Embedding dynamic dataflow in a call-by value language} (Scheme),
-FlapJax :cite{DBLP:conf/oopsla/MeyerovichGBCGBK09; query=Flapjax: a programming language for ajax applications} (Javascript),
+Among others, we mention
+FrTime :cite{DBLP:conf/esop/CooperK06; query=Embedding dynamic dataflow in a call-by-value language} (Scheme),
+FlapJax :cite{DBLP:conf/oopsla/MeyerovichGBCGBK09; query=FlapJax: a programming language for Ajax applications} (JavaScript),
 AmbientTalk/R :cite{DBLP:conf/tools/CarretonMCM10; query=Loosely-coupled distributed reactive programming in mobile ad hoc networks} and
 Scala.React :cite{query=Deprecating the Observer Pattern with Scala.react} (Scala).
 
 # Acknowledgments
 
 Several people contributed to this manual,
-among the others David Richter, Gerold Hintz and Pascal Weisenburger.
+among others David Richter, Gerold Hintz and Pascal Weisenburger.
 
 
      */
