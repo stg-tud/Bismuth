@@ -4,13 +4,12 @@ import { manuals } from "../../data/site";
 import { loadDoc } from "../../lib/scitzen";
 import "../../styles/scitzen.css";
 
+// with build.format "preserve" this renders to documentation/<article>.html
 export function getStaticPaths() {
-	return manuals.map((m) => ({ params: { slug: m.slug }, props: { manual: m } }));
+	return manuals.map((article) => ({ params: { article } }));
 }
 
-const { manual } = Astro.props;
-const slugForFile = (file: string) => manuals.find((m) => m.file === file)?.slug;
-const doc = loadDoc(manual.file, slugForFile);
+const doc = loadDoc(`${Astro.params.article}.html`);
 ---
 
 <Base title={doc.title}>

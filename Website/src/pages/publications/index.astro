@@ -1,7 +1,7 @@
 ---
 // Concise bibliography of src/bibliography/bismuth.bib – intentionally not linked from the navigation (yet).
-import Base from "../layouts/Base.astro";
-import { bibliography } from "../lib/bibliography";
+import Base from "../../layouts/Base.astro";
+import { bibliography } from "../../lib/bibliography";
 const entries = [...bibliography].sort((a, b) => b.year.localeCompare(a.year));
 ---
 

@@ -1,7 +1,7 @@
 ---
-import { url } from "../lib/url";
-import Base from "../layouts/Base.astro";
-import { demos } from "../data/site";
+import { url } from "../../lib/url";
+import Base from "../../layouts/Base.astro";
+import { demos } from "../../data/site";
 const first = demos[0];
 ---
 
@@ -38,7 +38,7 @@ const first = demos[0];
 </Base>
 
 <script>
-	import { url } from "../lib/url";
+	import { url } from "../../lib/url";
 
 	const frame = document.getElementById("demo-frame") as HTMLIFrameElement;
 	const open = document.getElementById("demo-open") as HTMLAnchorElement;

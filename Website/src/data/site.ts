@@ -5,6 +5,11 @@ export const site = {
 	repo: "https://github.com/stg-tud/bismuth",
 };
 
+// Articles built by scitzen (see `just websiteDocs`), rendered at /documentation/<article>.html –
+// the same relative position as in the scitzen output, so their relative links keep working.
+export const manuals = ["Algebraic Replicated Data Types", "Reactive Programming Concepts"];
+export const manualPath = (article: string) => `/documentation/${encodeURIComponent(article)}.html`;
+
 export interface Publication {
 	/** key in src/bibliography/bismuth.bib */
 	key: string;
@@ -103,7 +108,7 @@ export const projects: Project[] = [
 		title: "Algebraic Replicated Data Types",
 		summary:
 			"Instead of a fixed catalogue of CRDTs, developers use the algebraic data types they already write for their business logic: every ARDT is a join-semilattice, and merge semantics of products and sums are derived automatically from their components. ARDTs are the shared foundation of several research threads in Bismuth – LoRe, PRDTs, secure replication, and access control all build on them, and the library keeps evolving with them.",
-		links: [{ label: "documentation", href: "/documentation/rdts/" }],
+		links: [{ label: "documentation", href: manualPath("Algebraic Replicated Data Types") }],
 		publications: [{ key: "DBLP:conf/ecoop/KuessnerMWM23", venue: "ECOOP 2023", artifact: "KuessnerARDTArtifact2023" }],
 	},
 	{
@@ -140,12 +145,6 @@ export const projects: Project[] = [
 	},
 ];
 
-// Articles built by scitzen (see `just websiteDocs`), rendered at /documentation/<slug>/
-export const manuals = [
-	{ slug: "rdts", title: "Algebraic Replicated Data Types", file: "Algebraic Replicated Data Types.html" },
-	{ slug: "reactives", title: "Reactive Programming Concepts", file: "Reactive Programming Concepts.html" },
-];
-
 const maven = (artifact: string) => `https://index.scala-lang.org/stg-tud/bismuth/artifacts/${artifact}`;
 const scaladoc = (artifact: string) => `https://javadoc.io/doc/de.tu-darmstadt.stg/${artifact}_3/latest/index.html`;
 
@@ -154,7 +153,7 @@ export interface Library {
 	title: string;
 	artifact: string;
 	summary: string;
-	/** slug of the manual in `manuals` */
+	/** article name in `manuals` */
 	manual?: string;
 	maven: string;
 	scaladoc: string;
@@ -167,7 +166,7 @@ export const libraries: Library[] = [
 		artifact: "rdts",
 		summary:
 			"Algebraic replicated data types: lattices with automatically derived merge for products and sums, causal metadata, and a collection of common replicated data types.",
-		manual: "rdts",
+		manual: "Algebraic Replicated Data Types",
 		maven: maven("rdts"),
 		scaladoc: scaladoc("rdts"),
 	},
@@ -177,7 +176,7 @@ export const libraries: Library[] = [
 		artifact: "reactives",
 		summary:
 			"Signals and events in a transactional dataflow graph – the continuation of the REScala library.",
-		manual: "reactives",
+		manual: "Reactive Programming Concepts",
 		maven: maven("reactives"),
 		scaladoc: scaladoc("reactives"),
 	},

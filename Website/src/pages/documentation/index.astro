@@ -1,8 +1,7 @@
 ---
 import { url } from "../../lib/url";
 import Base from "../../layouts/Base.astro";
-import { libraries, manuals, site } from "../../data/site";
-const manualTitle = (slug: string) => manuals.find((m) => m.slug === slug)!.title;
+import { libraries, manualPath, site } from "../../data/site";
 ---
 
 <Base title="Libraries">
@@ -27,9 +26,9 @@ const manualTitle = (slug: string) => manuals.find((m) => m.slug === slug)!.titl
 						<p>{l.summary}</p>
 						<div class="lib-links">
 							{l.manual ? (
-								<a class="lib-link primary" href={url(`/documentation/${l.manual}/`)}>
+								<a class="lib-link primary" href={url(manualPath(l.manual))}>
 									<span>Manual</span>
-									<small>{manualTitle(l.manual)}</small>
+									<small>{l.manual}</small>
 								</a>
 							) : (
 								<span class="lib-link disabled">
