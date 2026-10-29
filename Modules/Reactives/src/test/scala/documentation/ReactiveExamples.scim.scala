@@ -135,7 +135,7 @@ Events can be fired with the method :m{fire}, which will start a propagation.
 
     /*:scim
 
-## Now, observe, remove
+## Now, observe, disconnect
 
 The current value of a signal can be accessed using the :m{now} method.
 It is useful for debugging and testing, and sometimes inside onclick handlers.
@@ -207,9 +207,9 @@ This approach can be used to directly register a method as an event handler.
 
     /*:scim
 
-Handlers can be unregistered from events with the :m{remove} operator.
-When a handler is unregistered, it is not executed when the event is fired.
-If you create handlers, you should also think about removing them, when they are no longer needed.
+Handlers can be unregistered from events with the :m{disconnect} method.
+When a handler is disconnected, it is not executed when the event is fired.
+If you create handlers, you should also think about disconnecting them when they are no longer needed.
 
      */
 
@@ -259,24 +259,24 @@ Combinators express functional dependencies among values.
 Intuitively, the value of a combinator is computed from one or multiple input values.
 Whenever any input changes, the value of the combinator is also updated.
 
-## Latest, Changed
+## Hold, Changed
 
 Conversion between signals and events are fundamental to introduce
 time-changing values into OO applications – which are usually event-based.
 
 This section covers the basic conversions between signals and events.
-The :m{latest} conversion function creates a signal from an event.
+The :m{hold} conversion function creates a signal from an event.
 The signal holds the value associated to an event.
 The value is held until the event is fired again and a new value is available.
 The :m{changed} conversion function creates an event from a signal.
 The function fires a new event every time a signal changes its value.
 
-The :m{latest} function applies to an event and returns a signal
+The :m{hold} function applies to an event and returns a signal
 holding the latest value of the event :m{e}.
 The initial value of the signal is set to :m{init}.
 
 ```code lang=scala
-    latest[T](e: Event[T], init: T): Signal[T]
+    hold[A >: T](init: A): Signal[A]
 ```
 
      */
@@ -466,9 +466,9 @@ function can potentially introduce a memory overflow.
 
     /*:scim
 
-## LatestOption Signal
+## HoldOption Signal
 
-The :m{latestOption} function is a variant of the :m{latest}
+The :m{holdOption} function is a variant of the :m{hold}
 function which uses the :m{Option} type to distinguish the case in
 which the event did not fire yet. Holds the latest value of an event
 as :m{Some(val)} or :m{None}.
@@ -571,30 +571,6 @@ provides both the old and the new value of the signal in a tuple.
 
     sChange.set(10)
     sChange.set(20)
-
-    /*:scim
-
-## ChangedTo Event
-
-The :m{changedTo} function is similar to :m{changed}, but it
-fires an event only when the signal changes its value to a given
-value.
-
-```code lang=scala
-    changedTo[V](value: V): Event[Unit]
-```
-
-     */
-
-    var testChangedTo           = 0
-    val vChangedTo              = Var(1)
-    val sChangedTo              = Signal { vChangedTo.value + 1 }
-    val eChangedTo: Event[Unit] = sChangedTo.changed.filter(_ == 3).map(_ => ())
-    val oChangedTo              = eChangedTo.observe((x: Unit) => testChangedTo += 1)
-
-    assert(testChangedTo == 0)
-    vChangedTo.set(2); assert(testChangedTo == 1)
-    vChangedTo.set(3); assert(testChangedTo == 1)
 
     /*:scim
 
