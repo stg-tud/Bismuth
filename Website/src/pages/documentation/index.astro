@@ -1,7 +1,7 @@
 ---
 import { url } from "../../lib/url";
 import Base from "../../layouts/Base.astro";
-import { libraries, manualPath, repoTree, site, version } from "../../data/site";
+import { changelog, libraries, manualPath, repoTree, site, version } from "../../data/site";
 ---
 
 <Base title="Libraries">
@@ -50,6 +50,9 @@ import { libraries, manualPath, repoTree, site, version } from "../../data/site"
 		<div class="container">
 			<div class="deps">
 				<h3>Using the libraries</h3>
+				<p>
+					The current version is {version}. See the <a href={url(manualPath(changelog))}>changelog</a> for what changed.
+				</p>
 				<input type="radio" name="dep-tool" id="dep-sbt" checked />
 				<label for="dep-sbt">sbt</label>
 				<input type="radio" name="dep-tool" id="dep-scala-cli" />

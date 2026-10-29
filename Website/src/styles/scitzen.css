@@ -70,3 +70,16 @@
 .highlight .m, .highlight .mi, .highlight .mf, .highlight .mh { color: #f5a97f; }
 .highlight .o, .highlight .ow { color: #d6d9fd; }
 .highlight .err { color: inherit; background: none; }
+
+/* lists: items hug each other like in the default scitzen style */
+.doc-content :is(ul, ol) { padding-left: 1.5rem; margin: 0.5rem 0 1rem; }
+.doc-content li > * { margin-top: 0; margin-bottom: 0; }
+.doc-content li > p + p { margin-top: 0.5rem; }
+.doc-content li :is(ul, ol) { margin: 0.15rem 0 0.25rem; }
+.doc-content li + li { margin-top: 0.15rem; }
+.doc-content li::marker { color: var(--indigo-600); }
+.doc-content dl { margin: 0.5rem 0 1rem; }
+.doc-content dt { font-weight: 700; color: var(--indigo-900); margin-top: 0.5rem; }
+.doc-content dd { margin: 0.15rem 0 0 1.5rem; }
+.doc-content dd > :first-child { margin-top: 0; }
+.doc-content dd > :last-child { margin-bottom: 0; }

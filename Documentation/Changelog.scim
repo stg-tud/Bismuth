@@ -1,19 +1,5 @@
-= Changelog and Repo Notes
-
-== Plans
-
-• merge the SocialMedia example into the Minisocial Web case study, so we can have that as an actual interactiev application
-  • there is also the minisocial example for just locl modifications, thats fine.
-
-== Known issues
-
-• warning: classpath set repeatedly during doc:
-  :link{https://github.com/scala/scala3/issues/22875}
-
-
-== Changelog
-
-Reminder to update the website when publishing a new version.
+= Changelog
+:flags = -section numbers
 
 # v0.39.0
 :date = 2026-10-24
@@ -35,9 +21,9 @@ Reminder to update the website when publishing a new version.
     • renamed Lattice methods to :mono{subsumes} :mono{inflates}
     • add a :mono{DecoratedLattice} to systemize compaction/filtering merges
     • more research lines included:
-   	 • interval tree clocks
-   	 • more consensus / paxos
-   	 • RDT filtering
+      • interval tree clocks
+      • more consensus / paxos
+      • RDT filtering
 
 
 •: Channels

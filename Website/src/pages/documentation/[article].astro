@@ -1,12 +1,12 @@
 ---
 import Base from "../../layouts/Base.astro";
-import { manuals } from "../../data/site";
+import { changelog, manuals } from "../../data/site";
 import { loadDoc } from "../../lib/scitzen";
 import "../../styles/scitzen.css";
 
 // with build.format "preserve" this renders to documentation/<article>.html
 export function getStaticPaths() {
-	return manuals.map((article) => ({ params: { article } }));
+	return [...manuals, changelog].map((article) => ({ params: { article } }));
 }
 
 const doc = loadDoc(`${Astro.params.article}.html`);

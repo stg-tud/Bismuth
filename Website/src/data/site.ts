@@ -8,6 +8,7 @@ export const site = {
 // Articles built by scitzen (see `websitePrepare` in the Justfile), rendered at /documentation/<article>.html –
 // the same relative position as in the scitzen output, so their relative links keep working.
 export const manuals = ["Algebraic Replicated Data Types", "Reactive Programming Concepts"];
+export const changelog = "Changelog";
 export const manualPath = (article: string) => `/documentation/${encodeURIComponent(article)}.html`;
 
 export interface Publication {

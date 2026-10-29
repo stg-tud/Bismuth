@@ -1,5 +1,22 @@
-= Replikathon
-:date = 2026-04-13
+= Repo Notes
+
+Internal notes on the state of the repository. Not published on the website.
+
+# Releases
+
+• When publishing a new version, update the version in Website/src/data/site.ts and add an entry to the changelog.
+
+# Plans
+
+• merge the SocialMedia example into the Minisocial Web case study, so we can have that as an actual interactiev application
+  • there is also the minisocial example for just locl modifications, thats fine.
+
+# Known issues
+
+• warning: classpath set repeatedly during doc:
+  :link{https://github.com/scala/scala3/issues/22875}
+
+# Replikathon 2026-04-13
 
 • lib dependency instructions
 • tink scala port???
@@ -25,8 +42,7 @@
 • crypto -> christian räumt auch auf
 • PRDT state machine replication: ongoing research (julian räumt auf)
 
-
-== Workshop Tutorial
+## Workshop Tutorial
 
 • first steps explanation documentation
 	• how to get started on:
