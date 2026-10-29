@@ -8,7 +8,7 @@ class RDTs extends munit.FunSuite {
 
 This manual introduces Algebraic Replicated Data Types (ARDTs):
 a systematic approach to building conflict-free replicated data
-types by composition of product, and sum types.
+types by composition of product and sum types.
 
 The :m{merge} semantics of a compound data type are :b{automatically derived} from the merge semantics of its components.
 
@@ -267,7 +267,7 @@ designing good data types (which is much easier).
 We need to design data types where concurrent operations do not overwrite each other.
 
 A common trick is to use :b{replica identities}.  Each replica writes to
-its own part of the state, so concurrent writes never conflict. The library provides a built in class to track unique IDs and the specific Uid of the local replica (which is a different type, to prevent accidential misuse).
+its own part of the state, so concurrent writes never conflict. The library provides a built-in class to track unique IDs and the specific Uid of the local replica (which is a different type, to prevent accidental misuse).
 
    */
   import rdts.base.Uid
@@ -305,7 +305,7 @@ to be merged into the state to take effect.
 
       var counter = Counter()
 
-      // inc() returns a delta that we merge into the state
+      // add() returns a delta that we merge into the state
       counter = counter `merge` counter.add(1)
       assertEquals(counter.value, 1)
 

@@ -1,0 +1,290 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Bismuth is the research monorepo of the Programming Foundations for Distributed Software at the Software Technology Group, TU Darmstadt."><link rel="icon" type="image/svg+xml" href="/Bismuth/logo.svg"><meta name="theme-color" content="#5c4cc0"><title>Changelog – Bismuth</title><link rel="stylesheet" href="/Bismuth/_astro/Base.Cs5PiiMA.css"><link rel="stylesheet" href="/Bismuth/_astro/_article_.Bjv-GiFQ.css"></head><body><header class="navbar"><div class="container"><a class="brand" href="/Bismuth/"><img src="/Bismuth/logo.svg" alt=""><span>Bismuth</span></a><nav class="nav-links"><a class="nav-link" href="/Bismuth/">Research</a><a class="nav-link" href="/Bismuth/documentation/">Libraries</a><a class="nav-link" href="/Bismuth/demos/">Demos</a><a class="nav-link" href="https://github.com/stg-tud/bismuth">Repository<span class="external" aria-hidden="true">↗</span></a></nav></div></header><main><div class="container doc-layout"><aside class="doc-toc"><details open><summary>Contents</summary><nav><ul><li class="h1"><a href="#Changelog">Changelog</a></li><li class="h2"><a href="#v0.39.0">v0.39.0</a></li><li class="h2"><a href="#v0.38.0">v0.38.0</a></li><li class="h2"><a href="#v0.37.0">v0.37.0</a></li><li class="h2"><a href="#v0.36.0">v0.36.0</a></li><li class="h3"><a href="#API changes">API changes</a></li><li class="h3"><a href="#Extra modules">Extra modules</a></li><li class="h3"><a href="#Internal improvements">Internal improvements</a></li><li class="h2"><a href="#v0.35.1">v0.35.1</a></li><li class="h2"><a href="#v0.35.0">v0.35.0</a></li><li class="h2"><a href="#v0.34.0">v0.34.0</a></li><li class="h3"><a href="#Reactives">Reactives</a></li><li class="h3"><a href="#RDTs">RDTs</a></li><li class="h2"><a href="#v0.33.1">v0.33.1</a></li><li class="h2"><a href="#v0.33.0">v0.33.0</a></li><li class="h2"><a href="#v0.32.0">v0.32.0</a></li><li class="h2"><a href="#v0.31.0">v0.31.0</a></li><li class="h2"><a href="#v0.30.0">v0.30.0</a></li><li class="h2"><a href="#v0.29.0">v0.29.0</a></li><li class="h2"><a href="#v0.28.0">v0.28.0</a></li><li class="h2"><a href="#v0.27.0">v0.27.0</a></li><li class="h2"><a href="#v0.26.0">v0.26.0</a></li><li class="h2"><a href="#v0.25.0">v0.25.0</a></li><li class="h2"><a href="#v0.24.0">v0.24.0</a></li><li class="h2"><a href="#v0.23.0">v0.23.0</a></li><li class="h2"><a href="#v0.22.0">v0.22.0</a></li><li class="h2"><a href="#v0.21.1">v0.21.1</a></li><li class="h2"><a href="#v0.21.0">v0.21.0</a></li><li class="h2"><a href="#v0.20.0">v0.20.0</a></li><li class="h2"><a href="#v0.19.0">v0.19.0</a></li><li class="h2"><a href="#v0.18.0">v0.18.0</a></li><li class="h2"><a href="#v0.17.0">v0.17.0</a></li><li class="h2"><a href="#v0.16.0">v0.16.0</a></li><li class="h2"><a href="#v0.15.0">v0.15.0</a></li><li class="h2"><a href="#v0.14.0">v0.14.0</a></li><li class="h2"><a href="#v0.13.0">v0.13.0</a></li><li class="h2"><a href="#v0.12.0">v0.12.0</a></li><li class="h2"><a href="#v0.11.0 aka the thesis version">v0.11.0 aka the thesis version</a></li><li class="h2"><a href="#v0.10.0">v0.10.0</a></li><li class="h2"><a href="#v0.9.0">v0.9.0</a></li><li class="h2"><a href="#v0.8.0">v0.8.0</a></li><li class="h2"><a href="#v0.7.0">v0.7.0</a></li><li class="h2"><a href="#v0.6.0">v0.6.0</a></li><li class="h2"><a href="#v0.5.0">v0.5.0</a></li><li class="h2"><a href="#v0.4.0">v0.4.0</a></li><li class="h2"><a href="#v0.3.0">v0.3.0</a></li><li class="h2"><a href="#v0.2.0">v0.2.0</a></li></ul></nav></details></aside><article class="doc-content  hardwrap justify">
+		<h1 id="Changelog">Changelog</h1>
+<h2 id="v0.39.0">v0.39.0</h2><div class="metadata"><time>2026-10-24</time></div>
+<ul><li><p>integrate deltalens into RDTs project
+</p></li><li><p>implicit admission ticket
+</p></li></ul>
+
+<h2 id="v0.38.0">v0.38.0</h2><div class="metadata"><time>2026-04-19</time></div>
+<dl><dt>Reactives</dt><dd><ul><li><p>fix reactive tags integration
+</p></li><li><p>removed FullMV
+</p></li></ul></dd></dl>
+
+<dl><dt>RDTs</dt><dd><ul><li><p>remove datatypes that are supposed to be wrapped into dotted/obrem
+</p></li><li><p>renamed Lattice methods to <code>subsumes</code> <code>inflates</code>
+</p></li><li><p>add a <code>DecoratedLattice</code> to systemize compaction/filtering merges
+</p></li><li><p>more research lines included:
+</p><ul><li><p>interval tree clocks
+</p></li><li><p>more consensus / paxos
+</p></li><li><p>RDT filtering
+</p></li></ul></li></ul></dd></dl>
+
+<dl><dt>Channels</dt><dd><ul><li><p>A lot changed here 🙃
+</p></li><li><p>client/server latent connections
+</p></li><li><p>channels no longer parametric, only allow sending Bytes
+</p></li><li><p>Connection descriptions and serializable connectors
+</p></li><li><p>Websocket server implementation
+</p></li><li><p>Broadcast implementation (for now based on HyParView and Plumtree)
+</p></li><li><p>Include JVM key crypto
+</p></li><li><p>Include JVM ACL
+</p></li></ul></dd></dl>
+
+
+<h2 id="v0.37.0">v0.37.0</h2><div class="metadata"><time>2024-12-12</time></div>
+<p>Scala 3.5 based release
+</p>
+<ul><li><p>all modules now use at least Java version 17
+</p><ul><li><p>This is now actually the oldest supported Java version (except for commercial extended support we don't have). This feels strange.
+</p></li></ul></li><li><p>publish channel and replication module
+</p><ul><li><p>module boundaries are likely to change, but for now these help a lot with replicating RDT deltas
+</p></li><li><p>channels now has a NIO TCP module
+</p></li></ul></li><li><p>add experimental DTN replication work
+</p></li><li><p>add consensus protocol datatypes
+</p></li><li><p>enhanced UID generation and printing for better debuggability (and unlikely collisions)
+</p></li></ul>
+
+<ul><li><p>todolist uses experimental WASM backend
+</p></li><li><p>key-value store implementation case study
+</p></li></ul>
+
+<h2 id="v0.36.0">v0.36.0</h2><div class="metadata"><time>2024-08-24</time></div>
+<h3 id="API changes">API changes</h3>
+<ul><li><p>rename module imports to use generic names:
+</p><ul><li><p>rescala -&gt; reactives
+</p></li><li><p>kofre -&gt; rdts
+</p></li></ul></li></ul>
+<ul><li><p>refactor API to no longer require bundle traits
+</p><ul><li><p>this removes the capability to select schedulers at runtime and instead moves the selection to compile time
+</p></li><li><p>this release uses the leveled scheduler
+</p></li></ul></li></ul>
+<ul><li><p>rename event.act to event.branch for a more consistent API
+</p></li></ul>
+<ul><li><p>remove infix on most methods
+</p></li></ul>
+<ul><li><p>reactive tags integration no longer depends on scalatags, works on DOM elements directly
+</p></li></ul>
+<ul><li><p>RDTs still have quickly changing API
+</p><ul><li><p>no more extensions based wrapped APIs
+</p></li><li><p>more systematic IDs
+</p></li></ul></li></ul>
+<h3 id="Extra modules">Extra modules</h3>
+<ul><li><p>reactive lenses experiments
+</p></li><li><p>lore is now part of the repo (not included in releases)
+</p><ul><li><p>there is also an experimental lore compiler plugin
+</p></li></ul></li><li><p>add channels module as an experiment to have RDT specific communication infrastructure
+</p><ul><li><p>with initial DTN support
+</p></li></ul></li><li><p>local first access control experiments
+</p></li><li><p>vendor in quicklens and adapt to allow to produce deltas
+</p></li><li><p>remove the graph compiler module (historical now)
+</p></li><li><p>add webview experiments
+</p></li></ul>
+<h3 id="Internal improvements">Internal improvements</h3>
+<ul><li><p>migrate all tests to munit
+</p></li><li><p>compile with safe init and explicit nulls (most modules)
+</p></li><li><p>make a special propagation phase for follow-up transactions (this is still not a well-designed area …)
+</p></li></ul>
+
+<h2 id="v0.35.1">v0.35.1</h2><div class="metadata"><time>2024-03-08</time></div>
+<ul><li><p>update Scala version to 3.3.3 due to incompatible release
+</p></li></ul>
+<h2 id="v0.35.0">v0.35.0</h2><div class="metadata"><time>2024-02-24</time></div>
+<p>This is a smaller release meant to mark a stable point before incompatible changes.
+</p>
+<ul><li><p>Reactives
+</p><ul><li><p>allow .value inside fold
+</p></li></ul></li></ul>
+<ul><li><p>RDTs
+</p><ul><li><p>remove dotset/map/fun, now generically generated from maps
+</p></li></ul></li></ul>
+<h2 id="v0.34.0">v0.34.0</h2><div class="metadata"><time>2023-11-10</time></div>
+<h3 id="Reactives">Reactives</h3>
+<ul><li><p>drop Scala 2 support
+</p><ul><li><p>We kept this around for compatibility with Scala Loci case studies, but those will keep working just fine with 0.33.
+</p></li><li><p>Maintaining the Scala 2 macros became too much. Every refactor breaks them in very subtle ways, due to the interactions of the generic nature of the code, and the macros resolving types weirdly.
+</p></li><li><p>We would like to update some APIs to make better use of Scala 3 features, in particular better handling of implicits, and more flexible macros will make certain parts of the code much more maintainable and enable better syntax for users.
+</p></li></ul></li><li><p>removed internal types from the public interface trait
+</p></li><li><p>remove old fold syntax
+</p></li><li><p>remove reduce (use new fold syntax instead)
+</p></li><li><p>remove zip events (use event expressions instead)
+</p></li><li><p>remove += (use observe instead)
+</p></li><li><p>remove apply for reading values, use value instead
+</p></li><li><p>rename \ to except
+</p></li><li><p>rename latest to hold
+</p></li><li><p>rename last to list
+</p></li><li><p>improve Event.fromCallback syntax
+</p></li><li><p>remove reactive-streams dependency and upgrade to Java Flow instead (still mostly untested, because their test suite requires finite streams, which we don’t have)
+</p></li><li><p>add snap to snapshot some signals when an event triggers (like map, but ignoring the event parameter)
+</p></li><li><p>enable debugger hooks
+</p></li></ul>
+<h3 id="RDTs">RDTs</h3>
+<ul><li><p>generate lattices from orderings
+</p></li><li><p>more systematic causal time implementation and use
+</p></li><li><p>generalized dot using lattices by filtering dots instead of custom merges
+</p></li><li><p>drop decompose lattice and normal lattice distinction, decomposition is now simply a best effort feature
+</p></li></ul>
+
+<h2 id="v0.33.1">v0.33.1</h2><div class="metadata"><time>2024-06-01</time></div>
+<ul><li><p>fix default signal and event expressions in JavaScript
+</p></li></ul>
+
+<h2 id="v0.33.0">v0.33.0</h2><div class="metadata"><time>2023-02-22</time></div>
+<ul><li><p>move errant new transactions during propagation to observer phase
+</p></li><li><p>partially undo bundles to improve doc compile time efficiency
+</p></li><li><p>new Fold now correctly handles dynamic dependencies
+</p></li><li><p>more structured debug info stored in reactives
+</p></li><li><p>simplify Lattices inheritance structure
+</p></li></ul>
+
+<h2 id="v0.32.0">v0.32.0</h2><div class="metadata"><time>2022-12-31</time></div>
+<ul><li><p>automatic derivation of replicated data types
+</p><ul><li><p>cleaned up implementations of built-in replicated data types
+</p></li></ul></li><li><p>Scala 3 version now has signal macros
+</p></li><li><p>move incremental collections' thesis results into main repository
+</p></li></ul>
+
+<h2 id="v0.31.0">v0.31.0</h2><div class="metadata"><time>2021-12-07</time></div>
+<ul><li><p>drop checked macro support, use snapshot helpers instead
+</p></li><li><p>promote fullMV scheduler to published artifact
+</p></li><li><p>add experimental reactor syntax
+</p></li><li><p>internal refactoring for Scala 3 support (-macros)
+</p></li></ul>
+
+<h2 id="v0.30.0">v0.30.0</h2><div class="metadata"><time>2020-04-10</time></div>
+<ul><li><p>update ScalaJS to 1.0
+</p></li><li><p>fixes to cross compile for 2.11 (JVM only), 2.12, and 2.13
+</p></li><li><p>new Signal.map macro
+</p></li><li><p>more CRDT experiments
+</p></li></ul>
+
+<h2 id="v0.29.0">v0.29.0</h2><div class="metadata"><time>2019-09-15</time></div>
+<ul><li><p>update scala-loci version to 0.3.0
+</p></li></ul>
+<h2 id="v0.28.0">v0.28.0</h2><div class="metadata"><time>2019-09-08</time></div>
+<ul><li><p>fix rescalatags observer behavior
+</p></li></ul>
+<h2 id="v0.27.0">v0.27.0</h2><div class="metadata"><time>2019-09-07</time></div>
+<p>Include small external projects into the main project. This simplifies publishing and makes experimental features available in the published versions.
+</p>
+<h2 id="v0.26.0">v0.26.0</h2><div class="metadata"><time>2019-07-14</time></div>
+<ul><li><p>enable .value use in filter and collect macros
+</p></li><li><p>bug fixes for fold macro
+</p></li><li><p>add more CRDTs/lattice types
+</p></li><li><p>improve automatic name generation of reactives
+</p></li><li><p>update dependencies
+</p></li></ul>
+<h2 id="v0.25.0">v0.25.0</h2><div class="metadata"><time>2019-03-31</time></div>
+<ul><li><p>many improvements to rescalatags
+</p></li><li><p>internal code cleanup and refactoring
+</p></li><li><p>CRDT library and distribution based on loci cleanups
+</p></li></ul>
+<h2 id="v0.24.0">v0.24.0</h2><div class="metadata"><time>2018-07-14</time></div>
+<ul><li><p>move default import to rescala.default
+</p></li><li><p>updates to flatten operator
+</p></li><li><p>improve reactive macro cut out
+</p></li><li><p>better support for restoration
+</p></li></ul>
+<h2 id="v0.23.0">v0.23.0</h2><div class="metadata"><time>2018-05-07</time></div>
+<ul><li><p>no notes
+</p></li></ul>
+<h2 id="v0.22.0">v0.22.0</h2><div class="metadata"><time>2018-02-25</time></div>
+<ul><li><p>add experimental multi fold events
+</p></li><li><p>fold is now a macro (can use signal dependencies)
+</p></li><li><p>rescalatags can now handle frags
+</p></li><li><p>internal refactorings
+</p></li></ul>
+<h2 id="v0.21.1">v0.21.1</h2><div class="metadata"><time>2018-01-28</time></div>
+<ul><li><p>fix infinite loop when starting turns in observers
+</p></li></ul>
+<h2 id="v0.21.0">v0.21.0</h2><div class="metadata"><time>2018-01-28</time></div>
+<ul><li><p>Reactive expressions are now static by default, and complain if any dynamic access happens.
+</p></li><li><p>Event.map is now also a macro and allows accessing reactives.
+</p></li><li><p>Internal interface cleanups and performance improvements.
+</p></li></ul>
+<h2 id="v0.20.0">v0.20.0</h2><div class="metadata"><time>2017-11-14</time></div>
+<ul><li><p>no notes
+</p></li></ul>
+<h2 id="v0.19.0">v0.19.0</h2><div class="metadata"><time>2016-12-21</time></div>
+<p>This is mostly a maintenance release to support Scala 2.12.
+</p>
+<ul><li><p>add Observable type alias to engine
+</p></li></ul>
+<h2 id="v0.18.0">v0.18.0</h2><div class="metadata"><time>2016-09-19</time></div>
+<ul><li><p>many fixes and improvements for the Signal macro
+</p></li><li><p>add the rescalatags mini framework (thanks scala.rx and scalatags)
+</p></li><li><p>reactives can now propagate exceptions
+</p></li><li><p>signal can now be empty
+</p></li><li><p>importing `rescala._` should now cover everything useful (and not much more)
+</p></li><li><p>improved flattening, can now flatten many more combinations
+</p></li><li><p>migrated from JUnit to ScalaTest only
+</p></li><li><p>add reactive streams compatibility layer
+</p></li><li><p>allow garbage collection of unused downstream reactives
+</p></li></ul>
+<h2 id="v0.17.0">v0.17.0</h2><div class="metadata"><time>2016-07-04</time></div>
+<ul><li><p>embed RESwing
+</p></li><li><p>embed case studies
+</p></li><li><p>update locksweep semantics to match parrp (according to tests)
+</p></li><li><p>release locks before observer phase
+</p></li></ul>
+<h2 id="v0.16.0">v0.16.0</h2><div class="metadata"><time>2016-04-04</time></div>
+<ul><li><p>locksweep is now counter based
+</p></li><li><p>refactor internal API
+</p></li><li><p>benchmark cleanups and additions
+</p></li></ul>
+<h2 id="v0.15.0">v0.15.0</h2><div class="metadata"><time>2016-02-25</time></div>
+<ul><li><p>reactive state handled per engine
+</p></li><li><p>merge pipelining branch
+</p></li></ul>
+<h2 id="v0.14.0">v0.14.0</h2><div class="metadata"><time>2016-02-09</time></div>
+<ul><li><p>no notes
+</p></li></ul>
+<h2 id="v0.13.0">v0.13.0</h2><div class="metadata"><time>2015-06-20</time></div>
+<ul><li><p>add microbenchmarks
+</p></li><li><p>fix bug with missed key transfers
+</p></li><li><p>compile with ScalaJS
+</p></li><li><p>make composition of reactives type-safe with regard to internal state
+</p></li></ul>
+<h2 id="v0.12.0">v0.12.0</h2><div class="metadata"><time>2015-06-15</time></div>
+<ul><li><p>AtomicReferences instead of synchronized for lock implementation
+</p></li><li><p>ParRP turn refactoring
+</p></li><li><p>remove cyclic reference between turns and engines
+</p></li><li><p>experimental GC starting from unused sources
+</p></li></ul>
+<h2 id="v0.11.0 aka the thesis version">v0.11.0 aka the thesis version</h2><div class="metadata"><time>2015-03-12</time></div>
+<ul><li><p>disabled assertions
+</p></li><li><p>added exponential back-off as a combined waiting strategy
+</p></li><li><p>bug fixes and code cleanups
+</p></li></ul>
+<h2 id="v0.10.0">v0.10.0</h2><div class="metadata"><time>2015-02-11</time></div>
+<ul><li><p>simplify inter turn synchronization by introducing explicit keychains
+</p></li><li><p>miscellaneous fixes improvements and renamings
+</p></li></ul>
+<h2 id="v0.9.0">v0.9.0</h2><div class="metadata"><time>2014-12-29</time></div>
+<ul><li><p>code cleanups and minor improvements
+</p></li></ul>
+<h2 id="v0.8.0">v0.8.0</h2><div class="metadata"><time>2014-12-22</time></div>
+<ul><li><p>reactives with a single static dependency now reuse the lock of their predecessor
+</p></li></ul>
+<h2 id="v0.7.0">v0.7.0</h2><div class="metadata"><time>2014-12-19</time></div>
+<ul><li><p>added STM turns
+</p></li><li><p>added yielding turns
+</p></li><li><p>philosophers are back! and eating!
+</p></li></ul>
+<h2 id="v0.6.0">v0.6.0</h2><div class="metadata"><time>2014-12-17</time></div>
+<ul><li><p>fixed dynamic reads
+</p></li><li><p>improved turn creation interface
+</p></li><li><p>added spin-locking for initial lock acquisition
+</p></li><li><p>removed philosophers
+</p></li></ul>
+<h2 id="v0.5.0">v0.5.0</h2><div class="metadata"><time>2014-12-11</time></div>
+<ul><li><p>improved pessimistic locking
+</p></li></ul>
+<h2 id="v0.4.0">v0.4.0</h2><div class="metadata"><time>2014-12-01</time></div>
+<ul><li><p>no notes
+</p></li></ul>
+<h2 id="v0.3.0">v0.3.0</h2><div class="metadata"><time>2014-10-29</time></div>
+<ul><li><p>no notes
+</p></li></ul>
+<h2 id="v0.2.0">v0.2.0</h2><div class="metadata"><time>2016-08-17</time></div>
+<ul><li><p>version used for public case and user studies
+</p></li></ul>
+	</article></div></main><footer><div class="container cols"><div class="about"><strong class="brand-footer"><img src="/Bismuth/logo.svg" alt="">Bismuth</strong><span>Bismuth is the research monorepo of the Programming Foundations for Distributed Software at the Software Technology Group, TU Darmstadt.</span></div><div><a href="/Bismuth/">Research</a><a href="/Bismuth/documentation/">Libraries</a><a href="/Bismuth/demos/">Demos</a><a href="/Bismuth/publications/">Publications</a></div><div><a href="https://github.com/stg-tud/bismuth">Repository ↗</a><a href="https://matrix.to/#/#difosys:matrix.tu-darmstadt.de">Matrix Chat ↗</a></div><div><span>Technical University of Darmstadt</span><span>Software Technology Group</span><a href="https://www.stg.tu-darmstadt.de/">stg.tu-darmstadt.de</a></div></div><div class="bottom">Bismuth is available under the Apache 2 License. © 2026 The Bismuth Contributors. This website is lovingly vibe-coded. The research behind it is the work of many wonderful (and very human) PhD students.</div></footer></body></html>
