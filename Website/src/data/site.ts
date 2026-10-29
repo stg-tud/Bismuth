@@ -51,7 +51,7 @@ export const projects: Project[] = [
 		title: "Protocol Replicated Data Types",
 		related: ["ardts"],
 		summary:
-			"Consensus protocols built from replicated data types that monotonically accumulate knowledge until agreement is reached. Algebraic composition of RDTs yields composable protocol building blocks, whose safety is verified automatically.",
+			"Consensus protocols built from replicated data types. Each replica accumulates knowledge until agreement is reached. Protocols are composed from small building blocks, and their safety is verified automatically.",
 		publications: [{ key: "10.1145/3839522", venue: "OOPSLA 2026", artifact: "HaasPRDTArtifact2026" }],
 	},
 	{
@@ -62,7 +62,7 @@ export const projects: Project[] = [
 		title: "Overview: A Programming Model for Decentralized Applications",
 		related: ["ardts", "lore", "ardts-security", "prdts"],
 		summary:
-			"An overview of how the research strands combine into one programming model for decentralized software: algebraic replicated data types with authentication and confidentiality, reactive function calls that turn them into convergent distributed dataflows, and automated reasoning that detects where coordination is required. Developers reason locally, while the runtime ensures convergence to a consistent global state.",
+			"Shows how the research strands fit together into one programming model. Replicated data types provide authentication and confidentiality, reactive function calls connect them into distributed dataflows, and automated reasoning finds where coordination is needed. Developers reason about local state, and the runtime makes sure all devices converge.",
 		publications: [{ key: "HaasThinkLocally2025", venue: "IEEE Internet Computing 2025" }],
 	},
 	{
@@ -73,7 +73,7 @@ export const projects: Project[] = [
 		title: "Decentralized Access Control for Replicated Data Types",
 		related: ["ardts", "ardts-security"],
 		summary:
-			"Access control for replicated data types without a central authority: fine-grained permissions follow the tree structure of ARDTs, and are first-class capabilities that can be delegated and revoked at runtime. The authorization state is itself replicated as a tamper-evident hash DAG, and every replica enforces policies locally when exchanging deltas – guaranteeing confidentiality, integrity, and availability even in the presence of Byzantine replicas.",
+			"Access control for replicated data types without a central authority. Permissions follow the structure of the data and can be delegated and revoked at runtime. The permissions themselves are replicated as a tamper-evident hash DAG. Every replica checks them locally when exchanging updates, which keeps data confidential and intact even if some replicas are malicious.",
 		publications: [],
 	},
 	{
@@ -84,7 +84,7 @@ export const projects: Project[] = [
 		title: "LoRe: Verifiably Safe Local-First Software",
 		related: ["ardts"],
 		summary:
-			"Reactive programming for local-first applications: developers state safety invariants, and LoRe verifies which concurrent interactions may violate them – selectively using coordination only where required.",
+			"Reactive programming for local-first applications. Developers state invariants, LoRe checks which concurrent interactions could violate them, and adds coordination only for those.",
 		publications: [
 			{ key: "10.1145/3633769", venue: "TOPLAS 2024", artifact: "HaasLoReArtifact2023" },
 		],
@@ -97,7 +97,7 @@ export const projects: Project[] = [
 		title: "Secure Local-First Software",
 		related: ["ardts"],
 		summary:
-			"Local-first applications must preserve the privacy and integrity of user data even when synchronizing via untrusted intermediaries. Because ARDTs are coordination-free and state-based, replicas can encrypt and authenticate their (delta) states end-to-end using a shared secret – intermediaries store and forward data they cannot read or forge.",
+			"Local-first applications often synchronize through servers they do not trust. Because ARDTs are state-based, replicas can encrypt and sign their states end-to-end with a shared secret. Intermediaries can then store and forward data, but cannot read or modify it.",
 		publications: [{ key: "DBLP:conf/ecoop/KuessnerMWM23", venue: "ECOOP 2023", artifact: "KuessnerARDTArtifact2023" }],
 	},
 	{
@@ -107,7 +107,7 @@ export const projects: Project[] = [
 		tracks: ["rdt"],
 		title: "Algebraic Replicated Data Types",
 		summary:
-			"Instead of a fixed catalogue of CRDTs, developers use the algebraic data types they already write for their business logic: every ARDT is a join-semilattice, and merge semantics of products and sums are derived automatically from their components. ARDTs are the shared foundation of several research threads in Bismuth – LoRe, PRDTs, secure replication, and access control all build on them, and the library keeps evolving with them.",
+			"Developers replicate the data types they already use for their application logic, instead of picking from a fixed set of CRDTs. Every ARDT is a lattice, and merging is derived automatically from the structure of the type. Most other work in Bismuth builds on ARDTs, including LoRe, PRDTs, secure replication, and access control.",
 		links: [{ label: "documentation", href: manualPath("Algebraic Replicated Data Types") }],
 		publications: [{ key: "DBLP:conf/ecoop/KuessnerMWM23", venue: "ECOOP 2023", artifact: "KuessnerARDTArtifact2023" }],
 	},
@@ -118,7 +118,7 @@ export const projects: Project[] = [
 		tracks: ["drp"],
 		title: "Fault-Tolerant Distributed Reactive Programming",
 		summary:
-			"Automating fault tolerance for distributed, interactive applications – similar to how a garbage collector automates memory management. Thread-safe transactional propagation, snapshots and restoration of reactive state, and state-based CRDTs for replicated reactives combine into a single programming paradigm with high-level consistency guarantees, also applied to disruption-tolerant networks and Wi-Fi firmware.",
+			"Automatic fault tolerance for distributed interactive applications, much like a garbage collector automates memory management. Combines thread-safe transactional change propagation, snapshots and recovery of reactive state, and replicated reactives based on CRDTs. Also applied to disruption-tolerant networks and Wi-Fi firmware.",
 		publications: [
 			{ key: "Mogk2021Diss", venue: "Dissertation 2021" },
 			{ key: "Sterz2020ReacfiFi", venue: "Programming 2021" },
@@ -136,7 +136,7 @@ export const projects: Project[] = [
 		tracks: ["drp"],
 		title: "REScala",
 		summary:
-			"REScala started as an extension of EScala (C#-style events in Scala) to bring the semantic benefits of functional reactive programming, inspired by projects such as FlapJax, into object-oriented code that undergraduate students can use and understand. Its API has stayed largely the same since 2014. Within the PACE ERC project, REScala was soon explored for distributed software, leading to SID-UP – an update algorithm for distributed dataflow graphs without global coordination.",
+			"REScala started as an extension of EScala (C#-style events in Scala). The goal was to bring functional reactive programming, inspired by projects such as FlapJax, into object-oriented code that students can use and understand. The API has stayed largely the same since 2014. In the PACE ERC project, REScala was extended to distributed software, which led to SID-UP, an update algorithm for distributed dataflow graphs without global coordination.",
 		links: [{ label: "rescala-lang.com", href: "https://www.rescala-lang.com/" }],
 		publications: [
 			{ key: "Drechsler2014", venue: "OOPSLA 2014" },
