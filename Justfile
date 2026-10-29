@@ -2,8 +2,7 @@ authors:
 	git shortlog --summary --numbered
 
 test:
-	# npm install --no-package-lock
-	deno install --node-modules-dir=auto
+	npm install
 	sbt test
 
 publishLocal:
@@ -20,8 +19,7 @@ runSimpleCaseStudy:
 	sbt 'exJVM / run'
 
 webappsPrepare:
-	# npm --prefix "Modules/exWeb/" install --no-package-lock
-	cd "Modules/exWeb/" && deno install --node-modules-dir=auto
+	cd "Modules/exWeb/" && npm install
 	# the custom main.js conditionally includes both variants so we need fast/full main.js variants to exist otherwise the bundler barfs
 	sbt exWeb/fastLinkJS
 	sbt exWeb/fullLinkJS
@@ -40,9 +38,6 @@ webappsWebviewJVM:
 webappsWebviewJavaGi: # launch a web app in a java-gi (GTK4 + Libadwaita + WebKitGTK) browser window
 	# requires GTK4, libadwaita and webkitgtk-6.0 native libraries at runtime
 	sbt 'exJVM / runMain ex2026webview.JavaGiWebview "http://localhost:5173/"'
-
-webappsDenoDesktopRun: webappsPrepare
-	cd Modules/exWeb && deno desktop --hmr -A .
 
 reformPrepare:
 	if [ ! -f "Modules/Reform/.env" ] && [ -f "Modules/Reform/env.example" ]; then cp "Modules/Reform/env.example" "Modules/Reform/.env"; fi
@@ -94,10 +89,10 @@ websitePrepare: webappsPrepare
 	mkdir -p Website/public/documentation
 	cp -r scitzen.out/web/resources Website/public/documentation/
 	"Modules/exWeb/node_modules/vite/bin/vite.js" build "Modules/exWeb/" --outDir "$PWD/Website/public/examples" --emptyOutDir
-	cd Website && deno install --node-modules-dir=auto
+	cd Website && npm install
 
 websiteServe: websitePrepare
-	cd Website && deno run -A npm:astro dev
+	cd Website && npx astro dev
 
 # build into the `website` branch (worktree in website-deploy/, published by github pages from docs/) and commit; push manually
 websiteDeploy: websitePrepare
@@ -106,6 +101,6 @@ websiteDeploy: websitePrepare
 		else git worktree add --orphan -b website website-deploy; fi; \
 	fi
 	rm -rf website-deploy/docs
-	cd Website && deno run -A npm:astro build --outDir ../website-deploy/docs
+	cd Website && npx astro build --outDir ../website-deploy/docs
 	touch website-deploy/docs/.nojekyll
 	cd website-deploy && git add -A docs && git commit -m "deploy website from main $(git -C .. rev-parse --short HEAD)"
