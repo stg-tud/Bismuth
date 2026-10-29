@@ -1,7 +1,7 @@
 export const site = {
 	title: "Bismuth",
 	description:
-		"Bismuth is the research monorepo of the Programming Foundations for Distributed Systems at the Software Technology Group, TU Darmstadt.",
+		"Bismuth is the research monorepo of the Programming Foundations for Distributed Software at the Software Technology Group, TU Darmstadt.",
 	repo: "https://github.com/stg-tud/bismuth",
 };
 
@@ -136,7 +136,7 @@ export const projects: Project[] = [
 		tracks: ["drp"],
 		title: "REScala",
 		summary:
-			"REScala started as an extension of EScala (C#-style events in Scala) to bring the semantic benefits of functional reactive programming, inspired by projects such as FlapJax, into object-oriented code that undergraduate students can use and understand. Its API has stayed largely the same since 2014. Within the PACE ERC project, REScala was soon explored for distributed systems, leading to SID-UP – an update algorithm for distributed dataflow graphs without global coordination.",
+			"REScala started as an extension of EScala (C#-style events in Scala) to bring the semantic benefits of functional reactive programming, inspired by projects such as FlapJax, into object-oriented code that undergraduate students can use and understand. Its API has stayed largely the same since 2014. Within the PACE ERC project, REScala was soon explored for distributed software, leading to SID-UP – an update algorithm for distributed dataflow graphs without global coordination.",
 		links: [{ label: "rescala-lang.com", href: "https://www.rescala-lang.com/" }],
 		publications: [
 			{ key: "Drechsler2014", venue: "OOPSLA 2014" },
