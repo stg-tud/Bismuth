@@ -36,10 +36,12 @@ import { libraries, manualPath, site } from "../../data/site";
 									<small>not yet available</small>
 								</span>
 							)}
-							<a class="lib-link" href={l.scaladoc}>
-								<span>Scaladoc ↗</span>
-								<small>API reference</small>
-							</a>
+							<div class="lib-link">
+								<span>Scaladoc</span>
+								<small class="platforms">
+									{l.scaladoc.map((d) => <a href={d.href}>{d.platform} ↗</a>)}
+								</small>
+							</div>
 							<a class="lib-link" href={l.maven}>
 								<span>Artifacts ↗</span>
 								<small><code>{l.artifact}</code></small>

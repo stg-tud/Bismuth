@@ -141,6 +141,9 @@ code { background: var(--indigo-100); padding: 0 0.25em; border-radius: 3px; }
 .lib-link > span { font-family: "Barlow", sans-serif; font-weight: 700; font-size: 1.1rem; }
 .lib-link small { font-size: 13px; text-align: right; }
 .lib-link small code { background: none; padding: 0; }
+.lib-link .platforms { display: flex; gap: 0.75rem; }
+.lib-link .platforms a { font-family: "Barlow", sans-serif; font-weight: 700; font-size: 14px; color: var(--indigo-900); }
+.lib-link .platforms a:hover { color: var(--indigo-600); }
 a.lib-link:hover { background: var(--indigo-200); color: var(--indigo-900); }
 .lib-link.primary { background: var(--yellow-400); color: var(--gray-950); }
 a.lib-link.primary:hover { background: var(--yellow-500); color: var(--gray-950); }

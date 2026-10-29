@@ -146,7 +146,18 @@ export const projects: Project[] = [
 ];
 
 const maven = (artifact: string) => `https://index.scala-lang.org/stg-tud/bismuth/artifacts/${artifact}`;
-const scaladoc = (artifact: string) => `https://javadoc.io/doc/de.tu-darmstadt.stg/${artifact}_3/latest/index.html`;
+const version = "0.39.0";
+/** published platforms, with the artifact suffix of the cross-built variant */
+const platforms = [
+	{ name: "JVM", suffix: "_3" },
+	{ name: "JS", suffix: "_sjs1_3" },
+	{ name: "Native", suffix: "_native0.5_3" },
+];
+const scaladoc = (artifact: string) =>
+	platforms.map((p) => ({
+		platform: p.name,
+		href: `https://javadoc.io/doc/de.tu-darmstadt.stg/${artifact}${p.suffix}/${version}/index.html`,
+	}));
 
 export interface Library {
 	id: string;
@@ -156,7 +167,8 @@ export interface Library {
 	/** article name in `manuals` */
 	manual?: string;
 	maven: string;
-	scaladoc: string;
+	/** one Scaladoc per platform, the APIs differ slightly between platforms */
+	scaladoc: { platform: string; href: string }[];
 }
 
 export const libraries: Library[] = [
