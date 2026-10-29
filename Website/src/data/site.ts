@@ -5,7 +5,7 @@ export const site = {
 	repo: "https://github.com/stg-tud/bismuth",
 };
 
-// Articles built by scitzen (see `just websiteDocs`), rendered at /documentation/<article>.html –
+// Articles built by scitzen (see `websitePrepare` in the Justfile), rendered at /documentation/<article>.html –
 // the same relative position as in the scitzen output, so their relative links keep working.
 export const manuals = ["Algebraic Replicated Data Types", "Reactive Programming Concepts"];
 export const manualPath = (article: string) => `/documentation/${encodeURIComponent(article)}.html`;

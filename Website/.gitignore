@@ -1,4 +1,3 @@
-dist/
 .astro/
 node_modules/
 public/examples/

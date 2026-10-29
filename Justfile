@@ -29,11 +29,6 @@ webappsPrepare:
 webappsServe: webappsPrepare
 	"Modules/exWeb/node_modules/vite/bin/vite.js" "Modules/exWeb/"
 
-webappsBundle: webappsPrepare
-	# plain multi-page `vite build`: dist/ contains the landing page, one html per
-	# case study, and shared chunks, i.e. a directly deployable folder
-	"Modules/exWeb/node_modules/vite/bin/vite.js" build "Modules/exWeb/" --outDir "target/dist"
-
 webappsWebviewNative:
 	# connect to a running vite dev server (start it with `just webappsServe`)
 	sbt 'webview / run "http://localhost:5173/"'
@@ -91,38 +86,26 @@ open-in-podman command="fish":
 	rm -rf target/out # need to delete out otherwise host sbt will not work
 
 
-# render scitzen articles with the minimal template that the website ingests (output: scitzen.out/web)
-websiteDocs:
+# collect website inputs: scitzen articles (rendered with the minimal template the website ingests) and the exWeb demos
+[private]
+websitePrepare: webappsPrepare
 	scitzen compile --html --html-template Website/scitzen-template.html.scim Modules/
-	rm -rf Website/public/documentation
+	rm -rf Website/public/documentation Website/public/examples
 	mkdir -p Website/public/documentation
-	if [ -d scitzen.out/web/resources ]; then cp -r scitzen.out/web/resources Website/public/documentation/; fi
-
-# copy the exWeb bundle into the website (run `just webappsBundle` before to update it)
-websiteExamples:
-	rm -rf Website/public/examples
-	if [ -d Modules/exWeb/target/dist ]; then cp -r Modules/exWeb/target/dist Website/public/examples; else echo "no exWeb bundle, run just webappsBundle"; fi
-
-websitePrepare: websiteDocs websiteExamples
+	cp -r scitzen.out/web/resources Website/public/documentation/
+	"Modules/exWeb/node_modules/vite/bin/vite.js" build "Modules/exWeb/" --outDir "$PWD/Website/public/examples" --emptyOutDir
 	cd Website && deno install --node-modules-dir=auto
 
 websiteServe: websitePrepare
 	cd Website && deno run -A npm:astro dev
 
-# static site in Website/dist
-websiteBuild: websitePrepare
-	cd Website && deno run -A npm:astro build
-
-# the `website` branch (checked out as worktree in website-deploy/) is published by github pages from its docs/ folder
-websiteWorktree:
+# build into the `website` branch (worktree in website-deploy/, published by github pages from docs/) and commit; push manually
+websiteDeploy: websitePrepare
 	if [ ! -e website-deploy ]; then \
 		if git show-ref --quiet refs/heads/website; then git worktree add website-deploy website; \
 		else git worktree add --orphan -b website website-deploy; fi; \
 	fi
-
-# build everything (including the demos) and commit the result to the website branch, push manually
-websiteDeploy: webappsBundle websiteBuild websiteWorktree
 	rm -rf website-deploy/docs
-	cp -r Website/dist website-deploy/docs
+	cd Website && deno run -A npm:astro build --outDir ../website-deploy/docs
 	touch website-deploy/docs/.nojekyll
 	cd website-deploy && git add -A docs && git commit -m "deploy website from main $(git -C .. rev-parse --short HEAD)"

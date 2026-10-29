@@ -21,7 +21,7 @@ function pick(html: string, re: RegExp): string | undefined {
 export function loadDoc(file: string): ScitzenDoc {
 	const full = path.join(scitzenOut, file);
 	if (!fs.existsSync(full)) {
-		throw new Error(`scitzen output missing: ${full} – run \`just websiteDocs\` first`);
+		throw new Error(`scitzen output missing: ${full} – run \`just websiteServe\` or \`just websiteDeploy\``);
 	}
 	const html = fs.readFileSync(full, "utf8");
 	const content = pick(html, /<main id="scitzen-content"[^>]*>([\s\S]*)<\/main>/);
