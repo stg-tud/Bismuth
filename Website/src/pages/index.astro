@@ -19,6 +19,21 @@ const byId = (id: string) => projects.find((p) => p.id === id)!;
 				implementations alongside the papers that formalize them, often with mechanizations in Lean. Bismuth is the
 				successor of <a href="https://www.rescala-lang.com/">REScala</a>.
 			</p>
+			<div class="summary">
+				<div class="summary-card">
+					<h3>Abstracted distribution</h3>
+					<p>Developers work with ordinary data types and reactive signals. The platform takes care of replication and synchronization.</p>
+				</div>
+				<div class="summary-card">
+					<h3>Local state, global consistency</h3>
+					<p>Each device works on its local state and synchronizes when it can. Coordination is only added where an application needs it.</p>
+				</div>
+				<div class="summary-card">
+					<h3>Correct by composition</h3>
+					<p>Replicated data types, reactive dataflow, and access control compose. Programs built from them inherit their guarantees.</p>
+				</div>
+			</div>
+			<h2 class="timeline-title">Research timeline</h2>
 			<div class="timeline">
 				{
 					projects.map((p) => (
