@@ -158,7 +158,7 @@ case class MultiPaxos[A](
     ) // .merge(afterRequests)
   }
 
-  def decision(using Participants): Agreement[Seq[A]] = Agreement.Decided(read)
+  def decision: Agreement[Seq[A]] = Agreement.Decided(read)
 
 //  override def toString: String =
 //      lazy val s = s"MultiPaxos(commitIndex: ${log.size}, slots: ${slots.size})"
@@ -173,7 +173,6 @@ object MultiPaxos:
         given Lattice[Map[Long, A]] =
             given Lattice[A] = Lattice.assertEquals
             Lattice.mapLattice
-        given Lattice[Long] = Math.max
         Lattice.derived
 
     given [A]: Bottom[MultiPaxos[A]] = Bottom.provide(empty)

@@ -4,7 +4,6 @@ import rdts.base.{Bottom, Lattice, ReplicaId, Uid}
 import rdts.protocols.Paxos.given
 import rdts.protocols.Util.*
 import rdts.protocols.Util.Agreement.*
-import rdts.protocols.Participants.participants
 import rdts.protocols.{Consensus, Participants}
 
 // Paxos PRDT

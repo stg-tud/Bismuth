@@ -16,7 +16,7 @@ case class ParallelMultiPaxos[A](
 
     // private helper functions
     private def currentPaxos: Option[Paxos[A]] = rounds.get(commitIndex + 1).orElse(rounds.get(commitIndex))
-    private def nextSlot(using replicaId: ReplicaId): Long = {
+    private def nextSlot: Long = {
       val numRounds = rounds.size
       rounds.get(numRounds - 1) match {
         case Some(paxos) => paxos.currentRound match {

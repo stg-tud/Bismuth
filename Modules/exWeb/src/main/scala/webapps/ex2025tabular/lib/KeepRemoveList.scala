@@ -18,7 +18,7 @@ import rdts.time.{Dot, Dots}
 case class KeepRemoveList[E] private (
     order: Epoch[GrowOnlyList[Dot]] = empty.order,
     payloads: Map[Dot, LastWriterWins[E]] = Map.empty,
-    flags: Map[Dot, EnableWinsFlag] = Map.empty
+    flags: Map[Dot, EnableWinsFlag]
 ) {
   private type C = KeepRemoveList[E]
 
