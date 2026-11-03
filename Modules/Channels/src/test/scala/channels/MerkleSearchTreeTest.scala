@@ -8,7 +8,7 @@ import org.scalacheck.Prop.forAll
 import org.scalacheck.{Arbitrary, Gen}
 import rdts.base.Uid
 import rdts.time.{CausalTime, Dot}
-import test.rdts.DataGenerator.{ExampleData, given}
+import rdts.DataGenerator.{ExampleData, given}
 
 class MerkleSearchTreeTest extends munit.ScalaCheckSuite {
 
