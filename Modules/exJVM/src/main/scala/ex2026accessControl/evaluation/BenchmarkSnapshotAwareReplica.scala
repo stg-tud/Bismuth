@@ -7,8 +7,8 @@ import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.filters.Filter
 import replication.authz.{AntiEntropy, ArdtEventGraph, Replica, SnapshotAwareReplica}
 
-/** [[BenchmarkReplica]] for [[SnapshotAwareReplica]]. Its [[backup]] and [[restore]] leave the snapshot taken by
-  * [[SnapshotAwareReplica.createSnapshot]] alone.
+/** [[BenchmarkReplica]] for [[replication.authz.SnapshotAwareReplica]]. Its [[backup]] and [[restore]] leave the snapshot taken by
+  * [[replication.authz.SnapshotAwareReplica.createSnapshot]] alone.
   */
 class BenchmarkSnapshotAwareReplica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
     genesis: Hash,

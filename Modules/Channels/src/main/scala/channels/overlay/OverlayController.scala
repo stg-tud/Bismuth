@@ -7,12 +7,12 @@ import rdts.base.Uid
 /** Identifies one live transport connection. Assigned by the driver (e.g. [[channels.BroadcastIO]]). */
 final case class ConnId(value: Long)
 
-/** Identifies one outgoing connection attempt. Chosen by the overlay when it emits [[OverlayAction.Dial]]. */
+/** Identifies one outgoing connection attempt. Chosen by the overlay when it emits [[OverlayController.OverlayAction.Dial]]. */
 final case class AttemptId(value: Long)
 
 /** Immutable overlay state machine.
   *
-  * The overlay is driven exclusively by [[OverlayEvent]]s and responds with [[OverlayAction]]s.
+  * The overlay is driven exclusively by [[OverlayController.OverlayEvent]]s and responds with [[OverlayController.OverlayAction]]s.
   * It never observes time, transports, or connection objects directly: connections are referred to by
   * [[ConnId]]s that the driver assigns, and outgoing attempts by [[AttemptId]]s the overlay assigns.
   * Every connection reported to the overlay (`Incoming`, `Established`) is owned by it until it emits `Close`

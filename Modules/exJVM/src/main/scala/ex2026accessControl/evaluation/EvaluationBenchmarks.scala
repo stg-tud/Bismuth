@@ -135,7 +135,7 @@ class EvaluationBenchmarks {
     HashDag.materialize(state.hashDag)
 }
 
-/** Holds an [[ArdtEventGraph]] built by [[TraceGeneration.generateDelegationHierarchyEventGraph]]: a fixed set of
+/** Holds an [[replication.authz.ArdtEventGraph]] built by [[TraceGeneration.generateDelegationHierarchyEventGraph]]: a fixed set of
   * 13 replicas in a two-level delegation hierarchy, writing in two phases.
   */
 @State(Scope.Benchmark)
