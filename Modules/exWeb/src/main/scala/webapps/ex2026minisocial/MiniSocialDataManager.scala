@@ -5,7 +5,7 @@ import rdts.base.Lattice
 import rdts.syntax.DeltaBuffer
 import reactives.default.*
 
-/** Wraps a [[BroadcastIO]] such that a chosen CRDT (`MiniSocial`) can be hooked up to a reactive UI,
+/** Wraps a [[channels.BroadcastIO]] such that a chosen CRDT (`MiniSocial`) can be hooked up to a reactive UI,
   * broadcasting local deltas and merging received ones.
   */
 object MiniSocialDataManager {

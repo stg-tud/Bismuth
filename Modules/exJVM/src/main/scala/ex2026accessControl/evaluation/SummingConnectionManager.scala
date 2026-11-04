@@ -4,7 +4,7 @@ import channels.connection.MessageBuffer
 import crypto.PublicIdentity
 import replication.sync.ConnectionManager
 
-/** A [[ConnectionManager]] without an actual network layer, which does nothing but sum up the messages handed
+/** A [[replication.sync.ConnectionManager]] without an actual network layer, which does nothing but sum up the messages handed
   * to it: their total number, as well as their total size in bytes. Used to benchmark the sending side of
   * anti-entropy (i.e. looking up, filtering and encoding what is to be sent) without paying for, or being
   * distorted by, any actual I/O.

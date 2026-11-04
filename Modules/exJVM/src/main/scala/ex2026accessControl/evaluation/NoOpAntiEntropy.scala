@@ -5,8 +5,8 @@ import crypto.Commitment.RevealedValue
 import crypto.{Hash, PublicIdentity}
 import replication.authz.{AntiEntropy, Replica}
 
-/** An [[AntiEntropy]] subclass that does nothing when any of its methods are invoked. Used to construct a
-  * [[Replica]] for evaluation purposes without an actual network layer.
+/** An [[replication.authz.AntiEntropy]] subclass that does nothing when any of its methods are invoked. Used to construct a
+  * [[replication.authz.Replica]] for evaluation purposes without an actual network layer.
   */
 class NoOpAntiEntropy(replica: Replica[?]) extends AntiEntropy(replica, _ => ???, _ => ???) {
   override def listenAddress: Option[(String, Int)]  = None

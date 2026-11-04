@@ -9,9 +9,9 @@ import replication.JsoniterCodecsJvm.ardtEventCodec
 import replication.authz.ArdtEvent.Payload.{Capability, DeltaCommitment, Revocation}
 import replication.authz.{ArdtEvent, ArdtEventGraph}
 
-/** Helpers for directly constructing and inserting signed [[ArdtEvent]]s, without going through
+/** Helpers for directly constructing and inserting signed [[replication.authz.ArdtEvent]]s, without going through
   * [[replication.authz.Replica]] (which requires an actual network layer to disseminate events).
-  * Used to assemble [[ArdtEventGraph]]s for evaluation purposes.
+  * Used to assemble [[replication.authz.ArdtEventGraph]]s for evaluation purposes.
   */
 object EventGraphBuilder {
 

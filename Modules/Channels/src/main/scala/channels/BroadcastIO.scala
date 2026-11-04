@@ -73,10 +73,10 @@ object BroadcastIO {
 
 /** Driver connecting transports, an overlay state machine, and a broadcast state machine.
   *
-  * - the overlay ([[OverlayController]]) decides which connections exist and which peers are neighbors
-  * - the broadcast protocol ([[BroadcastProtocol]]) decides what to send to which neighbor
+  * - the overlay ([[channels.overlay.OverlayController]]) decides which connections exist and which peers are neighbors
+  * - the broadcast protocol ([[channels.broadcast.BroadcastProtocol]]) decides what to send to which neighbor
   * - this class only translates: transport callbacks become overlay events, actions become transport operations,
-  *   timer requests are scheduled on [[Timers]], and the overlay's `NeighborUp`/`NeighborDown` are passed on to the
+  *   timer requests are scheduled on [[channels.Timers]], and the overlay's `NeighborUp`/`NeighborDown` are passed on to the
   *   broadcast protocol. It makes no protocol decisions of its own.
   *
   * All state machine steps run one at a time under `lock`; steps triggered while another step is running
