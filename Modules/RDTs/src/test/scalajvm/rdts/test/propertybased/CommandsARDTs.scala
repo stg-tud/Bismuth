@@ -45,8 +45,8 @@ trait CommandsARDTs[LocalState: Lattice] extends Commands:
     def genIdSubset(state: State): Gen[Set[ReplicaId]] =
         val ids = state.keys.toList
         for
-          amount <- Gen.choose(1, ids.size)
-          elements <- Gen.pick(amount, ids)
+            amount   <- Gen.choose(1, ids.size)
+            elements <- Gen.pick(amount, ids)
         yield elements.toSet
 
     trait ACommand(id: ReplicaId) extends Command:

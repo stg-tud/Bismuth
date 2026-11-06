@@ -163,53 +163,54 @@ class KeyValueReplica(
       }
 
     def maybeAnswerClientFromCache(): Unit =
-      // check if we are the leader and have a heartbeat quorum
-      log("checking if we are the leader and have a heartbeat quorum")
-      if !commitReads && state.leader.contains(localUid.uid) && connInf.state.hasQuorum(
-            timeoutThreshold,
-            System.currentTimeMillis()
-          )
-      then {
-        log("commencing to answer unanswered read requests from cache")
-        var readOpt = Option(client.readQueue.poll())
+        // check if we are the leader and have a heartbeat quorum
+        log("checking if we are the leader and have a heartbeat quorum")
+        if !commitReads && state.leader.contains(localUid.uid) && connInf.state.hasQuorum(
+              timeoutThreshold,
+              System.currentTimeMillis()
+            )
+        then {
+          log("commencing to answer unanswered read requests from cache")
+          var readOpt = Option(client.readQueue.poll())
 
-        while readOpt.nonEmpty do
-            readOpt match {
-              case Some(_, ClientCommRead.ReadReq(id, op)) =>
-                log("answering unanswered read request from cache")
-                val response = performOp(op)
-                client.publishRead(ClientCommRead.ReadRes(id, response))
-                readOpt = Option(client.readQueue.poll())
-              case None => ()
-            }
-      } else
-          if !state.leader.contains(localUid.uid) then
-              log("not leader, cancel answering unanswered read requests from cache")
-          else if !connInf.state.hasQuorum(
-                timeoutThreshold,
-                System.currentTimeMillis()
-              )
-          then
-              log("I assume that I am the leader but I don't have a hearbeat quorum")
+          while readOpt.nonEmpty do
+              readOpt match {
+                case Some(_, ClientCommRead.ReadReq(id, op)) =>
+                  log("answering unanswered read request from cache")
+                  val response = performOp(op)
+                  client.publishRead(ClientCommRead.ReadRes(id, response))
+                  readOpt = Option(client.readQueue.poll())
+                case None => ()
+              }
+        } else
+            if !state.leader.contains(localUid.uid) then
+                log("not leader, cancel answering unanswered read requests from cache")
+            else if !connInf.state.hasQuorum(
+                  timeoutThreshold,
+                  System.currentTimeMillis()
+                )
+            then
+                log("I assume that I am the leader but I don't have a hearbeat quorum")
 
     private def maybeAnswerClientFromLog(start: Long, state: ClusterState): Unit = {
-        val newEntries =  state.readSince(start)
-        if newEntries.size > 0 then {
-          log(s"log(${state.read.size} entries): answering since ($start), found ${newEntries.size} new entries")
-          // println(s"${pprint.tokenize(newState).mkString("")}")
-          for req @ ClientCommWrite.WriteReq(id, op) <- newEntries do {
-            val result: String = performOp(op)
+      val newEntries = state.readSince(start)
+      if newEntries.size > 0 then {
+        log(s"log(${state.read.size} entries): answering since ($start), found ${newEntries.size} new entries")
+        // println(s"${pprint.tokenize(newState).mkString("")}")
+        for req @ ClientCommWrite.WriteReq(id, op) <- newEntries do {
+          val result: String = performOp(op)
 
-            // println(s"queue size is: ${client.state.requests.size} / ${client.state.responses.size} (${distinctClients.size} clients)")
-            // only leader is allowed to actually respond to requests
-            if state.leader.contains(localUid.uid) then {
-              log(s"answering request $id, log is (${state.read.size}):[${state.read.map(_.show).zip(Range(0,state.read.size)).mkString(",")}]")
-              client.publishWrite(ClientCommWrite.WriteRes(id, result))
-            }
+          // println(s"queue size is: ${client.state.requests.size} / ${client.state.responses.size} (${distinctClients.size} clients)")
+          // only leader is allowed to actually respond to requests
+          if state.leader.contains(localUid.uid) then {
+            log(
+              s"answering request $id, log is (${state.read.size}):[${state.read.map(_.show).zip(Range(0, state.read.size)).mkString(",")}]"
+            )
+            client.publishWrite(ClientCommWrite.WriteRes(id, result))
           }
         }
       }
-
+    }
 
   }
 

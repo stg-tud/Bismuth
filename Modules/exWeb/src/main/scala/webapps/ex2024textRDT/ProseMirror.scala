@@ -35,7 +35,7 @@ final class ProseMirror[F <: FugueFactory](
   ): @unchecked
 
   def dispatchTransaction(tr: Transaction): Unit = {
-    tr.steps.foreach(step => {
+    tr.steps.foreach { step =>
       val stepJson = step
         .toJSON()
         .asInstanceOf[scalajs.js.Dynamic]
@@ -50,7 +50,7 @@ final class ProseMirror[F <: FugueFactory](
             tr.docs(0).textBetween(0, replaceStep.to)
 
           val start = textBefore.size
-          val end = textWithin.size
+          val end   = textWithin.size
 
           val text = replaceStep.slice.content
             .textBetween(
@@ -58,28 +58,25 @@ final class ProseMirror[F <: FugueFactory](
               replaceStep.slice.size
             )
 
-          for (i <- end - 1 to start by -1) {
-            replica.delete(i)
-          }
+          for i <- end - 1 to start by -1 do
+              replica.delete(i)
 
-          for ((char, i) <- text.zipWithIndex) {
-            replica.insert(start + i, char)
-          }
+          for (char, i) <- text.zipWithIndex do
+              replica.insert(start + i, char)
         case unknown =>
           println("unknown case")
       }
-    })
+    }
     state = state.applyTransaction(tr)
     view.updateState(state)
     refresh()
   }
 
   /** Replaces the editor contents with `text`, keeping the replica in sync. */
-  def setText(text: String): Unit = {
+  def setText(text: String): Unit =
     if text.nonEmpty then {
       dispatchTransaction(state.tr.insertText(text, 0))
     }
-  }
 
   refresh()
 
@@ -111,7 +108,7 @@ final class ProseMirror[F <: FugueFactory](
     refresh()
   }
 
-  private def refresh(): Unit = {
+  private def refresh(): Unit =
     if showTree then {
       val root = replica.state.rootTreeNode.buildTree()
       plotTree(s"#editor${replica.state.replicaId}-graph", root)
@@ -142,41 +139,38 @@ final class ProseMirror[F <: FugueFactory](
         .querySelector(s"#editor${replica.state.replicaId}-graph-avl")
         .innerHTML = "";
     }
-  }
 
   private def ttComplex(
       treeNode: AVLTreeNode[ComplexAVLTreeNode]
-  ): String = {
+  ): String =
     s"${treeNode.value._values match {
         case null  => "⌫".repeat(treeNode.value.to - treeNode.value.offset + 1)
         case value => treeNode.value.values.mkString
       }} ${treeNode.value.rid match {
         case null => "root"
-        case rid =>
+        case rid  =>
           s"${rid}#${treeNode.value.counter}.${treeNode.value.offset}-${treeNode.value.to}"
       }}" + " size: " + treeNode.deepSize
-  }
 
   private def buildTreeComplex(
       treeNode: AVLTreeNode[ComplexAVLTreeNode],
       prefix: String
-  ): MyD3TreeNode = {
+  ): MyD3TreeNode =
     MyD3TreeNode(
       ttComplex(treeNode),
       treeNode.left match {
-        case null => Array()
+        case null  => Array()
         case value =>
           Array(buildTreeComplex(value, prefix + ttComplex(treeNode) + "/"))
       },
       treeNode.right match {
-        case null => Array()
+        case null  => Array()
         case value =>
           Array(buildTreeComplex(value, prefix + ttComplex(treeNode) + "/"))
       }
     )
-  }
 
-  private def tt(treeNode: AVLTreeNode[SimpleAVLTreeNode]): String = {
+  private def tt(treeNode: AVLTreeNode[SimpleAVLTreeNode]): String =
     (treeNode.value.value match {
       case null  => "⌫"
       case value => value.toString
@@ -184,12 +178,11 @@ final class ProseMirror[F <: FugueFactory](
       case null  => "root"
       case value => s"${value.rid}#${value.counter}"
     }) + " size: " + treeNode.deepSize
-  }
 
   private def buildTree(
       treeNode: AVLTreeNode[SimpleAVLTreeNode],
       prefix: String
-  ): MyD3TreeNode = {
+  ): MyD3TreeNode =
     MyD3TreeNode(
       tt(treeNode),
       treeNode.left match {
@@ -201,5 +194,4 @@ final class ProseMirror[F <: FugueFactory](
         case value => Array(buildTree(value, prefix + tt(treeNode) + "/"))
       }
     )
-  }
 }

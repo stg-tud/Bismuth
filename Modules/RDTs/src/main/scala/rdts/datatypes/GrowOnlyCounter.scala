@@ -18,8 +18,8 @@ object GrowOnlyCounter {
   given bottom: Bottom[GrowOnlyCounter] = Bottom.provide(zero)
 
   given lattice: Lattice[GrowOnlyCounter] =
-    given Lattice[Int] = math.max
-    Lattice.derived
+      given Lattice[Int] = math.max
+      Lattice.derived
 
   given decompose: Decompose[GrowOnlyCounter] =
       given Decompose[Int] = Decompose.atomic

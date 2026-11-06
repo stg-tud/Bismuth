@@ -19,9 +19,8 @@ object SimpleAVLTreeNode {
 
       def id(): SimpleID | Null = treeNode.value.id
 
-      def value(): Char | Null = {
+      def value(): Char | Null =
         treeNode.value.value
-      }
 
       def leftChildren(): Iterator[AVLTreeNode[SimpleAVLTreeNode]] =
         treeNode.value.leftChildrenBuffer match {
@@ -41,7 +40,7 @@ object SimpleAVLTreeNode {
         val fastDescendant =
           treeNode.value.leftmostDescendantCache.tree().descendant
         myAssert(fastDescendant.eq(treeNode.value.leftChildrenBuffer match {
-          case null => treeNode
+          case null  => treeNode
           case value =>
             if value.isEmpty then {
               treeNode
@@ -57,7 +56,7 @@ object SimpleAVLTreeNode {
           treeNode.value.rightmostDescendantCache.tree().descendant
         myAssert(
           fastDescendant.eq(treeNode.value.rightChildrenBuffer match {
-            case null => treeNode
+            case null  => treeNode
             case value =>
               if value.isEmpty then {
                 treeNode
@@ -66,7 +65,7 @@ object SimpleAVLTreeNode {
               }
           }),
           s"got ${fastDescendant.value.id} expected ${(treeNode.value.rightChildrenBuffer match {
-              case null => treeNode
+              case null  => treeNode
               case value =>
                 if value.isEmpty then {
                   treeNode

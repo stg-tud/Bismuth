@@ -10,8 +10,8 @@ object mod {
   @js.native
   open class Transform protected () extends js.Object {
     def delete(from: Double, to: Double): this.type = js.native
-    val docs: js.Array[Node] = js.native
-    val steps: js.Array[Step] = js.native
+    val docs: js.Array[Node]                        = js.native
+    val steps: js.Array[Step]                       = js.native
   }
 
   @JSImport("prosemirror-transform", "Step")
@@ -24,7 +24,7 @@ object mod {
   @js.native
   open class ReplaceStep_ protected () extends Step {
     val from: Double = js.native
-    val to: Double = js.native
+    val to: Double   = js.native
     val slice: Slice = js.native
   }
 }

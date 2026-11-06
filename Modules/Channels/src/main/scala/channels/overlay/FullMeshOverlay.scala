@@ -127,7 +127,7 @@ case class FullMeshOverlay(
     }
 
   private def activate(peer: PeerConnectInfo, conn: Connection): (FullMeshOverlay, List[OverlayAction]) = {
-    val remembered     = rememberPeer(peer).copy(pending = pending - conn)
+    val remembered         = rememberPeer(peer).copy(pending = pending - conn)
     def use(c: Connection) = remembered.copy(active = remembered.active.updated(peer.uid, c))
     active.get(peer.uid) match
         case None                               => (use(conn), List(OverlayAction.NeighborUp(peer.uid)))

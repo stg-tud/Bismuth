@@ -8,27 +8,25 @@ import scala.math.Ordered.orderingToOrdered
 
 given simpleAVLTreeNodeSize: AVLTreeNodeValueSize[SimpleAVLTreeNode] with {
   extension (node: SimpleAVLTreeNode) {
-    def size: Int = {
+    def size: Int =
       node.value match {
         case null  => 0
         case value => 1
       }
-    }
   }
 }
 
 object SimpleAVLFugueFactory {
 
   given simpleAVLFugueFactory: FugueFactory with {
-    type ID = SimpleID
-    type N = AVLTreeNode[SimpleAVLTreeNode]
-    type NC = SimpleAVLTreeNode.simpleAVLTreeNode.type
-    type F = SimpleAVLFugueFactory
+    type ID  = SimpleID
+    type N   = AVLTreeNode[SimpleAVLTreeNode]
+    type NC  = SimpleAVLTreeNode.simpleAVLTreeNode.type
+    type F   = SimpleAVLFugueFactory
     type MSG = Message[ID]
 
-    def create(replicaId: RID): SimpleAVLFugueFactory = {
+    def create(replicaId: RID): SimpleAVLFugueFactory =
       SimpleAVLFugueFactory(replicaId)
-    }
 
     given treeNodeContext: NC = SimpleAVLTreeNode.simpleAVLTreeNode
 
@@ -41,7 +39,7 @@ object SimpleAVLFugueFactory {
             factory.atVisibleIndex(i - 1)
           }
         val firstRightChild = leftOrigin.firstRightChild()
-        val side = if firstRightChild == null then {
+        val side            = if firstRightChild == null then {
           Side.Right
         } else {
           Side.Left
@@ -61,13 +59,12 @@ object SimpleAVLFugueFactory {
         )
       }
 
-      def handleRemoteMessage(message: MSG, editor: Editory): Unit = {
+      def handleRemoteMessage(message: MSG, editor: Editory): Unit =
         message match {
           case Message.Insert(id, value, parent, side) =>
             deliveringRemoteInsert(editor, id, value, parent, side)
           case Message.Delete(id) => deliveringRemoteDelete(editor, id)
         }
-      }
 
       private def deliveringRemoteDelete(editor: Editory, id: ID): Unit = {
         val deleted = deliveringLocalDelete(id)
@@ -105,7 +102,7 @@ object SimpleAVLFugueFactory {
           id
         )
         val deleted = treeNode.value() != null
-        val _ = factory.delete(treeNode)
+        val _       = factory.delete(treeNode)
         deleted
       }
 
@@ -127,7 +124,7 @@ object SimpleAVLFugueFactory {
       override def dupe(): SimpleAVLFugueFactory = factory
 
       override def createRootNode(): AVLTreeNode[SimpleAVLTreeNode] = {
-        val node = AVLTreeNode[text_rdt.SimpleAVLTreeNode](self => {
+        val node = AVLTreeNode[text_rdt.SimpleAVLTreeNode] { self =>
           val leftmostDescendantCacheRoot =
             AVL2Tree[AVLTreeNode[SimpleAVLTreeNode]](null, self)
           val leftmostDescendantCacheNode =
@@ -158,7 +155,7 @@ object SimpleAVLFugueFactory {
             leftmostDescendantCacheNode,
             rightmostDescendantCacheNode
           )
-        })(using
+        }(using
           simpleAVLTreeNodeSize
             .asInstanceOf[AVLTreeNodeValueSize[SimpleAVLTreeNode]]
         )
@@ -215,9 +212,9 @@ object SimpleAVLFugueFactory {
           if i == -1 then {
             i = parent.rightChildren().length
           }
-          if (
-            i == 0 || parent.value.rightChildrenBuffer == null || parent.value.rightChildrenBuffer.nn.isEmpty
-           ) then {
+          if
+              i == 0 || parent.value.rightChildrenBuffer == null || parent.value.rightChildrenBuffer.nn.isEmpty
+          then {
             factory.avlTree.insertBasedOn(parent, node, Side.Right)
           } else {
             val target = parent.value.rightChildrenBuffer.nn(i - 1)
@@ -259,9 +256,9 @@ object SimpleAVLFugueFactory {
           if i == -1 then {
             i = parent.leftChildren().length
           }
-          if (
-            (parent.value.leftChildrenBuffer != null && i == parent.value.leftChildrenBuffer.nn.size) || parent.value.leftChildrenBuffer == null || parent.value.leftChildrenBuffer.nn.isEmpty
-           ) then {
+          if
+              (parent.value.leftChildrenBuffer != null && i == parent.value.leftChildrenBuffer.nn.size) || parent.value.leftChildrenBuffer == null || parent.value.leftChildrenBuffer.nn.isEmpty
+          then {
             factory.avlTree.insertBasedOn(parent, node, Side.Left)
           } else {
             val target = parent.value.leftChildrenBuffer.nn(i)
@@ -308,9 +305,8 @@ object SimpleAVLFugueFactory {
 
       override def get(
           id: SimpleID | Null
-      ): AVLTreeNode[SimpleAVLTreeNode] = {
+      ): AVLTreeNode[SimpleAVLTreeNode] =
         factory.tree(id)
-      }
     }
   }
 }

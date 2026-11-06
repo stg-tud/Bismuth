@@ -70,7 +70,7 @@ object MyRealWorldBenchmark {
     }
   }
 
-  private given fixtureOperationsCodec: JsonValueCodec[Seq[FixtureOperation]] =
+  private given fixtureOperationsCodec: JsonValueCodec[Seq[FixtureOperation]] = {
     new JsonValueCodec[Seq[FixtureOperation]] {
 
       override def decodeValue(
@@ -124,8 +124,9 @@ object MyRealWorldBenchmark {
       override def nullValue: Seq[FixtureOperation] =
         null.asInstanceOf[Seq[FixtureOperation]]
     }
+  }
 
-  val finalString: String = {
+  val finalString: String =
     readFromString[String](
       Source
         .fromInputStream(
@@ -133,9 +134,8 @@ object MyRealWorldBenchmark {
         )
         .mkString
     )
-  }
 
-  val operations: ArrayBuffer[FixtureOperation] = {
+  val operations: ArrayBuffer[FixtureOperation] =
     ArrayBuffer.from(
       readFromString[Seq[FixtureOperation]](
         Source
@@ -145,7 +145,6 @@ object MyRealWorldBenchmark {
           .mkString
       )
     )
-  }
 }
 
 object Counters {
@@ -161,7 +160,7 @@ object Counters {
 @Fork(jvmArgsAppend = Array("-Dtextrdt.assertions=disabled"))
 class MyRealWorldBenchmarkLocal {
 
-  import Counters._
+  import Counters.*
 
   @Param(Array("false"))
   var shouldMeasureMemory: Boolean = uninitialized
@@ -189,21 +188,21 @@ class MyRealWorldBenchmarkLocal {
       size: Int
   ): Replica[
     text_rdt.SimpleFugueFactory.simpleFugueFactory.type |
-      text_rdt.ComplexFugueFactory.complexFugueFactory.type |
-      text_rdt.SimpleAVLFugueFactory.simpleAVLFugueFactory.type |
-      ComplexAVLFugueFactory.complexAVLFugueFactory.type
+    text_rdt.ComplexFugueFactory.complexFugueFactory.type |
+    text_rdt.SimpleAVLFugueFactory.simpleAVLFugueFactory.type |
+    ComplexAVLFugueFactory.complexAVLFugueFactory.type
   ] = {
     val replicaStateA = ReplicaState[
       SimpleFugueFactory.simpleFugueFactory.type |
-        ComplexFugueFactory.complexFugueFactory.type |
-        SimpleAVLFugueFactory.simpleAVLFugueFactory.type |
-        ComplexAVLFugueFactory.complexAVLFugueFactory.type
+      ComplexFugueFactory.complexFugueFactory.type |
+      SimpleAVLFugueFactory.simpleAVLFugueFactory.type |
+      ComplexAVLFugueFactory.complexAVLFugueFactory.type
     ](
       "A"
     )(using
       factoryConstructor match {
-        case "simple"  => SimpleFugueFactory.simpleFugueFactory
-        case "complex" => ComplexFugueFactory.complexFugueFactory
+        case "simple"    => SimpleFugueFactory.simpleFugueFactory
+        case "complex"   => ComplexFugueFactory.complexFugueFactory
         case "simpleavl" =>
           SimpleAVLFugueFactory.simpleAVLFugueFactory
         case "complexavl" =>
@@ -212,9 +211,9 @@ class MyRealWorldBenchmarkLocal {
     )
     val replicaA = Replica[
       SimpleFugueFactory.simpleFugueFactory.type |
-        ComplexFugueFactory.complexFugueFactory.type |
-        SimpleAVLFugueFactory.simpleAVLFugueFactory.type |
-        ComplexAVLFugueFactory.complexAVLFugueFactory.type
+      ComplexFugueFactory.complexFugueFactory.type |
+      SimpleAVLFugueFactory.simpleAVLFugueFactory.type |
+      ComplexAVLFugueFactory.complexAVLFugueFactory.type
     ](replicaStateA, StringEditory())
     MyRealWorldBenchmark.operations.view
       .slice(0, size)
@@ -237,7 +236,7 @@ class MyRealWorldBenchmarkLocal {
 )
 class MyRealWorldBenchmarkLargeLocal {
 
-  import Counters._
+  import Counters.*
 
   @Param(Array("false"))
   var shouldMeasureMemory: Boolean = uninitialized
@@ -263,21 +262,21 @@ class MyRealWorldBenchmarkLargeLocal {
   def localMethod(
   ): Replica[
     text_rdt.SimpleFugueFactory.simpleFugueFactory.type |
-      text_rdt.ComplexFugueFactory.complexFugueFactory.type |
-      text_rdt.SimpleAVLFugueFactory.simpleAVLFugueFactory.type |
-      ComplexAVLFugueFactory.complexAVLFugueFactory.type
+    text_rdt.ComplexFugueFactory.complexFugueFactory.type |
+    text_rdt.SimpleAVLFugueFactory.simpleAVLFugueFactory.type |
+    ComplexAVLFugueFactory.complexAVLFugueFactory.type
   ] = {
     val replicaStateA = ReplicaState[
       SimpleFugueFactory.simpleFugueFactory.type |
-        ComplexFugueFactory.complexFugueFactory.type |
-        SimpleAVLFugueFactory.simpleAVLFugueFactory.type |
-        ComplexAVLFugueFactory.complexAVLFugueFactory.type
+      ComplexFugueFactory.complexFugueFactory.type |
+      SimpleAVLFugueFactory.simpleAVLFugueFactory.type |
+      ComplexAVLFugueFactory.complexAVLFugueFactory.type
     ](
       "A"
     )(using
       factoryConstructor match {
-        case "simple"  => SimpleFugueFactory.simpleFugueFactory
-        case "complex" => ComplexFugueFactory.complexFugueFactory
+        case "simple"    => SimpleFugueFactory.simpleFugueFactory
+        case "complex"   => ComplexFugueFactory.complexFugueFactory
         case "simpleavl" =>
           SimpleAVLFugueFactory.simpleAVLFugueFactory
         case "complexavl" =>
@@ -286,12 +285,12 @@ class MyRealWorldBenchmarkLargeLocal {
     )
     val replicaA = Replica[
       SimpleFugueFactory.simpleFugueFactory.type |
-        ComplexFugueFactory.complexFugueFactory.type |
-        SimpleAVLFugueFactory.simpleAVLFugueFactory.type |
-        ComplexAVLFugueFactory.complexAVLFugueFactory.type
+      ComplexFugueFactory.complexFugueFactory.type |
+      SimpleAVLFugueFactory.simpleAVLFugueFactory.type |
+      ComplexAVLFugueFactory.complexAVLFugueFactory.type
     ](replicaStateA, StringEditory())
-    var index = 0
-    val operations = MyRealWorldBenchmark.operations
+    var index          = 0
+    val operations     = MyRealWorldBenchmark.operations
     val operationsSize = operations.size
     while index < count do {
       var i = 0
@@ -322,7 +321,7 @@ class MyRealWorldBenchmarkLargeLocal {
 @Fork(jvmArgsAppend = Array("-Dtextrdt.assertions=disabled", "-Xmx8G"))
 class MyRealWorldBenchmarkLargeRemote {
 
-  import Counters._
+  import Counters.*
 
   @Param(Array("false"))
   var shouldMeasureMemory: Boolean = uninitialized
@@ -335,34 +334,33 @@ class MyRealWorldBenchmarkLargeRemote {
 
   var replicaWithOperationsApplied: Replica[
     text_rdt.SimpleFugueFactory.simpleFugueFactory.type |
-      text_rdt.ComplexFugueFactory.complexFugueFactory.type |
-      text_rdt.SimpleAVLFugueFactory.simpleAVLFugueFactory.type |
-      ComplexAVLFugueFactory.complexAVLFugueFactory.type
+    text_rdt.ComplexFugueFactory.complexFugueFactory.type |
+    text_rdt.SimpleAVLFugueFactory.simpleAVLFugueFactory.type |
+    ComplexAVLFugueFactory.complexAVLFugueFactory.type
   ] = uninitialized
 
   @Setup(Level.Trial)
-  def setupReplicaWithOperationsApplied(): Unit = {
+  def setupReplicaWithOperationsApplied(): Unit =
     replicaWithOperationsApplied = localMethod()
-  }
 
   private def localMethod(): Replica[
     text_rdt.SimpleFugueFactory.simpleFugueFactory.type |
-      text_rdt.ComplexFugueFactory.complexFugueFactory.type |
-      text_rdt.SimpleAVLFugueFactory.simpleAVLFugueFactory.type |
-      ComplexAVLFugueFactory.complexAVLFugueFactory.type
+    text_rdt.ComplexFugueFactory.complexFugueFactory.type |
+    text_rdt.SimpleAVLFugueFactory.simpleAVLFugueFactory.type |
+    ComplexAVLFugueFactory.complexAVLFugueFactory.type
   ] = {
 
     val replicaStateA = ReplicaState[
       SimpleFugueFactory.simpleFugueFactory.type |
-        ComplexFugueFactory.complexFugueFactory.type |
-        SimpleAVLFugueFactory.simpleAVLFugueFactory.type |
-        ComplexAVLFugueFactory.complexAVLFugueFactory.type
+      ComplexFugueFactory.complexFugueFactory.type |
+      SimpleAVLFugueFactory.simpleAVLFugueFactory.type |
+      ComplexAVLFugueFactory.complexAVLFugueFactory.type
     ](
       "A"
     )(using
       factoryConstructor match {
-        case "simple"  => SimpleFugueFactory.simpleFugueFactory
-        case "complex" => ComplexFugueFactory.complexFugueFactory
+        case "simple"    => SimpleFugueFactory.simpleFugueFactory
+        case "complex"   => ComplexFugueFactory.complexFugueFactory
         case "simpleavl" =>
           SimpleAVLFugueFactory.simpleAVLFugueFactory
         case "complexavl" =>
@@ -371,11 +369,11 @@ class MyRealWorldBenchmarkLargeRemote {
     )
     val replicaA = Replica[
       SimpleFugueFactory.simpleFugueFactory.type |
-        ComplexFugueFactory.complexFugueFactory.type |
-        SimpleAVLFugueFactory.simpleAVLFugueFactory.type |
-        ComplexAVLFugueFactory.complexAVLFugueFactory.type
+      ComplexFugueFactory.complexFugueFactory.type |
+      SimpleAVLFugueFactory.simpleAVLFugueFactory.type |
+      ComplexAVLFugueFactory.complexAVLFugueFactory.type
     ](replicaStateA, StringEditory())
-    (0 until count).foreach(index => {
+    (0 until count).foreach(index =>
       MyRealWorldBenchmark.operations.view
         .foreach {
           case FixtureOperation.Insert(position, character) =>
@@ -388,7 +386,7 @@ class MyRealWorldBenchmarkLargeRemote {
               index * 104852 + position
             )
         }
-    })
+    )
     if shouldMeasureMemory then {
       assert(replicaA.text() == MyRealWorldBenchmark.finalString * count)
     }
@@ -398,15 +396,15 @@ class MyRealWorldBenchmarkLargeRemote {
   def remoteMethod(): Option[Replica[?]] = {
     val replicaStateA = ReplicaState[
       SimpleFugueFactory.simpleFugueFactory.type |
-        ComplexFugueFactory.complexFugueFactory.type |
-        SimpleAVLFugueFactory.simpleAVLFugueFactory.type |
-        ComplexAVLFugueFactory.complexAVLFugueFactory.type
+      ComplexFugueFactory.complexFugueFactory.type |
+      SimpleAVLFugueFactory.simpleAVLFugueFactory.type |
+      ComplexAVLFugueFactory.complexAVLFugueFactory.type
     ](
       "B"
     )(using
       factoryConstructor match {
-        case "simple"  => SimpleFugueFactory.simpleFugueFactory
-        case "complex" => ComplexFugueFactory.complexFugueFactory
+        case "simple"    => SimpleFugueFactory.simpleFugueFactory
+        case "complex"   => ComplexFugueFactory.complexFugueFactory
         case "simpleavl" =>
           SimpleAVLFugueFactory.simpleAVLFugueFactory
         case "complexavl" =>
@@ -415,9 +413,9 @@ class MyRealWorldBenchmarkLargeRemote {
     )
     val replicaA = Replica[
       SimpleFugueFactory.simpleFugueFactory.type |
-        ComplexFugueFactory.complexFugueFactory.type |
-        SimpleAVLFugueFactory.simpleAVLFugueFactory.type |
-        ComplexAVLFugueFactory.complexAVLFugueFactory.type
+      ComplexFugueFactory.complexFugueFactory.type |
+      SimpleAVLFugueFactory.simpleAVLFugueFactory.type |
+      ComplexAVLFugueFactory.complexAVLFugueFactory.type
     ](replicaStateA, StringEditory())
     replicaA.syncFrom(
       replicaWithOperationsApplied.state
@@ -445,7 +443,7 @@ class MyRealWorldBenchmarkLargeRemote {
 @Fork(jvmArgsAppend = Array("-Dtextrdt.assertions=disabled"))
 class MyTerribleBenchmarkSequentialInserts {
 
-  import Counters._
+  import Counters.*
 
   @Param(Array("false"))
   var shouldMeasureMemory: Boolean = uninitialized
@@ -479,15 +477,15 @@ class MyTerribleBenchmarkSequentialInserts {
     val replicaStateA =
       ReplicaState[
         SimpleFugueFactory.simpleFugueFactory.type |
-          ComplexFugueFactory.complexFugueFactory.type |
-          SimpleAVLFugueFactory.simpleAVLFugueFactory.type |
-          ComplexAVLFugueFactory.complexAVLFugueFactory.type
+        ComplexFugueFactory.complexFugueFactory.type |
+        SimpleAVLFugueFactory.simpleAVLFugueFactory.type |
+        ComplexAVLFugueFactory.complexAVLFugueFactory.type
       ](
         "A"
       )(using
         factoryConstructor match {
-          case "simple"  => SimpleFugueFactory.simpleFugueFactory
-          case "complex" => ComplexFugueFactory.complexFugueFactory
+          case "simple"    => SimpleFugueFactory.simpleFugueFactory
+          case "complex"   => ComplexFugueFactory.complexFugueFactory
           case "simpleavl" =>
             SimpleAVLFugueFactory.simpleAVLFugueFactory
           case "complexavl" =>
@@ -496,13 +494,12 @@ class MyTerribleBenchmarkSequentialInserts {
       )
     val replicaA = Replica[
       SimpleFugueFactory.simpleFugueFactory.type |
-        ComplexFugueFactory.complexFugueFactory.type |
-        SimpleAVLFugueFactory.simpleAVLFugueFactory.type |
-        ComplexAVLFugueFactory.complexAVLFugueFactory.type
+      ComplexFugueFactory.complexFugueFactory.type |
+      SimpleAVLFugueFactory.simpleAVLFugueFactory.type |
+      ComplexAVLFugueFactory.complexAVLFugueFactory.type
     ](replicaStateA, StringEditory())
-    for (i <- 0 until size) {
-      replicaA.insert(i, 'a')
-    }
+    for i <- 0 until size do
+        replicaA.insert(i, 'a')
     if shouldMeasureMemory then {
       assert(replicaStateA.text().equals("a" * size))
     }
@@ -514,7 +511,7 @@ class MyTerribleBenchmarkSequentialInserts {
 @Fork(jvmArgsAppend = Array("-Dtextrdt.assertions=disabled"))
 class MyTerribleBenchmarkEvilInsert {
 
-  import Counters._
+  import Counters.*
 
   @Param(Array("false"))
   var shouldMeasureMemory: Boolean = uninitialized
@@ -535,12 +532,12 @@ class MyTerribleBenchmarkEvilInsert {
 
   private def evilInsert1(factoryConstructor: String): Replica[
     SimpleAVLFugueFactory.simpleAVLFugueFactory.type |
-      ComplexAVLFugueFactory.complexAVLFugueFactory.type
+    ComplexAVLFugueFactory.complexAVLFugueFactory.type
   ] = {
     val replicaStateToSyncInto =
       ReplicaState[
         SimpleAVLFugueFactory.simpleAVLFugueFactory.type |
-          ComplexAVLFugueFactory.complexAVLFugueFactory.type
+        ComplexAVLFugueFactory.complexAVLFugueFactory.type
       ](
         "a"
       )(using
@@ -552,16 +549,15 @@ class MyTerribleBenchmarkEvilInsert {
         }
       )
     val replicaToSyncInto = Replica(replicaStateToSyncInto, StringEditory())
-    for (i <- 0 until until) {
-      replicaToSyncInto.insert(0, 'p')
-    }
+    for i <- 0 until until do
+        replicaToSyncInto.insert(0, 'p')
     replicaToSyncInto
   }
 
   @Benchmark
   def evilInsert1SimpleAVL(counters: Counters): Replica[
     SimpleAVLFugueFactory.simpleAVLFugueFactory.type |
-      ComplexAVLFugueFactory.complexAVLFugueFactory.type
+    ComplexAVLFugueFactory.complexAVLFugueFactory.type
   ] = {
     if shouldMeasureMemory then {
       counters.memory = -measureMemory()
@@ -576,7 +572,7 @@ class MyTerribleBenchmarkEvilInsert {
   @Benchmark
   def evilInsert1ComplexAVL(counters: Counters): Replica[
     SimpleAVLFugueFactory.simpleAVLFugueFactory.type |
-      ComplexAVLFugueFactory.complexAVLFugueFactory.type
+    ComplexAVLFugueFactory.complexAVLFugueFactory.type
   ] = {
     if shouldMeasureMemory then {
       counters.memory = -measureMemory()
@@ -604,9 +600,8 @@ class MyTerribleBenchmarkEvilInsert {
         SimpleAVLFugueFactory.simpleAVLFugueFactory
       )
     val replicaToSyncInto = Replica(replicaStateToSyncInto, StringEditory())
-    for (i <- 0 until count) {
-      replicaToSyncInto.insert(i, 'p')
-    }
+    for i <- 0 until count do
+        replicaToSyncInto.insert(i, 'p')
     replicaToSyncInto.deliveringRemote(
       (
         mutable.HashMap.empty,
@@ -646,12 +641,11 @@ class MyTerribleBenchmarkEvilInsert {
         ComplexAVLFugueFactory.complexAVLFugueFactory
       )
     val replicaToSyncInto = Replica(replicaStateToSyncInto, StringEditory())
-    for (i <- 0 until count) {
-      replicaToSyncInto.insert(
-        i,
-        'p'
-      )
-    }
+    for i <- 0 until count do
+        replicaToSyncInto.insert(
+          i,
+          'p'
+        )
     replicaToSyncInto.deliveringRemote(
       (
         mutable.HashMap.empty,
@@ -695,17 +689,15 @@ class MyTerribleBenchmarkEvilInsert {
         ComplexAVLFugueFactory.complexAVLFugueFactory
       )
     val replicaToSyncInto = Replica(replicaStateToSyncInto, StringEditory())
-    for (i <- 0 until count) {
-      replicaToSyncInto.insert(
-        i,
-        'p'
-      )
-    }
-    for (i <- 0 until until / 2) {
-      replicaToSyncInto.delete(
-        i + 1
-      )
-    }
+    for i <- 0 until count do
+        replicaToSyncInto.insert(
+          i,
+          'p'
+        )
+    for i <- 0 until until / 2 do
+        replicaToSyncInto.delete(
+          i + 1
+        )
     val result = replicaToSyncInto
     if shouldMeasureMemory then {
       counters.memory += measureMemory()
@@ -729,12 +721,11 @@ class MyTerribleBenchmarkEvilInsert {
         ComplexAVLFugueFactory.complexAVLFugueFactory
       )
     val replicaToSyncInto = Replica(replicaStateToSyncInto, StringEditory())
-    for (i <- 0 until count) {
-      replicaToSyncInto.insert(
-        i,
-        'p'
-      )
-    }
+    for i <- 0 until count do
+        replicaToSyncInto.insert(
+          i,
+          'p'
+        )
     replicaToSyncInto.deliveringRemote(
       (
         mutable.HashMap.empty,
@@ -754,12 +745,11 @@ class MyTerribleBenchmarkEvilInsert {
         )
       )
     )
-    for (i <- 1 until until * 2 - 2 by 2) {
-      replicaToSyncInto.insert(
-        i,
-        's'
-      )
-    }
+    for i <- 1 until until * 2 - 2 by 2 do
+        replicaToSyncInto.insert(
+          i,
+          's'
+        )
     val result = replicaToSyncInto
     if shouldMeasureMemory then {
       counters.memory += measureMemory()

@@ -16,9 +16,8 @@ trait FugueFactory {
   def appendMessage(
       buffer: mutable.ArrayBuffer[MSG],
       messageToAppend: MSG
-  ): Unit = {
+  ): Unit =
     buffer.addOne(messageToAppend)
-  }
 
   extension (factory: F) {
 

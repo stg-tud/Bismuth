@@ -14,7 +14,7 @@ object TestMain {
     def clientPort(number: Int)   = 8100 + number * 10
     def peerPortPort(number: Int) = clientPort(number) + 1
 
-    def initNode(number: Int, total: Int) = {
+    def initNode(number: Int, total: Int) =
       (List(
         "node",
         "--name",
@@ -25,12 +25,11 @@ object TestMain {
         peerPortPort(number).toString,
         "--cluster"
       )
-      ++ (1 to number).map(i => s"localhost:${peerPortPort(i)}").toList
-      ++ List(
-        "--initial-cluster-ids",
-        (1 to total).map(i => s"node$i").mkString(" ")
-      ))
-    }
+        ++ (1 to number).map(i => s"localhost:${peerPortPort(i)}").toList
+        ++ List(
+          "--initial-cluster-ids",
+          (1 to total).map(i => s"node$i").mkString(" ")
+        ))
 
     (1 to nodes).foreach { n =>
       println(s"starting node $n")

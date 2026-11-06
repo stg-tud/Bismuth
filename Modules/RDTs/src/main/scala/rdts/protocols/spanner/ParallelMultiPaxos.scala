@@ -16,7 +16,7 @@ case class ParallelMultiPaxos[A](
 
     // private helper functions
     private def currentPaxos: Option[Paxos[A]] = rounds.get(commitIndex + 1).orElse(rounds.get(commitIndex))
-    private def nextSlot: Long = {
+    private def nextSlot: Long                 = {
       val numRounds = rounds.size
       rounds.get(numRounds - 1) match {
         case Some(paxos) => paxos.currentRound match {
@@ -84,7 +84,7 @@ case class ParallelMultiPaxos[A](
 
     def proposeIfLeader(index: Long, value: A)(using ReplicaId, Participants): ParallelMultiPaxos[A] =
       precondition(index == 0L || rounds.contains(index - 1)) {
-        def openNextSlot = {
+        def openNextSlot =
           // opens a new slot for the next log entry, either by reusing the old ballot or starting a new one
           rounds.get(index - 1).flatMap(_.newestBallotWithLeader) match
               case Some((ballotNum, PaxosRound(leaderElection, _))) =>
@@ -96,7 +96,6 @@ case class ParallelMultiPaxos[A](
                   ))
                 )
               case None => Paxos[A]()
-        }
         val paxos =
           rounds.getOrElse(index, openNextSlot)
 
@@ -110,8 +109,8 @@ case class ParallelMultiPaxos[A](
       }
 
     def proposeIfLeader(value: A)(using ReplicaId, Participants): ParallelMultiPaxos[A] =
-        //println(s"proposing for slot: ${nextSlot}, log length: ${read.size}")
-        proposeIfLeader(nextSlot, value)
+      // println(s"proposing for slot: ${nextSlot}, log length: ${read.size}")
+      proposeIfLeader(nextSlot, value)
 
     def upkeep(using ReplicaId, Participants): ParallelMultiPaxos[A] = {
       // perform upkeep in open rounds

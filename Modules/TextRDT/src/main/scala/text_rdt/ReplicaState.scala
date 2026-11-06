@@ -15,21 +15,18 @@ final case class ReplicaState[F <: FugueFactory](
 
   def text(): String = {
     val text = factory.text()
-    for ((char, index) <- text.zipWithIndex) {
-      myAssert(
-        factory.atVisibleIndex(index).value().toString() == char.toString()
-      )
-    }
+    for (char, index) <- text.zipWithIndex do
+        myAssert(
+          factory.atVisibleIndex(index).value().toString() == char.toString()
+        )
     text
   }
 
-  def visibleIndexOf(node: factoryContext.N): Int = {
+  def visibleIndexOf(node: factoryContext.N): Int =
     factory.visibleIndexOf(node)
-  }
 
-  def get(id: factoryContext.ID): factoryContext.N = {
+  def get(id: factoryContext.ID): factoryContext.N =
     factory.get(id)
-  }
 
   def insert(i: Int, x: Char): Unit = {
     val message = factory.insert(i, x)

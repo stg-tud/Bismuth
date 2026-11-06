@@ -33,7 +33,7 @@ final case class ComplexTreeNode(
     )
     myAssert(
       parent match {
-        case null => true
+        case null   => true
         case parent =>
           parent.complexTreeNode.leftChildrenBuffer
             .map(_.complexTreeNode)
@@ -46,19 +46,17 @@ final case class ComplexTreeNode(
 
   override def toString: String = pprintNonAVL.apply(this).plainText
 
-  def valueSize(): Int = {
+  def valueSize(): Int =
     values match {
       case Left(value)  => value.size
       case Right(value) => value
     }
-  }
 
-  def visibleValueSize(): Int = {
+  def visibleValueSize(): Int =
     values match {
       case Left(value)  => value.size
       case Right(value) => 0
     }
-  }
 }
 
 final case class ComplexTreeNodeSingle(
@@ -75,16 +73,14 @@ final case class ComplexTreeNodeSingle(
     s"0 <= $index - ${complexTreeNode.offset}"
   )
 
-  def valueIndex(): Int = {
+  def valueIndex(): Int =
     index - complexTreeNode.offset
-  }
 
-  def visibleValueIndex(): Int = {
+  def visibleValueIndex(): Int =
     complexTreeNode.values match {
       case Left(value)  => index - complexTreeNode.offset
       case Right(value) => 0
     }
-  }
 }
 
 object ComplexTreeNodeSingle {
@@ -93,15 +89,14 @@ object ComplexTreeNodeSingle {
 
     extension (treeNode: ComplexTreeNodeSingle) {
 
-      override def parent(): ComplexTreeNodeSingle | Null = {
+      override def parent(): ComplexTreeNodeSingle | Null =
         if treeNode.valueIndex() == 0 then {
           treeNode.complexTreeNode.parent
         } else {
           ComplexTreeNodeSingle(treeNode.complexTreeNode, treeNode.index - 1)
         }
-      }
 
-      override def parentId(): ComplexID | Null = {
+      override def parentId(): ComplexID | Null =
         if treeNode.valueIndex() == 0 then {
           treeNode.complexTreeNode.parent.nn.id()
         } else {
@@ -111,11 +106,10 @@ object ComplexTreeNodeSingle {
             treeNode.index - 1
           )
         }
-      }
 
       override def id(): ComplexID | Null =
         treeNode.complexTreeNode.id match {
-          case null => null
+          case null  => null
           case value =>
             ComplexID(
               value.rid,
@@ -133,15 +127,14 @@ object ComplexTreeNodeSingle {
             null
         }
 
-      override def leftChildren(): Iterator[ComplexTreeNodeSingle] = {
+      override def leftChildren(): Iterator[ComplexTreeNodeSingle] =
         if treeNode.valueIndex() == 0 then {
           treeNode.complexTreeNode.leftChildrenBuffer.iterator
         } else {
           Iterator.empty
         }
-      }
 
-      override def rightChildren(): Iterator[ComplexTreeNodeSingle] = {
+      override def rightChildren(): Iterator[ComplexTreeNodeSingle] =
         if treeNode.valueIndex() + 1 < treeNode.complexTreeNode.valueSize() then {
           Iterator(
             ComplexTreeNodeSingle(
@@ -152,7 +145,6 @@ object ComplexTreeNodeSingle {
         } else {
           treeNode.complexTreeNode.rightChildrenBuffer.iterator
         }
-      }
 
       override def side(): Side = treeNode.complexTreeNode.side
     }

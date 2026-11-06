@@ -31,9 +31,8 @@ final case class ComplexAVLTreeNode(
     ComplexAVLTreeNode
   ]] = scala.compiletime.uninitialized
 
-  def values: View[Char] = {
+  def values: View[Char] =
     _values.nn.view.slice(offset, to + 1)
-  }
 
   inline def invariant(): Unit = {}
 
@@ -46,28 +45,27 @@ object ComplexAVLTreeNode {
     def compare(
         x: text_rdt.avl.AVLTreeNode[text_rdt.ComplexAVLTreeNode],
         y: text_rdt.avl.AVLTreeNode[text_rdt.ComplexAVLTreeNode]
-    ): Int = (
-      x.value.rid.nn,
-      x.value.counter,
-      x.value.offset
-    ) compare (y.value.rid.nn, y.value.counter, y.value.offset)
+    ): Int =
+      (
+        x.value.rid.nn,
+        x.value.counter,
+        x.value.offset
+      ) compare (y.value.rid.nn, y.value.counter, y.value.offset)
   }
 }
 
 extension (treeNode: AVLTreeNode[ComplexAVLTreeNode]) {
-  def leftmostDescendant(): AVLTreeNode[ComplexAVLTreeNode] = {
+  def leftmostDescendant(): AVLTreeNode[ComplexAVLTreeNode] =
     ComplexAVLTreeNodeSingle(
       treeNode,
       treeNode.value.offset
     ).leftmostDescendant().complexTreeNode
-  }
 
-  def rightmostDescendant(): AVLTreeNode[ComplexAVLTreeNode] = {
+  def rightmostDescendant(): AVLTreeNode[ComplexAVLTreeNode] =
     ComplexAVLTreeNodeSingle(
       treeNode,
       treeNode.value.to
     ).rightmostDescendant().complexTreeNode
-  }
 }
 
 final case class ComplexAVLTreeNodeSingle(
@@ -84,13 +82,11 @@ final case class ComplexAVLTreeNodeSingle(
     s"$index <= ${complexTreeNode.value.to}"
   )
 
-  final def isRightEdge: Boolean = {
+  final def isRightEdge: Boolean =
     index == complexTreeNode.value.to
-  }
 
-  final def isLeftEdge: Boolean = {
+  final def isLeftEdge: Boolean =
     index == complexTreeNode.value.offset
-  }
 
   override def equals(_x: Any): Boolean = {
     val x = _x.asInstanceOf[ComplexAVLTreeNodeSingle]
@@ -107,17 +103,15 @@ object ComplexAVLTreeNodeSingle {
 
     extension (treeNode: ComplexAVLTreeNodeSingle) {
 
-      override def parent(): ComplexAVLTreeNodeSingle | Null = {
+      override def parent(): ComplexAVLTreeNodeSingle | Null =
         ???
-      }
 
-      override def parentId(): ComplexID | Null = {
+      override def parentId(): ComplexID | Null =
         ???
-      }
 
       override def id(): ComplexID | Null =
         treeNode.complexTreeNode.value.rid match {
-          case null => null
+          case null     => null
           case rid: RID =>
             ComplexID(
               rid,
@@ -134,10 +128,10 @@ object ComplexAVLTreeNodeSingle {
             values(treeNode.index)
         }
 
-      final override def firstLeftChild(): ComplexAVLTreeNodeSingle | Null = {
+      final override def firstLeftChild(): ComplexAVLTreeNodeSingle | Null =
         if treeNode.isLeftEdge then {
           treeNode.complexTreeNode.value.leftChildrenBuffer match {
-            case null => null
+            case null                                             => null
             case singleLeftChild: AVLTreeNode[ComplexAVLTreeNode] =>
               ComplexAVLTreeNodeSingle(
                 singleLeftChild,
@@ -156,12 +150,11 @@ object ComplexAVLTreeNodeSingle {
         } else {
           null
         }
-      }
 
-      override def leftChildren(): Iterator[ComplexAVLTreeNodeSingle] = {
+      override def leftChildren(): Iterator[ComplexAVLTreeNodeSingle] =
         if treeNode.isLeftEdge then {
           treeNode.complexTreeNode.value.leftChildrenBuffer match {
-            case null => Iterator.empty
+            case null                                             => Iterator.empty
             case singleLeftChild: AVLTreeNode[ComplexAVLTreeNode] =>
               Iterator(
                 ComplexAVLTreeNodeSingle(
@@ -179,9 +172,8 @@ object ComplexAVLTreeNodeSingle {
         } else {
           Iterator.empty
         }
-      }
 
-      final override def firstRightChild(): ComplexAVLTreeNodeSingle | Null = {
+      final override def firstRightChild(): ComplexAVLTreeNodeSingle | Null =
         if !treeNode.isRightEdge then {
           ComplexAVLTreeNodeSingle(
             treeNode.complexTreeNode,
@@ -189,7 +181,7 @@ object ComplexAVLTreeNodeSingle {
           )
         } else {
           treeNode.complexTreeNode.value.rightChildrenBuffer match {
-            case null => null
+            case null                                              => null
             case singleRightChild: AVLTreeNode[ComplexAVLTreeNode] =>
               ComplexAVLTreeNodeSingle(
                 singleRightChild,
@@ -202,9 +194,8 @@ object ComplexAVLTreeNodeSingle {
               ComplexAVLTreeNodeSingle(v, v.value.offset)
           }
         }
-      }
 
-      override def rightChildren(): Iterator[ComplexAVLTreeNodeSingle] = {
+      override def rightChildren(): Iterator[ComplexAVLTreeNodeSingle] =
         if !treeNode.isRightEdge then {
           Iterator(
             ComplexAVLTreeNodeSingle(
@@ -214,7 +205,7 @@ object ComplexAVLTreeNodeSingle {
           )
         } else {
           treeNode.complexTreeNode.value.rightChildrenBuffer match {
-            case null => Iterator.empty
+            case null                                              => Iterator.empty
             case singleRightChild: AVLTreeNode[ComplexAVLTreeNode] =>
               Iterator(
                 ComplexAVLTreeNodeSingle(
@@ -230,7 +221,6 @@ object ComplexAVLTreeNodeSingle {
               )
           }
         }
-      }
 
       final override def leftmostDescendant(): ComplexAVLTreeNodeSingle = {
         val fastDescendant = if treeNode.isLeftEdge then {
@@ -293,13 +283,12 @@ object ComplexAVLTreeNodeSingle {
         fastDescendant
       }
 
-      override def side(): Side = {
+      override def side(): Side =
         if treeNode.isLeftEdge then {
           treeNode.complexTreeNode.value.side
         } else {
           Side.Right
         }
-      }
     }
   }
 }

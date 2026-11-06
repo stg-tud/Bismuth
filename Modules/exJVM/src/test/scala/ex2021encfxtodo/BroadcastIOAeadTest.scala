@@ -19,8 +19,9 @@ class BroadcastIOAeadTest extends FunSuite {
 
   private def newAead(): Aead = {
     AeadConfig.register()
-    val keyset = KeysetHandle.generateNew(KeyTemplates.get("XCHACHA20_POLY1305").toParameters, RegistryConfiguration.get())
-    val aead   = keyset.getPrimitive(RegistryConfiguration.get(), classOf[TinkAead])
+    val keyset =
+      KeysetHandle.generateNew(KeyTemplates.get("XCHACHA20_POLY1305").toParameters, RegistryConfiguration.get())
+    val aead = keyset.getPrimitive(RegistryConfiguration.get(), classOf[TinkAead])
     TinkBasedAead(aead)
   }
 

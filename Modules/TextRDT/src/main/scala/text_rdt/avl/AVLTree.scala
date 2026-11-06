@@ -16,47 +16,41 @@ trait AVLTreeNodeValueSize[T] {
 
 extension [T](optionalAvlNode: AVLTreeNode[T] | Null) {
 
-  def height: Int = {
+  def height: Int =
     optionalAvlNode match {
       case null  => 0
       case value => value.height
     }
-  }
 
-  def calculatedHeight(): Int = {
+  def calculatedHeight(): Int =
     optionalAvlNode match {
       case null  => 0
       case value => value.calculatedHeight()
     }
-  }
 
-  def deepSize: Int = {
+  def deepSize: Int =
     optionalAvlNode match {
       case null  => 0
       case value => value.deepSize
     }
-  }
 
-  def calculatedDeepSize(): Int = {
+  def calculatedDeepSize(): Int =
     optionalAvlNode match {
       case null  => 0
       case value => value.calculatedDeepSize()
     }
-  }
 
-  def foreach(method: AVLTreeNode[T] => Unit): Unit = {
+  def foreach(method: AVLTreeNode[T] => Unit): Unit =
     optionalAvlNode match {
       case null  =>
       case value => method(value)
     }
-  }
 
-  def forall(method: AVLTreeNode[T] => Boolean): Boolean = {
+  def forall(method: AVLTreeNode[T] => Boolean): Boolean =
     optionalAvlNode match {
       case null  => true
       case value => method(value)
     }
-  }
 }
 
 object AVLTreeNode {
@@ -90,13 +84,13 @@ final class AVLTreeNode[T: AVLTreeNodeValueSize] {
 
   final var value: T = uninitialized
 
-  var deepSize: Int = -1
+  var deepSize: Int                 = -1
   var parent: AVLTreeNode[T] | Null =
     uninitialized
   var left: AVLTreeNode[T] | Null =
     uninitialized
   var right: AVLTreeNode[T] | Null = uninitialized
-  var height: Int = 1
+  var height: Int                  = 1
 
   override def equals(x: Any): Boolean = this eq x.asInstanceOf[Object]
 
@@ -104,9 +98,8 @@ final class AVLTreeNode[T: AVLTreeNodeValueSize] {
 
   override def toString: String = pprintAVL.apply(this).plainText
 
-  def calculatedDeepSize(): Int = {
+  def calculatedDeepSize(): Int =
     left.calculatedDeepSize() + value.size + right.calculatedDeepSize()
-  }
 
   def calculatedHeight(): Int = {
     val result = Math.max(
@@ -117,61 +110,54 @@ final class AVLTreeNode[T: AVLTreeNodeValueSize] {
     result
   }
 
-  def invariantSpecifiedHeight(): Unit = {
+  def invariantSpecifiedHeight(): Unit =
     if Helper.ENABLE then {
       myAssert(
         height == calculatedHeight(),
         s"$height == ${calculatedHeight()} for $this"
       )
     }
-  }
 
-  def invariantSpecifiedHeightRecursiveDown(): Unit = {
+  def invariantSpecifiedHeightRecursiveDown(): Unit =
     if Helper.ENABLE then {
       invariantSpecifiedHeightRecursiveDownInternal()
     }
-  }
 
-  def invariantBalancedRecursiveDown(): Unit = {
+  def invariantBalancedRecursiveDown(): Unit =
     if Helper.ENABLE then {
       invariantBalanced()
       left.foreach(_.invariantBalancedRecursiveDown())
       right.foreach(_.invariantBalancedRecursiveDown())
     }
-  }
 
-  def invariantBalanced(): Unit = {
+  def invariantBalanced(): Unit =
     if Helper.ENABLE then {
       myAssert(
         Math.abs(
           left.height
-            - right.height
+          - right.height
         ) <= 1,
         s"for $this"
       )
     }
-  }
 
-  def invariantAvl(): Unit = {
+  def invariantAvl(): Unit =
     if Helper.ENABLE then {
       invariantParentLinks()
       invariantSize()
       invariantSpecifiedHeight()
       invariantBalanced()
     }
-  }
 
-  def invariantAvlRecursiveDown(): Unit = {
+  def invariantAvlRecursiveDown(): Unit =
     if Helper.ENABLE then {
       invariantAvlRecursiveDownInternal()
     }
-  }
 
-  def invariant(): Unit = {
+  def invariant(): Unit =
     if Helper.ENABLE then {
       invariantInternal()
     }
-  }
 
   private def invariantInternal(): Unit = {
     invariantParentLinks()
@@ -179,7 +165,7 @@ final class AVLTreeNode[T: AVLTreeNodeValueSize] {
     right.foreach(_.invariantInternal())
   }
 
-  def invariantParentLinks(): Unit = {
+  def invariantParentLinks(): Unit =
     if Helper.ENABLE then {
       myAssert(left.forall(c => c.parent.eq(this)))
       myAssert(right.forall(c => c.parent.eq(this)))
@@ -188,16 +174,14 @@ final class AVLTreeNode[T: AVLTreeNodeValueSize] {
         s"parent: $parent, this: $this"
       )
     }
-  }
 
-  private def invariantSize(): Unit = {
+  private def invariantSize(): Unit =
     if Helper.ENABLE then {
       myAssert(
         deepSize == calculatedDeepSize(),
         s"$deepSize == ${calculatedDeepSize()} for $this"
       )
     }
-  }
 
   private def invariantSizeRecursiveDownInternal(): Unit = {
     invariantSize()
@@ -206,11 +190,10 @@ final class AVLTreeNode[T: AVLTreeNodeValueSize] {
 
   }
 
-  private def invariantSizeRecursiveDown(): Unit = {
+  private def invariantSizeRecursiveDown(): Unit =
     if Helper.ENABLE then {
       invariantSizeRecursiveDownInternal()
     }
-  }
 
   @tailrec
   def nodeAtIndex(offset: Int): NodeAtIndexResult[T] = {
@@ -219,7 +202,7 @@ final class AVLTreeNode[T: AVLTreeNodeValueSize] {
     }
     var remainingOffset: Int = offset
     remainingOffset = left match {
-      case null => remainingOffset
+      case null  => remainingOffset
       case value =>
         if remainingOffset < value.deepSize then {
           return value.nodeAtIndex(remainingOffset)
@@ -233,7 +216,7 @@ final class AVLTreeNode[T: AVLTreeNodeValueSize] {
       remainingOffset - value.size
     }
     remainingOffset = right match {
-      case null => remainingOffset
+      case null  => remainingOffset
       case value =>
         if remainingOffset < value.deepSize then {
           return value.nodeAtIndex(remainingOffset)
@@ -281,7 +264,7 @@ final class AVLTreeNode[T: AVLTreeNodeValueSize] {
     }
   }
 
-  def replaceWith(tree: AVLTree[T], replacement: AVLTreeNode[T]): Unit = {
+  def replaceWith(tree: AVLTree[T], replacement: AVLTreeNode[T]): Unit =
     this.parent match {
       case null =>
         tree.root = replacement
@@ -296,7 +279,6 @@ final class AVLTreeNode[T: AVLTreeNodeValueSize] {
         }
         replacement.parent = value
     }
-  }
 
   def rotateLeft(tree: AVLTree[T]): Unit = {
     if Helper.ENABLE then {
@@ -304,7 +286,7 @@ final class AVLTreeNode[T: AVLTreeNodeValueSize] {
     }
 
     val rightGet = right.nn
-    val temp = rightGet
+    val temp     = rightGet
     this.replaceWith(tree, temp)
     right = rightGet.left
     rightGet.left match {
@@ -333,7 +315,7 @@ final class AVLTreeNode[T: AVLTreeNodeValueSize] {
     }
 
     val leftGet = left.nn
-    val temp = leftGet
+    val temp    = leftGet
     this.replaceWith(tree, temp)
     left = leftGet.right
     leftGet.right match {
@@ -356,29 +338,26 @@ final class AVLTreeNode[T: AVLTreeNodeValueSize] {
     }
   }
 
-  def indexOfNode(): Int = {
+  def indexOfNode(): Int =
     indexOfNode(0)
-  }
 
   @tailrec
-  def indexOfNode(acc: Int): Int = {
+  def indexOfNode(acc: Int): Int =
     side() match {
-      case null => acc + left.deepSize
+      case null      => acc + left.deepSize
       case Side.Left =>
         parent.nn.indexOfNode(acc - value.size - right.deepSize)
       case Side.Right =>
         parent.nn.indexOfNode(acc + left.deepSize + parent.nn.value.size)
     }
-  }
 
-  private def side(): Side | Null = {
+  private def side(): Side | Null =
     parent match {
       case null   => null
       case parent => sideGet()
     }
-  }
 
-  private def sideGet(): Side = {
+  private def sideGet(): Side =
     if parent.nn.left eq this then {
       Side.Left
     } else if parent.nn.right eq this then {
@@ -386,9 +365,8 @@ final class AVLTreeNode[T: AVLTreeNodeValueSize] {
     } else {
       assert(false)
     }
-  }
 
-  def values(): Seq[T] = {
+  def values(): Seq[T] =
     (left match {
       case null =>
         Seq.empty
@@ -402,9 +380,8 @@ final class AVLTreeNode[T: AVLTreeNodeValueSize] {
         case right =>
           right.values()
       })
-  }
 
-  def collectNodes(): Set[AVLTreeNode[T]] = {
+  def collectNodes(): Set[AVLTreeNode[T]] =
     (left match {
       case null => Set.empty
       case left => left.collectNodes()
@@ -412,7 +389,6 @@ final class AVLTreeNode[T: AVLTreeNodeValueSize] {
       case null  => Set.empty
       case right => right.collectNodes()
     })
-  }
 
   private def invariantSpecifiedHeightRecursiveDownInternal(): Unit = {
     invariantSpecifiedHeight()
@@ -427,20 +403,18 @@ final class AVLTreeNode[T: AVLTreeNodeValueSize] {
   }
 
   @tailrec
-  private def leftmostDescendant(): AVLTreeNode[T] = {
+  private def leftmostDescendant(): AVLTreeNode[T] =
     left match {
       case null => this
       case left => left.leftmostDescendant()
     }
-  }
 
   @tailrec
-  private def rightmostDescendant(): AVLTreeNode[T] = {
+  private def rightmostDescendant(): AVLTreeNode[T] =
     right match {
       case null  => this
       case right => right.rightmostDescendant()
     }
-  }
 
   private def rebalanceRight(tree: AVLTree[T]): AVLTreeNode[T] = {
     if Helper.ENABLE then {
@@ -513,7 +487,7 @@ final class AVLTreeNode[T: AVLTreeNodeValueSize] {
           newLast.invariantAvlRecursiveDown()
         }
         parent match {
-          case null =>
+          case null  =>
           case value =>
             if Helper.ENABLE then {
               tree.invariant()
@@ -526,7 +500,7 @@ final class AVLTreeNode[T: AVLTreeNodeValueSize] {
           newLast.invariantAvlRecursiveDown()
         }
         parent match {
-          case null =>
+          case null  =>
           case value =>
             if Helper.ENABLE then {
               tree.invariant()
@@ -627,11 +601,10 @@ final case class AVLTree[T: AVLTreeNodeValueSize](
     }
   }
 
-  def invariant(): Unit = {
+  def invariant(): Unit =
     if Helper.ENABLE then {
       root.foreach(_.invariant())
     }
-  }
 
   def insertBasedOn(
       nodeToInsertBasedOn: AVLTreeNode[T],
@@ -681,9 +654,8 @@ final case class AVLTree[T: AVLTreeNodeValueSize](
     result
   }
 
-  def invariantAvlRecursiveDown(): Unit = {
+  def invariantAvlRecursiveDown(): Unit =
     if Helper.ENABLE then {
       root.foreach(_.invariantAvlRecursiveDown())
     }
-  }
 }

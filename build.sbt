@@ -146,10 +146,10 @@ lazy val exWeb = project.in(file("Modules/exWeb"))
   .dependsOn(channels.js(s3v), rdts.js(s3v), lore.js(s3v), textRdt.js(s3v))
   .settings(
     libraryDependencies ++= Seq(
-      "com.github.japgolly.scalajs-react" %% "core"      % "3.0.0",
-      "com.github.japgolly.scalajs-react" %% "extra"     % "3.0.0",
-      "com.lihaoyi"                       %% "scalatags" % "0.13.1" % Compile,
-      "com.olvind"                        %% "scalablytyped-runtime" % "2.4.2",
+      "com.github.japgolly.scalajs-react" %% "core"                      % "3.0.0",
+      "com.github.japgolly.scalajs-react" %% "extra"                     % "3.0.0",
+      "com.lihaoyi"                       %% "scalatags"                 % "0.13.1" % Compile,
+      "com.olvind"                        %% "scalablytyped-runtime"     % "2.4.2",
       "org.scala-js"                      %% "scalajs-java-securerandom" % "1.0.0" `cross` CrossVersion.for3Use2_13,
       pprint,
       scalajsDom,

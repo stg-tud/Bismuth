@@ -8,7 +8,7 @@ import scala.scalajs.js.annotation.JSImport
 
 object mod {
 
-  type Attrs = StringDictionary[Any]
+  type Attrs         = StringDictionary[Any]
   type DOMOutputSpec = String | Array[String | Any]
 
   @JSImport("prosemirror-model", "Node")
@@ -21,14 +21,14 @@ object mod {
   @js.native
   open class Fragment extends js.Object {
     def textBetween(from: Double, to: Double): String = js.native
-    def size: Double = js.native
+    def size: Double                                  = js.native
   }
 
   @JSImport("prosemirror-model", "Slice")
   @js.native
   open class Slice extends js.Object {
     val content: Fragment = js.native
-    def size: Double = js.native
+    def size: Double      = js.native
   }
 
   @js.native
@@ -37,11 +37,12 @@ object mod {
     inline def apply(): NodeSpec = js.Dynamic.literal().asInstanceOf[NodeSpec]
 
     implicit open class MutableBuilder[Self <: NodeSpec](val x: Self) extends AnyVal {
-      inline def setContent(value: String): Self = StObject.set(x, "content", value.asInstanceOf[js.Any])
-      inline def setMarks(value: String): Self   = StObject.set(x, "marks", value.asInstanceOf[js.Any])
-      inline def setCode(value: Boolean): Self   = StObject.set(x, "code", value.asInstanceOf[js.Any])
+      inline def setContent(value: String): Self   = StObject.set(x, "content", value.asInstanceOf[js.Any])
+      inline def setMarks(value: String): Self     = StObject.set(x, "marks", value.asInstanceOf[js.Any])
+      inline def setCode(value: Boolean): Self     = StObject.set(x, "code", value.asInstanceOf[js.Any])
       inline def setDefining(value: Boolean): Self = StObject.set(x, "defining", value.asInstanceOf[js.Any])
-      inline def setParseDOM(value: js.Array[TagParseRule]): Self = StObject.set(x, "parseDOM", value.asInstanceOf[js.Any])
+      inline def setParseDOM(value: js.Array[TagParseRule]): Self =
+        StObject.set(x, "parseDOM", value.asInstanceOf[js.Any])
       inline def setToDOM(value: Node => DOMOutputSpec): Self = StObject.set(x, "toDOM", js.Any.fromFunction1(value))
     }
   }
@@ -57,7 +58,8 @@ object mod {
     }
 
     implicit open class MutableBuilder[Self <: TagParseRule](val x: Self) extends AnyVal {
-      inline def setPreserveWhitespace(value: Boolean | full): Self = StObject.set(x, "preserveWhitespace", value.asInstanceOf[js.Any])
+      inline def setPreserveWhitespace(value: Boolean | full): Self =
+        StObject.set(x, "preserveWhitespace", value.asInstanceOf[js.Any])
     }
   }
 

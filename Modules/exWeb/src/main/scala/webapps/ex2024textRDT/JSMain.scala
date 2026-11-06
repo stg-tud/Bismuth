@@ -342,7 +342,7 @@ private case class JSMain[F <: FugueFactory](
 
   private def addEditor(initialText: String = ""): Unit = {
     val editorIndex = editors.length
-    val newEditor = document.createElement("div")
+    val newEditor   = document.createElement("div")
     newEditor.id = s"editor$editorIndex-parent"
     newEditor.classList.add("editor-panel")
 
@@ -377,7 +377,7 @@ private case class JSMain[F <: FugueFactory](
     val _ = newEditor.appendChild(graph)
     val _ = newEditor.appendChild(graphAvl)
 
-    for (i <- editors.indices) {
+    for i <- editors.indices do {
       {
         val button = document.createElement("button")
         button.id = s"sync-editor$i-editor$editorIndex"

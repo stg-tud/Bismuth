@@ -4,23 +4,30 @@ import munit.ScalaCheckSuite
 import org.scalacheck.Test
 import text_rdt.helper.scalacheck
 
-class OTAlgorithmScalaCheckSuite extends InternalFugueScalaCheckSuite(replicaId => OTAlgorithm(replicaId, Vector.empty)) {
-
-}
+class OTAlgorithmScalaCheckSuite
+    extends InternalFugueScalaCheckSuite(replicaId => OTAlgorithm(replicaId, Vector.empty)) {}
 
 object OTAlgorithmScalaCheckSuite {}
 
 class SimpleInternalFugueScalaCheckSuite
-    extends InternalFugueScalaCheckSuite(replicaId => Replica(ReplicaState(replicaId)(using SimpleFugueFactory.simpleFugueFactory), StringEditory())) {}
+    extends InternalFugueScalaCheckSuite(replicaId =>
+      Replica(ReplicaState(replicaId)(using SimpleFugueFactory.simpleFugueFactory), StringEditory())
+    ) {}
 
 class ComplexInternalFugueScalaCheckSuite
-    extends InternalFugueScalaCheckSuite(replicaId => Replica(ReplicaState(replicaId)(using ComplexFugueFactory.complexFugueFactory), StringEditory())) {}
+    extends InternalFugueScalaCheckSuite(replicaId =>
+      Replica(ReplicaState(replicaId)(using ComplexFugueFactory.complexFugueFactory), StringEditory())
+    ) {}
 
 class SimpleAVLInternalFugueScalaCheckSuite
-    extends InternalFugueScalaCheckSuite(replicaId => Replica(ReplicaState(replicaId)(using SimpleAVLFugueFactory.simpleAVLFugueFactory), StringEditory())) {}
+    extends InternalFugueScalaCheckSuite(replicaId =>
+      Replica(ReplicaState(replicaId)(using SimpleAVLFugueFactory.simpleAVLFugueFactory), StringEditory())
+    ) {}
 
 class ComplexAVLInternalFugueScalaCheckSuite
-    extends InternalFugueScalaCheckSuite(replicaId => Replica(ReplicaState(replicaId)(using ComplexAVLFugueFactory.complexAVLFugueFactory), StringEditory())) {
+    extends InternalFugueScalaCheckSuite(replicaId =>
+      Replica(ReplicaState(replicaId)(using ComplexAVLFugueFactory.complexAVLFugueFactory), StringEditory())
+    ) {
 
   override protected def scalaCheckInitialSeed: String =
     "EW9fMG9YY_yS7U_xrPdYhnQaD0XdHdBj2miRsRsemXC="
@@ -79,12 +86,10 @@ class InternalFugueTreeEqualityCheckSuite extends ScalaCheckSuite {
   ) {
     InternalFugueTreeEqualityTest(
       Array(
-        () => {
-          SimpleFugueFactory.simpleFugueFactory
-        },
-        () => {
+        () =>
+          SimpleFugueFactory.simpleFugueFactory,
+        () =>
           ComplexFugueFactory.complexFugueFactory
-        }
       )
     ).property()
   }
@@ -95,12 +100,10 @@ class InternalFugueTreeEqualityCheckSuite extends ScalaCheckSuite {
   ) {
     InternalFugueTreeEqualityTest(
       Array(
-        () => {
-          SimpleFugueFactory.simpleFugueFactory
-        },
-        () => {
+        () =>
+          SimpleFugueFactory.simpleFugueFactory,
+        () =>
           SimpleAVLFugueFactory.simpleAVLFugueFactory
-        }
       )
     ).property()
   }
@@ -111,12 +114,10 @@ class InternalFugueTreeEqualityCheckSuite extends ScalaCheckSuite {
   ) {
     InternalFugueTreeEqualityTest(
       Array(
-        () => {
-          SimpleFugueFactory.simpleFugueFactory
-        },
-        () => {
+        () =>
+          SimpleFugueFactory.simpleFugueFactory,
+        () =>
           ComplexAVLFugueFactory.complexAVLFugueFactory
-        }
       )
     ).property()
   }

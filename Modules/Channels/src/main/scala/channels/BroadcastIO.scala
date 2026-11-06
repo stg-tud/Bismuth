@@ -97,7 +97,7 @@ class BroadcastIO[State](
 )(using val stateCodec: JsonValueCodec[State]) {
 
   /** A broadcast message to send on `connection`, resolved from the overlay during the transition. */
-  private final case class Transmit(connection: Connection, envelope: Envelope[State])
+  final private case class Transmit(connection: Connection, envelope: Envelope[State])
 
   /** What the transitions ask for. `NeighborUp`/`NeighborDown` and broadcast `Send`s are resolved inside the transition. */
   private type Output = OverlayAction | Event[State] | Transmit

@@ -3,10 +3,14 @@ package text_rdt
 import munit.FunSuite
 
 class SimpleInternalFugueTestSuite
-    extends InternalFugueTestSuite(replicaId => Replica(ReplicaState(replicaId)(using SimpleFugueFactory.simpleFugueFactory), StringEditory())) {}
+    extends InternalFugueTestSuite(replicaId =>
+      Replica(ReplicaState(replicaId)(using SimpleFugueFactory.simpleFugueFactory), StringEditory())
+    ) {}
 
 class ComplexInternalFugueTestSuite
-    extends InternalFugueTestSuite(replicaId => Replica(ReplicaState(replicaId)(using ComplexFugueFactory.complexFugueFactory), StringEditory())) {
+    extends InternalFugueTestSuite(replicaId =>
+      Replica(ReplicaState(replicaId)(using ComplexFugueFactory.complexFugueFactory), StringEditory())
+    ) {
   test("batching-works") {
     val replicaStateA = factoryConstructor("A")
     replicaStateA.insert(0, '/')
@@ -17,11 +21,15 @@ class ComplexInternalFugueTestSuite
 }
 
 class SimpleAVLInternalFugueTestSuite
-    extends InternalFugueTestSuite(replicaId => Replica(ReplicaState(replicaId)(using SimpleAVLFugueFactory.simpleAVLFugueFactory), StringEditory())) {}
+    extends InternalFugueTestSuite(replicaId =>
+      Replica(ReplicaState(replicaId)(using SimpleAVLFugueFactory.simpleAVLFugueFactory), StringEditory())
+    ) {}
 
 class ComplexAVLInternalFugueTestSuite
-    extends InternalFugueTestSuite(replicaId => Replica(ReplicaState(replicaId)(using ComplexAVLFugueFactory.complexAVLFugueFactory), StringEditory())) {
-  
+    extends InternalFugueTestSuite(replicaId =>
+      Replica(ReplicaState(replicaId)(using ComplexAVLFugueFactory.complexAVLFugueFactory), StringEditory())
+    ) {
+
   test("batching-works") {
     val replicaStateA = factoryConstructor("A")
     replicaStateA.insert(0, '/')
@@ -334,7 +342,7 @@ abstract class InternalFugueTestSuite[A](
 
   test("regression-25") {
     val replicaA = factoryConstructor("B")
-    val replicaB = factoryConstructor("A") 
+    val replicaB = factoryConstructor("A")
     replicaA.insert(0, 'O')
     replicaA.insert(1, 'V')
     replicaA.insert(2, 'Z')
@@ -356,7 +364,7 @@ abstract class InternalFugueTestSuite[A](
   }
 
   test("regression-27") {
-    val replicaA = factoryConstructor("D") 
+    val replicaA = factoryConstructor("D")
     val replicaC = factoryConstructor("C")
     replicaA.insert(0, 'B')
     replicaA.insert(0, '@')
@@ -372,7 +380,7 @@ abstract class InternalFugueTestSuite[A](
   }
 
   test("regression-28") {
-    val replicaA = factoryConstructor("A") 
+    val replicaA = factoryConstructor("A")
     val replicaB = factoryConstructor("B")
     replicaA.insert(0, '4')
     replicaA.delete(0)
@@ -383,7 +391,7 @@ abstract class InternalFugueTestSuite[A](
   }
 
   test("regression-29") {
-    val replicaA = factoryConstructor("A") 
+    val replicaA = factoryConstructor("A")
     val replicaB = factoryConstructor("B")
     replicaA.insert(0, '4')
     replicaA.insert(0, '0')
@@ -394,7 +402,7 @@ abstract class InternalFugueTestSuite[A](
   }
 
   test("regression-30") {
-    val replicaA = factoryConstructor("A") 
+    val replicaA = factoryConstructor("A")
     val replicaB = factoryConstructor("B")
     replicaA.insert(0, 'c')
     replicaA.insert(1, '0')
@@ -405,7 +413,7 @@ abstract class InternalFugueTestSuite[A](
   }
 
   test("regression-31") {
-    val replicaA = factoryConstructor("A") 
+    val replicaA = factoryConstructor("A")
     val replicaB = factoryConstructor("B")
     replicaA.insert(0, 'c')
     replicaA.insert(1, '0')
@@ -415,7 +423,7 @@ abstract class InternalFugueTestSuite[A](
   }
 
   test("regression-32") {
-    val replicaA = factoryConstructor("A") 
+    val replicaA = factoryConstructor("A")
     val replicaB = factoryConstructor("B")
     val replicaC = factoryConstructor("C")
     replicaB.insert(0, 'A')
@@ -428,7 +436,7 @@ abstract class InternalFugueTestSuite[A](
   }
 
   test("regression-33") {
-    val replicaA = factoryConstructor("A") 
+    val replicaA = factoryConstructor("A")
     val replicaB = factoryConstructor("B")
     val replicaC = factoryConstructor("C")
     replicaA.insert(0, 'u')
@@ -442,7 +450,7 @@ abstract class InternalFugueTestSuite[A](
   }
 
   test("regression-34") {
-    val replicaA = factoryConstructor("C") 
+    val replicaA = factoryConstructor("C")
     val replicaB = factoryConstructor("B")
     val replicaC = factoryConstructor("A")
     replicaC.insert(0, '}')
@@ -466,7 +474,7 @@ abstract class InternalFugueTestSuite[A](
   breaking PC-CP2. https://dl.acm.org/doi/pdf/10.1145/1180875.1180918 */
   test("regression-35") {
     assume(this.getClass().getName() != "text_rdt.OTAlgorithmTestSuite")
-    val replicaA = factoryConstructor("1863976979") 
+    val replicaA = factoryConstructor("1863976979")
     val replicaB = factoryConstructor("320716343")
     val replicaC = factoryConstructor("2135938835")
     replicaB.insert(0, '$')

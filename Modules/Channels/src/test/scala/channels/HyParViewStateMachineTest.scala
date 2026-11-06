@@ -50,7 +50,10 @@ class HyParViewStateMachineTest extends FunSuite {
         (next.asInstanceOf[HyParViewStateMachine], actions)
   }
 
-  private def received(conn: channels.connection.Connection, message: channels.overlay.OverlayController.OverlayMessage) =
+  private def received(
+      conn: channels.connection.Connection,
+      message: channels.overlay.OverlayController.OverlayMessage
+  ) =
     OverlayEvent.Received(conn, message)
 
   private val c1 = StubConnection("c1")

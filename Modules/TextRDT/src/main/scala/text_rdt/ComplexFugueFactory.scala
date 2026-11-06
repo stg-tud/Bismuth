@@ -20,17 +20,17 @@ final case class ComplexFugueFactory(replicaId: RID) {
     val _ = tree.updateWith(
       node.complexTreeNode.id
     ) {
-      case None => Some(mutable.ArrayBuffer(node.complexTreeNode))
+      case None        => Some(mutable.ArrayBuffer(node.complexTreeNode))
       case Some(value) =>
         if Helper.ENABLE then {
           val duplicatedNode = value.find(n =>
             n.offset <= node.complexTreeNode.offset && node.complexTreeNode.offset < n.offset + n
               .valueSize()
-              ||
-              n.offset <= (node.complexTreeNode.offset + node.complexTreeNode
-                .valueSize() - 1) && (node.complexTreeNode.offset + node.complexTreeNode
-                .valueSize() - 1) < n.offset + n
-                .valueSize()
+            ||
+            n.offset <= (node.complexTreeNode.offset + node.complexTreeNode
+              .valueSize() - 1) && (node.complexTreeNode.offset + node.complexTreeNode
+              .valueSize() - 1) < n.offset + n
+              .valueSize()
           )
           myAssert(
             duplicatedNode.isEmpty,
@@ -48,15 +48,14 @@ final case class ComplexFugueFactory(replicaId: RID) {
 object ComplexFugueFactory {
 
   given complexFugueFactory: FugueFactory with {
-    type ID = ComplexID
-    type N = ComplexTreeNodeSingle
-    type NC = ComplexTreeNodeSingle.complexTreeNodeSingle.type
-    type F = ComplexFugueFactory
+    type ID  = ComplexID
+    type N   = ComplexTreeNodeSingle
+    type NC  = ComplexTreeNodeSingle.complexTreeNodeSingle.type
+    type F   = ComplexFugueFactory
     type MSG = Message[ID]
 
-    def create(replicaId: RID): ComplexFugueFactory = {
+    def create(replicaId: RID): ComplexFugueFactory =
       ComplexFugueFactory(replicaId)
-    }
 
     given treeNodeContext: NC = ComplexTreeNodeSingle.complexTreeNodeSingle
 
@@ -74,7 +73,7 @@ object ComplexFugueFactory {
             factory.atVisibleIndex(i - 1)
           }
         val firstRightChild = leftOrigin.firstRightChild()
-        val side = if firstRightChild == null then {
+        val side            = if firstRightChild == null then {
           Side.Right
         } else {
           Side.Left
@@ -94,13 +93,12 @@ object ComplexFugueFactory {
         )
       }
 
-      def handleRemoteMessage(message: MSG, editor: Editory): Unit = {
+      def handleRemoteMessage(message: MSG, editor: Editory): Unit =
         message match {
           case Message.Insert(id, value, parent, side) =>
             deliveringRemoteInsert(editor, id, value, parent, side)
           case Message.Delete(id) => deliveringRemoteDelete(editor, id)
         }
-      }
 
       private def deliveringRemoteDelete(editor: Editory, id: ID): Unit = {
         val deleted = deliveringLocalDelete(id)
@@ -138,7 +136,7 @@ object ComplexFugueFactory {
           id
         )
         val deleted = treeNode.value() != null
-        val _ = factory.delete(treeNode)
+        val _       = factory.delete(treeNode)
         deleted
       }
 
@@ -175,17 +173,17 @@ object ComplexFugueFactory {
           case idNotNull => idNotNull
         }
 
-        if (
-          side == Side.Right &&
-          parent.complexTreeNode.valueSize() == parent.valueIndex() + 1
-         ) then {
+        if
+            side == Side.Right &&
+            parent.complexTreeNode.valueSize() == parent.valueIndex() + 1
+        then {
           parent.complexTreeNode.values match {
             case Left(values) =>
-              if (
-                parent.complexTreeNode.allowAppend && parent
-                  .side() == Side.Right && parent.complexTreeNode.rightChildrenBuffer.isEmpty && parent
-                  .id() != null && parent.id().nn.rid == id.rid
-               ) then {
+              if
+                  parent.complexTreeNode.allowAppend && parent
+                    .side() == Side.Right && parent.complexTreeNode.rightChildrenBuffer.isEmpty && parent
+                    .id() != null && parent.id().nn.rid == id.rid
+              then {
                 myAssert(parent.side() == Side.Right)
                 values.append(value)
 
@@ -222,7 +220,7 @@ object ComplexFugueFactory {
           )
 
           val buffer = parent.complexTreeNode.rightChildrenBuffer
-          var i = buffer
+          var i      = buffer
             .indexWhere(rightSib => nodeToAppend.id().nn < rightSib.id().nn)
           if i == -1 then {
             i = buffer.length
@@ -247,10 +245,10 @@ object ComplexFugueFactory {
           )
         }
 
-        if (
-          side == Side.Left &&
-          parent.valueIndex() == 0
-         ) then {
+        if
+            side == Side.Left &&
+            parent.valueIndex() == 0
+        then {
           val nodeToPrepend = ComplexTreeNodeSingle(
             ComplexTreeNode(
               id.toSimpleID,
@@ -266,7 +264,7 @@ object ComplexFugueFactory {
           )
 
           val buffer = parent.complexTreeNode.leftChildrenBuffer
-          var i = buffer
+          var i      = buffer
             .indexWhere(sib => nodeToPrepend.id().nn < sib.id().nn)
           if i == -1 then {
             i = buffer.length
@@ -371,10 +369,10 @@ object ComplexFugueFactory {
               nodeToSplit.complexTreeNode.offset + splitIndex
             )
             nodeRightSplit.complexTreeNode.rightChildrenBuffer =
-              nodeToSplit.complexTreeNode.rightChildrenBuffer.map(c => {
+              nodeToSplit.complexTreeNode.rightChildrenBuffer.map { c =>
                 c.complexTreeNode.parent = nodeRightSplit
                 c
-              })
+              }
             nodeToSplit.complexTreeNode.rightChildrenBuffer =
               mutable.ArrayBuffer.empty
 
@@ -397,9 +395,10 @@ object ComplexFugueFactory {
       }
 
       override def delete(node: ComplexTreeNodeSingle): MSG = {
-        if node.complexTreeNode.values.isRight then {} else if (
-          node.complexTreeNode.values.swap.toOption.get.length == 1
-         ) then {
+        if node.complexTreeNode.values.isRight then {}
+        else if
+            node.complexTreeNode.values.swap.toOption.get.length == 1
+        then {
           node.complexTreeNode.values = Right(1)
         } else if node.valueIndex() == 0 then {
           val (nodeToSplit, nodeRightSplit) = split(node, 1)
@@ -410,7 +409,7 @@ object ComplexFugueFactory {
         } else {
           myAssert(node.complexTreeNode.valueSize() >= 3)
           val (firstNode, nodeRightSplit) = split(node, node.valueIndex())
-          val (secondNode, thirdNode) =
+          val (secondNode, thirdNode)     =
             split(nodeRightSplit, 1)
           secondNode.complexTreeNode.values = Right(1)
         }
@@ -433,7 +432,7 @@ object ComplexFugueFactory {
             })
             .find(n =>
               id match {
-                case null => n.id == null
+                case null   => n.id == null
                 case nodeId =>
                   n.offset <= nodeId.offset && nodeId.offset < n.offset + n
                     .valueSize()
@@ -472,7 +471,7 @@ object ComplexFugueFactory {
               }
             case text_rdt.Side.Right =>
               node.parent match {
-                case null => None
+                case null  => None
                 case value =>
                   nodesRecursive(value.complexTreeNode, stack)
               }
@@ -493,7 +492,7 @@ object ComplexFugueFactory {
       override def textWithDeleted(): Vector[Either[Char, Char]] = ???
 
       override def text(): String = {
-        val root = get(null).complexTreeNode
+        val root  = get(null).complexTreeNode
         val stack = mutable.Stack(
           StackEntry(
             Side.Left,
@@ -501,9 +500,9 @@ object ComplexFugueFactory {
           )
         )
         Iterable
-          .unfold(root)(node => {
+          .unfold(root)(node =>
             nodesRecursive(node, stack)
-          })
+          )
           .flatten
           .mkString
       }
@@ -558,7 +557,7 @@ object ComplexFugueFactory {
       }
 
       override def atVisibleIndex(i: Int): complexFugueFactory.this.N = {
-        val root = get(null).complexTreeNode
+        val root  = get(null).complexTreeNode
         val stack = mutable.Stack(
           StackEntry(
             Side.Left,
@@ -621,7 +620,7 @@ object ComplexFugueFactory {
       }
 
       override def visibleIndexOf(node: ComplexTreeNodeSingle): Int = {
-        val root = get(null).complexTreeNode
+        val root  = get(null).complexTreeNode
         val stack = mutable.Stack(
           StackEntry(
             Side.Left,

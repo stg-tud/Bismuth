@@ -19,16 +19,13 @@ final case class AVLTreeBasicTest() extends Commands {
 
   override def initialPreCondition(state: State): Boolean = state.isEmpty
 
-  override def genCommand(state: State): Gen[Command] = {
+  override def genCommand(state: State): Gen[Command] =
     genInsert(state)
-  }
 
   def genInsert(state: State): Gen[Insert] = for {
     offsetInArray <- Gen.chooseNum(0, Int.MaxValue)
-    value <- Gen.stringOfN(2, Gen.asciiPrintableChar)
-  } yield {
-    Insert(offsetInArray, value)
-  }
+    value         <- Gen.stringOfN(2, Gen.asciiPrintableChar)
+  } yield Insert(offsetInArray, value)
 
   override def canCreateNewSut(
       newState: State,
@@ -44,9 +41,9 @@ final case class AVLTreeBasicTest() extends Commands {
     type Result = (String, String)
 
     override def run(sut: Sut): Result = {
-      var log = ""
+      var log    = ""
       val values = sut.values()
-      val index =
+      val index  =
         offsetInArray % (values.length + 1)
       val offset =
         if index == values.length then {
@@ -82,9 +79,8 @@ final case class AVLTreeBasicTest() extends Commands {
 
     override def preCondition(state: State): Boolean = true
 
-    override def postCondition(state: State, result: Result): Prop = {
+    override def postCondition(state: State, result: Result): Prop =
       Prop.=?(nextState(state).mkString, result._1)
-    }
 
     override def nextState(state: State): State = {
       val result = mutable.ListBuffer

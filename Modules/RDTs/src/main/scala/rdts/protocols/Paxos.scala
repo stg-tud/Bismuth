@@ -145,9 +145,9 @@ case class Paxos[A](
     ) {
       val vote = currentProposals.voteFor(proposal)
       if vote != Voting() then
-        Paxos(Map(currentBallotNum -> PaxosRound(
-          proposals = vote
-        )))
+          Paxos(Map(currentBallotNum -> PaxosRound(
+            proposals = vote
+          )))
       else Paxos()
     }
   // api:
@@ -240,7 +240,7 @@ object Paxos {
           }
       extension [A](c: Paxos[A])
           // upkeep can be used to perform the next protocol step automatically
-          override def upkeep()(using replicaId: ReplicaId, participants: Participants): Paxos[A] = {
+          override def upkeep()(using replicaId: ReplicaId, participants: Participants): Paxos[A] =
             if participants.members.contains(replicaId.uid) then
                 // check which phase we are in
                 c.currentRound match
@@ -254,7 +254,6 @@ object Paxos {
                     case _ =>
                       c.phase1b
             else Paxos()
-          }
 
       override def empty[A]: Paxos[A] = paxosBottom.empty
 

@@ -21,26 +21,26 @@ object CausalID {
     }
 
     override def tryCompare(left: CausalID, right: CausalID): Option[Int] = {
-      var leftLarger = false
+      var leftLarger  = false
       var rightLarger = false
-      left.foreachEntry((rid, counter) => {
-        val leftValue = counter
+      left.foreachEntry { (rid, counter) =>
+        val leftValue  = counter
         val rightValue = right.getOrElse(rid, 0)
         if leftValue > rightValue then {
           leftLarger = true
         } else if leftValue < rightValue then {
           rightLarger = true
         }
-      })
-      right.foreachEntry((rid, counter) => {
+      }
+      right.foreachEntry { (rid, counter) =>
         val rightValue = counter
-        val leftValue = left.getOrElse(rid, 0)
+        val leftValue  = left.getOrElse(rid, 0)
         if leftValue > rightValue then {
           leftLarger = true
         } else if leftValue < rightValue then {
           rightLarger = true
         }
-      })
+      }
       if leftLarger && rightLarger then {
         None
       } else if leftLarger && !rightLarger then {
@@ -54,7 +54,7 @@ object CausalID {
   }
 
   given totalOrder: Ordering[CausalID] with {
-    def compare(x: CausalID, y: CausalID): Int = {
+    def compare(x: CausalID, y: CausalID): Int =
       partialOrder.tryCompare(x, y) match {
         case None =>
           @tailrec
@@ -69,6 +69,5 @@ object CausalID {
           smaller(keys)
         case Some(value) => value
       }
-    }
   }
 }

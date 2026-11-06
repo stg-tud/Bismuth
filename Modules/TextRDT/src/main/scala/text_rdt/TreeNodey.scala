@@ -14,31 +14,27 @@ trait TreeNodey[N] {
 
     def value(): Char | Null
 
-    def firstLeftChild(): N | Null = {
+    def firstLeftChild(): N | Null =
       leftChildren().nextOption().orNull
-    }
 
     def leftChildren(): Iterator[N]
 
-    def firstRightChild(): N | Null = {
+    def firstRightChild(): N | Null =
       rightChildren().nextOption().orNull
-    }
 
     def rightChildren(): Iterator[N]
 
     def side(): Side
 
-    def leftmostDescendant(): N = {
+    def leftmostDescendant(): N =
       tailrecLeftmostDecendant()
-    }
 
     @tailrec
-    private final def tailrecLeftmostDecendant(): N = {
+    final private def tailrecLeftmostDecendant(): N =
       node.firstLeftChild() match {
         case null  => node
         case value => value.tailrecLeftmostDecendant()
       }
-    }
 
     def treeify(): pprint.Tree = pprint.Tree
       .Apply(

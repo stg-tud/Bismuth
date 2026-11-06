@@ -150,10 +150,10 @@ class ArdtEventGraphBenchmarkState {
   val concurrencyProbability: Double = 0.2
   val seed: Long                     = 42L
 
-  var eventGraph: ArdtEventGraph[BenchmarkRdt]       = scala.compiletime.uninitialized
-  var deltaValueStore: DeltaValueStore[BenchmarkRdt] = scala.compiletime.uninitialized
-  var genesisHash: Hash                              = scala.compiletime.uninitialized
-  var rootIdentity: PrivateIdentity                  = scala.compiletime.uninitialized
+  var eventGraph: ArdtEventGraph[BenchmarkRdt]                                       = scala.compiletime.uninitialized
+  var deltaValueStore: DeltaValueStore[BenchmarkRdt]                                 = scala.compiletime.uninitialized
+  var genesisHash: Hash                                                              = scala.compiletime.uninitialized
+  var rootIdentity: PrivateIdentity                                                  = scala.compiletime.uninitialized
   var trace: Array[(hash: Hash, encodedEvent: Array[Byte], deltaIndex: Option[Int])] =
     scala.compiletime.uninitialized
 

@@ -107,20 +107,18 @@ private case class JSP2PAutomatic() {
         var interval = 0;
 
         interval = org.scalajs.dom.window.setInterval(
-          () => {
+          () =>
             if channel.readyState == "open" then {
               channel.send("heads" + writeToString(replica.state.causalBroadcast.cachedHeads))
               replica.state.causalBroadcast.causalState = replica.state.causalBroadcast.causalState.clone()
               replica.state.causalBroadcast.tick()
             } else {
               org.scalajs.dom.window.clearInterval(interval)
-            }
-          },
+            },
           1000
         )
 
-        channel.onmessage = event => {
-
+        channel.onmessage = event =>
           if event.data.toString().startsWith("heads") then {
             val heads: ArrayBuffer[CausalID] =
               readFromString[ArrayBuffer[CausalID]](event.data.toString().stripPrefix("heads"))
@@ -142,30 +140,29 @@ private case class JSP2PAutomatic() {
                     replica.state.factoryContext.MSG
                   ]
               )
-            ] = readFromString[Seq[(CausalID, ArrayBuffer[ComplexAVLMessage])]](event.data.toString().stripPrefix("diff"))
+            ] =
+              readFromString[Seq[(CausalID, ArrayBuffer[ComplexAVLMessage])]](event.data.toString().stripPrefix("diff"))
             potentiallyNewer.foreach(received =>
               replica.deliveringRemote(received)
             )
           }
-        }
       }
     )
 
     connection.addEventListener(
       "connectionstatechange",
-      event => {
+      event =>
         child5.value = connection
           .asInstanceOf[scala.scalajs.js.Dynamic]
           .connectionState
           .asInstanceOf[String]
-      }
     )
 
     var sessionDescription: RTCSessionDescription | Null = null
 
     var candidates = Array[RTCIceCandidate]()
 
-    connection.onicecandidate = event => {
+    connection.onicecandidate = event =>
       if event.candidate eq null then {
         child5.value = writeToString(
           (
@@ -177,7 +174,6 @@ private case class JSP2PAutomatic() {
       } else {
         candidates = candidates.appended(event.candidate)
       }
-    }
 
     child7.addEventListener(
       "click",
@@ -217,24 +213,24 @@ private case class JSP2PAutomatic() {
                 incoming
               )
               .toFuture
-              .andThen(done => {
+              .andThen { done =>
                 child5.value = done.toString()
-              })
+              }
           case RTCSdpType.offer =>
             connection
               .setRemoteDescription(incoming)
               .toFuture
-              .andThen(done => {
+              .andThen(done =>
                 Future
                   .sequence(
                     iceCandidates
                       .map(connection.addIceCandidate(_).toFuture)
                   )
-                  .andThen(iceResult => {
+                  .andThen(iceResult =>
                     connection
                       .createAnswer()
                       .toFuture
-                      .andThen(answerResult => {
+                      .andThen(answerResult =>
                         answerResult match {
                           case Failure(exception) =>
                             exception.printStackTrace()
@@ -244,18 +240,18 @@ private case class JSP2PAutomatic() {
                             connection
                               .setLocalDescription(value)
                               .toFuture
-                              .andThen(done => {})
+                              .andThen { done => }
                         }
-                      })
-                  })
-              })
+                      )
+                  )
+              )
         }
       }
     )
 
     if shouldOffer then {
       val offer = connection.createOffer().toFuture
-      val _ = offer.andThen(offerResult => {
+      val _     = offer.andThen(offerResult =>
         offerResult match {
           case Failure(exception) =>
             exception.printStackTrace()
@@ -264,11 +260,11 @@ private case class JSP2PAutomatic() {
             connection
               .setLocalDescription(value)
               .toFuture
-              .andThen(done => {
+              .andThen { done =>
                 sessionDescription = value
-              })
+              }
         }
-      })
+      )
     }
 
     peers = peers.appended(connection)

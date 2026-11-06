@@ -53,18 +53,18 @@ class PaperGroups extends munit.FunSuite {
     // leader and followers share slots
     def setupConnections(allIds: Set[Uid]): Unit =
         def _setupConnections(remaining: Set[Uid]): Unit =
-            remaining.toList match {
-              case primary :: Nil         => ()
-              case primary :: secondaries =>
-                println(s"Setting up connection for $allIds with $primary as server and $secondaries as clients")
-                val connection = channels.connection.SynchronousLocalConnection(primary.toString)
-                replicas(primary).dataManagers(allIds).addServerConnection(connection.server)
-                secondaries.foreach(id =>
-                  replicas(id).dataManagers(allIds).addClientConnection(connection.client(id.toString))
-                )
-                _setupConnections(secondaries.toSet)
-              case Nil => ()
-            }
+          remaining.toList match {
+            case primary :: Nil         => ()
+            case primary :: secondaries =>
+              println(s"Setting up connection for $allIds with $primary as server and $secondaries as clients")
+              val connection = channels.connection.SynchronousLocalConnection(primary.toString)
+              replicas(primary).dataManagers(allIds).addServerConnection(connection.server)
+              secondaries.foreach(id =>
+                replicas(id).dataManagers(allIds).addClientConnection(connection.client(id.toString))
+              )
+              _setupConnections(secondaries.toSet)
+            case Nil => ()
+          }
         _setupConnections(allIds)
 
     systemConfig.knowledgeGroups.map(_.ids).foreach(setupConnections)
@@ -131,18 +131,18 @@ class PaperGroups extends munit.FunSuite {
     // leader and followers share slots
     def setupConnections(allIds: Set[Uid]): Unit =
         def _setupConnections(remaining: Set[Uid]): Unit =
-            remaining.toList match {
-              case primary :: Nil         => ()
-              case primary :: secondaries =>
-                println(s"Setting up connection for $allIds with $primary as server and $secondaries as clients")
-                val connection = channels.connection.SynchronousLocalConnection(primary.toString)
-                replicas(primary).dataManagers(allIds).addServerConnection(connection.server)
-                secondaries.foreach(id =>
-                  replicas(id).dataManagers(allIds).addClientConnection(connection.client(id.toString))
-                )
-                _setupConnections(secondaries.toSet)
-              case Nil => ()
-            }
+          remaining.toList match {
+            case primary :: Nil         => ()
+            case primary :: secondaries =>
+              println(s"Setting up connection for $allIds with $primary as server and $secondaries as clients")
+              val connection = channels.connection.SynchronousLocalConnection(primary.toString)
+              replicas(primary).dataManagers(allIds).addServerConnection(connection.server)
+              secondaries.foreach(id =>
+                replicas(id).dataManagers(allIds).addClientConnection(connection.client(id.toString))
+              )
+              _setupConnections(secondaries.toSet)
+            case Nil => ()
+          }
         _setupConnections(allIds)
 
     systemConfig.knowledgeGroups.map(_.ids).foreach(setupConnections)

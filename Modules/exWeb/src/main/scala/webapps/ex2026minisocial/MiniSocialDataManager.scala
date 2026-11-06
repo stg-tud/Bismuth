@@ -24,26 +24,25 @@ object MiniSocialDataManager {
       init: A,
       wrap: A => MiniSocial,
       unwrap: MiniSocial => Option[A]
-  )(create: (DeltaBuffer[A], Fold.Branch[DeltaBuffer[A]]) => Signal[DeltaBuffer[A]]): Signal[DeltaBuffer[A]] =
-    {
-      dataManager.broadcast(wrap(init))
-      val fullInit = dataManager.allPayloads.flatMap(v => unwrap(v.data)).foldLeft(init)(Lattice.merge)
+  )(create: (DeltaBuffer[A], Fold.Branch[DeltaBuffer[A]]) => Signal[DeltaBuffer[A]]): Signal[DeltaBuffer[A]] = {
+    dataManager.broadcast(wrap(init))
+    val fullInit = dataManager.allPayloads.flatMap(v => unwrap(v.data)).foldLeft(init)(Lattice.merge)
 
-      val branch = Fold.branch[DeltaBuffer[A]] {
-        receivedCallback.value.flatMap(unwrap) match
-            case None    => Fold.current
-            case Some(v) => Fold.current.applyDeltaNonAppend(v)
-      }
-
-      val sig = create(DeltaBuffer(fullInit), branch)
-
-      sig.observe { buffer =>
-        buffer.deltaBuffer.foreach { delta =>
-          dataManager.broadcast(wrap(delta))
-        }
-      }
-
-      sig
+    val branch = Fold.branch[DeltaBuffer[A]] {
+      receivedCallback.value.flatMap(unwrap) match
+          case None    => Fold.current
+          case Some(v) => Fold.current.applyDeltaNonAppend(v)
     }
+
+    val sig = create(DeltaBuffer(fullInit), branch)
+
+    sig.observe { buffer =>
+      buffer.deltaBuffer.foreach { delta =>
+        dataManager.broadcast(wrap(delta))
+      }
+    }
+
+    sig
+  }
 
 }

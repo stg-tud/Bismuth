@@ -22,15 +22,14 @@ case class RequestResponseQueue[S, T](
           requests = requests.update(timestamp, Req(value, timestamp)),
         )
       )
-  
-  def dequeueRequest(request: Req[S]): RequestResponseQueue[S, T] = {
+
+  def dequeueRequest(request: Req[S]): RequestResponseQueue[S, T] =
     RequestResponseQueue(requests = requests.remove(request.timestamp))
-  }
 
   def respond(request: Req[S], value: T)(using ReplicaId): RequestResponseQueue[S, T] = {
 //    val previousResonses = responses.keySet.filter(t => t._2 == request.timestamp._2)
 //    val clearedResponses: ObserveRemoveMap[Timestamp, Res[T]] = responses.removeAll(previousResonses)
-    val newResponse: ObserveRemoveMap[Timestamp, Res[T]]      = responses.update(request.timestamp, Res(value))
+    val newResponse: ObserveRemoveMap[Timestamp, Res[T]] = responses.update(request.timestamp, Res(value))
     RequestResponseQueue(
       requests = requests.remove(request.timestamp),
       responses = newResponse
@@ -52,7 +51,7 @@ case class RequestResponseQueue[S, T](
     requests.keySet.toList.sorted
 
   def requestsSorted: Seq[Req[S]] =
-     timestampsSorted.flatMap(requests.get)
+    timestampsSorted.flatMap(requests.get)
 }
 
 object RequestResponseQueue {

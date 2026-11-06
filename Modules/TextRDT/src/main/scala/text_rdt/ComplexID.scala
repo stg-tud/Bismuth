@@ -4,9 +4,8 @@ import scala.math.Ordered.orderingToOrdered
 
 final case class ComplexID(rid: RID, counter: Int, offset: Int) {
 
-  def toSimpleID: SimpleID | Null = {
+  def toSimpleID: SimpleID | Null =
     SimpleID(rid, counter)
-  }
 }
 
 given complexId: Idy[ComplexID] with {

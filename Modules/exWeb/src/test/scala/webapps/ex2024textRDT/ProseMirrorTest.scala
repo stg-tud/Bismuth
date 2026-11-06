@@ -24,7 +24,7 @@ class ProseMirrorTest extends FunSuite {
         throw e
     }
 
-  private def setupDom(count: Int): Unit = {
+  private def setupDom(count: Int): Unit =
     dom.document.body.innerHTML = (0 until count)
       .map(i =>
         s"""<div id="editor$i"></div>
@@ -33,7 +33,6 @@ class ProseMirrorTest extends FunSuite {
            |<button id="editor$i-toggle-graph"></button>""".stripMargin
       )
       .mkString("\n")
-  }
 
   private def newReplicaAndEditor[F <: FugueFactory](
       i: Int,
@@ -43,7 +42,7 @@ class ProseMirrorTest extends FunSuite {
       d3Tree.factoryContext
     )
     val replica = Replica(replicaState)
-    val editor = ProseMirror(
+    val editor  = ProseMirror(
       s"#editor$i",
       EditorState.create(editorStateConfig),
       d3Tree,
@@ -75,13 +74,13 @@ class ProseMirrorTest extends FunSuite {
   ): Unit = {
     setupDom(1)
     val (replica, editor) = newReplicaAndEditor(0, d3Tree)
-    val random = new Random(seed)
-    var text = ""
+    val random            = new Random(seed)
+    var text              = ""
 
-    for (_ <- 0 until 200) {
+    for _ <- 0 until 200 do {
       if text.isEmpty || random.nextBoolean() then {
         val index = random.nextInt(text.length + 1)
-        val char = ('a' + random.nextInt(26)).toChar
+        val char  = ('a' + random.nextInt(26)).toChar
         insert(editor, index, char)
         text = text.patch(index, char.toString, 0)
       } else {
@@ -104,9 +103,9 @@ class ProseMirrorTest extends FunSuite {
     setupDom(2)
     val (replica0, editor0) = newReplicaAndEditor(0, d3Tree)
     val (replica1, editor1) = newReplicaAndEditor(1, d3Tree)
-    val random = new Random(seed)
+    val random              = new Random(seed)
 
-    for (_ <- 0 until 60) {
+    for _ <- 0 until 60 do {
       val (editor, size) =
         if random.nextBoolean() then (editor0, replica0.text().length)
         else (editor1, replica1.text().length)

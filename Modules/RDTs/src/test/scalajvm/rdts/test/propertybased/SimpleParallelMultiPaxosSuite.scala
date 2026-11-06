@@ -85,8 +85,8 @@ class SimpleParallelMultiPaxosSpec[A: Arbitrary](
             (index1, index2) =>
               (state(index1), state(index2), res(index1), res(index2)) match
                   case (oldMultipaxos1, oldMultipaxos2, multipaxos1, multipaxos2) =>
-                    val (log1, log2)                   = (multipaxos1.read, multipaxos2.read)
-                    val (oldlog1, oldlog2)                   = (oldMultipaxos1.read, oldMultipaxos2.read)
+                    val (log1, log2)       = (multipaxos1.read, multipaxos2.read)
+                    val (oldlog1, oldlog2) = (oldMultipaxos1.read, oldMultipaxos2.read)
                     (log1.isPrefix(log2) || log2.isPrefix(
                       log1
                     )) :| s"every log is a prefix of another log or vice versa, but we had:\nleft:$log1\nright:$log2" &&

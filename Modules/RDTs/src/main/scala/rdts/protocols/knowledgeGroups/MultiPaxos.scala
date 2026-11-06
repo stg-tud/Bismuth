@@ -74,7 +74,7 @@ case class MultiPaxos[A](
 
   def proposeIfLeader(index: Long, value: A)(using ReplicaId, Participants): MultiPaxos[A] =
     precondition(index == 0L || slots.contains(index - 1)) {
-      def openNextSlot = {
+      def openNextSlot =
         // opens a new slot for the next log entry, either by reusing the old ballot or starting a new one
         slots.get(index - 1).flatMap(_.newestBallotWithLeader) match
             case Some((ballotNum, PaxosRound(leaderElection, _))) =>
@@ -86,7 +86,6 @@ case class MultiPaxos[A](
                 ))
               )
             case None => Paxos[A]()
-      }
       val paxos =
         slots.getOrElse(index, openNextSlot)
 

@@ -21,12 +21,11 @@ class AVLTreeTestSuite extends FunSuite {
       tree: AVLTree[T],
       index: Int,
       nodeWithOffset: Option[(AVLTreeNode[T], Int)]
-  )(using loc: Location): Unit = {
+  )(using loc: Location): Unit =
     nodeWithOffset match {
       case None        =>
       case Some(value) => assertEquals(value._1.indexOfNode() + value._2, index)
     }
-  }
 
   test("assertions enabled") {
     assertEquals(Helper.ENABLE, true)
@@ -45,8 +44,8 @@ class AVLTreeTestSuite extends FunSuite {
   }
 
   test("1 01 0001: Rotate Left") {
-    val tree = AVLTree[String](null)
-    val root = AVLTreeNode("a", null)
+    val tree  = AVLTree[String](null)
+    val root  = AVLTreeNode("a", null)
     val nodeR =
       AVLTreeNode("b", root)
     val nodeRR = AVLTreeNode("c", nodeR)
@@ -114,8 +113,8 @@ class AVLTreeTestSuite extends FunSuite {
   }
 
   test("1 01 -> 1 01 0001") {
-    val tree = AVLTree[String](null)
-    val root = AVLTreeNode("a", null)
+    val tree  = AVLTree[String](null)
+    val root  = AVLTreeNode("a", null)
     val nodeR = AVLTreeNode("b", root)
     root.right = nodeR
     tree.root = root

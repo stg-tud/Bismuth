@@ -24,7 +24,7 @@ final case class InternalSingleReplicaInsertDeleteTest[A](
   }
 
   def genInsert(state: State): Option[Gen[Insert]] = Some(for {
-    index <- Gen.chooseNum(0, state.length())
+    index     <- Gen.chooseNum(0, state.length())
     character <- Gen.asciiPrintableChar
   } yield Insert(index, character))
 
@@ -55,9 +55,12 @@ final case class InternalSingleReplicaInsertDeleteTest[A](
       }
 
       sut.insert(index, character)
-  
+
       if sut.isInstanceOf[Replica[?]] then {
-        assert(sut.asInstanceOf[Replica[?]].editor.asInstanceOf[StringEditory].data.toString() == sut.text(), s"${sut.asInstanceOf[Replica[?]].editor.asInstanceOf[StringEditory].data.toString()} == ${sut.text()}")
+        assert(
+          sut.asInstanceOf[Replica[?]].editor.asInstanceOf[StringEditory].data.toString() == sut.text(),
+          s"${sut.asInstanceOf[Replica[?]].editor.asInstanceOf[StringEditory].data.toString()} == ${sut.text()}"
+        )
       }
 
       sut.text()
@@ -65,9 +68,8 @@ final case class InternalSingleReplicaInsertDeleteTest[A](
 
     override def preCondition(state: State): Boolean = index <= state.length()
 
-    override def postCondition(state: State, result: Result): Prop = {
+    override def postCondition(state: State, result: Result): Prop =
       Prop.=?(nextState(state), result)
-    }
 
     override def nextState(state: State): State = {
       val builder = StringBuilder(state)
@@ -85,7 +87,7 @@ final case class InternalSingleReplicaInsertDeleteTest[A](
       }
 
       sut.delete(index)
-    
+
       if sut.isInstanceOf[Replica[?]] then {
         assert(sut.asInstanceOf[Replica[?]].editor.asInstanceOf[StringEditory].data.toString() == sut.text())
       }
@@ -93,16 +95,14 @@ final case class InternalSingleReplicaInsertDeleteTest[A](
       sut.text()
     }
 
-    override def preCondition(state: State): Boolean = {
+    override def preCondition(state: State): Boolean =
       index < state.length()
-    }
 
-    override def postCondition(state: State, result: Result): Prop = {
+    override def postCondition(state: State, result: Result): Prop =
       Prop.=?(
         nextState(state),
         result
       )
-    }
 
     override def nextState(state: State): State = {
       val builder = StringBuilder(state)

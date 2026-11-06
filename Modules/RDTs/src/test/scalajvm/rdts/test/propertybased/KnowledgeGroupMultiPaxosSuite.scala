@@ -53,21 +53,21 @@ class KnowledgeGroupMultiPaxosSpec[A: Arbitrary](
 
   def genStartElection(state: State): Gen[StartElection] =
     for
-        id   <- genId(state)
-        slot <- Gen.chooseNum(0, 5)
+        id        <- genId(state)
+        slot      <- Gen.chooseNum(0, 5)
         receivers <- genIdSubset(state)
     yield StartElection(id, slot, receivers + id)
 
   def genRequest(state: State): Gen[Request] =
     for
-        id    <- genId(state)
-        value <- arbitrary[A]
+        id        <- genId(state)
+        value     <- arbitrary[A]
         receivers <- genIdSubset(state)
     yield Request(id, value, receivers + id)
 
   def genUpkeep(state: State): Gen[Upkeep] =
     for
-        id <- genId(state)
+        id        <- genId(state)
         receivers <- genIdSubset(state)
     yield Upkeep(id, receivers + id)
 
@@ -95,7 +95,9 @@ class KnowledgeGroupMultiPaxosSpec[A: Arbitrary](
                     (log1.isPrefix(log2) || log2.isPrefix(
                       log1
                     )) :| s"every log is a prefix of another log or vice versa, but we had:\nleft:$log1\nright:$log2" &&
-                    (log1.isPrefix(oldLog1) && log2.isPrefix(oldLog2)) :| s"logs never shrink but we had $oldLog1 -> $log1, $oldLog2 -> $log2\n$oldMultipaxos2\n$multipaxos2"
+                    (log1.isPrefix(oldLog1) && log2.isPrefix(
+                      oldLog2
+                    )) :| s"logs never shrink but we had $oldLog1 -> $log1, $oldLog2 -> $log2\n$oldMultipaxos2\n$multipaxos2"
 //                    (log1.size < 5) :| s"logs are small but we had: $log1"
           }
 

@@ -44,7 +44,7 @@ class ProBenchClient(val name: Uid, logTimings: Boolean) extends Client(name, lo
       }
       publishRead(request)
       p.future
-      
+
   def writeWithResult(key: String, value: String): Future[String] =
     writeWithResult(Uid.gen(), key, value)
 

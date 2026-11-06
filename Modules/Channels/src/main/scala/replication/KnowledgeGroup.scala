@@ -14,11 +14,11 @@ case class PrdtSystem[A](knowledgeGroups: Set[KnowledgeGroup[A]]) {
     knowledgeGroups.filter(_.ids.contains(uid))
 
   def matches(delta: A, receiver: Uid)(using Bottom[A], ReplicaId) =
-    val localReplicaId = summon[ReplicaId].uid
-    knowledgeGroups.exists(g => g.ids.contains(localReplicaId) && g.ids.contains(receiver) && g.matches(delta))
+      val localReplicaId = summon[ReplicaId].uid
+      knowledgeGroups.exists(g => g.ids.contains(localReplicaId) && g.ids.contains(receiver) && g.matches(delta))
 
   def matches(delta: A, receivers: Set[Uid])(using Bottom[A], ReplicaId) =
-    val localReplicaId = summon[ReplicaId].uid
-    knowledgeGroups.exists(g => g.ids.contains(localReplicaId) && g.ids == receivers && g.matches(delta))
+      val localReplicaId = summon[ReplicaId].uid
+      knowledgeGroups.exists(g => g.ids.contains(localReplicaId) && g.ids == receivers && g.matches(delta))
 
 }

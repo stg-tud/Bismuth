@@ -44,26 +44,25 @@ case class InternalMultiReplicaStrongListSpecificationTest[F <: FugueFactory]()(
     if !state.contains(replicaId)
   } yield CreateReplica(replicaId))
 
-  def genSyncReplicas(state: State): Option[Gen[SyncReplicas]] = if (
-    state.size <= 1
-   ) then {
-    None
-  } else {
-    Some(for {
-      replicaIndex1 <- Gen.oneOf(state)
-      replicaIndex2 <- Gen.oneOf(state diff Set(replicaIndex1))
-    } yield {
-      SyncReplicas(replicaIndex1, replicaIndex2)
-    })
-  }
+  def genSyncReplicas(state: State): Option[Gen[SyncReplicas]] =
+    if
+        state.size <= 1
+    then {
+      None
+    } else {
+      Some(for {
+        replicaIndex1 <- Gen.oneOf(state)
+        replicaIndex2 <- Gen.oneOf(state diff Set(replicaIndex1))
+      } yield SyncReplicas(replicaIndex1, replicaIndex2))
+    }
 
   def genInsert(state: State): Option[Gen[Insert]] = if state.isEmpty then {
     None
   } else {
     Some(for {
       replicaIndex <- Gen.oneOf(state)
-      index <- Gen.chooseNum(0, Int.MaxValue)
-      character <- Gen.asciiPrintableChar
+      index        <- Gen.chooseNum(0, Int.MaxValue)
+      character    <- Gen.asciiPrintableChar
     } yield Insert(replicaIndex, index, character))
   }
 
@@ -72,7 +71,7 @@ case class InternalMultiReplicaStrongListSpecificationTest[F <: FugueFactory]()(
   } else {
     Some(for {
       replicaIndex <- Gen.oneOf(state)
-      index <- Gen.chooseNum(0, Int.MaxValue)
+      index        <- Gen.chooseNum(0, Int.MaxValue)
     } yield Delete(replicaIndex, index))
   }
 
@@ -104,24 +103,21 @@ case class InternalMultiReplicaStrongListSpecificationTest[F <: FugueFactory]()(
         replicaIndex.toString
       )(using factoryContext)
       val replica = Replica(replicaState, StringEditory())
-      val _ = sut.put(replicaIndex, replica)
+      val _       = sut.put(replicaIndex, replica)
 
       val after = sut.view.mapValues(r => r.state.factoryContext.textWithDeleted(r.state.factory)()).toMap
       (before, after)
     }
 
-    override def nextState(state: State): State = {
+    override def nextState(state: State): State =
       state ++ Set(replicaIndex)
-    }
 
-    override def postCondition(state: Set[Int], result: Result): Prop = {
+    override def postCondition(state: Set[Int], result: Result): Prop =
       Prop.all(
         (List(Prop.=?(state, result._1.keySet), Prop.=?(state ++ Set(replicaIndex), result._2.keySet))
-          ++
-          result._1.map((key, value) => Prop.=?(value, result._2(key))).toList
-        )*
+        ++
+        result._1.map((key, value) => Prop.=?(value, result._2(key))).toList)*
       )
-    }
   }
 
   case class SyncReplicas(replicaIndex1: Int, replicaIndex2: Int)
@@ -148,26 +144,29 @@ case class InternalMultiReplicaStrongListSpecificationTest[F <: FugueFactory]()(
       (before, after)
     }
 
-    override def nextState(state: State): State = {
+    override def nextState(state: State): State =
       state
-    }
 
-    override def postCondition(state: Set[Int], result: Result): Prop = {
+    override def postCondition(state: Set[Int], result: Result): Prop =
       // check that text before of replica 1 is a subset of text after
       // check that text before of replica 2 is a subset of text after
       // oh no deletions could change this, right
 
       // maybe check that order of what is still there  is still correct? can we even do this? I don't think so
 
-     // val newText = StringBuilder(result._1(replicaIndex)).insert(index % (result._1(replicaIndex).length + 1), character).toString()
+      // val newText = StringBuilder(result._1(replicaIndex)).insert(index % (result._1(replicaIndex).length + 1), character).toString()
       // TODO check that before can produce text after
       Prop.all(
-        (List(Prop.=?(state, result._1.keySet), Prop.=?(state, result._2.keySet), Prop.=?(result._2(replicaIndex1), result._2(replicaIndex2)))
-          ++
-          (result._1.view.filterKeys(key => key != replicaIndex1 && key != replicaIndex2)).map((key, value) => Prop.=?(value, result._2(key))).toList
-          )*
+        (List(
+          Prop.=?(state, result._1.keySet),
+          Prop.=?(state, result._2.keySet),
+          Prop.=?(result._2(replicaIndex1), result._2(replicaIndex2))
+        )
+        ++
+        result._1.view.filterKeys(key => key != replicaIndex1 && key != replicaIndex2).map((key, value) =>
+          Prop.=?(value, result._2(key))
+        ).toList)*
       )
-    }
   }
 
   case class Insert(replicaIndex: Int, index: Int, character: Char)
@@ -177,10 +176,10 @@ case class InternalMultiReplicaStrongListSpecificationTest[F <: FugueFactory]()(
       val before = sut.view.mapValues(r => r.state.factoryContext.textWithDeleted(r.state.factory)()).toMap
 
       val replica = sut(replicaIndex)
-      val len = replica.state.factoryContext.textWithDeleted(replica.state.factory)().filter(_.isLeft).size
-      
+      val len     = replica.state.factoryContext.textWithDeleted(replica.state.factory)().filter(_.isLeft).size
+
       assert(sut(replicaIndex).editor.asInstanceOf[StringEditory].data.toString() == sut(replicaIndex).text())
-      
+
       replica.insert(index % (len + 1), character)
 
       assert(sut(replicaIndex).editor.asInstanceOf[StringEditory].data.toString() == sut(replicaIndex).text())
@@ -192,20 +191,18 @@ case class InternalMultiReplicaStrongListSpecificationTest[F <: FugueFactory]()(
     override def preCondition(state: State): Boolean =
       state.contains(replicaIndex)
 
-    override def nextState(state: State): State = {
-       state
-    }
+    override def nextState(state: State): State =
+      state
 
     override def postCondition(state: Set[Int], result: Result): Prop = {
       println(s"result $result")
       val newText = result._1(replicaIndex).to(mutable.ArrayBuffer)
 
-
       // TODO FIXME this whole shit does not work if there are multiple deleted characters after each other
 
-      val indexModulo = index % (result._1(replicaIndex).count(_.isLeft) + 1)
-      var currentIndex = 0
-      var collectionIndex = newText.indexWhere(value => {
+      val indexModulo     = index % (result._1(replicaIndex).count(_.isLeft) + 1)
+      var currentIndex    = 0
+      var collectionIndex = newText.indexWhere(value =>
         if value.isLeft then {
           if currentIndex == indexModulo then {
             true
@@ -216,16 +213,21 @@ case class InternalMultiReplicaStrongListSpecificationTest[F <: FugueFactory]()(
         } else {
           false
         }
-      })
+      )
       if collectionIndex == -1 then {
         collectionIndex = newText.size - 1
       }
       newText.insert(collectionIndex, Left(character))
       Prop.all(
-        (List(Prop.=?(state, result._1.keySet), Prop.=?(state, result._2.keySet), Prop.=?(newText, result._2(replicaIndex)))
-          ++
-          (result._1.view.filterKeys(key => key != replicaIndex)).map((key, value) => Prop.=?(value, result._2(key))).toList
-          )*
+        (List(
+          Prop.=?(state, result._1.keySet),
+          Prop.=?(state, result._2.keySet),
+          Prop.=?(newText, result._2(replicaIndex))
+        )
+        ++
+        result._1.view.filterKeys(key => key != replicaIndex).map((key, value) =>
+          Prop.=?(value, result._2(key))
+        ).toList)*
       )
     }
   }
@@ -236,7 +238,7 @@ case class InternalMultiReplicaStrongListSpecificationTest[F <: FugueFactory]()(
       val before = sut.view.mapValues(r => r.state.factoryContext.textWithDeleted(r.state.factory)()).toMap
 
       val replica = sut(replicaIndex)
-      val len =
+      val len     =
         replica.state.factoryContext.textWithDeleted(replica.state.factory)().filter(_.isLeft).size
 
       assert(sut(replicaIndex).editor.asInstanceOf[StringEditory].data.toString() == sut(replicaIndex).text())
@@ -254,17 +256,16 @@ case class InternalMultiReplicaStrongListSpecificationTest[F <: FugueFactory]()(
     override def preCondition(state: State): Boolean =
       state.contains(replicaIndex)
 
-    override def nextState(state: State): State = {
+    override def nextState(state: State): State =
       state
-    }
 
     override def postCondition(state: Set[Int], result: Result): Prop = {
       val newText = result._1(replicaIndex).to(mutable.ArrayBuffer)
       if result._1(replicaIndex).count(_.isLeft) != 0 then {
         // skip deleted
-        val indexModulo = index % result._1(replicaIndex).count(_.isLeft)
-        var currentIndex = 0
-        val collectionIndex = newText.indexWhere(value => {
+        val indexModulo     = index % result._1(replicaIndex).count(_.isLeft)
+        var currentIndex    = 0
+        val collectionIndex = newText.indexWhere(value =>
           if value.isLeft then {
             if currentIndex == indexModulo then {
               true
@@ -275,14 +276,19 @@ case class InternalMultiReplicaStrongListSpecificationTest[F <: FugueFactory]()(
           } else {
             false
           }
-        })
+        )
         newText(collectionIndex) = Right(newText(collectionIndex).getOrElse('*'))
       }
       Prop.all(
-        (List(Prop.=?(state, result._1.keySet), Prop.=?(state, result._2.keySet), Prop.=?(newText, result._2(replicaIndex)))
-          ++
-          (result._1.view.filterKeys(key => key != replicaIndex)).map((key, value) => Prop.=?(value, result._2(key))).toList
-          ) *
+        (List(
+          Prop.=?(state, result._1.keySet),
+          Prop.=?(state, result._2.keySet),
+          Prop.=?(newText, result._2(replicaIndex))
+        )
+        ++
+        result._1.view.filterKeys(key => key != replicaIndex).map((key, value) =>
+          Prop.=?(value, result._2(key))
+        ).toList)*
       )
     }
   }

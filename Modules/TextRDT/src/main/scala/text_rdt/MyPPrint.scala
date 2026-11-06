@@ -4,7 +4,7 @@ import pprint.PPrinter
 import text_rdt.avl.AVLTreeNode
 import text_rdt.avl2.AVL2TreeNode
 
-lazy val pprintNonAVL: PPrinter =
+lazy val pprintNonAVL: PPrinter = {
   pprint.copy(
     additionalHandlers = {
       case value: AVLTreeNode[?] =>
@@ -151,6 +151,7 @@ lazy val pprintNonAVL: PPrinter =
         )
     }
   )
+}
 
 lazy val pprintAVL: PPrinter =
   pprint.copy(

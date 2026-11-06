@@ -28,43 +28,39 @@ final case class AVL2TreeBasicTest() extends Commands {
   def genInsert(state: State): Gen[Insert] = if state.isEmpty then {
     for {
       value <- Gen.choose(0, Int.MaxValue)
-      side <- Gen.oneOf(Side.Left, Side.Right)
-    } yield {
-      Insert(side, null, value)
-    }
+      side  <- Gen.oneOf(Side.Left, Side.Right)
+    } yield Insert(side, null, value)
   } else {
     for {
       value <- Gen.choose(0, Int.MaxValue)
       if !state.contains(value)
       side <- Gen.oneOf(Side.Left, Side.Right)
-    } yield {
-      side match {
-        case text_rdt.Side.Left =>
-          state.filter(_ > value).minOption match {
-            case None =>
-              state.filter(_ < value).maxOption match {
-                case None       => ???
-                case Some(base) => Insert(Side.Right, base, value)
-              }
-            case Some(base) => Insert(Side.Left, base, value)
-          }
-        case text_rdt.Side.Right =>
-          state.filter(_ < value).maxOption match {
-            case None =>
-              state.filter(_ > value).minOption match {
-                case None       => ???
-                case Some(base) => Insert(Side.Left, base, value)
-              }
-            case Some(base) => Insert(Side.Right, base, value)
-          }
-      }
+    } yield side match {
+      case text_rdt.Side.Left =>
+        state.filter(_ > value).minOption match {
+          case None =>
+            state.filter(_ < value).maxOption match {
+              case None       => ???
+              case Some(base) => Insert(Side.Right, base, value)
+            }
+          case Some(base) => Insert(Side.Left, base, value)
+        }
+      case text_rdt.Side.Right =>
+        state.filter(_ < value).maxOption match {
+          case None =>
+            state.filter(_ > value).minOption match {
+              case None       => ???
+              case Some(base) => Insert(Side.Left, base, value)
+            }
+          case Some(base) => Insert(Side.Right, base, value)
+        }
     }
   }
 
   def genSplit(state: State): Gen[Split] =
     for {
       value <- Gen.oneOf(state)
-      side <- Gen.oneOf(Side.Left, Side.Right)
+      side  <- Gen.oneOf(Side.Left, Side.Right)
     } yield Split(side, value)
 
   override def canCreateNewSut(
@@ -86,10 +82,10 @@ final case class AVL2TreeBasicTest() extends Commands {
 
     override def run(sut: Sut): Result = {
       base match {
-        case null => null
+        case null  => null
         case value =>
           sut.value.collectNodes().find(_.value == base) match {
-            case None =>
+            case None           =>
             case Some(baseNode) =>
               sut.value.insert(baseNode, AVL2TreeNode(value, sut.value), side)
           }
@@ -97,17 +93,15 @@ final case class AVL2TreeBasicTest() extends Commands {
       sut.value.values()
     }
 
-    override def postCondition(state: State, result: Result): Prop = {
+    override def postCondition(state: State, result: Result): Prop =
       Prop.=?(result, nextState(state).sorted)
-    }
 
-    override def nextState(state: State): State = {
+    override def nextState(state: State): State =
       if state.contains(base) then {
         state.appended(value)
       } else {
         state
       }
-    }
   }
 
   case class Split(side: Side, value: Int) extends SuccessCommand {
@@ -115,15 +109,14 @@ final case class AVL2TreeBasicTest() extends Commands {
 
     override def preCondition(state: State): Boolean = true
 
-    override def nextState(state: State): State = {
+    override def nextState(state: State): State =
       side match {
         case text_rdt.Side.Left  => state.filter(_ <= value)
         case text_rdt.Side.Right => state.filter(_ > value)
       }
-    }
 
     override def run(sut: Sut): Result = {
-      val leftTree = AVL2Tree[Unit](null, ())
+      val leftTree      = AVL2Tree[Unit](null, ())
       val (left, right) = sut.value.split(value, leftTree)
 
       side match {
@@ -137,11 +130,10 @@ final case class AVL2TreeBasicTest() extends Commands {
     override def postCondition(
         state: State,
         result: Result
-    ): Prop = {
+    ): Prop =
       Prop.=?(result._1, state.filter(_ <= value).sorted) && Prop.=?(
         result._2,
         state.filter(_ > value).sorted
       )
-    }
   }
 }

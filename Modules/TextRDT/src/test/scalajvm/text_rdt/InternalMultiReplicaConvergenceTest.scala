@@ -39,26 +39,25 @@ case class InternalMultiReplicaConvergenceTest[A](
     if !state._1.keySet.contains(replicaId)
   } yield CreateReplica(replicaId))
 
-  def genSyncReplicas(state: State): Option[Gen[SyncReplicas]] = if (
-    state._1.size <= 1
-   ) then {
-    None
-  } else {
-    Some(for {
-      replicaIndex1 <- Gen.oneOf(state._1.keySet)
-      replicaIndex2 <- Gen.oneOf(state._1.keySet diff Set(replicaIndex1))
-    } yield {
-      SyncReplicas(replicaIndex1, replicaIndex2)
-    })
-  }
+  def genSyncReplicas(state: State): Option[Gen[SyncReplicas]] =
+    if
+        state._1.size <= 1
+    then {
+      None
+    } else {
+      Some(for {
+        replicaIndex1 <- Gen.oneOf(state._1.keySet)
+        replicaIndex2 <- Gen.oneOf(state._1.keySet diff Set(replicaIndex1))
+      } yield SyncReplicas(replicaIndex1, replicaIndex2))
+    }
 
   def genInsert(state: State): Option[Gen[Insert]] = if state._1.isEmpty then {
     None
   } else {
     Some(for {
       replicaIndex <- Gen.oneOf(state._1.keySet)
-      index <- Gen.chooseNum(0, Int.MaxValue)
-      character <- Gen.asciiPrintableChar
+      index        <- Gen.chooseNum(0, Int.MaxValue)
+      character    <- Gen.asciiPrintableChar
     } yield Insert(replicaIndex, index, character))
   }
 
@@ -67,7 +66,7 @@ case class InternalMultiReplicaConvergenceTest[A](
   } else {
     Some(for {
       replicaIndex <- Gen.oneOf(state._1.keySet)
-      index <- Gen.chooseNum(0, Int.MaxValue)
+      index        <- Gen.chooseNum(0, Int.MaxValue)
     } yield Delete(replicaIndex, index))
   }
 
@@ -86,7 +85,7 @@ case class InternalMultiReplicaConvergenceTest[A](
     type Result = Map[Int, String]
 
     override def postCondition(state: State, result: Result): Prop = {
-      val grouped = nextState(state)._1.groupBy(e => e._2.revision)
+      val grouped         = nextState(state)._1.groupBy(e => e._2.revision)
       val groupsToCompare = grouped
         .map(elem => elem._2.toList.map(e => e._1))
         .filter(l => l.length > 1)
@@ -120,14 +119,13 @@ case class InternalMultiReplicaConvergenceTest[A](
       sut.view.mapValues(_.text()).toMap
     }
 
-    override def nextState(state: State): State = {
+    override def nextState(state: State): State =
       (
         state._1 ++ Iterable(
           (id, Convergence(state._2 + 1))
         ),
         state._2 + 1
       )
-    }
   }
 
   case class SyncReplicas(replicaIndex1: Int, replicaIndex2: Int)
@@ -148,8 +146,14 @@ case class InternalMultiReplicaConvergenceTest[A](
       replica1.sync(replica2.asInstanceOf[replica1.type])
 
       if replica1.isInstanceOf[Replica[?]] then {
-        assert(replica1.asInstanceOf[Replica[?]].editor.asInstanceOf[StringEditory].data.toString() == replica1.text(), s"${replica1.asInstanceOf[Replica[?]].editor.asInstanceOf[StringEditory].data.toString()} == ${replica1.text()}")
-        assert(replica2.asInstanceOf[Replica[?]].editor.asInstanceOf[StringEditory].data.toString() == replica2.text(), s"${replica2.asInstanceOf[Replica[?]].editor.asInstanceOf[StringEditory].data.toString()} == ${replica2.text()}")
+        assert(
+          replica1.asInstanceOf[Replica[?]].editor.asInstanceOf[StringEditory].data.toString() == replica1.text(),
+          s"${replica1.asInstanceOf[Replica[?]].editor.asInstanceOf[StringEditory].data.toString()} == ${replica1.text()}"
+        )
+        assert(
+          replica2.asInstanceOf[Replica[?]].editor.asInstanceOf[StringEditory].data.toString() == replica2.text(),
+          s"${replica2.asInstanceOf[Replica[?]].editor.asInstanceOf[StringEditory].data.toString()} == ${replica2.text()}"
+        )
       }
 
       sut.view.mapValues(_.text()).toMap
@@ -176,13 +180,17 @@ case class InternalMultiReplicaConvergenceTest[A](
         sut(replicaIndex).text().length()
 
       if sut(replicaIndex).isInstanceOf[Replica[?]] then {
-        assert(sut(replicaIndex).asInstanceOf[Replica[?]].editor.asInstanceOf[StringEditory].data.toString() == sut(replicaIndex).text())
+        assert(sut(replicaIndex).asInstanceOf[Replica[?]].editor.asInstanceOf[StringEditory].data.toString() == sut(
+          replicaIndex
+        ).text())
       }
 
       sut(replicaIndex).insert(index % (len + 1), character)
 
       if sut(replicaIndex).isInstanceOf[Replica[?]] then {
-        assert(sut(replicaIndex).asInstanceOf[Replica[?]].editor.asInstanceOf[StringEditory].data.toString() == sut(replicaIndex).text())
+        assert(sut(replicaIndex).asInstanceOf[Replica[?]].editor.asInstanceOf[StringEditory].data.toString() == sut(
+          replicaIndex
+        ).text())
       }
 
       sut.view.mapValues(_.text()).toMap
@@ -191,7 +199,7 @@ case class InternalMultiReplicaConvergenceTest[A](
     override def preCondition(state: State): Boolean =
       state._1.contains(replicaIndex)
 
-    override def nextState(state: State): State = {
+    override def nextState(state: State): State =
       (
         state._1.updated(
           replicaIndex,
@@ -199,7 +207,6 @@ case class InternalMultiReplicaConvergenceTest[A](
         ),
         state._2 + 1
       )
-    }
   }
 
   case class Delete(replicaIndex: Int, index: Int) extends BaseCommand {
@@ -209,7 +216,9 @@ case class InternalMultiReplicaConvergenceTest[A](
         sut(replicaIndex).text().length()
 
       if sut(replicaIndex).isInstanceOf[Replica[?]] then {
-        assert(sut(replicaIndex).asInstanceOf[Replica[?]].editor.asInstanceOf[StringEditory].data.toString() == sut(replicaIndex).text())
+        assert(sut(replicaIndex).asInstanceOf[Replica[?]].editor.asInstanceOf[StringEditory].data.toString() == sut(
+          replicaIndex
+        ).text())
       }
 
       if len > 0 then {
@@ -217,7 +226,9 @@ case class InternalMultiReplicaConvergenceTest[A](
       }
 
       if sut(replicaIndex).isInstanceOf[Replica[?]] then {
-        assert(sut(replicaIndex).asInstanceOf[Replica[?]].editor.asInstanceOf[StringEditory].data.toString() == sut(replicaIndex).text())
+        assert(sut(replicaIndex).asInstanceOf[Replica[?]].editor.asInstanceOf[StringEditory].data.toString() == sut(
+          replicaIndex
+        ).text())
       }
 
       sut.view.mapValues(_.text()).toMap
@@ -226,7 +237,7 @@ case class InternalMultiReplicaConvergenceTest[A](
     override def preCondition(state: State): Boolean =
       state._1.contains(replicaIndex)
 
-    override def nextState(state: State): State = {
+    override def nextState(state: State): State =
       (
         state._1.updated(
           replicaIndex,
@@ -234,6 +245,5 @@ case class InternalMultiReplicaConvergenceTest[A](
         ),
         state._2 + 1
       )
-    }
   }
 }

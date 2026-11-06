@@ -6,6 +6,6 @@ enum Message[ID] {
       value: Char,
       parent: ID | Null,
       side: Side
-  ) extends Message[ID]()
+  )                   extends Message[ID]()
   case Delete(id: ID) extends Message[ID]()
 }

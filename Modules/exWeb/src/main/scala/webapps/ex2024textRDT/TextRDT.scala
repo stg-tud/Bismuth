@@ -6,7 +6,6 @@ import scala.scalajs.js.annotation.JSExportTopLevel
 object TextRDT {
 
   @JSExportTopLevel("TextRDT")
-  def run(): Unit = {
+  def run(): Unit =
     JSMain.main()
-  }
 }

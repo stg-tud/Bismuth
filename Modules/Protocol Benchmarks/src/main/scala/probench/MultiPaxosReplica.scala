@@ -21,7 +21,7 @@ given JsonValueCodec[MultiPaxos[Request]] =
   JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))
 
 given Lattice[Payload[MultiPaxos[Request]]] =
-    Lattice.derived
+  Lattice.derived
 
 object KnowledgeGroups {
   val client    = Uid.predefined("client")
@@ -33,7 +33,7 @@ object KnowledgeGroups {
   val proxy1    = Uid.predefined("proxy1")
   val proxy2    = Uid.predefined("proxy2")
   // client server config
-  val clientServer = {
+  val clientServer =
     PrdtSystem[MultiPaxos[Request]](Set(
       KnowledgeGroup( // leader and followers share slots
         ids = Set(leader, follower1, follower2, follower3, follower4),
@@ -51,7 +51,6 @@ object KnowledgeGroups {
         enabled = _ => true
       )
     ))
-  }
 
   val compartmentalized = PrdtSystem[MultiPaxos[Request]](Set(
     KnowledgeGroup( // leader proxy1 for uneven rounds, and then only phase2a or leaderElection
@@ -163,12 +162,11 @@ class MultiPaxosReplica(
         val newstate: MultiPaxos[Request] = state.merge(upkept)
         val value                         = delta.requests.elements.head
         val slotIndex                     = newstate.slots.keys.maxOption.getOrElse(-1L)
-        val slot                          = {
+        val slot                          =
           if slotIndex == 0 && !newstate.slots(0).currentRoundHasProposal then
               0
           else
               slotIndex + 1
-        }
         val proposal = newstate.proposeIfLeader(slot, value)
         if !state.subsumes(proposal) then {
           log(s"got new request, proposing for slot ${slot}")
@@ -200,7 +198,7 @@ class MultiPaxosReplica(
     publish(delta)
   }
 
-  def requestWithResult(requestId: Uid, payload: String): Future[String] = {
+  def requestWithResult(requestId: Uid, payload: String): Future[String] =
     currentStateLock.synchronized {
       val delta = state.request(Request(requestId, payload))
       val p     = Promise[String]()
@@ -212,9 +210,8 @@ class MultiPaxosReplica(
       publish(delta)
       p.future
     }
-  }
 
-  private def maybeReturnResult(delta: MultiPaxos[Request]): Unit = {
+  private def maybeReturnResult(delta: MultiPaxos[Request]): Unit =
     // return resolved requests
     promises.synchronized {
       val answers = delta.log.values
@@ -225,7 +222,6 @@ class MultiPaxosReplica(
           }
       }
     }
-  }
 
   def startLeaderElection(): Unit = {
     val delta = state.startLeaderElection(state.log.size)

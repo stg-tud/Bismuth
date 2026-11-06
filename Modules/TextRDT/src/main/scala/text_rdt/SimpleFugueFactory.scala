@@ -6,15 +6,14 @@ import scala.math.Ordered.orderingToOrdered
 
 object SimpleFugueFactory {
   given simpleFugueFactory: FugueFactory with {
-    type ID = SimpleID
-    type N = SimpleTreeNode
-    type NC = simpleTreeNode.type
-    type F = SimpleFugueFactory
+    type ID  = SimpleID
+    type N   = SimpleTreeNode
+    type NC  = simpleTreeNode.type
+    type F   = SimpleFugueFactory
     type MSG = Message[ID]
 
-    def create(replicaId: RID): SimpleFugueFactory = {
+    def create(replicaId: RID): SimpleFugueFactory =
       SimpleFugueFactory(replicaId)
-    }
 
     given treeNodeContext: NC = simpleTreeNode
 
@@ -32,7 +31,7 @@ object SimpleFugueFactory {
             factory.atVisibleIndex(i - 1)
           }
         val firstRightChild = leftOrigin.firstRightChild()
-        val side = if firstRightChild == null then {
+        val side            = if firstRightChild == null then {
           Side.Right
         } else {
           Side.Left
@@ -52,13 +51,12 @@ object SimpleFugueFactory {
         )
       }
 
-      def handleRemoteMessage(message: MSG, editor: Editory): Unit = {
+      def handleRemoteMessage(message: MSG, editor: Editory): Unit =
         message match {
           case Message.Insert(id, value, parent, side) =>
             deliveringRemoteInsert(editor, id, value, parent, side)
           case Message.Delete(id) => deliveringRemoteDelete(editor, id)
         }
-      }
 
       private def deliveringRemoteDelete(editor: Editory, id: ID): Unit = {
         val deleted = deliveringLocalDelete(id)
@@ -96,21 +94,18 @@ object SimpleFugueFactory {
           id
         )
         val deleted = treeNode.value() != null
-        val _ = factory.delete(treeNode)
+        val _       = factory.delete(treeNode)
         deleted
       }
 
-      def values(): Iterable[Char] = {
+      def values(): Iterable[Char] =
         traverse(null)
-      }
 
-      private def nodes(): Iterable[N] = {
+      private def nodes(): Iterable[N] =
         nodes(null)
-      }
 
-      private def nodesWithTombstones(): Iterable[N] = {
+      private def nodesWithTombstones(): Iterable[N] =
         nodesWithTombstones(null)
-      }
 
       @tailrec
       private def tryProduce(
@@ -130,7 +125,7 @@ object SimpleFugueFactory {
               Some((node, node))
             case text_rdt.Side.Right =>
               node.parent() match {
-                case null => None
+                case null  => None
                 case value =>
                   tryProduce(value, stack)
               }
@@ -147,31 +142,27 @@ object SimpleFugueFactory {
           start: N
       ): Iterable[N] = {
         val stack = mutable.Stack(StackEntry(Side.Left, start.leftChildren()))
-        Iterable.unfold(start)(node => {
+        Iterable.unfold(start)(node =>
           tryProduce(node, stack)
-        })
+        )
       }
 
       @targetName("nodesWithTombstones_id")
       private def nodesWithTombstones(
           nodeID: ID | Null
-      ): Iterable[N] = {
+      ): Iterable[N] =
         nodesWithTombstones(factory.get(nodeID))
-      }
 
-      private def nodes(node: N): Iterable[N] = {
+      private def nodes(node: N): Iterable[N] =
         nodesWithTombstones(node).filter(node => node.value() != null)
-      }
 
       @targetName("nodes_id")
-      private def nodes(nodeID: ID | Null): Iterable[N] = {
+      private def nodes(nodeID: ID | Null): Iterable[N] =
         nodes(factory.get(nodeID))
-      }
 
       @targetName("traverse_id")
-      private def traverse(nodeID: ID | Null): Iterable[Char] = {
+      private def traverse(nodeID: ID | Null): Iterable[Char] =
         nodes(nodeID).map(node => node.value().nn)
-      }
 
       override def atVisibleIndex(i: Int): SimpleTreeNode = {
         val vals = factory.nodes().drop(i)
@@ -180,12 +171,11 @@ object SimpleFugueFactory {
 
       override def textWithDeleted(): Vector[Either[Char, Char]] = ???
 
-      override def text(): String = values().mkString
-      override def visibleIndexOf(node: N): Int = {
+      override def text(): String               = values().mkString
+      override def visibleIndexOf(node: N): Int =
         nodesWithTombstones()
           .takeWhile(value => value.id() != node.id())
           .count(node => node.value() != null)
-      }
 
       override def dupe(): SimpleFugueFactory = factory
 
@@ -260,9 +250,8 @@ object SimpleFugueFactory {
         Message.Delete(node.node.id.nn)
       }
 
-      override def get(id: SimpleID | Null): SimpleTreeNode = {
+      override def get(id: SimpleID | Null): SimpleTreeNode =
         factory.tree(id)
-      }
     }
 
   }

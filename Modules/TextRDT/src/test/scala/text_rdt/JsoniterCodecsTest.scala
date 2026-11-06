@@ -9,15 +9,14 @@ class JsoniterCodecsTest extends FunSuite {
 
   test("CausalID round-trips") {
     val causalId = mutable.HashMap("A" -> 1, "B" -> 2, "C" -> 3)
-    val encoded = writeToString(causalId)
-    val decoded = readFromString[CausalID](encoded)
+    val encoded  = writeToString(causalId)
+    val decoded  = readFromString[CausalID](encoded)
     assertEquals(decoded, causalId)
   }
 
   test("Side round-trips") {
-    for side <- Side.values do {
-      assertEquals(readFromString[Side](writeToString(side)), side)
-    }
+    for side <- Side.values do
+        assertEquals(readFromString[Side](writeToString(side)), side)
   }
 
   test("ComplexAVLMessage.Insert round-trips") {
@@ -77,7 +76,7 @@ class JsoniterCodecsTest extends FunSuite {
   }
 
   test("ComplexAVLMessage.Delete round-trips") {
-    val delete = ComplexAVLMessage.Delete("A", 1, 2, 3)
+    val delete  = ComplexAVLMessage.Delete("A", 1, 2, 3)
     val decoded = readFromString[ComplexAVLMessage](writeToString(delete))
     decoded match {
       case ComplexAVLMessage.Delete(rid, counter, offset, count) =>

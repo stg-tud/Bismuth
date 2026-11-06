@@ -8,9 +8,8 @@ final case class CausalBroadcast[MSG](replicaId: RID, batching: Boolean = true) 
   def appendMessage(
       buffer: mutable.ArrayBuffer[MSG],
       messageToAppend: MSG
-  ): Unit = {
+  ): Unit =
     buffer.addOne(messageToAppend)
-  }
 
   var needsTick: Boolean = batching
 
@@ -23,8 +22,7 @@ final case class CausalBroadcast[MSG](replicaId: RID, batching: Boolean = true) 
     (CausalID, mutable.ArrayBuffer[MSG])
   ] = mutable.ArrayBuffer.empty
 
-
-  def calculatedHeads(): mutable.ArrayBuffer[CausalID] = {
+  def calculatedHeads(): mutable.ArrayBuffer[CausalID] =
     mutable.ArrayBuffer.from(
       _history
         .to(Iterable)
@@ -36,27 +34,25 @@ final case class CausalBroadcast[MSG](replicaId: RID, batching: Boolean = true) 
         )
         .map(_._1)
     )
-  }
 
   def elementsPotentiallyNewer(
       heads: mutable.ArrayBuffer[CausalID]
   ): Iterable[
     (CausalID, mutable.ArrayBuffer[MSG])
-  ] = {
+  ] =
     _history
       .to(Iterable)
       .filter(node =>
         !heads.exists(head => CausalID.partialOrder.lteq(node._1, head))
       )
       .map((causalId, messages) => (causalId, messages.clone()))
-  }
 
   def concurrentToAndNotAfter(
-    concurrentTo: CausalID,
-    notAfter: CausalID,
+      concurrentTo: CausalID,
+      notAfter: CausalID,
   ): Iterable[
     (CausalID, mutable.ArrayBuffer[MSG])
-  ] = {
+  ] =
     _history
       .to(Iterable)
       .filter(node =>
@@ -64,14 +60,13 @@ final case class CausalBroadcast[MSG](replicaId: RID, batching: Boolean = true) 
         && !CausalID.partialOrder.gt(node._1, notAfter)
       )
       .map((causalId, messages) => (causalId, messages.clone()))
-  }
 
   def concurrentToAndBefore(
-    concurrentTo: CausalID,
-    before: CausalID,
+      concurrentTo: CausalID,
+      before: CausalID,
   ): Iterable[
     (CausalID, mutable.ArrayBuffer[MSG])
-  ] = {
+  ] =
     _history
       .to(Iterable)
       .filter(node =>
@@ -79,7 +74,6 @@ final case class CausalBroadcast[MSG](replicaId: RID, batching: Boolean = true) 
         && CausalID.partialOrder.lt(node._1, before)
       )
       .map((causalId, messages) => (causalId, messages.clone()))
-  }
 
   def addOneToHistory(msg: MSG): Unit = {
     if needsTick then {
@@ -99,13 +93,13 @@ final case class CausalBroadcast[MSG](replicaId: RID, batching: Boolean = true) 
         )
       cachedHeads.addOne(causalState)
       _history.addOne((causalState, mutable.ArrayBuffer(msg)))
-      //println(s"history at $replicaId: $_history")
+      // println(s"history at $replicaId: $_history")
     }
   }
 
   def addToHistory(
       msg: (CausalID, mutable.ArrayBuffer[MSG])
-  ): Unit = {
+  ): Unit =
     if _history.lastOption.exists(p => p._1 == msg._1) then {
       _history.last._2.addAll(msg._2)
     } else {
@@ -117,7 +111,6 @@ final case class CausalBroadcast[MSG](replicaId: RID, batching: Boolean = true) 
       cachedHeads.addOne(msg._1.clone())
       _history.addOne(msg)
     }
-  }
 
   def tick(): Unit = {
     causalState = causalState.clone()
@@ -135,16 +128,17 @@ final case class CausalBroadcast[MSG](replicaId: RID, batching: Boolean = true) 
   }
 
   def syncFrom(other: CausalBroadcast[MSG], handleMessage: (CausalID, MSG) => Unit): Unit = {
-    val heads1 = this.cachedHeads
+    val heads1            = this.cachedHeads
     val potentiallyNewer2 =
       other.elementsPotentiallyNewer(heads1)
     this.causalState = this.causalState.clone()
     other.causalState = other.causalState.clone()
-    potentiallyNewer2.foreach(entry => {
+    potentiallyNewer2.foreach(entry =>
       deliveringRemote(
-        entry, handleMessage
+        entry,
+        handleMessage
       )
-    })
+    )
     if batching then {
       this.needsTick = true
       other.needsTick = true
@@ -164,7 +158,7 @@ final case class CausalBroadcast[MSG](replicaId: RID, batching: Boolean = true) 
 
     // TODO FIXME maybe make this configurable
     entry._1
-      .foreachEntry((rid, counter) => {
+      .foreachEntry((rid, counter) =>
         this.causalState
           .update(
             rid,
@@ -173,6 +167,6 @@ final case class CausalBroadcast[MSG](replicaId: RID, batching: Boolean = true) 
               counter
             )
           )
-      })
+      )
   }
 }

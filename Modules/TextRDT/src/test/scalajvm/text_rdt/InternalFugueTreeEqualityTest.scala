@@ -21,44 +21,41 @@ case class InternalFugueTreeEqualityTest(
 
   type Sut = Vector[mutable.Map[String, Replica[?]]]
 
-  override def newSut(state: State): Sut = {
+  override def newSut(state: State): Sut =
     Vector.fill(factoryConstructors.length)(mutable.Map.empty)
-  }
 
   override def initialPreCondition(state: State): Boolean = state.isEmpty
 
-  override def genCommand(state: State): Gen[Command] = {
+  override def genCommand(state: State): Gen[Command] =
     Gen.frequency(
-      1 -> genCreateReplica(state),
+      1                                    -> genCreateReplica(state),
       (if state.length <= 1 then 0 else 4) -> genSyncReplicas(state),
-      (if state.isEmpty then 0 else 8) -> genInsert(state),
-      (if state.isEmpty then 0 else 8) -> genDelete(state)
+      (if state.isEmpty then 0 else 8)     -> genInsert(state),
+      (if state.isEmpty then 0 else 8)     -> genDelete(state)
     )
-  }
 
   def genCreateReplica(state: State): Gen[CreateReplica] = for {
     replicaId <- Gen.stringOfN(10, Gen.asciiPrintableChar)
   } yield CreateReplica(replicaId)
 
-  def genSyncReplicas(state: State): Gen[SyncReplicas] = if (
-    state.length <= 1
-   ) then {
-    SyncReplicas("", "")
-  } else {
-    for {
-      replica1 <- Gen.oneOf(state)
-      replica2 <- Gen.oneOf(state diff List(replica1))
-    } yield {
-      SyncReplicas(replica1, replica2)
+  def genSyncReplicas(state: State): Gen[SyncReplicas] =
+    if
+        state.length <= 1
+    then {
+      SyncReplicas("", "")
+    } else {
+      for {
+        replica1 <- Gen.oneOf(state)
+        replica2 <- Gen.oneOf(state diff List(replica1))
+      } yield SyncReplicas(replica1, replica2)
     }
-  }
 
   def genInsert(state: State): Gen[Insert] = if state.isEmpty then {
     Insert("", Int.MaxValue, ' ')
   } else {
     for {
-      replica <- Gen.oneOf(state)
-      index <- Gen.chooseNum(0, Int.MaxValue)
+      replica   <- Gen.oneOf(state)
+      index     <- Gen.chooseNum(0, Int.MaxValue)
       character <- Gen.asciiPrintableChar
     } yield Insert(replica, index, character)
   }
@@ -68,7 +65,7 @@ case class InternalFugueTreeEqualityTest(
   } else {
     for {
       replica <- Gen.oneOf(state)
-      index <- Gen.chooseNum(0, Int.MaxValue)
+      index   <- Gen.chooseNum(0, Int.MaxValue)
     } yield Delete(replica, index)
   }
 
@@ -89,7 +86,7 @@ case class InternalFugueTreeEqualityTest(
 
     override def postCondition(state: State, result: Result): Prop = {
       val prop = Prop.all(
-        result.result.head.indices.flatMap(replicaIndex => {
+        result.result.head.indices.flatMap(replicaIndex =>
           factoryConstructors.indices
             .sliding(2)
             .map(ab =>
@@ -99,7 +96,7 @@ case class InternalFugueTreeEqualityTest(
               )
             )
             .toSeq
-        })*
+        )*
       )
       prop
     }
@@ -109,20 +106,19 @@ case class InternalFugueTreeEqualityTest(
 
     override def preCondition(state: State): Boolean = true
 
-    override def run(sut: Sut): Result = {
+    override def run(sut: Sut): Result =
       MyResult(
         sut
           .zip(factoryConstructors)
-          .map((replicas, factoryConstructor) => {
+          .map { (replicas, factoryConstructor) =>
             val replicaState = ReplicaState(
               replicaId
             )(using factoryConstructor())
             val replica = Replica(replicaState, StringEditory())
-            val _ = replicas.put(replicaId, replica)
+            val _       = replicas.put(replicaId, replica)
             replicas.values.map(v => (v.tree(), s"create $replicaId")).toSeq
-          })
+          }
       )
-    }
 
     def nextState(state: State): State = state ++ List(replicaId)
   }
@@ -133,10 +129,10 @@ case class InternalFugueTreeEqualityTest(
     override def preCondition(state: State): Boolean =
       state.contains(replicaId1) && state.contains(replicaId2)
 
-    override def run(sut: Sut): Result = {
+    override def run(sut: Sut): Result =
       MyResult(
         sut
-          .map(replicas => {
+          .map { replicas =>
             val replica1 = replicas(replicaId1)
             val replica2 = replicas(replicaId2)
 
@@ -153,9 +149,8 @@ case class InternalFugueTreeEqualityTest(
             replicas.values
               .map(v => (v.tree(), s"sync $replicaId1 $replicaId2"))
               .toSeq
-          })
+          }
       )
-    }
 
     def nextState(state: State): State = state
   }
@@ -163,10 +158,10 @@ case class InternalFugueTreeEqualityTest(
   case class Insert(replica: String, index: Int, character: Char)
       extends BaseCommand {
 
-    override def run(sut: Sut): Result = {
+    override def run(sut: Sut): Result =
       MyResult(
         sut
-          .map(replicas => {
+          .map { replicas =>
             val len =
               replicas(replica).text().length()
 
@@ -181,9 +176,8 @@ case class InternalFugueTreeEqualityTest(
                 (v.tree(), s"insert $replica ${index % (len + 1)} $character")
               )
               .toSeq
-          })
+          }
       )
-    }
 
     override def preCondition(state: State): Boolean = state.contains(replica)
 
@@ -192,10 +186,10 @@ case class InternalFugueTreeEqualityTest(
 
   case class Delete(replica: String, index: Int) extends BaseCommand {
 
-    override def run(sut: Sut): Result = {
+    override def run(sut: Sut): Result =
       MyResult(
         sut
-          .map(replicas => {
+          .map { replicas =>
             val len =
               replicas(replica).text().length()
 
@@ -204,7 +198,7 @@ case class InternalFugueTreeEqualityTest(
             if len > 0 then {
               replicas(replica).delete(index % len)
             }
-        
+
             assert(replicas(replica).editor.asInstanceOf[StringEditory].data.toString() == replicas(replica).text())
 
             replicas.values
@@ -216,9 +210,8 @@ case class InternalFugueTreeEqualityTest(
                 )
               )
               .toSeq
-          })
+          }
       )
-    }
 
     override def preCondition(state: State): Boolean = state.contains(replica)
 

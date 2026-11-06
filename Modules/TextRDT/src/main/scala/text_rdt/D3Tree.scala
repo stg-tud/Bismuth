@@ -26,7 +26,7 @@ given simpleTreeNodeD3Tree: D3Tree[SimpleFugueFactory.simpleFugueFactory.type](
 ) with {
 
   extension (treeNode: SimpleTreeNode) {
-    private def tt(): String = {
+    private def tt(): String =
       (treeNode.value() match {
         case null  => "⌫"
         case value => value.toString
@@ -35,11 +35,10 @@ given simpleTreeNodeD3Tree: D3Tree[SimpleFugueFactory.simpleFugueFactory.type](
         case null  => "root"
         case value => s"${value.rid}#${value.counter}"
       })
-    }
 
     private def buildTree(
         prefix: String
-    ): MyD3TreeNode = {
+    ): MyD3TreeNode =
       MyD3TreeNode(
         treeNode.tt(),
         treeNode
@@ -55,11 +54,9 @@ given simpleTreeNodeD3Tree: D3Tree[SimpleFugueFactory.simpleFugueFactory.type](
           )
           .toArray
       )
-    }
 
-    def buildTree(): MyD3TreeNode = {
+    def buildTree(): MyD3TreeNode =
       buildTree("")
-    }
   }
 }
 
@@ -68,7 +65,7 @@ given complexTreeNodeD3Tree
   ComplexFugueFactory.complexFugueFactory
 ) with {
 
-  private def tt(treeNode: ComplexTreeNode): String = {
+  private def tt(treeNode: ComplexTreeNode): String =
     s"${treeNode.values match {
         case Left(value)  => value.mkString
         case Right(value) => "⌫".repeat(value)
@@ -76,12 +73,11 @@ given complexTreeNodeD3Tree
         case null  => "root"
         case value => s"${value.rid}#${value.counter}"
       }}"
-  }
 
   private def buildTree(
       prefix: String,
       treeNode: ComplexTreeNode
-  ): MyD3TreeNode = {
+  ): MyD3TreeNode =
     MyD3TreeNode(
       tt(treeNode),
       treeNode.leftChildrenBuffer.iterator
@@ -97,12 +93,10 @@ given complexTreeNodeD3Tree
         )
         .toArray
     )
-  }
 
   extension (treeNode: ComplexTreeNodeSingle) {
-    def buildTree(): MyD3TreeNode = {
+    def buildTree(): MyD3TreeNode =
       complexTreeNodeD3Tree.buildTree("", treeNode.complexTreeNode)
-    }
   }
 }
 
@@ -112,7 +106,7 @@ given simpleAVLTreeNodeD3Tree
 ) with {
 
   extension (treeNode: AVLTreeNode[SimpleAVLTreeNode]) {
-    private def tt(): String = {
+    private def tt(): String =
       (treeNode.value() match {
         case null  => "⌫"
         case value => value.toString
@@ -121,11 +115,10 @@ given simpleAVLTreeNodeD3Tree
         case null  => "root"
         case value => s"${value.rid}#${value.counter}"
       })
-    }
 
     private def buildTree(
         prefix: String
-    ): MyD3TreeNode = {
+    ): MyD3TreeNode =
       MyD3TreeNode(
         treeNode.tt(),
         treeNode
@@ -143,11 +136,9 @@ given simpleAVLTreeNodeD3Tree
           )
           .toArray
       )
-    }
 
-    def buildTree(): MyD3TreeNode = {
+    def buildTree(): MyD3TreeNode =
       buildTree("")
-    }
   }
 }
 
@@ -158,25 +149,24 @@ given complexAVLTreeNodeD3Tree
 
   private def tt(
       treeNode: AVLTreeNode[ComplexAVLTreeNode]
-  ): String = {
+  ): String =
     s"${treeNode.value._values match {
         case null  => "⌫".repeat(treeNode.value.to - treeNode.value.offset + 1)
         case value => treeNode.value.values.mkString
       }} ${treeNode.value.rid match {
         case null => "root"
-        case rid =>
+        case rid  =>
           s"${rid}#${treeNode.value.counter}.${treeNode.value.offset}-${treeNode.value.to}"
       }}"
-  }
 
   private def buildTree(
       prefix: String,
       treeNode: AVLTreeNode[ComplexAVLTreeNode]
-  ): MyD3TreeNode = {
+  ): MyD3TreeNode =
     MyD3TreeNode(
       tt(treeNode),
       treeNode.value.leftChildrenBuffer match {
-        case null => Array.empty
+        case null                                         => Array.empty
         case singleChild: AVLTreeNode[ComplexAVLTreeNode] =>
           Array(
             complexAVLTreeNodeD3Tree
@@ -193,7 +183,7 @@ given complexAVLTreeNodeD3Tree
             .toArray
       },
       treeNode.value.rightChildrenBuffer match {
-        case null => Array.empty
+        case null                                         => Array.empty
         case singleChild: AVLTreeNode[ComplexAVLTreeNode] =>
           Array(
             complexAVLTreeNodeD3Tree
@@ -210,11 +200,9 @@ given complexAVLTreeNodeD3Tree
             .toArray
       }
     )
-  }
 
   extension (treeNode: ComplexAVLTreeNodeSingle) {
-    def buildTree(): MyD3TreeNode = {
+    def buildTree(): MyD3TreeNode =
       complexAVLTreeNodeD3Tree.buildTree("", treeNode.complexTreeNode)
-    }
   }
 }
