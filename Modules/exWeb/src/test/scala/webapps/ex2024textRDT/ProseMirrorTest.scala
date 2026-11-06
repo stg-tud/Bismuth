@@ -159,15 +159,27 @@ class ProseMirrorTest extends FunSuite {
     multiReplicaTest(complexAVLTreeNodeD3Tree, 7)
   }
 
-  test("JSMain boots and creates an editor for the simple algorithm") {
+  test("simple: setting the initial text updates the replica and DOM") {
+    setupDom(1)
+    val (replica, editor) = newReplicaAndEditor(0, simpleTreeNodeD3Tree)
+    editor.setText("hello world")
+    assertEquals(replica.text(), "hello world")
+    assertEquals(domText(0), "hello world")
+  }
+
+  test("JSMain boots with two pre-filled editors for the simple algorithm") {
     dom.window.history.replaceState(null.asInstanceOf[js.Any], "", "/?simple")
     setupDom(0)
     JSMain.main()
+    assert(dom.document.querySelector("#editor0-parent") != null)
+    assert(dom.document.querySelector("#editor1-parent") != null)
+    assert(domText(0).nonEmpty)
+    assert(domText(1).nonEmpty)
+
     dom.document
       .querySelector("#create-editor")
       .asInstanceOf[js.Dynamic]
       .click()
-    assert(dom.document.querySelector("#editor0-parent") != null)
-    assert(dom.document.querySelector("#editor0") != null)
+    assert(dom.document.querySelector("#editor2-parent") != null)
   }
 }

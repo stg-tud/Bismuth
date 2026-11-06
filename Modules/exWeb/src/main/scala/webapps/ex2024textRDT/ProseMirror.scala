@@ -74,6 +74,13 @@ final class ProseMirror[F <: FugueFactory](
     refresh()
   }
 
+  /** Replaces the editor contents with `text`, keeping the replica in sync. */
+  def setText(text: String): Unit = {
+    if text.nonEmpty then {
+      dispatchTransaction(state.tr.insertText(text, 0))
+    }
+  }
+
   refresh()
 
   document
