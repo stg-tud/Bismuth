@@ -302,7 +302,7 @@ lazy val reform = project
 // imported from https://github.com/mohe2015/bachelor-thesis-collaborative-text-editing
 // the project uses its own cross layout (shared/ + jvm/ + js/), so the source dirs are wired up manually
 // the js part needs ScalablyTyped facades, which were generated once and are checked in under js/src/main/scala/typings
-val textRdtDir = file("Modules/text-rdt")
+val textRdtDir = file("Modules/TextRDT")
 
 lazy val textRdt = projectMatrix
   .in(textRdtDir)
@@ -321,7 +321,6 @@ lazy val textRdt = projectMatrix
   .jvmPlatform(
     scalaVersions = Seq(s3v),
     settings = Seq(
-      Compile / unmanagedSourceDirectories += textRdtDir / "jvm" / "src" / "main" / "scala",
       Test / unmanagedSourceDirectories += textRdtDir / "jvm" / "src" / "test" / "scala",
     )
   )
