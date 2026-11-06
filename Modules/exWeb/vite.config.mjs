@@ -20,6 +20,7 @@ export default defineConfig({
 				tabular: resolve(root, "tabular.html"),
 				"overlay-graph": resolve(root, "overlay-graph.html"),
 				"mini-social": resolve(root, "mini-social.html"),
+				"text-rdt": resolve(root, "text-rdt.html"),
 			},
 		},
 	},

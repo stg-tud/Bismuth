@@ -1,4 +1,7 @@
-package text_rdt
+package webapps.ex2024textRDT
+
+import text_rdt.*
+import text_rdt.given
 
 import munit.FunSuite
 import org.scalajs.dom

@@ -1,4 +1,6 @@
-package text_rdt
+package webapps.ex2024textRDT
+
+import text_rdt.*
 
 import org.scalajs.dom.document
 import org.scalajs.dom.SVGTextElement

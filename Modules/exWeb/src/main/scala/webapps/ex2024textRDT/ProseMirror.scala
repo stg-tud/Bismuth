@@ -1,4 +1,6 @@
-package text_rdt
+package webapps.ex2024textRDT
+
+import text_rdt.*
 
 import org.scalajs.dom.document
 import text_rdt.avl.AVLTreeNode
@@ -7,7 +9,6 @@ import typings.prosemirrorTransform.mod.ReplaceStep_
 import typings.prosemirrorView.mod.{DirectEditorProps, EditorView}
 
 import scala.scalajs.js
-import scala.scalajs.js.JSConverters.*
 import org.scalajs.dom.URL
 
 final class ProseMirror[F <: FugueFactory](

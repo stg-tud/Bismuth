@@ -1,6 +1,8 @@
-package text_rdt
+package webapps.ex2024textRDT
 
-import org.scalajs.dom.Element
+import text_rdt.*
+import text_rdt.given
+
 import org.scalajs.dom.HTMLInputElement
 import org.scalajs.dom.HTMLTextAreaElement
 import org.scalajs.dom.RTCConfiguration
@@ -12,6 +14,7 @@ import org.scalajs.dom.RTCPeerConnection
 import org.scalajs.dom.RTCSdpType
 import org.scalajs.dom.RTCSessionDescription
 import org.scalajs.dom.RTCSessionDescriptionInit
+import org.scalajs.dom.URL
 import org.scalajs.dom.document
 import typings.prosemirrorState.mod.EditorState
 import upickle.default.*
@@ -26,7 +29,11 @@ import scala.scalajs.js
 import scala.util.Failure
 import scala.util.Success
 
-private case class JSP2P() {
+private case class JSP2PAutomatic() {
+
+  val url = new URL(
+    document.location.href.asInstanceOf[String]
+  )
 
   private var peers: Seq[RTCPeerConnection] = List()
 
@@ -115,6 +122,7 @@ private case class JSP2P() {
         )
 
         channel.onmessage = event => {
+
           if event.data.toString().startsWith("heads") then {
             val heads: ArrayBuffer[CausalID] =
               read(event.data.toString().stripPrefix("heads"))
@@ -326,7 +334,7 @@ private case class JSP2P() {
 
   val replica =
     Replica[complexAVLTreeNodeD3Tree.factoryContext.type](
-      replicaState,
+      replicaState
     )
 
   val prosemirror =

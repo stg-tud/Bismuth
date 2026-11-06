@@ -1,4 +1,4 @@
-package text_rdt
+package webapps.ex2024textRDT
 
 import scala.scalajs.js
 import scala.scalajs.js.annotation.JSImport

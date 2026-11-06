@@ -143,12 +143,14 @@ lazy val exJVM = project.in(file("Modules/exJVM"))
 
 lazy val exWeb = project.in(file("Modules/exWeb"))
   .enablePlugins(ScalaJSPlugin)
-  .dependsOn(channels.js(s3v), rdts.js(s3v), lore.js(s3v))
+  .dependsOn(channels.js(s3v), rdts.js(s3v), lore.js(s3v), textRdt.js(s3v))
   .settings(
     libraryDependencies ++= Seq(
       "com.github.japgolly.scalajs-react" %% "core"      % "3.0.0",
       "com.github.japgolly.scalajs-react" %% "extra"     % "3.0.0",
       "com.lihaoyi"                       %% "scalatags" % "0.13.1" % Compile,
+      "com.olvind"                        %% "scalablytyped-runtime" % "2.4.2",
+      "org.scala-js"                      %% "scalajs-java-securerandom" % "1.0.0" `cross` CrossVersion.for3Use2_13,
       pprint,
       scalajsDom,
     ) ++ jsoniterScala,
@@ -163,7 +165,17 @@ lazy val exWeb = project.in(file("Modules/exWeb"))
         .withModuleSplitStyle(ModuleSplitStyle.SmallModulesFor(List("webapps")))
         .withESFeatures(_.withESVersion(ESVersion.ES2015)),
     Test / scalaJSLinkerConfig :=
-      scalaJSLinkerConfig.value,
+      (Compile / scalaJSLinkerConfig).value
+        .withModuleKind(ModuleKind.CommonJSModule)
+        .withModuleSplitStyle(ModuleSplitStyle.FewestModules),
+    // let node resolve jsdom and the prosemirror packages from this module's node_modules
+    Test / jsEnv := Def.uncached {
+      new org.scalajs.jsenv.nodejs.NodeJSEnv(
+        org.scalajs.jsenv.nodejs.NodeJSEnv.Config().withEnv(
+          Map("NODE_PATH" -> (baseDirectory.value / "node_modules").getAbsolutePath)
+        )
+      )
+    },
     // fix the output directory to make it “guessable” by JS import
     // (in sbt 2.0 target.value is centralized under target/out, so anchor to the module dir instead)
     fastLinkJS / crossTarget := baseDirectory.value / "target" / "generated_js",
@@ -313,37 +325,7 @@ lazy val textRdt = projectMatrix
       Test / unmanagedSourceDirectories += textRdtDir / "jvm" / "src" / "test" / "scala",
     )
   )
-  .jsPlatform(
-    scalaVersions = Seq(s3v),
-    settings = Seq(
-      libraryDependencies ++= Seq(
-        scalajsDom,
-        "com.olvind"   %% "scalablytyped-runtime"      % "2.4.2",
-        "org.scala-js" %% "scalajs-java-securerandom"  % "1.0.0" `cross` CrossVersion.for3Use2_13,
-      ),
-      Compile / unmanagedSourceDirectories += textRdtDir / "js" / "src" / "main" / "scala",
-      Test / unmanagedSourceDirectories += textRdtDir / "js" / "src" / "test" / "scala",
-      // tests run on node and install jsdom themselves, see ProseMirrorTest
-      Test / scalaJSLinkerConfig := (Compile / scalaJSLinkerConfig).value
-        .withModuleKind(ModuleKind.CommonJSModule)
-        .withModuleSplitStyle(ModuleSplitStyle.FewestModules),
-      // let node resolve jsdom/prosemirror from the module's node_modules
-      Test / jsEnv := Def.uncached {
-        new org.scalajs.jsenv.nodejs.NodeJSEnv(
-          org.scalajs.jsenv.nodejs.NodeJSEnv.Config().withEnv(
-            Map("NODE_PATH" -> (textRdtDir / "node_modules").getAbsolutePath)
-          )
-        )
-      },
-      Compile / scalaJSModuleInitializers := Seq(
-        ModuleInitializer.mainMethod("text_rdt.JSMain", "main").withModuleID("main")
-      ),
-      Compile / scalaJSLinkerConfig ~= (
-        _.withModuleKind(ModuleKind.ESModule)
-          .withModuleSplitStyle(ModuleSplitStyle.SmallModulesFor(List("text_rdt")))
-      ),
-    )
-  )
+  .jsPlatform(scalaVersions = Seq(s3v))
 
 lazy val webview = project.in(file("Modules/Webview"))
   .enablePlugins(ScalaNativePlugin)

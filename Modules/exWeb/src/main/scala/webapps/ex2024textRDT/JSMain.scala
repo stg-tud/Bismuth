@@ -1,4 +1,7 @@
-package text_rdt
+package webapps.ex2024textRDT
+
+import text_rdt.*
+import text_rdt.given
 
 import org.scalablytyped.runtime.StringDictionary
 import org.scalajs.dom.Element
@@ -17,7 +20,6 @@ import typings.prosemirrorState.mod.EditorStateConfig
 import typings.prosemirrorState.mod.Plugin
 import upickle.default.*
 
-import scala.collection.immutable
 import scala.scalajs.js
 
 val schema = Schema[Any, Any](
@@ -63,7 +65,6 @@ val editorStateConfig = EditorStateConfig()
 
 object JSMain {
 
-  @main
   def main(): Unit = {
     org.scalajs.dom.window.onerror =
       (message, source, lineNumber, colno, error) =>

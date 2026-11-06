@@ -9,6 +9,8 @@
 // The chosen variant (fastopt vs fullopt) is decided by the bundler (vite):
 // when building a distributable file we use the optimized fullopt.js; when
 // serving in development we fall back to the fastopt variant.
+import "prosemirror-view/style/prosemirror.css";
+
 const useFullopt = import.meta.env?.PROD;
 const modulePromise = useFullopt
 	? import("./target/generated_js/exweb-opt/main.js")
@@ -21,6 +23,7 @@ const appHandlers = {
 	"unit-conversion": "UnitConversion",
 	"overlay-graph": "OverlayNetworkGraph",
 	"mini-social": "MiniSocial",
+	"text-rdt": "TextRDT",
 };
 
 /** Launch the case study whose page we are on. */
