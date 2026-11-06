@@ -98,7 +98,8 @@ lazy val exJVM = project.in(file("Modules/exJVM"))
   .enablePlugins(JmhPlugin)
   .dependsOn(
     reactives.jvm(s3v),
-    channels.jvm(s3v) % "compile->compile;test->test"
+    channels.jvm(s3v) % "compile->compile;test->test",
+    textRdt.jvm(s3v),
   )
   .settings(
     Settings.javaOutputVersion(21),
@@ -308,12 +309,8 @@ lazy val textRdt = projectMatrix
   .jvmPlatform(
     scalaVersions = Seq(s3v),
     settings = Seq(
-      libraryDependencies ++= Seq(
-        "org.openjdk.jmh" % "jmh-core" % "1.37",
-      ),
       Compile / unmanagedSourceDirectories += textRdtDir / "jvm" / "src" / "main" / "scala",
       Test / unmanagedSourceDirectories += textRdtDir / "jvm" / "src" / "test" / "scala",
-      Compile / unmanagedResourceDirectories += textRdtDir / "jvm" / "src" / "main" / "resources",
     )
   )
   .jsPlatform(

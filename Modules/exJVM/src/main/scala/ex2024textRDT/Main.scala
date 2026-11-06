@@ -1,4 +1,4 @@
-package text_rdt
+package ex2024textRDT
 
 import java.lang.management.ManagementFactory
 import javax.management.ObjectName

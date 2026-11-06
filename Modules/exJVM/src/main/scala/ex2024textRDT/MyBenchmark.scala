@@ -1,4 +1,6 @@
-package text_rdt
+package ex2024textRDT
+
+import text_rdt.*
 
 import org.openjdk.jmh.annotations.*
 
@@ -43,7 +45,7 @@ object MyRealWorldBenchmark {
       .read(
         Source
           .fromInputStream(
-            getClass.getResourceAsStream("/data/final.json").nn
+            getClass.getResourceAsStream("/ex2024textRDT/data/final.json").nn
           )
           .mkString
       )
@@ -56,7 +58,7 @@ object MyRealWorldBenchmark {
         .read(
           Source
             .fromInputStream(
-              getClass.getResourceAsStream("/data/edits.json").nn
+              getClass.getResourceAsStream("/ex2024textRDT/data/edits.json").nn
             )
             .mkString
         )
