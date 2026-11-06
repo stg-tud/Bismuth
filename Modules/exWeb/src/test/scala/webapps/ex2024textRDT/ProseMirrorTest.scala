@@ -105,6 +105,12 @@ class ProseMirrorTest extends FunSuite {
     val (replica1, editor1) = newReplicaAndEditor(1, d3Tree)
     val random              = new Random(seed)
 
+    val replication0 = TextReplication(replica0)
+    val replication1 = TextReplication(replica1)
+    editor0.onLocalChange = () => replication0.publish()
+    editor1.onLocalChange = () => replication1.publish()
+    val link = TextReplication.LocalLink(replication0, replication1)
+
     for _ <- 0 until 60 do {
       val (editor, size) =
         if random.nextBoolean() then (editor0, replica0.text().length)
@@ -119,7 +125,7 @@ class ProseMirrorTest extends FunSuite {
       assertEquals(domText(0), replica0.text())
       assertEquals(domText(1), replica1.text())
 
-      replica0.sync(replica1)
+      link.sync()
       assertEquals(replica0.text(), replica1.text())
       assertEquals(domText(0), replica0.text())
       assertEquals(domText(1), replica1.text())

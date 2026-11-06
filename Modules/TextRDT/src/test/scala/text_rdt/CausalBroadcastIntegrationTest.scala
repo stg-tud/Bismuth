@@ -74,7 +74,7 @@ abstract class CausalBroadcastIntegrationTest(factory: RID => Replica[?]) extend
 }
 
 private def causalReplica[F <: FugueFactory](using f: F)(replicaId: RID): Replica[?] =
-  Replica(ReplicaState(replicaId, collectOutgoing = true)(using f), StringEditory())
+  Replica(ReplicaState(replicaId)(using f), StringEditory())
 
 class SimpleCausalBroadcastIntegrationTest
     extends CausalBroadcastIntegrationTest(causalReplica(using SimpleFugueFactory.simpleFugueFactory))

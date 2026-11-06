@@ -417,8 +417,8 @@ class MyRealWorldBenchmarkLargeRemote {
       SimpleAVLFugueFactory.simpleAVLFugueFactory.type |
       ComplexAVLFugueFactory.complexAVLFugueFactory.type
     ](replicaStateA, StringEditory())
-    replicaA.syncFrom(
-      replicaWithOperationsApplied.state
+    replicaA.applyRemoteUnchecked(
+      replicaWithOperationsApplied.state.outgoing.asInstanceOf[Iterable[replicaA.state.factoryContext.MSG]]
     )
     if shouldMeasureMemory then {
       assert(replicaA.text() == MyRealWorldBenchmark.finalString * count)
@@ -602,10 +602,7 @@ class MyTerribleBenchmarkEvilInsert {
     val replicaToSyncInto = Replica(replicaStateToSyncInto, StringEditory())
     for i <- 0 until count do
         replicaToSyncInto.insert(i, 'p')
-    replicaToSyncInto.deliveringRemote(
-      (
-        mutable.HashMap.empty,
-        mutable.ArrayBuffer.from(
+    replicaToSyncInto.applyRemoteUnchecked(
           (1 to until).map(i =>
             Message.Insert(
               SimpleID("b", i),
@@ -614,8 +611,6 @@ class MyTerribleBenchmarkEvilInsert {
               Side.Right
             )
           )
-        )
-      )
     )
 
     val result = replicaToSyncInto
@@ -646,10 +641,7 @@ class MyTerribleBenchmarkEvilInsert {
           i,
           'p'
         )
-    replicaToSyncInto.deliveringRemote(
-      (
-        mutable.HashMap.empty,
-        mutable.ArrayBuffer.from(
+    replicaToSyncInto.applyRemoteUnchecked(
           (0 until until).map(i =>
             ComplexAVLMessage.Insert(
               "b",
@@ -662,8 +654,6 @@ class MyTerribleBenchmarkEvilInsert {
               Side.Right
             )
           )
-        )
-      )
     )
 
     val result = replicaToSyncInto
@@ -726,10 +716,7 @@ class MyTerribleBenchmarkEvilInsert {
           i,
           'p'
         )
-    replicaToSyncInto.deliveringRemote(
-      (
-        mutable.HashMap.empty,
-        mutable.ArrayBuffer.from(
+    replicaToSyncInto.applyRemoteUnchecked(
           (0 until count).map(i =>
             ComplexAVLMessage.Insert(
               s"b$i",
@@ -742,8 +729,6 @@ class MyTerribleBenchmarkEvilInsert {
               Side.Right
             )
           )
-        )
-      )
     )
     for i <- 1 until until * 2 - 2 by 2 do
         replicaToSyncInto.insert(
@@ -773,10 +758,7 @@ class MyTerribleBenchmarkEvilInsert {
         ComplexAVLFugueFactory.complexAVLFugueFactory
       )
     val replicaToSyncInto = Replica(replicaStateToSyncInto, StringEditory())
-    replicaToSyncInto.deliveringRemote(
-      (
-        mutable.HashMap.empty,
-        mutable.ArrayBuffer.from(
+    replicaToSyncInto.applyRemoteUnchecked(
           (0 until until).map(i =>
             ComplexAVLMessage.Insert(
               s"b$i",
@@ -789,8 +771,6 @@ class MyTerribleBenchmarkEvilInsert {
               Side.Right
             )
           )
-        )
-      )
     )
 
     val result = replicaToSyncInto

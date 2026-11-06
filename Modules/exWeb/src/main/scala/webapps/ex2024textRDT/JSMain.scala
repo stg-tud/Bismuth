@@ -86,8 +86,6 @@ object JSMain {
       val _ = JSMain(complexAVLTreeNodeD3Tree)
     } else if url.searchParams.has("p2p") then {
       val _ = JSP2P()
-    } else if url.searchParams.has("doc") then {
-      val _ = JSP2PAutomatic()
     } else if url.searchParams.has("tree") then {
       plotTree(
         s"body",
@@ -125,10 +123,22 @@ object JSMain {
 private case class JSMain[F <: FugueFactory](
     d3Tree: D3Tree[F]
 ) {
-  private var editors: Seq[Replica[d3Tree.factoryContext.type]] =
-    List[
-      Replica[d3Tree.factoryContext.type]
-    ]()
+  private var editors: Seq[TextReplication[d3Tree.factoryContext.type]] = List()
+
+  /** In-memory links between editors, keyed by (lower index, higher index). Messages are delivered on sync only. */
+  private var links: Map[(Int, Int), TextReplication.LocalLink] = Map.empty
+
+  private def sync(i: Int, j: Int): Unit = {
+    val key  = (math.min(i, j), math.max(i, j))
+    val link = links.getOrElse(
+      key, {
+        val created = TextReplication.LocalLink(editors(key._1), editors(key._2))
+        links = links.updated(key, created)
+        created
+      }
+    )
+    link.sync()
+  }
 
   private val initialTexts = Seq(
     "Editor 0: edit here, then sync with editor 1 to merge the changes.",
@@ -289,7 +299,6 @@ private case class JSMain[F <: FugueFactory](
           <a href="?simpleavl">Simple AVL</a>
           <a href="?complexavl">Complex AVL</a>
           <a href="?p2p">Peer-to-peer</a>
-          <a href="?doc">Automatic peer-to-peer</a>
         </nav>
       </div>
       <button id="create-editor" class="primary">Create editor</button>
@@ -332,10 +341,7 @@ private case class JSMain[F <: FugueFactory](
               .asInstanceOf[String]
               .toInt
 
-          val replica1 = editors(dataReplica1)
-          val replica2 = editors(dataReplica2)
-
-          replica1.sync(replica2)
+          sync(dataReplica1, dataReplica2)
         }
       }
     )
@@ -411,7 +417,7 @@ private case class JSMain[F <: FugueFactory](
   private def createEditor(
       name: String,
       initialText: String
-  ): Replica[d3Tree.factoryContext.type] = {
+  ): TextReplication[d3Tree.factoryContext.type] = {
     val replicaState =
       new ReplicaState[d3Tree.factoryContext.type](
         name
@@ -427,9 +433,12 @@ private case class JSMain[F <: FugueFactory](
 
     replica.editor = prosemirror
 
+    val replication = TextReplication(replica)
+    prosemirror.onLocalChange = () => replication.publish()
+
     prosemirror.setText(initialText)
 
-    replica
+    replication
   }
 
   initialTexts.foreach(text => addEditor(text))

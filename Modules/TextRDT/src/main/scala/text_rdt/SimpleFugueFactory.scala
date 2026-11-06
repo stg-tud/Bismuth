@@ -15,6 +15,8 @@ object SimpleFugueFactory {
     def create(replicaId: RID): SimpleFugueFactory =
       SimpleFugueFactory(replicaId)
 
+    override def messageCodec: com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[MSG] = simpleMessageCodec
+
     given treeNodeContext: NC = simpleTreeNode
 
     private case class StackEntry(

@@ -3,11 +3,6 @@ package text_rdt
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReader, JsonValueCodec, JsonWriter}
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 
-import scala.collection.mutable
-
-given causalIDCodec: JsonValueCodec[CausalID] =
-  JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))
-
 given sideCodec: JsonValueCodec[Side] = JsonCodecMaker.make
 
 given myD3TreeNodeCodec: JsonValueCodec[MyD3TreeNode] =
@@ -49,13 +44,23 @@ given nullableRIDCodec: JsonValueCodec[RID | Null] =
 given complexAVLMessageCodec: JsonValueCodec[ComplexAVLMessage] =
   JsonCodecMaker.make
 
-given causalIDBufferCodec: JsonValueCodec[mutable.ArrayBuffer[CausalID]] =
-  JsonCodecMaker.make
+private def nullableCodec[A <: AnyRef](using codec: JsonValueCodec[A]): JsonValueCodec[A | Null] =
+  new JsonValueCodec[A | Null] {
+    private val optionCodec: JsonValueCodec[Option[A]] = JsonCodecMaker.make
 
-given causalIDMessageDiffsCodec
-    : JsonValueCodec[Seq[(CausalID, mutable.ArrayBuffer[ComplexAVLMessage])]] =
-  JsonCodecMaker.make
+    override def decodeValue(in: JsonReader, default: A | Null): A | Null =
+      optionCodec.decodeValue(in, None).orNull
 
-given sessionDescriptionCodec
-    : JsonValueCodec[(String, String, Array[(String, String, Double)])] =
-  JsonCodecMaker.make
+    override def encodeValue(x: A | Null, out: JsonWriter): Unit =
+      optionCodec.encodeValue(Option(x), out)
+
+    override def nullValue: A | Null = null
+  }
+
+given simpleIDCodec: JsonValueCodec[SimpleID]                 = JsonCodecMaker.make
+given nullableSimpleIDCodec: JsonValueCodec[SimpleID | Null]   = nullableCodec[SimpleID]
+given complexIDCodec: JsonValueCodec[ComplexID]               = JsonCodecMaker.make
+given nullableComplexIDCodec: JsonValueCodec[ComplexID | Null] = nullableCodec[ComplexID]
+
+given simpleMessageCodec: JsonValueCodec[Message[SimpleID]]   = JsonCodecMaker.make
+given complexMessageCodec: JsonValueCodec[Message[ComplexID]] = JsonCodecMaker.make

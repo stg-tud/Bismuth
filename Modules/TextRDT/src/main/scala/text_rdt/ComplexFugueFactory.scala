@@ -57,6 +57,8 @@ object ComplexFugueFactory {
     def create(replicaId: RID): ComplexFugueFactory =
       ComplexFugueFactory(replicaId)
 
+    override def messageCodec: com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[MSG] = complexMessageCodec
+
     given treeNodeContext: NC = ComplexTreeNodeSingle.complexTreeNodeSingle
 
     private case class StackEntry(

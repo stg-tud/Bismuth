@@ -3,16 +3,7 @@ package text_rdt
 import com.github.plokhotnyuk.jsoniter_scala.core.{readFromString, writeToString}
 import munit.FunSuite
 
-import scala.collection.mutable
-
 class JsoniterCodecsTest extends FunSuite {
-
-  test("CausalID round-trips") {
-    val causalId = mutable.HashMap("A" -> 1, "B" -> 2, "C" -> 3)
-    val encoded  = writeToString(causalId)
-    val decoded  = readFromString[CausalID](encoded)
-    assertEquals(decoded, causalId)
-  }
 
   test("Side round-trips") {
     for side <- Side.values do
@@ -104,38 +95,21 @@ class JsoniterCodecsTest extends FunSuite {
     assertEquals(writeToString(decoded), writeToString(tree))
   }
 
-  test("head and diff collections round-trip") {
-    val heads = mutable.ArrayBuffer(
-      mutable.HashMap("A" -> 1),
-      mutable.HashMap("B" -> 2, "C" -> 3)
+  test("Fugue operations round-trip") {
+    val simple: Seq[Message[SimpleID]] = Seq(
+      Message.Insert(SimpleID("A", 1), 'x', null, Side.Right),
+      Message.Insert(SimpleID("B", 2), 'y', SimpleID("A", 1), Side.Left),
+      Message.Delete(SimpleID("A", 1))
     )
-    assertEquals(readFromString[mutable.ArrayBuffer[CausalID]](writeToString(heads)), heads)
+    simple.foreach(msg => assertEquals(readFromString(writeToString(msg)(using simpleMessageCodec))(using simpleMessageCodec), msg))
 
-    val diffs: Seq[(CausalID, mutable.ArrayBuffer[ComplexAVLMessage])] = Seq(
-      (
-        mutable.HashMap("A" -> 1),
-        mutable.ArrayBuffer(
-          ComplexAVLMessage.Insert("A", 1, 0, StringBuilder("x"), null, 0, 0, Side.Left),
-          ComplexAVLMessage.Delete("A", 2, 0, 1)
-        )
-      )
+    val complex: Seq[Message[ComplexID]] = Seq(
+      Message.Insert(ComplexID("A", 1, 0), 'x', null, Side.Right),
+      Message.Insert(ComplexID("B", 2, 3), 'y', ComplexID("A", 1, 0), Side.Left),
+      Message.Delete(ComplexID("A", 1, 0))
     )
-    val decodedDiffs =
-      readFromString[Seq[(CausalID, mutable.ArrayBuffer[ComplexAVLMessage])]](
-        writeToString(diffs)
-      )
-    assertEquals(writeToString(decodedDiffs), writeToString(diffs))
-  }
-
-  test("session description tuple round-trips") {
-    val description =
-      ("offer", "sdp", Array(("candidate", "mid", 0.0)))
-    val decoded =
-      readFromString[(String, String, Array[(String, String, Double)])](
-        writeToString(description)
-      )
-    assertEquals(decoded._1, description._1)
-    assertEquals(decoded._2, description._2)
-    assertEquals(decoded._3.toSeq, description._3.toSeq)
+    complex.foreach(msg =>
+      assertEquals(readFromString(writeToString(msg)(using complexMessageCodec))(using complexMessageCodec), msg)
+    )
   }
 }

@@ -1,5 +1,7 @@
 package text_rdt
 
+import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
+
 import scala.collection.mutable
 
 trait FugueFactory {
@@ -10,6 +12,9 @@ trait FugueFactory {
   type MSG
 
   given treeNodeContext: NC
+
+  /** Serialization of operations, for replication over the network. */
+  def messageCodec: JsonValueCodec[MSG]
 
   def create(replicaId: RID): F
 

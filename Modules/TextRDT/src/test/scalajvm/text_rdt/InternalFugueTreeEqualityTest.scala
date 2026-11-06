@@ -139,9 +139,7 @@ case class InternalFugueTreeEqualityTest(
             assert(replica1.editor.asInstanceOf[StringEditory].data.toString() == replica1.text())
             assert(replica2.editor.asInstanceOf[StringEditory].data.toString() == replica2.text())
 
-            replica1.sync(
-              replica2.asInstanceOf[replica1.type]
-            )
+            InMemorySync.sync(replica1, replica2)
 
             assert(replica1.editor.asInstanceOf[StringEditory].data.toString() == replica1.text())
             assert(replica2.editor.asInstanceOf[StringEditory].data.toString() == replica2.text())

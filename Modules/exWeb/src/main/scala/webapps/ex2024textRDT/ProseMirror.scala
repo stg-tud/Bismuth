@@ -34,6 +34,9 @@ final class ProseMirror[F <: FugueFactory](
     )
   ): @unchecked
 
+  /** Called after local edits were applied to the replica, e.g., to publish them. */
+  var onLocalChange: () => Unit = () => ()
+
   def dispatchTransaction(tr: Transaction): Unit = {
     tr.steps.foreach { step =>
       val stepJson = step
@@ -70,6 +73,7 @@ final class ProseMirror[F <: FugueFactory](
     state = state.applyTransaction(tr)
     view.updateState(state)
     refresh()
+    if tr.steps.nonEmpty then onLocalChange()
   }
 
   /** Replaces the editor contents with `text`, keeping the replica in sync. */

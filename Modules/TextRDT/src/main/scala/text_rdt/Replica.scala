@@ -2,8 +2,6 @@ package text_rdt
 
 import rdts.time.{Causal, CausalBuffer, Dot, Dots}
 
-import scala.collection.mutable
-
 final case class Replica[F <: FugueFactory](
     state: ReplicaState[F],
     var editor: Editory
@@ -19,31 +17,8 @@ final case class Replica[F <: FugueFactory](
     state.delete(i)
   }
 
-  def sync(other: Replica[F]): Unit = {
-    this.syncFrom(other.state)
-    other.syncFrom(this.state)
-  }
-
-  def syncFrom(other: ReplicaState[F]): Unit =
-    this.state.causalBroadcast.syncFrom(
-      other.causalBroadcast.asInstanceOf[CausalBroadcast[Replica.this.state.factoryContext.MSG]],
-      (causalId, msg) => state.factoryContext.handleRemoteMessage(state.factory)(msg, editor)
-    )
-
-  def deliveringRemote(
-      entry: (
-          CausalID,
-          mutable.ArrayBuffer[Replica.this.state.factoryContext.MSG]
-      ),
-  ): Unit =
-    state.causalBroadcast.deliveringRemote(
-      entry,
-      (causalId, msg) => state.factoryContext.handleRemoteMessage(state.factory)(msg, editor)
-    )
-
   // ----------------------------------------------------------------------------------------------
   // replication via an external dissemination layer (e.g., channels.BroadcastIO)
-  // requires a state with `collectOutgoing = true`
   // ----------------------------------------------------------------------------------------------
 
   type Ops = Vector[state.factoryContext.MSG]
@@ -61,18 +36,19 @@ final case class Replica[F <: FugueFactory](
         send(delta).foreach { dot =>
           val (next, ready) = causalBuffer.markApplied(Dots.single(dot))
           causalBuffer = next
-          applyRemote(ready)
+          ready.foreach(applyRemoteUnchecked)
         }
 
   /** Receive a batch delivered by the dissemination layer under `dots`. Applies it once all predecessors are applied. */
   def receive(dots: Dots, delta: Causal[Ops]): Unit = {
     val (next, ready) = causalBuffer.receive(dots, delta)
     causalBuffer = next
-    applyRemote(ready)
+    ready.foreach(applyRemoteUnchecked)
   }
 
-  private def applyRemote(batches: List[Ops]): Unit =
-    batches.foreach(_.foreach(msg => state.factoryContext.handleRemoteMessage(state.factory)(msg, editor)))
+  /** Apply remote operations directly, without causal delivery. The caller must ensure causal order. */
+  def applyRemoteUnchecked(ops: IterableOnce[state.factoryContext.MSG]): Unit =
+    ops.iterator.foreach(msg => state.factoryContext.handleRemoteMessage(state.factory)(msg, editor))
 
   def text(): String =
     state.text()
@@ -97,18 +73,4 @@ object Replica {
 
   def apply[F <: FugueFactory](state: ReplicaState[F]): Replica[F] =
     Replica[F](state, null.asInstanceOf[Editory])
-
-  given algorithm[F <: FugueFactory]: CollaborativeTextEditingAlgorithm[Replica[F]] with {
-    extension (replica: Replica[F]) {
-      def insert(i: Int, x: Char): Unit = replica.insert(i, x)
-
-      def delete(i: Int): Unit = replica.delete(i)
-
-      def text(): String = replica.text()
-
-      def sync(other: Replica[F]): Unit = replica.sync(other)
-
-      def syncFrom(other: Replica[F]): Unit = replica.syncFrom(other.state)
-    }
-  }
 }

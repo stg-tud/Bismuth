@@ -148,6 +148,8 @@ object ComplexAVLFugueFactory {
       buffer.addOne(messageToAppend)
     }
 
+    override def messageCodec: com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[MSG] = complexAVLMessageCodec
+
     given treeNodeContext: NC =
       ComplexAVLTreeNodeSingle.complexAVLTreeNodeSingle
 

@@ -28,6 +28,8 @@ object SimpleAVLFugueFactory {
     def create(replicaId: RID): SimpleAVLFugueFactory =
       SimpleAVLFugueFactory(replicaId)
 
+    override def messageCodec: com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[MSG] = simpleMessageCodec
+
     given treeNodeContext: NC = SimpleAVLTreeNode.simpleAVLTreeNode
 
     extension (factory: SimpleAVLFugueFactory) {
