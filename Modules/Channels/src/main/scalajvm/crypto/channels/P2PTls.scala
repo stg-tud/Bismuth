@@ -3,7 +3,7 @@ package crypto.channels
 import channels.connection.{Abort, ByteBufferMessageBuffer, Connection, ConnectionDescriptor, ConnectionInfo, Connector, Listener, MessageBuffer, Receive}
 import crypto.PublicIdentity
 import crypto.channels.{P2PX509TrustManager, X509Util}
-import de.rmgk.delay.{Async, Sync}
+import de.rmgk.delay.{Async, Callback, Sync}
 import nl.altindag.ssl.SSLFactory
 import nl.altindag.ssl.pem.util.PemUtils
 import rdts.base.Uid
@@ -49,8 +49,9 @@ class P2PTls(privateIdentity: PrivateIdentity) {
           .createSocket(host, port)
           .asInstanceOf[SSLSocket]
         val remotePublicId = startHandshake(socket).bind
-        val conn           = P2PTlsConnection(socket, privateIdentity.getPublic, Uid(remotePublicId.id), receiver)
-        ec.execute(() => conn.receiveLoopBlocking())
+        val conn           = P2PTlsConnection(socket, privateIdentity.getPublic, Uid(remotePublicId.id))
+        val callback       = receiver.connectionEstablished(conn)
+        ec.execute(() => conn.receiveLoopBlocking(callback))
         conn
       }
     }
@@ -99,8 +100,9 @@ class P2PTls(privateIdentity: PrivateIdentity) {
                   try {
                     val socket = serverSocket.accept().asInstanceOf[SSLSocket]
                     startHandshake(socket).map { (abort: Abort) ?=> peerIdentity =>
-                      val conn = P2PTlsConnection(socket, privateIdentity.getPublic, Uid(peerIdentity.id), receiver)
-                      executionContext.execute(() => conn.receiveLoopBlocking())
+                      val conn     = P2PTlsConnection(socket, privateIdentity.getPublic, Uid(peerIdentity.id))
+                      val callback = receiver.connectionEstablished(conn)
+                      executionContext.execute(() => conn.receiveLoopBlocking(callback))
                     }.runIn(summon) {
                       case Success(value) => ()
                       case Failure(ex)    => Async.handler.fail(ex)
@@ -134,7 +136,6 @@ class P2PTls(privateIdentity: PrivateIdentity) {
       private val socket: SSLSocket,
       private val localId: PublicIdentity,
       peerReplicaId: Uid, // TODO: change type to PublicIdentity
-      receiver: Receive
   ) extends Connection {
     try
         socket.setOption(StandardSocketOptions.TCP_NODELAY, true)
@@ -144,7 +145,6 @@ class P2PTls(privateIdentity: PrivateIdentity) {
 
     private val outputStream                             = DataOutputStream(socket.getOutputStream)
     private val inputStream                              = DataInputStream(socket.getInputStream)
-    private lazy val receivedMessageCallback             = receiver.connectionEstablished(this)
     override val authenticatedPeerReplicaId: Option[Uid] = Some(peerReplicaId)
 
     override def info: ConnectionInfo = {
@@ -183,25 +183,24 @@ class P2PTls(privateIdentity: PrivateIdentity) {
       }
     }
 
-    private[P2PTls] def receiveLoopBlocking()(using abort: Abort): Unit =
-        // force the lazy receive callback now, so the receiver is notified about the established
-        // connection before (and independent of) the first received message
-        val _ = receivedMessageCallback
-        inputStream.synchronized {
-          try
-            while !abort.closeRequest do
-                val len = inputStream.readInt()
-                require(len < MessageBuffer.maxPayloadSize, "Message too large")
-                val bytes = inputStream.readNBytes(len)
-                if bytes.length == len then receivedMessageCallback.succeed(ByteBufferMessageBuffer(bytes))
-                else throw EOFException(s"Could not read $len bytes for message")
-          catch {
-            case ex: Throwable =>
-              try close()
-              catch { case _: Throwable => () }
-              receivedMessageCallback.fail(ex)
-          }
+    private[P2PTls] def receiveLoopBlocking(receivedMessageCallback: Callback[MessageBuffer])(using
+        abort: Abort
+    ): Unit =
+      inputStream.synchronized {
+        try
+          while !abort.closeRequest do
+              val len = inputStream.readInt()
+              require(len < MessageBuffer.maxPayloadSize, "Message too large")
+              val bytes = inputStream.readNBytes(len)
+              if bytes.length == len then receivedMessageCallback.succeed(ByteBufferMessageBuffer(bytes))
+              else throw EOFException(s"Could not read $len bytes for message")
+        catch {
+          case ex: Throwable =>
+            try close()
+            catch { case _: Throwable => () }
+            receivedMessageCallback.fail(ex)
         }
+      }
 
     override def close(): Unit =
       socket.close()

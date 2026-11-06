@@ -20,9 +20,10 @@ object TCP {
       executionContext: ExecutionContext
   ): JIOStreamConnection = {
     socket.setTcpNoDelay(true)
-    val conn = new JIOStreamConnection(socket.getInputStream, socket.getOutputStream, () => socket.close())
+    val conn     = new JIOStreamConnection(socket.getInputStream, socket.getOutputStream, () => socket.close())
+    val callback = incoming.connectionEstablished(conn)
     executionContext.execute: () =>
-        conn.loopHandler(incoming)
+        conn.loopReceive(callback)
     conn
   }
 

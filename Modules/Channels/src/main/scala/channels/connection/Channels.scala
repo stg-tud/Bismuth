@@ -76,9 +76,9 @@ trait Receive {
 /** Establishes exactly one connection, e.g., by dialing a remote address or by wrapping an existing channel. */
 trait Connector {
 
-  /** When run, establishes one connection: `receiver.connectionEstablished(conn)` is called exactly once, and the
-    * returned async completes with that same `conn`. The two may happen in either order (and on different threads).
-    * If the async fails before `connectionEstablished` was called, no connection was established.
+  /** When run, establishes one connection: `receiver.connectionEstablished(conn)` is called exactly once, and only
+    * afterwards the returned async completes with that same `conn`. If the async fails, no connection was established
+    * and `connectionEstablished` was not called.
     *
     * Running the async again attempts a new, independent connection (if the implementation supports that).
     */

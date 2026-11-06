@@ -65,7 +65,8 @@ class JIOStreamConnection(in: InputStream, out: OutputStream, doClose: () => Uni
 
   // frame parsing
 
-  def loopHandler(handler: Receive): Unit =
-    inputStream.loopReceive(handler.connectionEstablished(this))
+  /** Blocks, delivering received messages to `handler` until the connection ends. */
+  def loopReceive(handler: Callback[MessageBuffer]): Unit =
+    inputStream.loopReceive(handler)
 
 }

@@ -16,7 +16,6 @@ import rdts.base.{ReplicaId, Uid}
 
 import java.net.SocketException
 import java.nio.ByteBuffer
-import java.util.concurrent.atomic.AtomicReference
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success, Try}
 
@@ -104,6 +103,12 @@ class BroadcastIO[State](
 
   private val lock: AnyRef = new {}
 
+  /** Connections not dialed by the overlay (accepted by a listener, or added via `addClientConnection`). */
+  private val incoming: Receive = (conn: Connection) => {
+    transition(overlayStep(OverlayEvent.Incoming(conn)))
+    messageReceiver(conn)
+  }
+
   // ------------------------------------------------------------------------------------------------
   // snapshots
   // ------------------------------------------------------------------------------------------------
@@ -125,7 +130,7 @@ class BroadcastIO[State](
 
   /** Register an outgoing/client transport that yields a usable `Connection` (not dialed by the overlay). */
   def addClientConnection(connector: Connector): Unit =
-    establish(connector, OverlayEvent.Incoming(_))(error => printExceptionHandler.fail(error))
+    connector.connect(incoming).runIn(globalAbort)(printExceptionHandler)
 
   /** Register an incoming/server transport and learn its published local `ConnectionDescriptor`. */
   def addServerConnection(listener: Listener): Unit =
@@ -147,10 +152,10 @@ class BroadcastIO[State](
   // ------------------------------------------------------------------------------------------------
 
   /** Run `step` under the lock, then perform its outputs without the lock. */
-  private def transition(step: => List[Output]): Unit = performAll(locked(step))
-
-  private def locked(step: => List[Output]): List[Output] =
-    lock.synchronized { if globalAbort.closeRequest then Nil else step }
+  private inline def transition(inline step: List[Output]): Unit =
+    lock.synchronized {
+      if globalAbort.closeRequest then Nil else step
+    }.foreach(perform)
 
   private def overlayStep(event: OverlayEvent): List[Output] = {
     val (next, actions) = overlay.step(event)
@@ -190,10 +195,8 @@ class BroadcastIO[State](
           OverlayAction.Close(conn) :: overlayStep(OverlayEvent.Closed(conn))
 
   // ------------------------------------------------------------------------------------------------
-  // performing outputs (no lock held)
+  // performing outputs
   // ------------------------------------------------------------------------------------------------
-
-  private def performAll(outputs: List[Output]): Unit = outputs.foreach(perform)
 
   private def perform(output: Output): Unit = output match
       case Transmit(connection, envelope)    => send(connection, envelope)
@@ -219,39 +222,17 @@ class BroadcastIO[State](
           }
         }
 
-  /** Connections accepted by a listener. */
-  private val incoming: Receive = (conn: Connection) => {
-    transition(overlayStep(OverlayEvent.Incoming(conn)))
-    messageReceiver(conn)
-  }
-
-  /** Run `connector`, reporting the connection to the overlay as `event` once it is established. `failed` is called if
-    * no connection was established; a connection that fails after it was reported is reported as closed instead.
-    */
-  private def establish(connector: Connector, event: Connection => OverlayEvent)(failed: Throwable => Unit): Unit = {
-    val established = AtomicReference[Connection | Null](null)
-    connector.connect { (conn: Connection) =>
-      established.set(conn)
-      transition(overlayStep(event(conn)))
-      messageReceiver(conn)
-    }.runIn(globalAbort) {
-      case Success(_)     => ()
-      case Failure(error) =>
-        established.get() match
-            case null => failed(error)
-            case conn =>
-              conn.close()
-              transition(overlayStep(OverlayEvent.Closed(conn)))
-    }
-  }
-
   /** Establish a connection requested by the overlay; reports `Established` or `DialFailed`. */
   private def dial(attempt: AttemptId, to: Set[ConnectionDescriptor]): Unit =
     to.iterator.flatMap(resolver.connect).nextOption() match
         case None            => transition(overlayStep(OverlayEvent.DialFailed(attempt)))
         case Some(connector) =>
-          establish(connector, OverlayEvent.Established(attempt, _)) { _ =>
-            transition(overlayStep(OverlayEvent.DialFailed(attempt)))
+          connector.connect { (conn: Connection) =>
+            transition(overlayStep(OverlayEvent.Established(attempt, conn)))
+            messageReceiver(conn)
+          }.runIn(globalAbort) {
+            case Success(_) => ()
+            case Failure(_) => transition(overlayStep(OverlayEvent.DialFailed(attempt)))
           }
 
   private def messageReceiver(conn: Connection): Callback[MessageBuffer] = {
