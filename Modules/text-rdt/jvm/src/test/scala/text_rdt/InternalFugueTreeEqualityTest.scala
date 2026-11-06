@@ -30,9 +30,9 @@ case class InternalFugueTreeEqualityTest(
   override def genCommand(state: State): Gen[Command] = {
     Gen.frequency(
       1 -> genCreateReplica(state),
-      (if (state.length <= 1) 0 else 4) -> genSyncReplicas(state),
-      (if (state.isEmpty) 0 else 8) -> genInsert(state),
-      (if (state.isEmpty) 0 else 8) -> genDelete(state)
+      (if state.length <= 1 then 0 else 4) -> genSyncReplicas(state),
+      (if state.isEmpty then 0 else 8) -> genInsert(state),
+      (if state.isEmpty then 0 else 8) -> genDelete(state)
     )
   }
 
@@ -42,7 +42,7 @@ case class InternalFugueTreeEqualityTest(
 
   def genSyncReplicas(state: State): Gen[SyncReplicas] = if (
     state.length <= 1
-  ) {
+   ) then {
     SyncReplicas("", "")
   } else {
     for {
@@ -53,7 +53,7 @@ case class InternalFugueTreeEqualityTest(
     }
   }
 
-  def genInsert(state: State): Gen[Insert] = if (state.isEmpty) {
+  def genInsert(state: State): Gen[Insert] = if state.isEmpty then {
     Insert("", Int.MaxValue, ' ')
   } else {
     for {
@@ -63,7 +63,7 @@ case class InternalFugueTreeEqualityTest(
     } yield Insert(replica, index, character)
   }
 
-  def genDelete(state: State): Gen[Delete] = if (state.isEmpty) {
+  def genDelete(state: State): Gen[Delete] = if state.isEmpty then {
     Delete("", Int.MaxValue)
   } else {
     for {
@@ -201,7 +201,7 @@ case class InternalFugueTreeEqualityTest(
 
             assert(replicas(replica).editor.asInstanceOf[StringEditory].data.toString() == replicas(replica).text())
 
-            if (len > 0) {
+            if len > 0 then {
               replicas(replica).delete(index % len)
             }
         
@@ -211,7 +211,7 @@ case class InternalFugueTreeEqualityTest(
               .map(v =>
                 (
                   v.tree(),
-                  if (len > 0) { s"delete $replica index ${index % len}" }
+                  if len > 0 then { s"delete $replica index ${index % len}" }
                   else { s"don't delete $replica empty" }
                 )
               )

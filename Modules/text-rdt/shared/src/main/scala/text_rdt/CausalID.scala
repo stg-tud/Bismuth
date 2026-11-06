@@ -31,26 +31,26 @@ object CausalID {
       left.foreachEntry((rid, counter) => {
         val leftValue = counter
         val rightValue = right.getOrElse(rid, 0)
-        if (leftValue > rightValue) {
+        if leftValue > rightValue then {
           leftLarger = true
-        } else if (leftValue < rightValue) {
+        } else if leftValue < rightValue then {
           rightLarger = true
         }
       })
       right.foreachEntry((rid, counter) => {
         val rightValue = counter
         val leftValue = left.getOrElse(rid, 0)
-        if (leftValue > rightValue) {
+        if leftValue > rightValue then {
           leftLarger = true
-        } else if (leftValue < rightValue) {
+        } else if leftValue < rightValue then {
           rightLarger = true
         }
       })
-      if (leftLarger && rightLarger) {
+      if leftLarger && rightLarger then {
         None
-      } else if (leftLarger && !rightLarger) {
+      } else if leftLarger && !rightLarger then {
         Some(1)
-      } else if (!leftLarger && rightLarger) {
+      } else if !leftLarger && rightLarger then {
         Some(-1)
       } else {
         Some(0)

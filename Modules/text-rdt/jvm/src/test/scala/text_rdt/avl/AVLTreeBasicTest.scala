@@ -49,7 +49,7 @@ final case class AVLTreeBasicTest() extends Commands {
       val index =
         offsetInArray % (values.length + 1)
       val offset =
-        if (index == values.length) {
+        if index == values.length then {
           values
             .slice(0, index)
             .map(_.length())
@@ -60,8 +60,8 @@ final case class AVLTreeBasicTest() extends Commands {
             .map(_.length())
             .sum
         }
-      if (index == values.length && offset != 0) {
-        val nodeToInsertAt = sut.nodeAtIndex(offset - 1).nn._1
+      if index == values.length && offset != 0 then {
+        val nodeToInsertAt = sut.nodeAtIndex(offset - 1)._1
         log += s"inserting to the right of $nodeToInsertAt"
         sut.insert(
           nodeToInsertAt,
@@ -69,7 +69,7 @@ final case class AVLTreeBasicTest() extends Commands {
           Side.Right
         )
       } else {
-        val nodeToInsertAt = sut.nodeAtIndex(offset).nn._1
+        val nodeToInsertAt = sut.nodeAtIndex(offset)._1
         log += s"inserting to the left of $nodeToInsertAt"
         sut.insert(
           nodeToInsertAt,

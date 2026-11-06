@@ -9,16 +9,16 @@ object Helper {
       assertion: => Boolean,
       message: => Any
   ): Unit = {
-    if (ENABLE) {
-      if (!assertion) {
+    if ENABLE then {
+      if !assertion then {
         throw new java.lang.AssertionError("assertion failed: " + message)
       }
     }
   }
 
   def myAssert(assertion: => Boolean): Unit = {
-    if (ENABLE) {
-      if (!assertion) {
+    if ENABLE then {
+      if !assertion then {
         throw new java.lang.AssertionError("assertion failed")
       }
     }

@@ -22,7 +22,7 @@ final case class ComplexFugueFactory(replicaId: RID) {
     ) {
       case None => Some(mutable.ArrayBuffer(node.complexTreeNode))
       case Some(value) =>
-        if (Helper.ENABLE) {
+        if Helper.ENABLE then {
           val duplicatedNode = value.find(n =>
             n.offset <= node.complexTreeNode.offset && node.complexTreeNode.offset < n.offset + n
               .valueSize()
@@ -68,19 +68,19 @@ object ComplexFugueFactory {
     extension (factory: ComplexFugueFactory) {
       def insert(i: Int, x: Char): MSG = {
         val leftOrigin =
-          if (i == 0) {
+          if i == 0 then {
             get(null)
           } else {
             factory.atVisibleIndex(i - 1)
           }
         val firstRightChild = leftOrigin.firstRightChild()
-        val side = if (firstRightChild == null) {
+        val side = if firstRightChild == null then {
           Side.Right
         } else {
           Side.Left
         }
         val origin =
-          if (firstRightChild == null) {
+          if firstRightChild == null then {
             leftOrigin
           } else {
             firstRightChild.leftmostDescendant()
@@ -104,7 +104,7 @@ object ComplexFugueFactory {
 
       private def deliveringRemoteDelete(editor: Editory, id: ID): Unit = {
         val deleted = deliveringLocalDelete(id)
-        if (deleted) {
+        if deleted then {
           val index = visibleIndexOf(get(id))
           editor.delete(index)
         }
@@ -178,14 +178,14 @@ object ComplexFugueFactory {
         if (
           side == Side.Right &&
           parent.complexTreeNode.valueSize() == parent.valueIndex() + 1
-        ) {
+         ) then {
           parent.complexTreeNode.values match {
             case Left(values) =>
               if (
                 parent.complexTreeNode.allowAppend && parent
                   .side() == Side.Right && parent.complexTreeNode.rightChildrenBuffer.isEmpty && parent
                   .id() != null && parent.id().nn.rid == id.rid
-              ) {
+               ) then {
                 myAssert(parent.side() == Side.Right)
                 values.append(value)
 
@@ -224,7 +224,7 @@ object ComplexFugueFactory {
           val buffer = parent.complexTreeNode.rightChildrenBuffer
           var i = buffer
             .indexWhere(rightSib => nodeToAppend.id().nn < rightSib.id().nn)
-          if (i == -1) {
+          if i == -1 then {
             i = buffer.length
           }
           buffer
@@ -250,7 +250,7 @@ object ComplexFugueFactory {
         if (
           side == Side.Left &&
           parent.valueIndex() == 0
-        ) {
+         ) then {
           val nodeToPrepend = ComplexTreeNodeSingle(
             ComplexTreeNode(
               id.toSimpleID,
@@ -268,7 +268,7 @@ object ComplexFugueFactory {
           val buffer = parent.complexTreeNode.leftChildrenBuffer
           var i = buffer
             .indexWhere(sib => nodeToPrepend.id().nn < sib.id().nn)
-          if (i == -1) {
+          if i == -1 then {
             i = buffer.length
           }
           buffer
@@ -322,7 +322,7 @@ object ComplexFugueFactory {
         }
         var iInsert = bufferInsert
           .indexWhere(rightSib => nodeToInsert.id().nn < rightSib.id().nn)
-        if (iInsert == -1) {
+        if iInsert == -1 then {
           iInsert = bufferInsert.length
         }
         bufferInsert
@@ -382,7 +382,7 @@ object ComplexFugueFactory {
               nodeToSplit.complexTreeNode.rightChildrenBuffer
             var iRightSplit = bufferRightSplit
               .indexWhere(rightSib => nodeRightSplit.id().nn < rightSib.id().nn)
-            if (iRightSplit == -1) {
+            if iRightSplit == -1 then {
               iRightSplit = bufferRightSplit.length
             }
             bufferRightSplit
@@ -397,14 +397,14 @@ object ComplexFugueFactory {
       }
 
       override def delete(node: ComplexTreeNodeSingle): MSG = {
-        if (node.complexTreeNode.values.isRight) {} else if (
+        if node.complexTreeNode.values.isRight then {} else if (
           node.complexTreeNode.values.swap.toOption.get.length == 1
-        ) {
+         ) then {
           node.complexTreeNode.values = Right(1)
-        } else if (node.valueIndex() == 0) {
+        } else if node.valueIndex() == 0 then {
           val (nodeToSplit, nodeRightSplit) = split(node, 1)
           nodeToSplit.complexTreeNode.values = Right(1)
-        } else if (node.complexTreeNode.valueSize() == node.valueIndex() + 1) {
+        } else if node.complexTreeNode.valueSize() == node.valueIndex() + 1 then {
           val (nodeToSplit, nodeRightSplit) = split(node, node.valueIndex())
           nodeRightSplit.complexTreeNode.values = Right(1)
         } else {
@@ -455,7 +455,7 @@ object ComplexFugueFactory {
           stack: mutable.Stack[StackEntry]
       ): Option[(Iterator[Char], ComplexTreeNode)] = {
         val top = stack.pop()
-        if (top.children.isEmpty) {
+        if top.children.isEmpty then {
           top.side match {
             case text_rdt.Side.Left =>
               stack.push(
@@ -515,13 +515,13 @@ object ComplexFugueFactory {
           stack: mutable.Stack[StackEntry]
       ): N = {
         val top = stack.pop()
-        if (top.children.isEmpty) {
+        if top.children.isEmpty then {
           top.side match {
             case text_rdt.Side.Left =>
               var newIndex: Int = -1
               node.values match {
                 case Left(values) =>
-                  if (index < values.length) {
+                  if index < values.length then {
                     return ComplexTreeNodeSingle(node, index + node.offset)
                   } else {
                     newIndex = index - values.length
@@ -576,10 +576,10 @@ object ComplexFugueFactory {
           stack: mutable.Stack[StackEntry]
       ): Int = {
         val top = stack.pop()
-        if (top.children.isEmpty) {
+        if top.children.isEmpty then {
           top.side match {
             case text_rdt.Side.Left =>
-              if (node.eq(nodeToFind.complexTreeNode)) {
+              if node.eq(nodeToFind.complexTreeNode) then {
                 return index + nodeToFind.visibleValueIndex()
               }
               stack.push(

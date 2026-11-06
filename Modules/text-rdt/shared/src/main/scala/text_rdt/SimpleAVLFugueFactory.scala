@@ -35,19 +35,19 @@ object SimpleAVLFugueFactory {
     extension (factory: SimpleAVLFugueFactory) {
       def insert(i: Int, x: Char): MSG = {
         val leftOrigin =
-          if (i == 0) {
+          if i == 0 then {
             get(null)
           } else {
             factory.atVisibleIndex(i - 1)
           }
         val firstRightChild = leftOrigin.firstRightChild()
-        val side = if (firstRightChild == null) {
+        val side = if firstRightChild == null then {
           Side.Right
         } else {
           Side.Left
         }
         val origin =
-          if (firstRightChild == null) {
+          if firstRightChild == null then {
             leftOrigin
           } else {
             firstRightChild.leftmostDescendant()
@@ -71,7 +71,7 @@ object SimpleAVLFugueFactory {
 
       private def deliveringRemoteDelete(editor: Editory, id: ID): Unit = {
         val deleted = deliveringLocalDelete(id)
-        if (deleted) {
+        if deleted then {
           val index = visibleIndexOf(get(id))
           editor.delete(index)
         }
@@ -208,16 +208,16 @@ object SimpleAVLFugueFactory {
         )
         val _ = factory.tree.put(node.id(), node)
 
-        if (side == Side.Right) {
+        if side == Side.Right then {
           var i = parent
             .rightChildren()
             .indexWhere(rightSib => id < rightSib.id().nn)
-          if (i == -1) {
+          if i == -1 then {
             i = parent.rightChildren().length
           }
           if (
             i == 0 || parent.value.rightChildrenBuffer == null || parent.value.rightChildrenBuffer.nn.isEmpty
-          ) {
+           ) then {
             factory.avlTree.insertBasedOn(parent, node, Side.Right)
           } else {
             val target = parent.value.rightChildrenBuffer.nn(i - 1)
@@ -240,10 +240,10 @@ object SimpleAVLFugueFactory {
           parent.value.rightChildrenBuffer match {
             case null =>
               parent.value.rightChildrenBuffer =
-                new mutable.ArrayBuffer(1).nn.append(node)
+                new mutable.ArrayBuffer(1).append(node)
             case value => value.insert(i, node)
           }
-          if (Helper.ENABLE) {
+          if Helper.ENABLE then {
             val _ = parent.rightmostDescendant()
             val _ = parent.leftmostDescendant()
             val _ = node.leftmostDescendant()
@@ -256,12 +256,12 @@ object SimpleAVLFugueFactory {
             parent
               .leftChildren()
               .indexWhere(leftSib => id < leftSib.id().nn)
-          if (i == -1) {
+          if i == -1 then {
             i = parent.leftChildren().length
           }
           if (
             (parent.value.leftChildrenBuffer != null && i == parent.value.leftChildrenBuffer.nn.size) || parent.value.leftChildrenBuffer == null || parent.value.leftChildrenBuffer.nn.isEmpty
-          ) {
+           ) then {
             factory.avlTree.insertBasedOn(parent, node, Side.Left)
           } else {
             val target = parent.value.leftChildrenBuffer.nn(i)
@@ -283,10 +283,10 @@ object SimpleAVLFugueFactory {
           parent.value.leftChildrenBuffer match {
             case null =>
               parent.value.leftChildrenBuffer =
-                new mutable.ArrayBuffer(1).nn.append(node)
+                new mutable.ArrayBuffer(1).append(node)
             case value => value.insert(i, node)
           }
-          if (Helper.ENABLE) {
+          if Helper.ENABLE then {
             val _ = parent.rightmostDescendant()
             val _ = parent.leftmostDescendant()
             val _ = node.leftmostDescendant()
@@ -299,7 +299,7 @@ object SimpleAVLFugueFactory {
       }
 
       override def delete(node: AVLTreeNode[SimpleAVLTreeNode]): MSG = {
-        if (node.value.value != null) {
+        if node.value.value != null then {
           node.value.value = null
           node.fixSizeRecursively(-1)
         }

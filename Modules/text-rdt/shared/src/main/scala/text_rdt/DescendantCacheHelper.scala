@@ -24,8 +24,8 @@ object DescendantCacheHelper {
       node: AVLTreeNode[N],
       add: Int
   ): AVL2TreeNode[AVLTreeNode[N]] = {
-    if (isAtEnd) {
-      if (parentCache.isLastNode) {
+    if isAtEnd then {
+      if parentCache.isLastNode then {
         val sidemostDescendantCacheNode =
           AVL2TreeNode(
             parentCache.value + add,

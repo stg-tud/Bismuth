@@ -50,23 +50,23 @@ case class BrowserMultiReplicaConvergenceTest(
   override def genCommand(state: State): Gen[Command] = {
     Gen.frequency(
       1 -> genCreateReplica(state),
-      (if (state.size <= 1) 0 else 4) -> genSyncReplicas(state),
-      (if (state.isEmpty) 0 else 8) -> genInsert(state),
-      (if (state.isEmpty) 0 else 8) -> genDelete(state)
+      (if state.size <= 1 then 0 else 4) -> genSyncReplicas(state),
+      (if state.isEmpty then 0 else 8) -> genInsert(state),
+      (if state.isEmpty then 0 else 8) -> genDelete(state)
     )
   }
 
   def genCreateReplica(state: State): Gen[CreateReplica] =
     Gen.const(CreateReplica())
 
-  def genSyncReplicas(state: State): Gen[SyncReplicas] = if (state.size <= 1) {
+  def genSyncReplicas(state: State): Gen[SyncReplicas] = if state.size <= 1 then {
     SyncReplicas(Int.MaxValue, Int.MaxValue)
   } else {
     for {
       replicaIndex1 <- Gen.choose(0, state.size - 1)
       replicaIndex2 <- Gen.choose(0, state.size - 2)
     } yield {
-      if (replicaIndex1 == replicaIndex2) {
+      if replicaIndex1 == replicaIndex2 then {
         SyncReplicas(replicaIndex1, state.size - 1)
       } else {
         SyncReplicas(replicaIndex1, replicaIndex2)
@@ -74,7 +74,7 @@ case class BrowserMultiReplicaConvergenceTest(
     }
   }
 
-  def genInsert(state: State): Gen[Insert] = if (state.isEmpty) {
+  def genInsert(state: State): Gen[Insert] = if state.isEmpty then {
     Insert(Int.MaxValue, Int.MaxValue, ' ')
   } else {
     for {
@@ -84,7 +84,7 @@ case class BrowserMultiReplicaConvergenceTest(
     } yield Insert(replicaIndex, index, character)
   }
 
-  def genDelete(state: State): Gen[Delete] = if (state.isEmpty) {
+  def genDelete(state: State): Gen[Delete] = if state.isEmpty then {
     Delete(Int.MaxValue, Int.MaxValue)
   } else {
     for {
@@ -208,11 +208,11 @@ case class BrowserMultiReplicaConvergenceTest(
     override def run(sut: Sut): Result = {
       val oldText =
         sut._2(replicaIndex).textContent().nn
-      if (oldText.length() > 0) {
+      if oldText.length() > 0 then {
         val fixedIndex = index % oldText.length()
 
         val toFill = StringBuilder(oldText).deleteCharAt(fixedIndex).toString
-        if (toFill.isEmpty()) {
+        if toFill.isEmpty() then {
           sut.elements(replicaIndex).fill("")
         } else {
           sut

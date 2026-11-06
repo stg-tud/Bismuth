@@ -10,7 +10,7 @@ import com.microsoft.playwright.BrowserType
 
 class WebDriverFixture
     extends Fixture[ConcurrentLinkedQueue[Browser]]("webdriver") {
-  lazy val playwright = Playwright.create.nn
+  lazy val playwright: Playwright = Playwright.create.nn
 
   private val drivers: ConcurrentLinkedQueue[Browser] =
     ConcurrentLinkedQueue()
@@ -18,14 +18,14 @@ class WebDriverFixture
   private def createWebDriver(): Browser = {
     val browser =
       playwright.chromium.nn
-        .launch(new BrowserType.LaunchOptions().setHeadless(true).nn)
+        .launch(new BrowserType.LaunchOptions().setHeadless(true))
         .nn
     browser
   }
 
   def getOrCreateWebDriver(): Page = {
     val driverOrNull: Browser | Null = drivers.poll()
-    val optionDriver = if (driverOrNull eq null) {
+    val optionDriver = if driverOrNull eq null then {
       None
     } else {
       Some(driverOrNull)

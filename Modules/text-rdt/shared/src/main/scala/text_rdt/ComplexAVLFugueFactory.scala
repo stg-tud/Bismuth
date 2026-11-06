@@ -112,7 +112,7 @@ object ComplexAVLFugueFactory {
                 ) => {
               if (
                 rid == appendParentRid && counter == appendParentCounter && offset + valueLength - 1 == appendParentOffset && side == Side.Right && appendSide == Side.Right
-              ) {
+               ) then {
                 insert.valueOrValues.addAll(appendValueOrValues)
                 return
               } else {
@@ -137,13 +137,13 @@ object ComplexAVLFugueFactory {
                 ) => {
               if (
                 rid == appendRid && counter == appendCounter && offset + count == appendOffset
-              ) {
+               ) then {
                 delete.count += appendCount
                 return
               }
               if (
                 rid == appendRid && counter == appendCounter && appendOffset + appendCount == offset
-              ) {
+               ) then {
                 delete.offset = appendOffset
                 delete.count += appendCount
                 return
@@ -163,7 +163,7 @@ object ComplexAVLFugueFactory {
     extension (factory: ComplexAVLFugueFactory) {
       final def insert(i: Int, x: Char): MSG = {
         val leftOrigin =
-          if (i == 0) {
+          if i == 0 then {
             get(null)
           } else {
             atVisibleIndex(i - 1)
@@ -171,7 +171,7 @@ object ComplexAVLFugueFactory {
 
         val firstRightChild = leftOrigin.firstRightChild()
         var side: Side | Null = null
-        val origin = if (firstRightChild == null) {
+        val origin = if firstRightChild == null then {
           side = Side.Right
           leftOrigin
         } else {
@@ -201,7 +201,7 @@ object ComplexAVLFugueFactory {
               ) => {
             for ((value, i) <- valueOrValues.zipWithIndex) {
               val id = ComplexID(rid, counter, offset + i)
-              val parent = if (i == 0) {
+              val parent = if i == 0 then {
                 parentRid match {
                   case null => null
                   case rid  => ComplexID(rid, parentCounter, parentOffset)
@@ -225,7 +225,7 @@ object ComplexAVLFugueFactory {
               val deleted = treeNode.value() != null
               val index = visibleIndexOf(get(id))
               val _ = factory.delete(treeNode)
-              if (deleted) {
+              if deleted then {
                 editor.delete(index)
               }
             }
@@ -265,7 +265,7 @@ object ComplexAVLFugueFactory {
         rootTreeNode.complexTreeNode.value.rightmostDescendantCache =
           DescendantCacheHelper.empty(rootTreeNode.complexTreeNode)
 
-        if (Helper.ENABLE) {
+        if Helper.ENABLE then {
           val _ = rootTreeNode.rightmostDescendant()
           val _ = rootTreeNode.leftmostDescendant()
         }
@@ -305,7 +305,7 @@ object ComplexAVLFugueFactory {
             val before = rightChildrenBuffer.maxBefore(nodeToAppend)
             val afterEmpty = rightChildrenBuffer.minAfter(nodeToAppend).isEmpty
 
-            val base = if (rightChildrenBuffer.nn.isEmpty || before.isEmpty) {
+            val base = if rightChildrenBuffer.isEmpty || before.isEmpty then {
               parent
             } else {
               ComplexAVLTreeNodeSingle(
@@ -338,7 +338,7 @@ object ComplexAVLFugueFactory {
             parent.value.to - parent.value.offset + 1
           )
 
-        if (Helper.ENABLE) {
+        if Helper.ENABLE then {
           val _ = parent.leftmostDescendant()
           val _ = parent.rightmostDescendant()
           val _ = nodeToAppend.leftmostDescendant()
@@ -381,7 +381,7 @@ object ComplexAVLFugueFactory {
             val after = leftChildrenBuffer.minAfter(nodeToPrepend)
 
             val base =
-              if (leftChildrenBuffer.isEmpty || after.isEmpty) {
+              if leftChildrenBuffer.isEmpty || after.isEmpty then {
                 parent
               } else {
                 ComplexAVLTreeNodeSingle(
@@ -417,7 +417,7 @@ object ComplexAVLFugueFactory {
             1
           )
 
-        if (Helper.ENABLE) {
+        if Helper.ENABLE then {
           val _ = parent.leftmostDescendant()
           val _ = parent.rightmostDescendant()
           val _ = nodeToPrepend.leftmostDescendant()
@@ -447,18 +447,18 @@ object ComplexAVLFugueFactory {
           index: Int,
           side: Side
       ): MSG = {
-        val rid: RID = if (idOrNull == null) {
+        val rid: RID = if idOrNull == null then {
           factory.replicaId
         } else {
           idOrNull.rid
         }
-        val counter: Int = if (idOrNull == null) {
+        val counter: Int = if idOrNull == null then {
           factory.counter += 1
           factory.counter
         } else {
           idOrNull.counter
         }
-        val offset: Int = if (idOrNull == null) {
+        val offset: Int = if idOrNull == null then {
           0
         } else {
           idOrNull.offset
@@ -468,9 +468,9 @@ object ComplexAVLFugueFactory {
           parent,
           index
         ).isRightEdge
-        if (isRightEdge) {
+        if isRightEdge then {
           val values = parent.value._values
-          if (values != null && parent.value.allowAppend) {
+          if values != null && parent.value.allowAppend then {
             val rightChildrenBuffer =
               parent.value.rightChildrenBuffer
             if (
@@ -481,7 +481,7 @@ object ComplexAVLFugueFactory {
                   mutable.SortedSet[AVLTreeNode[ComplexAVLTreeNode]]
                 ]
                 .isEmpty)) && parent.value.rid.nn == rid
-            ) {
+             ) then {
               val _ = values.append(
                 value
               )
@@ -493,7 +493,7 @@ object ComplexAVLFugueFactory {
                 parent.value.counter,
                 index + 1,
                 StringBuilder(value.toString()),
-                parent.value.rid.nn,
+                parent.value.rid,
                 parent.value.counter,
                 index,
                 side
@@ -510,10 +510,10 @@ object ComplexAVLFugueFactory {
         var p: AVLTreeNode[ComplexAVLTreeNode] | Null = null
         var bufferOfNodeToAppendOrNull: StringBuilder | Null = null
 
-        if (isRightEdge) {
+        if isRightEdge then {
           if (
             parent.value.allowAppend && parent.value.rid.nn == rid && parent.value.counter == counter
-          ) {
+           ) then {
             parent.value.allowAppend = false
             p = parent
             bufferOfNodeToAppendOrNull = factory
@@ -522,12 +522,11 @@ object ComplexAVLFugueFactory {
                 case rid  => SimpleID(rid, parent.value.counter)
               })
               ._1
-              .nn
           } else {
             p = parent
             bufferOfNodeToAppendOrNull = new StringBuilder(2)
           }
-        } else if (isLeftEdge) {
+        } else if isLeftEdge then {
           p = parent
           bufferOfNodeToAppendOrNull = new StringBuilder(1)
         } else {
@@ -567,9 +566,9 @@ object ComplexAVLFugueFactory {
           offset
         )
 
-        if (isRightEdge || (!isLeftEdge && side == Side.Right)) {
+        if isRightEdge || (!isLeftEdge && side == Side.Right) then {
           insertRight(p, nodeToAppend.complexTreeNode)
-        } else if (isLeftEdge || (!isRightEdge && side == Side.Left)) {
+        } else if isLeftEdge || (!isRightEdge && side == Side.Left) then {
           insertLeft(p, nodeToAppend.complexTreeNode)
         } else {
           throw IllegalStateException()
@@ -600,7 +599,7 @@ object ComplexAVLFugueFactory {
         val oldTo = nodeToSplit.value.to
         nodeToSplit.value.to = splitIndex - 1
 
-        if (nodeToSplit.value._values != null) {
+        if nodeToSplit.value._values != null then {
           nodeToSplit.fixSizeRecursively(
             nodeToSplit.value.to - oldTo
           )
@@ -669,7 +668,7 @@ object ComplexAVLFugueFactory {
               rightChildrenBuffer.minAfter(nodeRightSplit).isEmpty
 
             val base =
-              if (rightChildrenBuffer.nn.isEmpty || before.isEmpty) {
+              if rightChildrenBuffer.isEmpty || before.isEmpty then {
                 nodeToSplit
               } else {
                 ComplexAVLTreeNodeSingle(
@@ -713,13 +712,13 @@ object ComplexAVLFugueFactory {
           nodeToSplit.value.rightmostDescendantCache
             .tree()
             .descendant == nodeToSplit
-        ) {
+         ) then {
           nodeToSplit.value.rightmostDescendantCache
             .tree()
             .descendant = nodeRightSplit
         }
 
-        if (Helper.ENABLE) {
+        if Helper.ENABLE then {
           val _ = nodeToSplit.leftmostDescendant()
           val _ = nodeToSplit.rightmostDescendant()
           val _ = nodeRightSplit.leftmostDescendant()
@@ -737,12 +736,12 @@ object ComplexAVLFugueFactory {
           node: AVLTreeNode[ComplexAVLTreeNode],
           index: Int
       ): MSG = {
-        if (node.value._values == null) {} else if (
+        if node.value._values == null then {} else if (
           node.value.to - node.value.offset == 0
-        ) {
+         ) then {
           node.value._values = null
           node.fixSizeRecursively(-1)
-        } else if (ComplexAVLTreeNodeSingle(node, index).isLeftEdge) {
+        } else if ComplexAVLTreeNodeSingle(node, index).isLeftEdge then {
           val tmp = factory
             .tree(SimpleID(node.value.rid.nn, node.value.counter))
             ._2
@@ -797,7 +796,7 @@ object ComplexAVLFugueFactory {
                               singleRightChild.value.rid
                             ) && parent.value.counter == singleRightChild.value.counter
                             && singleRightChild.value.leftChildrenBuffer == null
-                        ) => {
+                         ) => {
                       parent.value.to += 1
                       assert(sortedSet.remove(singleRightChild))
                       singleRightChild.value.offset += 1
@@ -817,7 +816,7 @@ object ComplexAVLFugueFactory {
               }
             }
           }
-        } else if (ComplexAVLTreeNodeSingle(node, index).isRightEdge) {
+        } else if ComplexAVLTreeNodeSingle(node, index).isRightEdge then {
           node.value.rightChildrenBuffer match {
             case singleRightChild: text_rdt.avl.AVLTreeNode[
                   text_rdt.ComplexAVLTreeNode
@@ -830,7 +829,7 @@ object ComplexAVLFugueFactory {
                       singleRightChild.value.rid
                     ) && node.value.counter == singleRightChild.value.counter
                     && singleRightChild.value.leftChildrenBuffer == null
-                ) => {
+                 ) => {
               node.value.to -= 1
               node.fixSizeRecursively(-1)
               val tmp = factory
@@ -933,7 +932,7 @@ object ComplexAVLFugueFactory {
         factory.avlTree
           .values()
           .map(v => {
-            if (v._values != null) {
+            if v._values != null then {
               Left(v._values.nn.view(v.offset))
             } else {
               Right('⌫') // v._values.nn.view(v.offset)

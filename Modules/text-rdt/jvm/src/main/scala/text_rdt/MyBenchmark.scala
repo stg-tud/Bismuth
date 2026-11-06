@@ -110,11 +110,11 @@ class MyRealWorldBenchmarkLocal {
 
   @Benchmark
   def local(counters: Counters): Option[Replica[?]] = {
-    if (shouldMeasureMemory) {
+    if shouldMeasureMemory then {
       counters.memory = -measureMemory()
     }
     val result = Some(localMethod(count))
-    if (shouldMeasureMemory) {
+    if shouldMeasureMemory then {
       counters.memory += measureMemory()
     }
     result
@@ -185,11 +185,11 @@ class MyRealWorldBenchmarkLargeLocal {
 
   @Benchmark
   def local(counters: Counters): Option[Replica[?]] = {
-    if (shouldMeasureMemory) {
+    if shouldMeasureMemory then {
       counters.memory = -measureMemory()
     }
     val result = Some(localMethod())
-    if (shouldMeasureMemory) {
+    if shouldMeasureMemory then {
       counters.memory += measureMemory()
     }
     result
@@ -228,9 +228,9 @@ class MyRealWorldBenchmarkLargeLocal {
     var index = 0
     val operations = MyRealWorldBenchmark.operations
     val operationsSize = operations.size
-    while (index < count) {
+    while index < count do {
       var i = 0
-      while (i < operationsSize) {
+      while i < operationsSize do {
         operations(i) match {
           case FixtureOperation.Insert(position, character) =>
             replicaA.insert(
@@ -246,7 +246,7 @@ class MyRealWorldBenchmarkLargeLocal {
       }
       index += 1
     }
-    if (shouldMeasureMemory) {
+    if shouldMeasureMemory then {
       assert(replicaA.text() == MyRealWorldBenchmark.finalString * count)
     }
     replicaA
@@ -324,7 +324,7 @@ class MyRealWorldBenchmarkLargeRemote {
             )
         }
     })
-    if (shouldMeasureMemory) {
+    if shouldMeasureMemory then {
       assert(replicaA.text() == MyRealWorldBenchmark.finalString * count)
     }
     replicaA
@@ -357,7 +357,7 @@ class MyRealWorldBenchmarkLargeRemote {
     replicaA.syncFrom(
       replicaWithOperationsApplied.state
     )
-    if (shouldMeasureMemory) {
+    if shouldMeasureMemory then {
       assert(replicaA.text() == MyRealWorldBenchmark.finalString * count)
     }
     Some(replicaA)
@@ -365,11 +365,11 @@ class MyRealWorldBenchmarkLargeRemote {
 
   @Benchmark
   def remote(counters: Counters): Option[Replica[?]] = {
-    if (shouldMeasureMemory) {
+    if shouldMeasureMemory then {
       counters.memory = -measureMemory()
     }
     val result = remoteMethod()
-    if (shouldMeasureMemory) {
+    if shouldMeasureMemory then {
       counters.memory += measureMemory()
     }
     result
@@ -398,11 +398,11 @@ class MyTerribleBenchmarkSequentialInserts {
 
   @Benchmark
   def sequentialInserts(counters: Counters): Replica[?] = {
-    if (shouldMeasureMemory) {
+    if shouldMeasureMemory then {
       counters.memory = -measureMemory()
     }
     val result = sequentialInserts(count)
-    if (shouldMeasureMemory) {
+    if shouldMeasureMemory then {
       counters.memory += measureMemory()
     }
     result
@@ -438,7 +438,7 @@ class MyTerribleBenchmarkSequentialInserts {
     for (i <- 0 until size) {
       replicaA.insert(i, 'a')
     }
-    if (shouldMeasureMemory) {
+    if shouldMeasureMemory then {
       assert(replicaStateA.text().equals("a" * size))
     }
     replicaA
@@ -498,11 +498,11 @@ class MyTerribleBenchmarkEvilInsert {
     SimpleAVLFugueFactory.simpleAVLFugueFactory.type |
       ComplexAVLFugueFactory.complexAVLFugueFactory.type
   ] = {
-    if (shouldMeasureMemory) {
+    if shouldMeasureMemory then {
       counters.memory = -measureMemory()
     }
     val result = evilInsert1("simpleavl")
-    if (shouldMeasureMemory) {
+    if shouldMeasureMemory then {
       counters.memory += measureMemory()
     }
     result
@@ -513,11 +513,11 @@ class MyTerribleBenchmarkEvilInsert {
     SimpleAVLFugueFactory.simpleAVLFugueFactory.type |
       ComplexAVLFugueFactory.complexAVLFugueFactory.type
   ] = {
-    if (shouldMeasureMemory) {
+    if shouldMeasureMemory then {
       counters.memory = -measureMemory()
     }
     val result = evilInsert1("complexavl")
-    if (shouldMeasureMemory) {
+    if shouldMeasureMemory then {
       counters.memory += measureMemory()
     }
     result
@@ -527,7 +527,7 @@ class MyTerribleBenchmarkEvilInsert {
   def evilInsert2SimpleAVL(counters: Counters): Replica[
     SimpleAVLFugueFactory.simpleAVLFugueFactory.type
   ] = {
-    if (shouldMeasureMemory) {
+    if shouldMeasureMemory then {
       counters.memory = -measureMemory()
     }
     val replicaStateToSyncInto =
@@ -559,7 +559,7 @@ class MyTerribleBenchmarkEvilInsert {
     )
 
     val result = replicaToSyncInto
-    if (shouldMeasureMemory) {
+    if shouldMeasureMemory then {
       counters.memory += measureMemory()
     }
     result
@@ -569,7 +569,7 @@ class MyTerribleBenchmarkEvilInsert {
   def evilInsert2ComplexAVL(counters: Counters): Replica[
     ComplexAVLFugueFactory.complexAVLFugueFactory.type
   ] = {
-    if (shouldMeasureMemory) {
+    if shouldMeasureMemory then {
       counters.memory = -measureMemory()
     }
     val replicaStateToSyncInto =
@@ -608,7 +608,7 @@ class MyTerribleBenchmarkEvilInsert {
     )
 
     val result = replicaToSyncInto
-    if (shouldMeasureMemory) {
+    if shouldMeasureMemory then {
       counters.memory += measureMemory()
     }
     result
@@ -618,7 +618,7 @@ class MyTerribleBenchmarkEvilInsert {
   def evilSplitComplexAVL(counters: Counters): Replica[
     ComplexAVLFugueFactory.complexAVLFugueFactory.type
   ] = {
-    if (shouldMeasureMemory) {
+    if shouldMeasureMemory then {
       counters.memory = -measureMemory()
     }
     val replicaStateToSyncInto =
@@ -642,7 +642,7 @@ class MyTerribleBenchmarkEvilInsert {
       )
     }
     val result = replicaToSyncInto
-    if (shouldMeasureMemory) {
+    if shouldMeasureMemory then {
       counters.memory += measureMemory()
     }
     result
@@ -652,7 +652,7 @@ class MyTerribleBenchmarkEvilInsert {
   def evilSplitManyRightChildrenComplexAVL(counters: Counters): Replica[
     ComplexAVLFugueFactory.complexAVLFugueFactory.type
   ] = {
-    if (shouldMeasureMemory) {
+    if shouldMeasureMemory then {
       counters.memory = -measureMemory()
     }
     val replicaStateToSyncInto =
@@ -696,7 +696,7 @@ class MyTerribleBenchmarkEvilInsert {
       )
     }
     val result = replicaToSyncInto
-    if (shouldMeasureMemory) {
+    if shouldMeasureMemory then {
       counters.memory += measureMemory()
     }
     result
@@ -706,7 +706,7 @@ class MyTerribleBenchmarkEvilInsert {
   def evilChildrenComplexAVL(counters: Counters): Replica[
     ComplexAVLFugueFactory.complexAVLFugueFactory.type
   ] = {
-    if (shouldMeasureMemory) {
+    if shouldMeasureMemory then {
       counters.memory = -measureMemory()
     }
     val replicaStateToSyncInto =
@@ -739,7 +739,7 @@ class MyTerribleBenchmarkEvilInsert {
     )
 
     val result = replicaToSyncInto
-    if (shouldMeasureMemory) {
+    if shouldMeasureMemory then {
       counters.memory += measureMemory()
     }
     result

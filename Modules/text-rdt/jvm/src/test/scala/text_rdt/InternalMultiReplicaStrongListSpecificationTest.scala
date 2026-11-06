@@ -46,7 +46,7 @@ case class InternalMultiReplicaStrongListSpecificationTest[F <: FugueFactory]()(
 
   def genSyncReplicas(state: State): Option[Gen[SyncReplicas]] = if (
     state.size <= 1
-  ) {
+   ) then {
     None
   } else {
     Some(for {
@@ -57,7 +57,7 @@ case class InternalMultiReplicaStrongListSpecificationTest[F <: FugueFactory]()(
     })
   }
 
-  def genInsert(state: State): Option[Gen[Insert]] = if (state.isEmpty) {
+  def genInsert(state: State): Option[Gen[Insert]] = if state.isEmpty then {
     None
   } else {
     Some(for {
@@ -67,7 +67,7 @@ case class InternalMultiReplicaStrongListSpecificationTest[F <: FugueFactory]()(
     } yield Insert(replicaIndex, index, character))
   }
 
-  def genDelete(state: State): Option[Gen[Delete]] = if (state.isEmpty) {
+  def genDelete(state: State): Option[Gen[Delete]] = if state.isEmpty then {
     None
   } else {
     Some(for {
@@ -206,8 +206,8 @@ case class InternalMultiReplicaStrongListSpecificationTest[F <: FugueFactory]()(
       val indexModulo = index % (result._1(replicaIndex).count(_.isLeft) + 1)
       var currentIndex = 0
       var collectionIndex = newText.indexWhere(value => {
-        if (value.isLeft) {
-          if (currentIndex == indexModulo) {
+        if value.isLeft then {
+          if currentIndex == indexModulo then {
             true
           } else {
             currentIndex += 1
@@ -217,7 +217,7 @@ case class InternalMultiReplicaStrongListSpecificationTest[F <: FugueFactory]()(
           false
         }
       })
-      if (collectionIndex == -1) {
+      if collectionIndex == -1 then {
         collectionIndex = newText.size - 1
       }
       newText.insert(collectionIndex, Left(character))
@@ -241,7 +241,7 @@ case class InternalMultiReplicaStrongListSpecificationTest[F <: FugueFactory]()(
 
       assert(sut(replicaIndex).editor.asInstanceOf[StringEditory].data.toString() == sut(replicaIndex).text())
 
-      if (len > 0) {
+      if len > 0 then {
         replica.delete(index % len)
       }
 
@@ -260,13 +260,13 @@ case class InternalMultiReplicaStrongListSpecificationTest[F <: FugueFactory]()(
 
     override def postCondition(state: Set[Int], result: Result): Prop = {
       val newText = result._1(replicaIndex).to(mutable.ArrayBuffer)
-      if (result._1(replicaIndex).count(_.isLeft) != 0) {
+      if result._1(replicaIndex).count(_.isLeft) != 0 then {
         // skip deleted
         val indexModulo = index % result._1(replicaIndex).count(_.isLeft)
         var currentIndex = 0
         val collectionIndex = newText.indexWhere(value => {
-          if (value.isLeft) {
-            if (currentIndex == indexModulo) {
+          if value.isLeft then {
+            if currentIndex == indexModulo then {
               true
             } else {
               currentIndex += 1

@@ -43,7 +43,7 @@ object SimpleAVLTreeNode {
         myAssert(fastDescendant.eq(treeNode.value.leftChildrenBuffer match {
           case null => treeNode
           case value =>
-            if (value.isEmpty) {
+            if value.isEmpty then {
               treeNode
             } else {
               value.head.leftmostDescendant()
@@ -59,7 +59,7 @@ object SimpleAVLTreeNode {
           fastDescendant.eq(treeNode.value.rightChildrenBuffer match {
             case null => treeNode
             case value =>
-              if (value.isEmpty) {
+              if value.isEmpty then {
                 treeNode
               } else {
                 value.last.rightmostDescendant()
@@ -68,7 +68,7 @@ object SimpleAVLTreeNode {
           s"got ${fastDescendant.value.id} expected ${(treeNode.value.rightChildrenBuffer match {
               case null => treeNode
               case value =>
-                if (value.isEmpty) {
+                if value.isEmpty then {
                   treeNode
                 } else {
                   value.last.rightmostDescendant()

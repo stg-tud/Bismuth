@@ -39,7 +39,7 @@ case class BrowserSingleReplicaInsertDeleteTest(
 
   override def initialPreCondition(state: State): Boolean = state.isEmpty
 
-  override def genCommand(state: State): Gen[Command] = if (state.isEmpty) {
+  override def genCommand(state: State): Gen[Command] = if state.isEmpty then {
     genInsert(state)
   } else {
     Gen.oneOf(genInsert(state), genDelete(state))
@@ -100,7 +100,7 @@ case class BrowserSingleReplicaInsertDeleteTest(
       val oldText =
         sut.element.textContent().nn
       val toFill = StringBuilder(oldText).deleteCharAt(index).toString
-      if (toFill.isEmpty()) {
+      if toFill.isEmpty() then {
         sut.element.fill("")
       } else {
         sut.element

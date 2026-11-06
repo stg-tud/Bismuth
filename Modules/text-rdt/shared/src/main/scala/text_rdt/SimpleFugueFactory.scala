@@ -26,19 +26,19 @@ object SimpleFugueFactory {
     extension (factory: SimpleFugueFactory) {
       def insert(i: Int, x: Char): MSG = {
         val leftOrigin =
-          if (i == 0) {
+          if i == 0 then {
             get(null)
           } else {
             factory.atVisibleIndex(i - 1)
           }
         val firstRightChild = leftOrigin.firstRightChild()
-        val side = if (firstRightChild == null) {
+        val side = if firstRightChild == null then {
           Side.Right
         } else {
           Side.Left
         }
         val origin =
-          if (firstRightChild == null) {
+          if firstRightChild == null then {
             leftOrigin
           } else {
             firstRightChild.leftmostDescendant()
@@ -62,7 +62,7 @@ object SimpleFugueFactory {
 
       private def deliveringRemoteDelete(editor: Editory, id: ID): Unit = {
         val deleted = deliveringLocalDelete(id)
-        if (deleted) {
+        if deleted then {
           val index = visibleIndexOf(get(id))
           editor.delete(index)
         }
@@ -118,7 +118,7 @@ object SimpleFugueFactory {
           stack: mutable.Stack[StackEntry]
       ): Option[(N, N)] = {
         val top = stack.pop()
-        if (top.children.isEmpty) {
+        if top.children.isEmpty then {
           top.side match {
             case text_rdt.Side.Left =>
               stack.push(
@@ -175,7 +175,7 @@ object SimpleFugueFactory {
 
       override def atVisibleIndex(i: Int): SimpleTreeNode = {
         val vals = factory.nodes().drop(i)
-        vals.iterator.next
+        vals.iterator.next()
       }
 
       override def textWithDeleted(): Vector[Either[Char, Char]] = ???
@@ -234,11 +234,11 @@ object SimpleFugueFactory {
         )
         val _ = factory.tree.put(node.id(), node)
 
-        if (node.side() == Side.Right) {
+        if node.side() == Side.Right then {
           var i = parent
             .rightChildren()
             .indexWhere(rightSib => node.id().nn < rightSib.id().nn)
-          if (i == -1) {
+          if i == -1 then {
             i = parent.rightChildren().length
           }
           parent.rightChildrenBuffer.insert(i, node)
@@ -247,7 +247,7 @@ object SimpleFugueFactory {
             parent
               .leftChildren()
               .indexWhere(leftSib => node.id().nn < leftSib.id().nn)
-          if (i == -1) {
+          if i == -1 then {
             i = parent.leftChildren().length
           }
           parent.leftChildrenBuffer.insert(i, node)

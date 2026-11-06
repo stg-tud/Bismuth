@@ -82,14 +82,14 @@ final case class CausalBroadcast[MSG](replicaId: RID, batching: Boolean = true) 
   }
 
   def addOneToHistory(msg: MSG): Unit = {
-    if (needsTick) {
+    if needsTick then {
       needsTick = false
       tick()
     }
-    if (batching && _history.nonEmpty && _history.last._1 == causalState) {
+    if batching && _history.nonEmpty && _history.last._1 == causalState then {
       appendMessage(_history.last._2, msg)
     } else {
-      if (!batching) {
+      if !batching then {
         tick()
       }
       cachedHeads
@@ -106,7 +106,7 @@ final case class CausalBroadcast[MSG](replicaId: RID, batching: Boolean = true) 
   def addToHistory(
       msg: (CausalID, mutable.ArrayBuffer[MSG])
   ): Unit = {
-    if (_history.lastOption.exists(p => p._1 == msg._1)) {
+    if _history.lastOption.exists(p => p._1 == msg._1) then {
       _history.last._2.addAll(msg._2)
     } else {
       cachedHeads
@@ -145,7 +145,7 @@ final case class CausalBroadcast[MSG](replicaId: RID, batching: Boolean = true) 
         entry, handleMessage
       )
     })
-    if (batching) {
+    if batching then {
       this.needsTick = true
       other.needsTick = true
     }

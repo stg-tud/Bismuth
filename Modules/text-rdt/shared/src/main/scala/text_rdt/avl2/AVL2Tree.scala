@@ -59,7 +59,7 @@ object AVL2TreeNode {
       value: AVL2TreeNode[V],
       right: AVL2TreeNode[V] | Null
   ): AVL2TreeNode[V] = {
-    if (Helper.ENABLE) {
+    if Helper.ENABLE then {
 
       myAssert(left.ne(value))
       myAssert(right.ne(value))
@@ -68,9 +68,9 @@ object AVL2TreeNode {
         s"left $left right $right"
       )
     }
-    if (left.height > right.height + 1) {
+    if left.height > right.height + 1 then {
       joinRightAVL(tree, left, value, right)
-    } else if (right.height > left.height + 1) {
+    } else if right.height > left.height + 1 then {
       joinLeftAVL(tree, left, value, right)
     } else {
       value.left = left
@@ -91,14 +91,14 @@ object AVL2TreeNode {
     val r = right.nn.right
     val kprime = right.nn
     val c = right.nn.left
-    if (c.height <= left.height + 1) {
+    if c.height <= left.height + 1 then {
       val tprime = k
       tprime.right = c
       tprime.left = left
       tprime.left.foreach(_.parent = tprime)
       tprime.right.foreach(_.parent = tprime)
       tprime.fixHeight()
-      if (tprime.height <= r.height + 1) {
+      if tprime.height <= r.height + 1 then {
         kprime.right = r
         kprime.left = tprime
         tprime.replaceWith(tree, kprime)
@@ -126,7 +126,7 @@ object AVL2TreeNode {
       kprime.left.foreach(_.parent = kprime)
       kprime.right.foreach(_.parent = kprime)
       kprime.fixHeight()
-      if (tprime.height <= r.height + 1) {
+      if tprime.height <= r.height + 1 then {
         tprimeprime
       } else {
         tprimeprime.rotateRight(tree)
@@ -143,14 +143,14 @@ object AVL2TreeNode {
     val l = left.nn.left
     val kprime = left.nn
     val c = left.nn.right
-    if (c.height <= right.height + 1) {
+    if c.height <= right.height + 1 then {
       val tprime = k
       tprime.left = c
       tprime.right = right
       tprime.left.foreach(_.parent = tprime)
       tprime.right.foreach(_.parent = tprime)
       tprime.fixHeight()
-      if (tprime.height <= l.height + 1) {
+      if tprime.height <= l.height + 1 then {
         kprime.left = l
         kprime.right = tprime
         tprime.replaceWith(tree, kprime)
@@ -178,7 +178,7 @@ object AVL2TreeNode {
       kprime.left.foreach(_.parent = kprime)
       kprime.right.foreach(_.parent = kprime)
       kprime.fixHeight()
-      if (tprime.height <= l.height + 1) {
+      if tprime.height <= l.height + 1 then {
         tprimeprime
       } else {
         tprimeprime.rotateLeft(tree)
@@ -217,7 +217,7 @@ final case class AVL2TreeNode[V] private (
   }
 
   def invariantSpecifiedHeight(): Unit = {
-    if (Helper.ENABLE) {
+    if Helper.ENABLE then {
       myAssert(
         height == calculatedHeight(),
         s"$height == ${calculatedHeight()} for $this"
@@ -226,13 +226,13 @@ final case class AVL2TreeNode[V] private (
   }
 
   def invariantSpecifiedHeightRecursiveDown(): Unit = {
-    if (Helper.ENABLE) {
+    if Helper.ENABLE then {
       invariantSpecifiedHeightRecursiveDownInternal()
     }
   }
 
   def invariantBalancedRecursiveDown(): Unit = {
-    if (Helper.ENABLE) {
+    if Helper.ENABLE then {
       invariantBalanced()
       left.foreach(_.invariantBalancedRecursiveDown())
       right.foreach(_.invariantBalancedRecursiveDown())
@@ -240,7 +240,7 @@ final case class AVL2TreeNode[V] private (
   }
 
   def invariantBalanced(): Unit = {
-    if (Helper.ENABLE) {
+    if Helper.ENABLE then {
       myAssert(
         Math.abs(
           left.height
@@ -252,7 +252,7 @@ final case class AVL2TreeNode[V] private (
   }
 
   def invariantAvl(): Unit = {
-    if (Helper.ENABLE) {
+    if Helper.ENABLE then {
       invariantParentLinks()
       invariantSpecifiedHeight()
       invariantBalanced()
@@ -260,13 +260,13 @@ final case class AVL2TreeNode[V] private (
   }
 
   def invariantAvlRecursiveDown(): Unit = {
-    if (Helper.ENABLE) {
+    if Helper.ENABLE then {
       invariantAvlRecursiveDownInternal()
     }
   }
 
   def invariant(): Unit = {
-    if (Helper.ENABLE) {
+    if Helper.ENABLE then {
       invariantInternal()
     }
   }
@@ -278,7 +278,7 @@ final case class AVL2TreeNode[V] private (
   }
 
   def invariantParentLinks(): Unit = {
-    if (Helper.ENABLE) {
+    if Helper.ENABLE then {
       myAssert(
         left.forall(c => c.parent.eq(this)),
         s"$left expected parent $this but got ${left.nn.parent}"
@@ -301,7 +301,7 @@ final case class AVL2TreeNode[V] private (
   }
 
   def fixHeight(): Unit = {
-    if (Helper.ENABLE) {
+    if Helper.ENABLE then {
       left.foreach(_.invariantSpecifiedHeightRecursiveDown())
       right.foreach(_.invariantSpecifiedHeightRecursiveDown())
     }
@@ -309,7 +309,7 @@ final case class AVL2TreeNode[V] private (
       left.height,
       right.height
     )
-    if (Helper.ENABLE) {
+    if Helper.ENABLE then {
 
       invariantSpecifiedHeightRecursiveDown()
     }
@@ -324,9 +324,9 @@ final case class AVL2TreeNode[V] private (
         tree.root = replacement
         replacement.parent = tree
       case value: AVL2TreeNode[V] =>
-        if (value.left.eq(this)) {
+        if value.left.eq(this) then {
           value.left = replacement
-        } else if (value.right.eq(this)) {
+        } else if value.right.eq(this) then {
           value.right = replacement
         } else {
           assert(false)
@@ -336,7 +336,7 @@ final case class AVL2TreeNode[V] private (
   }
 
   def rotateLeft(tree: AVL2Tree[V]): AVL2TreeNode[V] = {
-    if (Helper.ENABLE) {
+    if Helper.ENABLE then {
 
       tree.invariant()
       this.invariant()
@@ -354,7 +354,7 @@ final case class AVL2TreeNode[V] private (
     this.fixHeight()
     temp.fixHeight()
 
-    if (Helper.ENABLE) {
+    if Helper.ENABLE then {
 
       temp.invariantSpecifiedHeightRecursiveDown()
     }
@@ -362,7 +362,7 @@ final case class AVL2TreeNode[V] private (
   }
 
   def rotateRight(tree: AVL2Tree[V]): AVL2TreeNode[V] = {
-    if (Helper.ENABLE) {
+    if Helper.ENABLE then {
 
       tree.invariant()
       this.invariant()
@@ -380,7 +380,7 @@ final case class AVL2TreeNode[V] private (
     this.fixHeight()
     temp.fixHeight()
 
-    if (Helper.ENABLE) {
+    if Helper.ENABLE then {
 
       temp.invariantSpecifiedHeightRecursiveDown()
       tree.invariant()
@@ -393,7 +393,7 @@ final case class AVL2TreeNode[V] private (
       tree: AVL2Tree[V],
       key: Int
   ): (AVL2TreeNode[V] | Null, AVL2TreeNode[V] | Null) = {
-    if (key.compare(value) < 0) {
+    if key.compare(value) < 0 then {
       val (leftprime, rightprime) = left match {
         case null  => (null, null)
         case value => value.split(treeForSmaller, tree, key)
@@ -415,7 +415,7 @@ final case class AVL2TreeNode[V] private (
       nodeToInsert: AVL2TreeNode[V],
       side: Side
   ): Unit = {
-    if (Helper.ENABLE) {
+    if Helper.ENABLE then {
 
       tree.invariant()
       tree.invariantAvlRecursiveDown()
@@ -427,7 +427,7 @@ final case class AVL2TreeNode[V] private (
             myAssert(nodeToInsert.value < this.value)
             left = nodeToInsert
             nodeToInsert.parent = this
-            if (Helper.ENABLE) {
+            if Helper.ENABLE then {
               myAssert(
                 tree.values() == tree.values().sorted,
                 s"${tree.values()} == ${tree.values().sorted} when inserting ${nodeToInsert.value}"
@@ -435,7 +435,7 @@ final case class AVL2TreeNode[V] private (
               tree.invariant()
             }
             this.retrace(tree, Side.Left)
-            if (Helper.ENABLE) {
+            if Helper.ENABLE then {
 
               myAssert(
                 tree.values() == tree.values().sorted,
@@ -449,7 +449,7 @@ final case class AVL2TreeNode[V] private (
             myAssert(rDesc.value < nodeToInsert.value)
             rDesc.right = nodeToInsert
             nodeToInsert.parent = rDesc
-            if (Helper.ENABLE) {
+            if Helper.ENABLE then {
 
               myAssert(
                 tree.values() == tree.values().sorted,
@@ -458,7 +458,7 @@ final case class AVL2TreeNode[V] private (
               tree.invariant()
             }
             rDesc.retrace(tree, Side.Right)
-            if (Helper.ENABLE) {
+            if Helper.ENABLE then {
 
               myAssert(
                 tree.values() == tree.values().sorted,
@@ -474,7 +474,7 @@ final case class AVL2TreeNode[V] private (
             myAssert(this.value < nodeToInsert.value)
             right = nodeToInsert
             nodeToInsert.parent = this
-            if (Helper.ENABLE) {
+            if Helper.ENABLE then {
 
               myAssert(
                 tree.values() == tree.values().sorted,
@@ -483,7 +483,7 @@ final case class AVL2TreeNode[V] private (
               tree.invariant()
             }
             this.retrace(tree, Side.Right)
-            if (Helper.ENABLE) {
+            if Helper.ENABLE then {
 
               myAssert(
                 tree.values() == tree.values().sorted,
@@ -494,13 +494,13 @@ final case class AVL2TreeNode[V] private (
             }
           case value =>
             val lDesc = value.leftmostDescendant()
-            if (Helper.ENABLE) {
+            if Helper.ENABLE then {
 
               myAssert(nodeToInsert.value < lDesc.value)
             }
             lDesc.left = nodeToInsert
             nodeToInsert.parent = lDesc
-            if (Helper.ENABLE) {
+            if Helper.ENABLE then {
 
               myAssert(
                 tree.values() == tree.values().sorted,
@@ -509,7 +509,7 @@ final case class AVL2TreeNode[V] private (
               tree.invariant()
             }
             lDesc.retrace(tree, Side.Left)
-            if (Helper.ENABLE) {
+            if Helper.ENABLE then {
 
               myAssert(
                 tree.values() == tree.values().sorted,
@@ -546,7 +546,7 @@ final case class AVL2TreeNode[V] private (
   private def isRightmostNode: Boolean = {
     parent match {
       case parent: AVL2TreeNode[V] =>
-        if (parent.left.eq(this)) {
+        if parent.left.eq(this) then {
           false
         } else {
           parent.isRightmostNode
@@ -556,7 +556,7 @@ final case class AVL2TreeNode[V] private (
   }
 
   def isLastNode: Boolean = {
-    if (right != null) {
+    if right != null then {
       return false
     }
     isRightmostNode
@@ -599,17 +599,17 @@ final case class AVL2TreeNode[V] private (
   }
 
   private def rebalanceRight(tree: AVL2Tree[V]): AVL2TreeNode[V] = {
-    if (Helper.ENABLE) {
+    if Helper.ENABLE then {
       tree.invariant()
       left.foreach(_.invariantAvlRecursiveDown())
       right.foreach(_.invariantAvlRecursiveDown())
     }
     val result = this
-    if (right.height - left.height == 2) {
-      if (right.nn.right.height > right.nn.left.height) {
+    if right.height - left.height == 2 then {
+      if right.nn.right.height > right.nn.left.height then {
         val _ = this.rotateLeft(tree)
       } else {
-        if (Helper.ENABLE) {
+        if Helper.ENABLE then {
           myAssert(right.nn.left.height > right.nn.right.height)
         }
         val _ = this.right.nn.rotateRight(tree)
@@ -618,7 +618,7 @@ final case class AVL2TreeNode[V] private (
     } else {
       this.fixHeight()
     }
-    if (Helper.ENABLE) {
+    if Helper.ENABLE then {
       tree.invariant()
       result.invariantAvlRecursiveDown()
     }
@@ -626,18 +626,18 @@ final case class AVL2TreeNode[V] private (
   }
 
   private def rebalanceLeft(tree: AVL2Tree[V]): AVL2TreeNode[V] = {
-    if (Helper.ENABLE) {
+    if Helper.ENABLE then {
 
       tree.invariant()
       left.foreach(_.invariantAvlRecursiveDown())
       right.foreach(_.invariantAvlRecursiveDown())
     }
     val result = this
-    if (left.height - right.height == 2) {
-      if (left.nn.left.height > left.nn.right.height) {
+    if left.height - right.height == 2 then {
+      if left.nn.left.height > left.nn.right.height then {
         val _ = this.rotateRight(tree)
       } else {
-        if (Helper.ENABLE) {
+        if Helper.ENABLE then {
 
           myAssert(left.nn.right.height > left.nn.left.height)
         }
@@ -647,7 +647,7 @@ final case class AVL2TreeNode[V] private (
     } else {
       this.fixHeight()
     }
-    if (Helper.ENABLE) {
+    if Helper.ENABLE then {
 
       tree.invariant()
       result.invariantAvlRecursiveDown()
@@ -660,20 +660,20 @@ final case class AVL2TreeNode[V] private (
       tree: AVL2Tree[V],
       side: Side
   ): Unit = {
-    if (Helper.ENABLE) {
+    if Helper.ENABLE then {
       tree.invariant()
     }
     side match {
       case text_rdt.Side.Left =>
         val newLast = rebalanceLeft(tree)
-        if (Helper.ENABLE) {
+        if Helper.ENABLE then {
 
           newLast.invariantAvlRecursiveDown()
         }
         parent match {
           case noParent: AVL2Tree[V] =>
           case value: AVL2TreeNode[V] =>
-            if (Helper.ENABLE) {
+            if Helper.ENABLE then {
 
               tree.invariant()
             }
@@ -681,14 +681,14 @@ final case class AVL2TreeNode[V] private (
         }
       case text_rdt.Side.Right =>
         val newLast = rebalanceRight(tree)
-        if (Helper.ENABLE) {
+        if Helper.ENABLE then {
 
           newLast.invariantAvlRecursiveDown()
         }
         parent match {
           case noParent: AVL2Tree[V] =>
           case value: AVL2TreeNode[V] =>
-            if (Helper.ENABLE) {
+            if Helper.ENABLE then {
 
               tree.invariant()
             }
@@ -698,9 +698,9 @@ final case class AVL2TreeNode[V] private (
   }
 
   private def sideGet(): Side = {
-    if (parent.asInstanceOf[AVL2TreeNode[V]].left.eq(this)) {
+    if parent.asInstanceOf[AVL2TreeNode[V]].left.eq(this) then {
       Side.Left
-    } else if (parent.asInstanceOf[AVL2TreeNode[V]].right.eq(this)) {
+    } else if parent.asInstanceOf[AVL2TreeNode[V]].right.eq(this) then {
       Side.Right
     } else {
       assert(false)
@@ -718,7 +718,7 @@ final case class AVL2Tree[V](
       key: Int,
       treeForSmaller: AVL2Tree[V]
   ): (AVL2Tree[V], AVL2Tree[V]) = {
-    if (Helper.ENABLE) {
+    if Helper.ENABLE then {
 
       this.invariant()
       this.invariantAvlRecursiveDown()
@@ -752,7 +752,7 @@ final case class AVL2Tree[V](
             this.root = value
             value.parent = this
         }
-        if (Helper.ENABLE) {
+        if Helper.ENABLE then {
 
           this.invariant()
           this.invariantAvlRecursiveDown()
@@ -776,7 +776,7 @@ final case class AVL2Tree[V](
       nodeToInsert: AVL2TreeNode[V],
       side: Side
   ): Unit = {
-    if (Helper.ENABLE) {
+    if Helper.ENABLE then {
 
       invariant()
       invariantAvlRecursiveDown()
@@ -787,7 +787,7 @@ final case class AVL2Tree[V](
         root = nodeToInsert
       case value => insertBasedOn(value, nodeToInsert, side)
     }
-    if (Helper.ENABLE) {
+    if Helper.ENABLE then {
 
       invariantAvlRecursiveDown()
     }
@@ -798,19 +798,19 @@ final case class AVL2Tree[V](
       nodeToInsert: AVL2TreeNode[V],
       side: Side
   ): Unit = {
-    if (Helper.ENABLE) {
+    if Helper.ENABLE then {
       invariant()
       invariantAvlRecursiveDown()
     }
     nodeToInsertBasedOn.insert(this, nodeToInsert, side)
-    if (Helper.ENABLE) {
+    if Helper.ENABLE then {
 
       invariantAvlRecursiveDown()
     }
   }
 
   def invariant(): Unit = {
-    if (Helper.ENABLE) {
+    if Helper.ENABLE then {
       root.foreach(_.invariant())
     }
   }
@@ -831,7 +831,7 @@ final case class AVL2Tree[V](
   }
 
   def invariantAvlRecursiveDown(): Unit = {
-    if (Helper.ENABLE) {
+    if Helper.ENABLE then {
       root.foreach(_.invariantAvlRecursiveDown())
     }
   }

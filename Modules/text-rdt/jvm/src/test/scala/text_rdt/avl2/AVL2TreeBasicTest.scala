@@ -19,13 +19,13 @@ final case class AVL2TreeBasicTest() extends Commands {
 
   override def initialPreCondition(state: State): Boolean = state.isEmpty
 
-  override def genCommand(state: State): Gen[Command] = if (state.isEmpty) {
+  override def genCommand(state: State): Gen[Command] = if state.isEmpty then {
     genInsert(state)
   } else {
     Gen.oneOf(genInsert(state), genSplit(state))
   }
 
-  def genInsert(state: State): Gen[Insert] = if (state.isEmpty) {
+  def genInsert(state: State): Gen[Insert] = if state.isEmpty then {
     for {
       value <- Gen.choose(0, Int.MaxValue)
       side <- Gen.oneOf(Side.Left, Side.Right)
@@ -102,7 +102,7 @@ final case class AVL2TreeBasicTest() extends Commands {
     }
 
     override def nextState(state: State): State = {
-      if (state.contains(base)) {
+      if state.contains(base) then {
         state.appended(value)
       } else {
         state

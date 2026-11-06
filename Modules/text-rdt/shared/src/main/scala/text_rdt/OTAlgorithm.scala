@@ -34,24 +34,24 @@ def inclusionTransformInternal(operationToTransform: OTOperation, operationToTra
   val result = ((operationToTransform.replica, operationToTransform.inner), (operationToTransformAgainst.replica, operationToTransformAgainst.inner)) match {
     case Tuple2((oReplica, OperationType.Identity), other) => (oReplica, OperationType.Identity)
     case Tuple2(other, (bReplica, OperationType.Identity)) => other
-    case Tuple2((oReplica, OperationType.Insert(oI, oX)), (bReplica, OperationType.Insert(bI, bX))) => if (oI < bI || (oI == bI && oReplica < bReplica)) {
+    case Tuple2((oReplica, OperationType.Insert(oI, oX)), (bReplica, OperationType.Insert(bI, bX))) => if oI < bI || (oI == bI && oReplica < bReplica) then {
       (oReplica, OperationType.Insert(oI, oX))
     } else {
       (oReplica, OperationType.Insert(oI + 1, oX))
     }
-    case Tuple2((oReplica, OperationType.Insert(oI, oX)), (bReplica, OperationType.Delete(bI))) => if (oI <= bI) {
+    case Tuple2((oReplica, OperationType.Insert(oI, oX)), (bReplica, OperationType.Delete(bI))) => if oI <= bI then {
       (oReplica, OperationType.Insert(oI, oX))
     } else {
       (oReplica, OperationType.Insert(oI - 1, oX))
     }
-    case Tuple2((oReplica, OperationType.Delete(oI)), (bReplica, OperationType.Insert(bI, bX))) => if (oI < bI) {
+    case Tuple2((oReplica, OperationType.Delete(oI)), (bReplica, OperationType.Insert(bI, bX))) => if oI < bI then {
       (oReplica, OperationType.Delete(oI))
     } else {
       (oReplica, OperationType.Delete(oI + 1))
     }
-    case Tuple2((oReplica, OperationType.Delete(oI)), (bReplica, OperationType.Delete(bI))) => if (oI < bI) {
+    case Tuple2((oReplica, OperationType.Delete(oI)), (bReplica, OperationType.Delete(bI))) => if oI < bI then {
       (oReplica, OperationType.Delete(oI))
-    } else if (oI > bI) {
+    } else if oI > bI then {
       (oReplica, OperationType.Delete(oI - 1))
     } else {
       (oReplica, OperationType.Identity)
@@ -82,7 +82,7 @@ object OTAlgorithm {
 
     extension (algorithm: OTAlgorithm) {
       override def delete(i: Int): Unit = {
-        if (algorithm.causalBroadcast.needsTick) {
+        if algorithm.causalBroadcast.needsTick then {
           algorithm.causalBroadcast.needsTick = false
           algorithm.causalBroadcast.tick()
         }
@@ -101,7 +101,7 @@ object OTAlgorithm {
       }
 
       override def insert(i: Int, x: Char): Unit = {
-        if (algorithm.causalBroadcast.needsTick) {
+        if algorithm.causalBroadcast.needsTick then {
           algorithm.causalBroadcast.needsTick = false
           algorithm.causalBroadcast.tick()
         }
@@ -134,7 +134,7 @@ object OTAlgorithm {
         val returnValue = mutable.ArrayBuffer.from(larger.flatMap((key, value) => {
           val s = smaller.getOrElse(key, 0)
 
-          if (s != value) {
+          if s != value then {
             algorithm.operationsPerSite(key).slice(s, value)
           } else {
             mutable.ArrayBuffer()
@@ -151,7 +151,7 @@ object OTAlgorithm {
 
         //println(s"enter cotTransform $operationParam $contextDifference")
         var operation = operationParam
-        while (contextDifference.nonEmpty) {
+        while contextDifference.nonEmpty do {
           var operationX = contextDifference.remove(0)
           assert(CausalID.partialOrder.lteq(operationX.context, operation.context))
           operationX = cotTransform(operationX, getDifference(operation.context, operationX.context))

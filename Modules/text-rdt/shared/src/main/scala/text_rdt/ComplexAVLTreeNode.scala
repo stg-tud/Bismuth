@@ -135,7 +135,7 @@ object ComplexAVLTreeNodeSingle {
         }
 
       final override def firstLeftChild(): ComplexAVLTreeNodeSingle | Null = {
-        if (treeNode.isLeftEdge) {
+        if treeNode.isLeftEdge then {
           treeNode.complexTreeNode.value.leftChildrenBuffer match {
             case null => null
             case singleLeftChild: AVLTreeNode[ComplexAVLTreeNode] =>
@@ -146,7 +146,7 @@ object ComplexAVLTreeNodeSingle {
             case leftChildrenBuffer: mutable.SortedSet[
                   AVLTreeNode[ComplexAVLTreeNode]
                 ] =>
-              if (leftChildrenBuffer.nonEmpty) {
+              if leftChildrenBuffer.nonEmpty then {
                 val v = leftChildrenBuffer.head
                 ComplexAVLTreeNodeSingle(v, v.value.offset)
               } else {
@@ -159,7 +159,7 @@ object ComplexAVLTreeNodeSingle {
       }
 
       override def leftChildren(): Iterator[ComplexAVLTreeNodeSingle] = {
-        if (treeNode.isLeftEdge) {
+        if treeNode.isLeftEdge then {
           treeNode.complexTreeNode.value.leftChildrenBuffer match {
             case null => Iterator.empty
             case singleLeftChild: AVLTreeNode[ComplexAVLTreeNode] =>
@@ -182,7 +182,7 @@ object ComplexAVLTreeNodeSingle {
       }
 
       final override def firstRightChild(): ComplexAVLTreeNodeSingle | Null = {
-        if (!treeNode.isRightEdge) {
+        if !treeNode.isRightEdge then {
           ComplexAVLTreeNodeSingle(
             treeNode.complexTreeNode,
             treeNode.index + 1
@@ -205,7 +205,7 @@ object ComplexAVLTreeNodeSingle {
       }
 
       override def rightChildren(): Iterator[ComplexAVLTreeNodeSingle] = {
-        if (!treeNode.isRightEdge) {
+        if !treeNode.isRightEdge then {
           Iterator(
             ComplexAVLTreeNodeSingle(
               treeNode.complexTreeNode,
@@ -233,7 +233,7 @@ object ComplexAVLTreeNodeSingle {
       }
 
       final override def leftmostDescendant(): ComplexAVLTreeNodeSingle = {
-        val fastDescendant = if (treeNode.isLeftEdge) {
+        val fastDescendant = if treeNode.isLeftEdge then {
           val node = treeNode.complexTreeNode.value.leftmostDescendantCache
             .tree()
             .descendant
@@ -257,7 +257,7 @@ object ComplexAVLTreeNodeSingle {
             fastDescendantNode,
             fastDescendantNode.value.to
           )
-        if (Helper.ENABLE) {
+        if Helper.ENABLE then {
           val expected =
             treeNode.complexTreeNode.value.rightChildrenBuffer match {
               case null =>
@@ -273,7 +273,7 @@ object ComplexAVLTreeNodeSingle {
               case value: mutable.SortedSet[
                     AVLTreeNode[ComplexAVLTreeNode]
                   ] =>
-                if (value.isEmpty) {
+                if value.isEmpty then {
                   ComplexAVLTreeNodeSingle(
                     treeNode.complexTreeNode,
                     treeNode.complexTreeNode.value.to
@@ -294,7 +294,7 @@ object ComplexAVLTreeNodeSingle {
       }
 
       override def side(): Side = {
-        if (treeNode.isLeftEdge) {
+        if treeNode.isLeftEdge then {
           treeNode.complexTreeNode.value.side
         } else {
           Side.Right

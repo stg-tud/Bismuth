@@ -94,7 +94,7 @@ object ComplexTreeNodeSingle {
     extension (treeNode: ComplexTreeNodeSingle) {
 
       override def parent(): ComplexTreeNodeSingle | Null = {
-        if (treeNode.valueIndex() == 0) {
+        if treeNode.valueIndex() == 0 then {
           treeNode.complexTreeNode.parent
         } else {
           ComplexTreeNodeSingle(treeNode.complexTreeNode, treeNode.index - 1)
@@ -102,7 +102,7 @@ object ComplexTreeNodeSingle {
       }
 
       override def parentId(): ComplexID | Null = {
-        if (treeNode.valueIndex() == 0) {
+        if treeNode.valueIndex() == 0 then {
           treeNode.complexTreeNode.parent.nn.id()
         } else {
           ComplexID(
@@ -134,7 +134,7 @@ object ComplexTreeNodeSingle {
         }
 
       override def leftChildren(): Iterator[ComplexTreeNodeSingle] = {
-        if (treeNode.valueIndex() == 0) {
+        if treeNode.valueIndex() == 0 then {
           treeNode.complexTreeNode.leftChildrenBuffer.iterator
         } else {
           Iterator.empty
@@ -142,7 +142,7 @@ object ComplexTreeNodeSingle {
       }
 
       override def rightChildren(): Iterator[ComplexTreeNodeSingle] = {
-        if (treeNode.valueIndex() + 1 < treeNode.complexTreeNode.valueSize()) {
+        if treeNode.valueIndex() + 1 < treeNode.complexTreeNode.valueSize() then {
           Iterator(
             ComplexTreeNodeSingle(
               treeNode.complexTreeNode,

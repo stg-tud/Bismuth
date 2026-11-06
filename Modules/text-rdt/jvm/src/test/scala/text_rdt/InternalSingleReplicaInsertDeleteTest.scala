@@ -28,7 +28,7 @@ final case class InternalSingleReplicaInsertDeleteTest[A](
     character <- Gen.asciiPrintableChar
   } yield Insert(index, character))
 
-  def genDelete(state: State): Option[Gen[Delete]] = if (state.isEmpty) {
+  def genDelete(state: State): Option[Gen[Delete]] = if state.isEmpty then {
     None
   } else {
     Some(for {
@@ -50,13 +50,13 @@ final case class InternalSingleReplicaInsertDeleteTest[A](
     type Result = State
 
     override def run(sut: Sut): Result = {
-      if (sut.isInstanceOf[Replica[?]]) {
+      if sut.isInstanceOf[Replica[?]] then {
         assert(sut.asInstanceOf[Replica[?]].editor.asInstanceOf[StringEditory].data.toString() == sut.text())
       }
 
       sut.insert(index, character)
   
-      if (sut.isInstanceOf[Replica[?]]) {
+      if sut.isInstanceOf[Replica[?]] then {
         assert(sut.asInstanceOf[Replica[?]].editor.asInstanceOf[StringEditory].data.toString() == sut.text(), s"${sut.asInstanceOf[Replica[?]].editor.asInstanceOf[StringEditory].data.toString()} == ${sut.text()}")
       }
 
@@ -80,13 +80,13 @@ final case class InternalSingleReplicaInsertDeleteTest[A](
     type Result = State
 
     override def run(sut: Sut): Result = {
-      if (sut.isInstanceOf[Replica[?]]) {
+      if sut.isInstanceOf[Replica[?]] then {
         assert(sut.asInstanceOf[Replica[?]].editor.asInstanceOf[StringEditory].data.toString() == sut.text())
       }
 
       sut.delete(index)
     
-      if (sut.isInstanceOf[Replica[?]]) {
+      if sut.isInstanceOf[Replica[?]] then {
         assert(sut.asInstanceOf[Replica[?]].editor.asInstanceOf[StringEditory].data.toString() == sut.text())
       }
 
