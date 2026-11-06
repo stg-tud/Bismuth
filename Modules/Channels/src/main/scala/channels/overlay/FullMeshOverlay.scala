@@ -1,6 +1,6 @@
 package channels.overlay
 
-import channels.connection.{ConnectionDescriptor, PeerConnectInfo}
+import channels.connection.{Connection, ConnectionDescriptor, PeerConnectInfo}
 import channels.overlay.FullMeshOverlay.Purpose
 import channels.overlay.OverlayController.{OverlayAction, OverlayEvent, OverlayMessage}
 import rdts.base.Uid
@@ -26,19 +26,21 @@ object FullMeshOverlay {
   */
 case class FullMeshOverlay(
     self: PeerConnectInfo,
-    active: Map[Uid, ConnId] = Map.empty,
+    active: Map[Uid, Connection] = Map.empty,
     known: Map[Uid, PeerConnectInfo] = Map.empty,
     /** Connections that have not yet announced their peer. */
-    pending: Set[ConnId] = Set.empty,
+    pending: Set[Connection] = Set.empty,
     /** Connections we dialed (as opposed to incoming ones). */
-    outgoing: Set[ConnId] = Set.empty,
+    outgoing: Set[Connection] = Set.empty,
     dialing: Map[AttemptId, Purpose] = Map.empty,
     nextAttempt: Long = 0L,
 ) extends OverlayController {
 
   override def neighbors: Set[Uid] = active.keySet
 
-  override def connectionFor(peer: Uid): Option[ConnId] = active.get(peer)
+  override def connectionFor(peer: Uid): Option[Connection] = active.get(peer)
+
+  override def holds(conn: Connection): Boolean = pending.contains(conn) || active.valuesIterator.contains(conn)
 
   override def selfConnectionDescriptors: Set[ConnectionDescriptor] = self.channelConnectors
 
@@ -83,7 +85,7 @@ case class FullMeshOverlay(
         (this, Nil)
 
       case OverlayEvent.Received(conn, message) =>
-        if !pending.contains(conn) && !active.valuesIterator.contains(conn) then (this, Nil)
+        if !holds(conn) then (this, Nil)
         else
             message match
                 case OverlayMessage.Join(_) =>
@@ -102,7 +104,7 @@ case class FullMeshOverlay(
                 case _ =>
                   (this, Nil)
 
-  private def announce(conn: ConnId) = OverlayAction.Send(conn, OverlayMessage.Neighbor(self, highPriority = true))
+  private def announce(conn: Connection) = OverlayAction.Send(conn, OverlayMessage.Neighbor(self, highPriority = true))
 
   private def dial(purpose: Purpose, to: Set[ConnectionDescriptor]): (FullMeshOverlay, List[OverlayAction]) = {
     val attempt = AttemptId(nextAttempt)
@@ -124,9 +126,9 @@ case class FullMeshOverlay(
       }
     }
 
-  private def activate(peer: PeerConnectInfo, conn: ConnId): (FullMeshOverlay, List[OverlayAction]) = {
+  private def activate(peer: PeerConnectInfo, conn: Connection): (FullMeshOverlay, List[OverlayAction]) = {
     val remembered     = rememberPeer(peer).copy(pending = pending - conn)
-    def use(c: ConnId) = remembered.copy(active = remembered.active.updated(peer.uid, c))
+    def use(c: Connection) = remembered.copy(active = remembered.active.updated(peer.uid, c))
     active.get(peer.uid) match
         case None                               => (use(conn), List(OverlayAction.NeighborUp(peer.uid)))
         case Some(existing) if existing == conn => (remembered, Nil)

@@ -2,7 +2,7 @@ package channels
 
 import channels.connection.{ConnectionDescriptor, PeerConnectInfo}
 import channels.overlay.OverlayController.{OverlayAction, OverlayEvent, OverlayMessage}
-import channels.overlay.{AttemptId, ConnId, FullMeshOverlay}
+import channels.overlay.{AttemptId, FullMeshOverlay}
 import munit.FunSuite
 import rdts.base.Uid
 
@@ -12,8 +12,8 @@ class FullMeshOverlayTest extends FunSuite {
   private val peer  = PeerConnectInfo(Uid.predefined("peer"), Set(ConnectionDescriptor.QueuedLocal("peer")))
   private val other = PeerConnectInfo(Uid.predefined("other"), Set(ConnectionDescriptor.QueuedLocal("other")))
 
-  private val c1 = ConnId(1)
-  private val c2 = ConnId(2)
+  private val c1 = StubConnection("c1")
+  private val c2 = StubConnection("c2")
 
   extension (m: FullMeshOverlay) {
     def on(event: OverlayEvent): (FullMeshOverlay, List[OverlayAction]) =
@@ -33,7 +33,7 @@ class FullMeshOverlayTest extends FunSuite {
 
   test("of two connections to the same peer, both sides keep the one dialed by the smaller id") {
     // peer < self: the peer's dial (incoming c2) wins over our own dial (c1), regardless of announcement order
-    def withBoth(firstAnnounced: ConnId, secondAnnounced: ConnId) =
+    def withBoth(firstAnnounced: channels.connection.Connection, secondAnnounced: channels.connection.Connection) =
       FullMeshOverlay(self)
         .on(OverlayEvent.Discovered(Set(peer)))._1
         .on(OverlayEvent.Established(AttemptId(0), c1))._1

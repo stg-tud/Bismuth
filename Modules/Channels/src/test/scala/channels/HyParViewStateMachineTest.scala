@@ -4,7 +4,7 @@ import channels.connection.{ConnectionDescriptor, PeerConnectInfo}
 import channels.overlay.HyParViewStateMachine.{HyParViewConfig, Link}
 import channels.overlay.OverlayController.OverlayMessage.*
 import channels.overlay.OverlayController.{OverlayAction, OverlayEvent, OverlayTimer}
-import channels.overlay.{AttemptId, ConnId, HyParViewStateMachine}
+import channels.overlay.{AttemptId, HyParViewStateMachine}
 import munit.FunSuite
 import rdts.base.Uid
 
@@ -38,7 +38,7 @@ class HyParViewStateMachineTest extends FunSuite {
     ).copy(shuffleScheduled = true)
 
   extension (m: HyParViewStateMachine) {
-    def withActive(peers: (PeerConnectInfo, ConnId)*): HyParViewStateMachine =
+    def withActive(peers: (PeerConnectInfo, channels.connection.Connection)*): HyParViewStateMachine =
       m.copy(
         known = m.known ++ peers.map((p, _) => p.uid -> p),
         links = m.links ++ peers.map((p, c) => c -> Link.Active(p)),
@@ -50,12 +50,12 @@ class HyParViewStateMachineTest extends FunSuite {
         (next.asInstanceOf[HyParViewStateMachine], actions)
   }
 
-  private def received(conn: ConnId, message: channels.overlay.OverlayController.OverlayMessage) =
+  private def received(conn: channels.connection.Connection, message: channels.overlay.OverlayController.OverlayMessage) =
     OverlayEvent.Received(conn, message)
 
-  private val c1 = ConnId(1)
-  private val c2 = ConnId(2)
-  private val c3 = ConnId(3)
+  private val c1 = StubConnection("c1")
+  private val c2 = StubConnection("c2")
+  private val c3 = StubConnection("c3")
 
   test("bootstrap dials the contact, sends Join once connected, and accepts the contact's Neighbor") {
     val contactDescriptor = ConnectionDescriptor.QueuedLocal("contact")

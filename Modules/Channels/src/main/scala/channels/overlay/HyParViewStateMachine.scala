@@ -1,10 +1,12 @@
 package channels.overlay
 
-import channels.connection.{ConnectionDescriptor, PeerConnectInfo}
+import channels.connection.{Connection, ConnectionDescriptor, PeerConnectInfo}
 import channels.overlay.HyParViewStateMachine.{HyParViewConfig, Link, Purpose, Result}
 import channels.overlay.OverlayController.OverlayMessage.*
 import channels.overlay.OverlayController.{OverlayAction, OverlayEvent, OverlayMessage, OverlayTimer}
 import rdts.base.Uid
+
+import scala.collection.immutable.VectorMap
 
 /** Immutable membership state machine for HyParView.
   *
@@ -98,7 +100,7 @@ object HyParViewStateMachine {
       self = self,
       config = config,
       known = Map.empty,
-      links = Map.empty,
+      links = VectorMap.empty,
       dialing = Map.empty,
       refused = Set.empty,
       nextAttempt = 0L,
@@ -113,7 +115,8 @@ final case class HyParViewStateMachine(
     config: HyParViewConfig,
     /** All peers we know about other than ourselves; the passive view is `known` minus the active view. */
     known: Map[Uid, PeerConnectInfo],
-    links: Map[ConnId, Link],
+    /** Insertion ordered, so that random choices over the active view are deterministic for a given `randomIndex`. */
+    links: VectorMap[Connection, Link],
     dialing: Map[AttemptId, Purpose],
     /** Candidates that refused or failed a handshake; not retried before the next shuffle round. */
     refused: Set[Uid],
@@ -127,9 +130,9 @@ final case class HyParViewStateMachine(
   // views
   // ------------------------------------------------------------------------------------------------
 
-  /** Active edges in a deterministic order (by connection id). */
-  def activeEntries: Vector[(ConnId, PeerConnectInfo)] =
-    links.toVector.collect { case (conn, Link.Active(peer)) => conn -> peer }.sortBy(_._1.value)
+  /** Active edges in a deterministic order (by insertion into `links`). */
+  def activeEntries: Vector[(Connection, PeerConnectInfo)] =
+    links.toVector.collect { case (conn, Link.Active(peer)) => conn -> peer }
 
   def activeView: Set[Uid]               = activeEntries.iterator.map(_._2.uid).toSet
   def activePeers: Set[PeerConnectInfo]  = activeEntries.iterator.map(_._2).toSet
@@ -140,8 +143,10 @@ final case class HyParViewStateMachine(
 
   override def neighbors: Set[Uid] = activeView
 
-  override def connectionFor(peer: Uid): Option[ConnId] =
+  override def connectionFor(peer: Uid): Option[Connection] =
     activeEntries.collectFirst { case (conn, p) if p.uid == peer => conn }
+
+  override def holds(conn: Connection): Boolean = links.contains(conn)
 
   override def selfConnectionDescriptors: Set[ConnectionDescriptor] = self.channelConnectors
 
@@ -230,9 +235,9 @@ final case class HyParViewStateMachine(
       case OverlayEvent.Received(conn, message) =>
         if links.contains(conn) then receive(conn, message) else done
 
-  private def startHandshakeTimer(conn: ConnId) = OverlayAction.StartTimer(OverlayTimer.Handshake(conn))
+  private def startHandshakeTimer(conn: Connection) = OverlayAction.StartTimer(OverlayTimer.Handshake(conn))
 
-  private def receive(conn: ConnId, message: OverlayMessage): Result = message match
+  private def receive(conn: Connection, message: OverlayMessage): Result = message match
       case Join(newNode) =>
         // Paper join contact handling: the contact adds the newcomer (forced, high priority) and forwards
         // `ForwardJoin` along its current active view to seed additional peers.
@@ -312,7 +317,7 @@ final case class HyParViewStateMachine(
   // ------------------------------------------------------------------------------------------------
 
   /** True if we have our own handshake with `peer` in flight on another connection, and ours wins the tie-break. */
-  private def ownHandshakeWins(peer: Uid, incoming: ConnId): Boolean =
+  private def ownHandshakeWins(peer: Uid, incoming: Connection): Boolean =
       val ownInFlight = links.exists {
         case (c, Link.Pending(Some(p), true)) => c != incoming && p.uid == peer
         case _                                => false
@@ -328,7 +333,7 @@ final case class HyParViewStateMachine(
   }
 
   /** Make `conn` the active edge to `peer`, evicting a random neighbor if the active view is full. */
-  private def addActive(peer: PeerConnectInfo, conn: ConnId): Result =
+  private def addActive(peer: PeerConnectInfo, conn: Connection): Result =
     connectionFor(peer.uid) match
         case Some(existing) if existing == conn => done
         case Some(existing)                     =>

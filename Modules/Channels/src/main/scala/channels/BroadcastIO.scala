@@ -5,10 +5,10 @@ import channels.JsoniterCodecs.given
 import channels.broadcast.PlumtreeBroadcast.{Event, Peer}
 import channels.broadcast.PlumtreeMessage.*
 import channels.broadcast.{BroadcastProtocol, PlumtreeBroadcast, PlumtreeMessage}
-import channels.connection.{Abort, ByteBufferMessageBuffer, ChannelResolver, Connection, ConnectionClosedException, ConnectionDescriptor, LatentConnection, MessageBuffer, NoMoreDataException, PeerConnectInfo}
+import channels.connection.*
 import channels.experiments.Aead
 import channels.overlay.OverlayController.{OverlayAction, OverlayEvent, OverlayMessage}
-import channels.overlay.{AttemptId, ConnId, FullMeshOverlay, OverlayController}
+import channels.overlay.{AttemptId, FullMeshOverlay, OverlayController}
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromByteBuffer, writeToArray}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import de.rmgk.delay.{Async, Callback}
@@ -16,7 +16,7 @@ import rdts.base.{ReplicaId, Uid}
 
 import java.net.SocketException
 import java.nio.ByteBuffer
-import scala.collection.mutable
+import java.util.concurrent.atomic.AtomicReference
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success, Try}
 
@@ -77,10 +77,11 @@ object BroadcastIO {
   * - the broadcast protocol ([[channels.broadcast.BroadcastProtocol]]) decides what to send to which neighbor
   * - this class only translates: transport callbacks become overlay events, actions become transport operations,
   *   timer requests are scheduled on [[channels.Timers]], and the overlay's `NeighborUp`/`NeighborDown` are passed on to the
-  *   broadcast protocol. It makes no protocol decisions of its own.
+  *   broadcast protocol. It makes no protocol decisions of its own, and keeps no state besides the two state machines.
   *
-  * All state machine steps run one at a time under `lock`; steps triggered while another step is running
-  * (e.g. by synchronous transports or callbacks) are queued and run afterwards.
+  * Concurrency: each input runs the state transitions under `lock` and gets back the resulting [[Output]]s, which are
+  * performed on the calling thread after the lock is released. Exceptions therefore reach the caller. Outputs that
+  * synchronously cause further inputs (e.g. synchronous local connections) simply recurse on already committed state.
   */
 class BroadcastIO[State](
     val replicaId: ReplicaId,
@@ -95,14 +96,17 @@ class BroadcastIO[State](
     timerDelays: TimerDelays,
 )(using val stateCodec: JsonValueCodec[State]) {
 
-  val lock: AnyRef = new {}
+  /** A broadcast message to send on `connection`, resolved from the overlay during the transition. */
+  private final case class Transmit(connection: Connection, envelope: Envelope[State])
 
-  /** Live connections known to the overlay. */
-  private var connections: Map[ConnId, Connection] = Map.empty
-  private var nextConnId: Long                     = 0L
+  /** What the transitions ask for. `NeighborUp`/`NeighborDown` and broadcast `Send`s are resolved inside the transition. */
+  private type Output = OverlayAction | Event[State] | Transmit
 
-  /** Outgoing connections whose `Established` was not yet reported; messages received meanwhile are buffered. */
-  private var establishing: Map[ConnId, Vector[MessageBuffer]] = Map.empty
+  private val lock: AnyRef = new {}
+
+  // ------------------------------------------------------------------------------------------------
+  // snapshots
+  // ------------------------------------------------------------------------------------------------
 
   def overlayController: OverlayController = overlay
 
@@ -110,13 +114,10 @@ class BroadcastIO[State](
 
   def selfConnectionDescriptors: Set[ConnectionDescriptor] = overlay.selfConnectionDescriptors
 
-  /** Ids of all live connections the driver holds (for consistency checks in tests). */
-  private[channels] def connectionIds: Set[ConnId] = lock.synchronized(connections.keySet)
-
   /** The transport connection backing the active edge to `peer`, if any. */
-  def connectionTo(peer: Uid): Option[Connection] = lock.synchronized {
-    overlay.connectionFor(peer).flatMap(connections.get)
-  }
+  def connectionTo(peer: Uid): Option[Connection] = overlay.connectionFor(peer)
+
+  def allPayloads: List[Payload[State]] = broadcast.allPayloads
 
   // ------------------------------------------------------------------------------------------------
   // public API
@@ -132,170 +133,138 @@ class BroadcastIO[State](
   def addServerConnection(latentConnection: LatentConnection[ConnectionDescriptor]): Unit =
     Async.provided(globalAbort) {
       val descriptor = acceptIncoming(latentConnection).bind
-      stepOverlay(OverlayEvent.SelfDescriptorAdded(descriptor))
+      transition(overlayStep(OverlayEvent.SelfDescriptorAdded(descriptor)))
     }.run(printExceptionHandler)
 
   /** Register externally discovered peers with the overlay. */
-  def discover(peers: Set[PeerConnectInfo]): Unit = stepOverlay(OverlayEvent.Discovered(peers))
+  def discover(peers: Set[PeerConnectInfo]): Unit = transition(overlayStep(OverlayEvent.Discovered(peers)))
 
   /** Initiate overlay-native bootstrap through a single descriptor. */
-  def bootstrapVia(contact: ConnectionDescriptor): Unit = stepOverlay(OverlayEvent.Bootstrap(contact))
+  def bootstrapVia(contact: ConnectionDescriptor): Unit = transition(overlayStep(OverlayEvent.Bootstrap(contact)))
 
-  def allPayloads: List[Payload[State]] = lock.synchronized(broadcast.allPayloads)
-
-  def broadcast(delta: State): Unit = stepBroadcast(_.broadcast(delta))
+  def broadcast(delta: State): Unit = transition(broadcastStep(_.broadcast(delta)))
 
   // ------------------------------------------------------------------------------------------------
-  // serialized state machine steps
+  // transitions (run under `lock`, no I/O)
   // ------------------------------------------------------------------------------------------------
 
-  private val work    = mutable.Queue.empty[() => Unit]
-  private var running = false
+  /** Run `step` under the lock, then perform its outputs without the lock. */
+  private def transition(step: => List[Output]): Unit = performAll(locked(step))
 
-  private def serialized(task: => Unit): Unit = lock.synchronized {
-    work.enqueue(() => task)
-    if !running then
-        running = true
-        try while work.nonEmpty do work.dequeue()()
-        finally running = false
+  private def locked(step: => List[Output]): List[Output] =
+    lock.synchronized { if globalAbort.closeRequest then Nil else step }
+
+  private def overlayStep(event: OverlayEvent): List[Output] = {
+    val (next, actions) = overlay.step(event)
+    overlay = next
+    actions.flatMap {
+      case OverlayAction.NeighborUp(peer)   => broadcastStep(_.addPeer(Peer(peer)))
+      case OverlayAction.NeighborDown(peer) => broadcastStep(_.removePeer(Peer(peer)))
+      case other                            => List(other)
+    }
   }
 
-  private def stepOverlay(event: OverlayEvent): Unit = serialized {
-    if !globalAbort.closeRequest then
-        val (next, actions) = overlay.step(event)
-        overlay = next
-        actions.foreach(handleOverlayAction)
-  }
-
-  private def stepBroadcast(f: BroadcastProtocol[State] => PlumtreeBroadcast.Result[State]): Unit = serialized {
-    if !globalAbort.closeRequest then
-        val result = f(broadcast)
-        broadcast = result.state
-        result.events.foreach(handleBroadcastEvent)
-  }
-
-  private def handleOverlayAction(action: OverlayAction): Unit = action match
-      case OverlayAction.Dial(attempt, to)   => dial(attempt, to)
-      case OverlayAction.Send(conn, message) => send(conn, Envelope.Membership(message))
-      case OverlayAction.Close(conn)         =>
-        val closed = connections.get(conn)
-        forget(conn)
-        closed.foreach(_.close())
-      case OverlayAction.StartTimer(timer) =>
-        timers.schedule(timerDelays(timer))(() => stepOverlay(OverlayEvent.TimerFired(timer)))
-      case OverlayAction.NeighborUp(peer)   => stepBroadcast(_.addPeer(Peer(peer)))
-      case OverlayAction.NeighborDown(peer) => stepBroadcast(_.removePeer(Peer(peer)))
-
-  private def handleBroadcastEvent(event: Event[State]): Unit = event match
-      case Event.Deliver(payload)     => receiveCallback(payload.data)
+  private def broadcastStep(f: BroadcastProtocol[State] => PlumtreeBroadcast.Result[State]): List[Output] = {
+    val result = f(broadcast)
+    broadcast = result.state
+    result.events.toList.flatMap {
       case Event.Send(peers, message) =>
-        peers.foreach(peer =>
-          overlay.connectionFor(peer.uid).foreach(send(_, Envelope.Broadcast(replicaId.uid, message)))
+        peers.flatMap(peer =>
+          overlay.connectionFor(peer.uid).map(Transmit(_, Envelope.Broadcast(replicaId.uid, message)))
         )
+      case other => List(other)
+    }
+  }
+
+  private def handleIncoming(conn: Connection, message: MessageBuffer): List[Output] =
+    BroadcastIO.decodeEnvelope(message, aead) match
+        case Success(Envelope.Membership(overlayMessage)) =>
+          overlayStep(OverlayEvent.Received(conn, overlayMessage))
+        case Success(Envelope.Broadcast(sender, broadcastMessage)) =>
+          // messages still arriving on a connection the overlay already closed (e.g. the losing one of two
+          // connections to the same peer) would be handled as duplicates and prune the broadcast tree
+          if overlay.holds(conn)
+          then broadcastStep(_.handleMessage(Peer(sender), broadcastMessage))
+          else Nil
+        case Failure(error) =>
+          println(s"$replicaId: error during message decoding")
+          error.printStackTrace()
+          OverlayAction.Close(conn) :: overlayStep(OverlayEvent.Closed(conn))
+
+  // ------------------------------------------------------------------------------------------------
+  // performing outputs (no lock held)
+  // ------------------------------------------------------------------------------------------------
+
+  private def performAll(outputs: List[Output]): Unit = outputs.foreach(perform)
+
+  private def perform(output: Output): Unit = output match
+      case Transmit(connection, envelope)    => send(connection, envelope)
+      case OverlayAction.Send(conn, message) => send(conn, Envelope.Membership(message))
+      case OverlayAction.Close(conn)         => conn.close()
+      case OverlayAction.Dial(attempt, to)   => dial(attempt, to)
+      case OverlayAction.StartTimer(timer)   =>
+        timers.schedule(timerDelays(timer))(() => transition(overlayStep(OverlayEvent.TimerFired(timer))))
+      case _: (OverlayAction.NeighborUp | OverlayAction.NeighborDown | Event.Send[?]) =>
+        throw IllegalStateException(s"resolved during the transition: $output")
+      case Event.Deliver(payload)  => receiveCallback(payload.data)
       case Event.StartTimer(timer) =>
-        timers.schedule(timerDelays(timer))(() => stepBroadcast(_.timerFired(timer)))
+        timers.schedule(timerDelays(timer))(() => transition(broadcastStep(_.timerFired(timer))))
 
-  // ------------------------------------------------------------------------------------------------
-  // transport
-  // ------------------------------------------------------------------------------------------------
-
-  private def register(conn: Connection): ConnId = lock.synchronized {
-    val id = ConnId(nextConnId)
-    nextConnId += 1
-    connections = connections.updated(id, conn)
-    id
-  }
-
-  private def forget(conn: ConnId): Unit = lock.synchronized {
-    connections = connections.removed(conn)
-    establishing = establishing.removed(conn)
-  }
+  private def send(connection: Connection, envelope: Envelope[State]): Unit =
+    if !globalAbort.closeRequest then
+        sendingActor.execute { () =>
+          connection.send(BroadcastIO.encodeEnvelope(envelope, aead)).run {
+            case Success(_) => ()
+            case Failure(_) =>
+              connection.close()
+              transition(overlayStep(OverlayEvent.Closed(connection)))
+          }
+        }
 
   private def acceptIncoming[T](latentConnection: LatentConnection[T]): Async[Abort, T] =
     latentConnection.prepare { (conn: Connection) =>
-      val id = register(conn)
-      stepOverlay(OverlayEvent.Incoming(id))
-      messageReceiver(id)
+      transition(overlayStep(OverlayEvent.Incoming(conn)))
+      messageReceiver(conn)
     }
 
-  /** Establish a connection requested by the overlay; reports `Established` or `DialFailed`. */
+  /** Establish a connection requested by the overlay; reports `Established` or `DialFailed`.
+    *
+    * A `LatentConnection[Connection]` hands us its connection exactly once, before `prepare` completes. The overlay
+    * learns about it right away (so no received message is ever for an unknown connection), but the resulting outputs
+    * (typically the first messages) are only performed once `prepare` completed and our receiver is installed.
+    */
   private def dial(attempt: AttemptId, to: Set[ConnectionDescriptor]): Unit =
     to.iterator.flatMap(resolver.connect).nextOption() match
-        case None                   => stepOverlay(OverlayEvent.DialFailed(attempt))
+        case None                   => transition(overlayStep(OverlayEvent.DialFailed(attempt)))
         case Some(latentConnection) =>
-          var registered: Option[ConnId] = None
+          val established = AtomicReference[Option[(Connection, List[Output])]](None)
           Async.provided(globalAbort) {
-            val conn = latentConnection.prepare { (conn: Connection) =>
-              val id = register(conn)
-              lock.synchronized { establishing = establishing.updated(id, Vector.empty) }
-              registered = Some(id)
-              messageReceiver(id)
+            latentConnection.prepare { (conn: Connection) =>
+              established.set(Some((conn, locked(overlayStep(OverlayEvent.Established(attempt, conn))))))
+              messageReceiver(conn)
             }.bind
-            lock.synchronized {
-              registered.filter(establishing.contains) match
-                  case None     => stepOverlay(OverlayEvent.DialFailed(attempt)) // closed while establishing
-                  case Some(id) =>
-                    val buffered = establishing(id)
-                    establishing = establishing.removed(id)
-                    // the connection returned by `prepare` is the one to send on
-                    connections = connections.updated(id, conn)
-                    stepOverlay(OverlayEvent.Established(attempt, id))
-                    buffered.foreach(message => serialized(handleIncoming(id, message)))
-            }
-          }.run {
-            case Success(_)     => ()
-            case Failure(error) =>
-              registered.foreach(forget)
-              stepOverlay(OverlayEvent.DialFailed(attempt))
+          }.run { result =>
+            (result, established.get()) match
+                case (Success(_), Some((_, outputs)))    => performAll(outputs)
+                case (Success(_), None)                  => transition(overlayStep(OverlayEvent.DialFailed(attempt)))
+                case (Failure(_), None)                  => transition(overlayStep(OverlayEvent.DialFailed(attempt)))
+                case (Failure(_), Some((conn, outputs))) =>
+                  // established but failed afterwards: drop the first messages and report the connection as closed
+                  conn.close()
+                  transition(overlayStep(OverlayEvent.Closed(conn)))
           }
 
-  /** Receive, decode, and dispatch messages; report the end of the connection to the overlay. */
-  private def messageReceiver(conn: ConnId): Callback[MessageBuffer] = {
-    case Success(message) =>
-      lock.synchronized {
-        establishing.get(conn) match
-            case Some(buffered) => establishing = establishing.updated(conn, buffered :+ message)
-            case None           => serialized(handleIncoming(conn, message))
-      }
-    case Failure(error) =>
+  private def messageReceiver(conn: Connection): Callback[MessageBuffer] = {
+    case Success(message) => transition(handleIncoming(conn, message))
+    case Failure(error)   =>
       error match
           case se: SocketException if se.getMessage == "Connection reset" =>
           case _: (NoMoreDataException | ConnectionClosedException)       =>
           case _                                                          =>
             println(s"$replicaId: error during message handling")
             error.printStackTrace()
-      transportClosed(conn)
+      transition(overlayStep(OverlayEvent.Closed(conn)))
   }
-
-  private def transportClosed(conn: ConnId): Unit = lock.synchronized {
-    if connections.contains(conn) then
-        forget(conn)
-        stepOverlay(OverlayEvent.Closed(conn))
-  }
-
-  private def handleIncoming(conn: ConnId, message: MessageBuffer): Unit =
-    if connections.contains(conn) then
-        BroadcastIO.decodeEnvelope(message, aead) match
-            case Success(Envelope.Membership(overlayMessage)) =>
-              stepOverlay(OverlayEvent.Received(conn, overlayMessage))
-            case Success(Envelope.Broadcast(sender, broadcastMessage)) =>
-              stepBroadcast(_.handleMessage(Peer(sender), broadcastMessage))
-            case Failure(error) =>
-              println(s"$replicaId: error during message decoding")
-              error.printStackTrace()
-              connections.get(conn).foreach(_.close())
-              transportClosed(conn)
-
-  private def send(conn: ConnId, payload: Envelope[State]): Unit =
-    if !globalAbort.closeRequest then
-        connections.get(conn).foreach { connection =>
-          sendingActor.execute { () =>
-            connection.send(BroadcastIO.encodeEnvelope(payload, aead)).run {
-              case Success(_) => ()
-              case Failure(_) => transportClosed(conn)
-            }
-          }
-        }
 
   private def printExceptionHandler: Callback[Any] =
       case Failure(ex) =>

@@ -1,11 +1,8 @@
 package channels.overlay
 
-import channels.connection.{ConnectionDescriptor, PeerConnectInfo}
+import channels.connection.{Connection, ConnectionDescriptor, PeerConnectInfo}
 import channels.overlay.OverlayController.{OverlayAction, OverlayEvent}
 import rdts.base.Uid
-
-/** Identifies one live transport connection. Assigned by the driver (e.g. [[channels.BroadcastIO]]). */
-final case class ConnId(value: Long)
 
 /** Identifies one outgoing connection attempt. Chosen by the overlay when it emits [[OverlayController.OverlayAction.Dial]]. */
 final case class AttemptId(value: Long)
@@ -13,8 +10,8 @@ final case class AttemptId(value: Long)
 /** Immutable overlay state machine.
   *
   * The overlay is driven exclusively by [[OverlayController.OverlayEvent]]s and responds with [[OverlayController.OverlayAction]]s.
-  * It never observes time, transports, or connection objects directly: connections are referred to by
-  * [[ConnId]]s that the driver assigns, and outgoing attempts by [[AttemptId]]s the overlay assigns.
+  * It never observes time or transports directly: connections are only used as identities (compared by reference),
+  * the overlay never sends on or closes them itself. Outgoing attempts are referred to by [[AttemptId]]s the overlay assigns.
   * Every connection reported to the overlay (`Incoming`, `Established`) is owned by it until it emits `Close`
   * or the driver reports `Closed`.
   */
@@ -26,7 +23,10 @@ trait OverlayController {
   def neighbors: Set[Uid]
 
   /** The connection backing the active edge to `peer`, if any. */
-  def connectionFor(peer: Uid): Option[ConnId]
+  def connectionFor(peer: Uid): Option[Connection]
+
+  /** Whether `conn` is still owned by the overlay (pending or active), i.e. it was reported and not yet closed. */
+  def holds(conn: Connection): Boolean
 
   /** Currently advertised self connection descriptors. */
   def selfConnectionDescriptors: Set[ConnectionDescriptor]
@@ -46,18 +46,18 @@ object OverlayController {
     case SelfDescriptorAdded(descriptor: ConnectionDescriptor)
 
     /** A remote node connected to us (or a connection was handed to us without a dial). */
-    case Incoming(conn: ConnId)
+    case Incoming(conn: Connection)
 
     /** The connection requested by `Dial(attempt, _)` was established. */
-    case Established(attempt: AttemptId, conn: ConnId)
+    case Established(attempt: AttemptId, conn: Connection)
 
     /** The connection requested by `Dial(attempt, _)` could not be established. */
     case DialFailed(attempt: AttemptId)
 
-    case Received(conn: ConnId, message: OverlayMessage)
+    case Received(conn: Connection, message: OverlayMessage)
 
     /** The connection ended for a reason other than our own `Close` (remote close, transport error). */
-    case Closed(conn: ConnId)
+    case Closed(conn: Connection)
 
     /** A timer requested by `StartTimer` expired. Stale timers are expected and must be ignored. */
     case TimerFired(timer: OverlayTimer)
@@ -70,7 +70,7 @@ object OverlayController {
     case Shuffle
 
     /** A connection that has not completed its handshake by now is given up. */
-    case Handshake(conn: ConnId)
+    case Handshake(conn: Connection)
   }
 
   enum OverlayMessage {
@@ -91,10 +91,10 @@ object OverlayController {
     /** Establish a connection to one of the descriptors; answered by `Established` or `DialFailed`. */
     case Dial(attempt: AttemptId, to: Set[ConnectionDescriptor])
 
-    case Send(conn: ConnId, message: OverlayMessage)
+    case Send(conn: Connection, message: OverlayMessage)
 
     /** Close the connection. The overlay has already forgotten it; no `Closed` event is expected. */
-    case Close(conn: ConnId)
+    case Close(conn: Connection)
 
     case StartTimer(timer: OverlayTimer)
 

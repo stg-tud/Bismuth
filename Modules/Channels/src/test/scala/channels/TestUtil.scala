@@ -29,3 +29,10 @@ extension (io: BroadcastIO[?]) {
       case manual: Timers.Manual => manual.fireAll()
       case other                 => throw IllegalStateException(s"timers are not manual: $other")
 }
+
+/** A connection that is only used as an identity in overlay state machine tests. */
+final class StubConnection(name: String) extends channels.connection.Connection {
+  override def send(message: channels.connection.MessageBuffer): de.rmgk.delay.Async[Any, Unit] = de.rmgk.delay.Async(())
+  override def close(): Unit                                                           = ()
+  override def toString: String                                                         = s"StubConnection($name)"
+}

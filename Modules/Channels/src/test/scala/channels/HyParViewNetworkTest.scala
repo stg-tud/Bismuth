@@ -96,7 +96,6 @@ class HyParViewNetworkTest extends munit.FunSuite {
 
     def assertInvariants(): Unit =
       nodes.values.foreach { n =>
-        assertEquals(n.io.connectionIds, n.hv.links.keySet, s"${n.id}: driver and overlay disagree${describe}")
         assert(
           !n.hv.links.valuesIterator.exists(_.isInstanceOf[Link.Pending]),
           s"${n.id}: handshake left pending${describe}"

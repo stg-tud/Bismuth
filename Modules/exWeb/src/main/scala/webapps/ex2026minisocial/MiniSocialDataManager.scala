@@ -25,7 +25,7 @@ object MiniSocialDataManager {
       wrap: A => MiniSocial,
       unwrap: MiniSocial => Option[A]
   )(create: (DeltaBuffer[A], Fold.Branch[DeltaBuffer[A]]) => Signal[DeltaBuffer[A]]): Signal[DeltaBuffer[A]] =
-    dataManager.lock.synchronized {
+    {
       dataManager.broadcast(wrap(init))
       val fullInit = dataManager.allPayloads.flatMap(v => unwrap(v.data)).foldLeft(init)(Lattice.merge)
 
