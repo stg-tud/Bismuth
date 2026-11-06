@@ -1,6 +1,5 @@
 package text_rdt
-import upickle.default._
 
-enum Side derives ReadWriter {
+enum Side {
   case Left, Right
 }

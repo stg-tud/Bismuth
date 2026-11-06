@@ -3,7 +3,6 @@ package text_rdt
 import text_rdt.avl.AVLTreeNode
 
 import scala.collection.mutable
-import upickle.default._
 
 case class MyD3TreeNode(
     value: String,
@@ -13,7 +12,7 @@ case class MyD3TreeNode(
     var y: Double = 0,
     var width: Double = 0,
     var height: Double = 0
-) derives ReadWriter
+)
 
 trait D3Tree[F <: FugueFactory](using val factoryContext: F) {
 

@@ -2,6 +2,8 @@ package ex2024textRDT
 
 import text_rdt.*
 
+import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReader, JsonValueCodec, JsonWriter, readFromString}
+import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import org.openjdk.jmh.annotations.*
 
 import scala.collection.mutable
@@ -40,47 +42,108 @@ def measureMemory(): Long = {
 
 object MyRealWorldBenchmark {
 
+  private given stringCodec: JsonValueCodec[String] = JsonCodecMaker.make
+
+  private def readOperation(in: JsonReader): FixtureOperation = {
+    if in.nextToken() != '['.toByte then {
+      in.decodeError("expected operation array")
+    }
+    val index = in.readInt()
+    if in.nextToken() != ','.toByte then {
+      in.decodeError("expected ',' after operation index")
+    }
+    val length = in.readInt()
+    in.nextToken() match {
+      case ',' =>
+        val string = in.readString("")
+        assert(length == 0)
+        assert(string.length == 1)
+        if in.nextToken() != ']'.toByte then {
+          in.decodeError("expected end of operation array")
+        }
+        FixtureOperation.Insert(index, string.charAt(0))
+      case ']' =>
+        assert(length == 1)
+        FixtureOperation.Delete(index)
+      case _ =>
+        in.decodeError("expected ',' or ']' after operation length")
+    }
+  }
+
+  private given fixtureOperationsCodec: JsonValueCodec[Seq[FixtureOperation]] =
+    new JsonValueCodec[Seq[FixtureOperation]] {
+
+      override def decodeValue(
+          in: JsonReader,
+          default: Seq[FixtureOperation]
+      ): Seq[FixtureOperation] = {
+        val operations = ArrayBuffer.empty[FixtureOperation]
+        if in.nextToken() != '['.toByte then {
+          in.decodeError("expected operations array")
+        }
+        var token = in.nextToken()
+        if token != ']'.toByte then {
+          in.rollbackToken()
+          var done = false
+          while !done do {
+            operations += readOperation(in)
+            token = in.nextToken()
+            if token == ','.toByte then {
+              ()
+            } else if token == ']'.toByte then {
+              done = true
+            } else {
+              in.decodeError("expected ',' or ']'")
+            }
+          }
+        }
+        operations.toSeq
+      }
+
+      override def encodeValue(
+          x: Seq[FixtureOperation],
+          out: JsonWriter
+      ): Unit = {
+        out.writeArrayStart()
+        x.foreach {
+          case FixtureOperation.Insert(position, character) =>
+            out.writeArrayStart()
+            out.writeVal(position)
+            out.writeVal(0)
+            out.writeVal(character.toString)
+            out.writeArrayEnd()
+          case FixtureOperation.Delete(position) =>
+            out.writeArrayStart()
+            out.writeVal(position)
+            out.writeVal(1)
+            out.writeArrayEnd()
+        }
+        out.writeArrayEnd()
+      }
+
+      override def nullValue: Seq[FixtureOperation] =
+        null.asInstanceOf[Seq[FixtureOperation]]
+    }
+
   val finalString: String = {
-    ujson
-      .read(
-        Source
-          .fromInputStream(
-            getClass.getResourceAsStream("/ex2024textRDT/data/final.json").nn
-          )
-          .mkString
-      )
-      .str
+    readFromString[String](
+      Source
+        .fromInputStream(
+          getClass.getResourceAsStream("/ex2024textRDT/data/final.json").nn
+        )
+        .mkString
+    )
   }
 
   val operations: ArrayBuffer[FixtureOperation] = {
-    val json =
-      ujson
-        .read(
-          Source
-            .fromInputStream(
-              getClass.getResourceAsStream("/ex2024textRDT/data/edits.json").nn
-            )
-            .mkString
-        )
-        .arr
-    json.map(item =>
-      item.arr.toArray match {
-        case Array(first, second, third) =>
-          val index = first.num.toInt
-          val length = second.num.toInt
-          assert(length == 0)
-          val string = third.str
-          assert(string.length() == 1)
-          val char = string.charAt(0)
-          FixtureOperation.Insert(index, char)
-        case Array(first, second) =>
-          val index = first.num.toInt
-          val length = second.num.toInt
-          assert(length == 1)
-          FixtureOperation.Delete(index)
-        case default =>
-          assert(false)
-      }
+    ArrayBuffer.from(
+      readFromString[Seq[FixtureOperation]](
+        Source
+          .fromInputStream(
+            getClass.getResourceAsStream("/ex2024textRDT/data/edits.json").nn
+          )
+          .mkString
+      )
     )
   }
 }

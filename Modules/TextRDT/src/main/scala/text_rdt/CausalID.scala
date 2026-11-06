@@ -1,14 +1,9 @@
 package text_rdt
 
 import scala.collection.mutable
-import upickle.default._
 import scala.annotation.tailrec
 
 type CausalID = mutable.HashMap[RID, Int]
-
-implicit val fooReadWrite: ReadWriter[CausalID] =
-  readwriter[Map[RID, Int]]
-    .bimap[CausalID](Map.from(_), mutable.HashMap.from(_))
 
 object CausalID {
   assert(!CausalID.partialOrder.lt(mutable.HashMap("A" -> 1, "B" -> 1), mutable.HashMap("B" -> 2)))

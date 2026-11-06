@@ -17,11 +17,9 @@ import org.scalajs.dom.RTCSessionDescriptionInit
 import org.scalajs.dom.URL
 import org.scalajs.dom.document
 import typings.prosemirrorState.mod.EditorState
-import upickle.default.*
+import com.github.plokhotnyuk.jsoniter_scala.core.{readFromString, writeToString}
 
 import java.util.UUID
-import scala.collection.immutable
-import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -111,7 +109,7 @@ private case class JSP2PAutomatic() {
         interval = org.scalajs.dom.window.setInterval(
           () => {
             if channel.readyState == "open" then {
-              channel.send("heads" + write(replica.state.causalBroadcast.cachedHeads))
+              channel.send("heads" + writeToString(replica.state.causalBroadcast.cachedHeads))
               replica.state.causalBroadcast.causalState = replica.state.causalBroadcast.causalState.clone()
               replica.state.causalBroadcast.tick()
             } else {
@@ -125,14 +123,14 @@ private case class JSP2PAutomatic() {
 
           if event.data.toString().startsWith("heads") then {
             val heads: ArrayBuffer[CausalID] =
-              read(event.data.toString().stripPrefix("heads"))
+              readFromString[ArrayBuffer[CausalID]](event.data.toString().stripPrefix("heads"))
             val potentiallyNewer2 =
               replica.state.causalBroadcast
                 .elementsPotentiallyNewer(
                   heads
                 )
                 .toSeq
-            val result = write(potentiallyNewer2)
+            val result = writeToString(potentiallyNewer2)
             replica.state.causalBroadcast.causalState = replica.state.causalBroadcast.causalState.clone()
             replica.state.causalBroadcast.tick()
             channel.send("diff" + result)
@@ -144,7 +142,7 @@ private case class JSP2PAutomatic() {
                     replica.state.factoryContext.MSG
                   ]
               )
-            ] = read(event.data.toString().stripPrefix("diff"))
+            ] = readFromString[Seq[(CausalID, ArrayBuffer[ComplexAVLMessage])]](event.data.toString().stripPrefix("diff"))
             potentiallyNewer.foreach(received =>
               replica.deliveringRemote(received)
             )
@@ -169,7 +167,7 @@ private case class JSP2PAutomatic() {
 
     connection.onicecandidate = event => {
       if event.candidate eq null then {
-        child5.value = write(
+        child5.value = writeToString(
           (
             sessionDescription.nn.`type`.toString(),
             sessionDescription.nn.sdp,
@@ -194,7 +192,7 @@ private case class JSP2PAutomatic() {
           iceCandidatesTuple: Array[
             (String, String, Double)
           ]
-        ) = read[(String, String, Array[(String, String, Double)])](input)
+        ) = readFromString[(String, String, Array[(String, String, Double)])](input)
 
         val iceCandidates = iceCandidatesTuple.map(c =>
           RTCIceCandidate(new RTCIceCandidateInit {

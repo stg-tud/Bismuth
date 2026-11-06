@@ -18,7 +18,7 @@ import typings.prosemirrorState.mod.Command
 import typings.prosemirrorState.mod.EditorState
 import typings.prosemirrorState.mod.EditorStateConfig
 import typings.prosemirrorState.mod.Plugin
-import upickle.default.*
+import com.github.plokhotnyuk.jsoniter_scala.core.readFromString
 
 import scala.scalajs.js
 
@@ -91,7 +91,7 @@ object JSMain {
     } else if url.searchParams.has("tree") then {
       plotTree(
         s"body",
-        read(url.searchParams.get("tree"))
+        readFromString[MyD3TreeNode](url.searchParams.get("tree"))
       )
       val node = document.querySelector("svg")
       document.body

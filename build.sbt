@@ -304,11 +304,8 @@ lazy val textRdt = projectMatrix
   .in(file("Modules/TextRDT"))
   .settings(
     Settings.strictScalacFlags,
-    libraryDependencies ++= Seq(
-      "com.lihaoyi" %% "ujson"   % "4.4.3",
-      "com.lihaoyi" %% "upickle" % "4.4.3",
-      pprint,
-    ),
+    libraryDependencies ++= jsoniterScala,
+    libraryDependencies += pprint,
   )
   .jvmPlatform(scalaVersions = Seq(s3v))
   .jsPlatform(scalaVersions = Seq(s3v))
