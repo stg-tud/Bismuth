@@ -300,30 +300,17 @@ lazy val reform = project
   )
 
 // imported from https://github.com/mohe2015/bachelor-thesis-collaborative-text-editing
-// the project uses its own cross layout (shared/ + jvm/ + js/), so the source dirs are wired up manually
-// the js part needs ScalablyTyped facades, which were generated once and are checked in under js/src/main/scala/typings
-val textRdtDir = file("Modules/TextRDT")
-
 lazy val textRdt = projectMatrix
-  .in(textRdtDir)
+  .in(file("Modules/TextRDT"))
   .settings(
     Settings.strictScalacFlags,
     libraryDependencies ++= Seq(
-      "com.lihaoyi"    %% "ujson"      % "4.4.3",
-      "com.lihaoyi"    %% "upickle"    % "4.4.3",
-      "org.scalacheck" %% "scalacheck" % "1.18.1" % Test,
+      "com.lihaoyi" %% "ujson"   % "4.4.3",
+      "com.lihaoyi" %% "upickle" % "4.4.3",
       pprint,
     ),
-    Compile / unmanagedSourceDirectories += textRdtDir / "shared" / "src" / "main" / "scala",
-    Test / unmanagedSourceDirectories += textRdtDir / "shared" / "src" / "test" / "scala",
-    Test / testOptions += Tests.Argument("-F"),
   )
-  .jvmPlatform(
-    scalaVersions = Seq(s3v),
-    settings = Seq(
-      Test / unmanagedSourceDirectories += textRdtDir / "jvm" / "src" / "test" / "scala",
-    )
-  )
+  .jvmPlatform(scalaVersions = Seq(s3v))
   .jsPlatform(scalaVersions = Seq(s3v))
 
 lazy val webview = project.in(file("Modules/Webview"))
