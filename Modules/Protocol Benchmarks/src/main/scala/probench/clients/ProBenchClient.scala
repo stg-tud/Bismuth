@@ -21,13 +21,13 @@ class ProBenchClient(val name: Uid, logTimings: Boolean) extends Client(name, lo
   val writeDataManager: BroadcastIO[ClientCommWrite] =
     BroadcastIO(
       localUid,
-      handleIncomingWrite,
+      payload => handleIncomingWrite(payload.data),
       broadcast = Some(PlumtreeBroadcast(localUid.uid, deltaStorage = KeepAllHistory()))
     )
   val readDataManager: BroadcastIO[ClientCommRead] =
     BroadcastIO(
       localUid,
-      handleIncomingRead,
+      payload => handleIncomingRead(payload.data),
       broadcast = Some(PlumtreeBroadcast(localUid.uid, deltaStorage = KeepAllHistory()))
     )
 
@@ -62,11 +62,11 @@ class ProBenchClient(val name: Uid, logTimings: Boolean) extends Client(name, lo
 
   def publishWrite(delta: ClientCommWrite.WriteReq): Unit = currentStateLock.synchronized {
     log("publishing write")
-    writeDataManager.broadcast(delta)
+    writeDataManager.broadcast(delta): Unit
   }
   def publishRead(delta: ClientCommRead.ReadReq): Unit = currentStateLock.synchronized {
     log("publishing read")
-    readDataManager.broadcast(delta)
+    readDataManager.broadcast(delta): Unit
   }
 
   def handleIncomingWrite(change: ClientCommWrite): Unit = currentStateLock.synchronized {

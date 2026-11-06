@@ -10,6 +10,32 @@ import rdts.base.ReplicaId
 import rdts.datatypes.ReplicatedSet
 
 class BroadcastIOTest extends munit.FunSuite {
+  test("broadcast returns the dot delivered to receivers") {
+
+    given JsonValueCodec[String] = JsonCodecMaker.make
+
+    val received = scala.collection.mutable.ArrayBuffer.empty[(rdts.time.Dots, String)]
+    val sender   = BroadcastIO[String](ReplicaId.gen(), _ => ())
+    val receiver = BroadcastIO[String](ReplicaId.gen(), p => received.addOne((p.dots, p.data)))
+
+    val queue = LocalMessageQueue()
+    val link  = QueuedLocalConnection("dots", queue)
+    receiver.addServerConnection(link.server)
+    sender.addClientConnection(link.client("s"))
+    while queue.nonEmpty do queue.deliverAll(): Unit
+
+    val d1 = sender.broadcast("a")
+    val d2 = sender.broadcast("b")
+    while queue.nonEmpty do queue.deliverAll(): Unit
+
+    assert(d1.isDefined && d2.isDefined && d1 != d2)
+    assertEquals(d1.get.place, sender.replicaId.uid)
+    assertEquals(
+      received.toSet,
+      Set(rdts.time.Dots.single(d1.get) -> "a", rdts.time.Dots.single(d2.get) -> "b")
+    )
+  }
+
   test("basics") {
 
     given JsonValueCodec[Set[String]] = JsonCodecMaker.make
@@ -284,7 +310,7 @@ class BroadcastIOTest extends munit.FunSuite {
       val dissemination: BroadcastIO[ReplicatedSet[String]] =
         BroadcastIO[ReplicatedSet[String]](
           uid,
-          delta => state = state.merge(delta)
+          payload => state = state.merge(payload.data)
         )
     }
 
@@ -313,7 +339,7 @@ class BroadcastIOTest extends munit.FunSuite {
 
     def publish(node: Node)(delta: ReplicatedSet[String]): Unit = {
       node.state = node.state.merge(delta)
-      node.dissemination.broadcast(delta)
+      node.dissemination.broadcast(delta): Unit
     }
 
     drainAll(nodes)

@@ -13,6 +13,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromByteB
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import de.rmgk.delay.{Async, Callback}
 import rdts.base.{ReplicaId, Uid}
+import rdts.time.Dot
 
 import java.net.SocketException
 import java.nio.ByteBuffer
@@ -25,9 +26,10 @@ object BroadcastIO {
     case Broadcast(sender: Uid, message: PlumtreeMessage[State])
   }
 
+  /** `receiveCallback` gets each delivered delta together with the dots assigned to it by the sender. */
   def apply[State](
       replicaId: ReplicaId,
-      receiveCallback: State => Unit,
+      receiveCallback: Payload[State] => Unit,
       overlay: Option[OverlayController] = None,
       resolver: ChannelResolver = ChannelResolver.disconnected,
       sendingActor: ExecutionContext = BroadcastIO.executeImmediately,
@@ -84,7 +86,7 @@ object BroadcastIO {
   */
 class BroadcastIO[State](
     val replicaId: ReplicaId,
-    receiveCallback: State => Unit,
+    receiveCallback: Payload[State] => Unit,
     @volatile private var overlay: OverlayController,
     resolver: ChannelResolver,
     sendingActor: ExecutionContext,
@@ -145,14 +147,25 @@ class BroadcastIO[State](
   /** Initiate overlay-native bootstrap through a single descriptor. */
   def bootstrapVia(contact: ConnectionDescriptor): Unit = transition(overlayStep(OverlayEvent.Bootstrap(contact)))
 
-  def broadcast(delta: State): Unit = transition(broadcastStep(_.broadcast(delta)))
+  /** Disseminate a local delta and return the dot assigned to it (`None` if this BroadcastIO is closed).
+    * Receivers get the same dot as part of the [[Payload]], which allows applications to track causality.
+    */
+  def broadcast(delta: State): Option[Dot] = {
+    var assigned: Option[Dot] = None
+    transition(broadcastStep { protocol =>
+      val result = protocol.broadcast(delta)
+      assigned = result.assigned
+      result
+    })
+    assigned
+  }
 
   // ------------------------------------------------------------------------------------------------
   // transitions (run under `lock`, no I/O)
   // ------------------------------------------------------------------------------------------------
 
   /** Run `step` under the lock, then perform its outputs without the lock. */
-  private inline def transition(inline step: List[Output]): Unit =
+  private def transition(step: => List[Output]): Unit =
     lock.synchronized {
       if globalAbort.closeRequest then Nil else step
     }.foreach(perform)
@@ -207,7 +220,7 @@ class BroadcastIO[State](
         timers.schedule(timerDelays(timer))(() => transition(overlayStep(OverlayEvent.TimerFired(timer))))
       case _: (OverlayAction.NeighborUp | OverlayAction.NeighborDown | Event.Send[?]) =>
         throw IllegalStateException(s"resolved during the transition: $output")
-      case Event.Deliver(payload)  => receiveCallback(payload.data)
+      case Event.Deliver(payload)  => receiveCallback(payload)
       case Event.StartTimer(timer) =>
         timers.schedule(timerDelays(timer))(() => transition(broadcastStep(_.timerFired(timer))))
 

@@ -19,7 +19,7 @@ object TodoDataManager {
   given Bottom[TodoRepState]         = Bottom.derived
 
   val (receivedCallback, dataManager: BroadcastIO[TodoRepState]) = Event.fromCallback {
-    BroadcastIO[TodoRepState](Todolist.replicaId, Event.handle)
+    BroadcastIO[TodoRepState](Todolist.replicaId, payload => Event.handle(payload.data))
   }
 
   def hookup[A: Lattice](

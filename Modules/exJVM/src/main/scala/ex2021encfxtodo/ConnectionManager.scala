@@ -49,7 +49,7 @@ class ConnectionManager[State: JsonValueCodec](
   val dataManager: BroadcastIO[State] =
     BroadcastIO[State](
       replicaId = replicaId,
-      receiveCallback = receiveCallback,
+      receiveCallback = payload => receiveCallback(payload.data),
       overlay = Some(FullMeshOverlay(PeerConnectInfo(replicaId.uid))),
       resolver = nioResolver,
       globalAbort = globalAbort,
@@ -62,7 +62,7 @@ class ConnectionManager[State: JsonValueCodec](
   nioThread.execute(() => nio.loopSelection(dataManager.globalAbort))
 
   def stateChanged(newState: State): Unit =
-    dataManager.broadcast(newState)
+    dataManager.broadcast(newState): Unit
 
   def connectionString: String =
     dataManager.selfConnectionDescriptors.head.toString

@@ -44,7 +44,7 @@ object Webview {
       if target.startsWith("http://") || target.startsWith("https://") then URI(target)
       else Path.of(target).toUri
 
-    val dataManager = BroadcastIO[TodoRepState](ReplicaId.gen(), receiveCallback)
+    val dataManager = BroadcastIO[TodoRepState](ReplicaId.gen(), payload => receiveCallback(payload.data))
 
     val w = WebView()
     dataManager.addClientConnection(WebviewNativeChannel.listen(w))

@@ -46,8 +46,8 @@ class OverlayDemoNode(
   private def newOverlay() =
     BroadcastIO[OverlayStatusProtocol.Status](
       localUid,
-      delta => {
-        state = state.merge(delta)
+      payload => {
+        state = state.merge(payload.data)
         emitStateChanged()
       },
       overlay = Some(HyParViewStateMachine.empty(selfRef, config, random.between, _ => true)),

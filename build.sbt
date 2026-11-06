@@ -302,6 +302,7 @@ lazy val reform = project
 // imported from https://github.com/mohe2015/bachelor-thesis-collaborative-text-editing
 lazy val textRdt = projectMatrix
   .in(file("Modules/TextRDT"))
+  .dependsOn(rdts)
   .settings(
     Settings.strictScalacFlags,
     libraryDependencies ++= jsoniterScala,

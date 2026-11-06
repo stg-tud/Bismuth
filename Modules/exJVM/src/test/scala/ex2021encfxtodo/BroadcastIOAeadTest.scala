@@ -31,8 +31,8 @@ class BroadcastIOAeadTest extends FunSuite {
     val received1 = mutable.ListBuffer.empty[Set[String]]
     val received2 = mutable.ListBuffer.empty[Set[String]]
 
-    val dd1 = BroadcastIO[Set[String]](ReplicaId.gen(), received1 += _, aead = aead)
-    val dd2 = BroadcastIO[Set[String]](ReplicaId.gen(), received2 += _, aead = aead)
+    val dd1 = BroadcastIO[Set[String]](ReplicaId.gen(), p => received1 += p.data, aead = aead)
+    val dd2 = BroadcastIO[Set[String]](ReplicaId.gen(), p => received2 += p.data, aead = aead)
 
     val queue = LocalMessageQueue()
     val link  = QueuedLocalConnection("aead", queue)

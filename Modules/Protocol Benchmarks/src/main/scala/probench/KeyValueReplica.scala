@@ -70,7 +70,7 @@ class KeyValueReplica(
 
     lazy val dataManager: BroadcastIO[ClusterState] = BroadcastIO[ClusterState](
       localUid,
-      delta => replicaActor.execute(() => handleIncoming(delta)),
+      payload => replicaActor.execute(() => handleIncoming(payload.data)),
       sendingActor = sendingActor,
       broadcast =
         Some(PlumtreeBroadcast(localUid.uid, deltaStorage = DeltaStorage.getStorage(deltaStorageType, () => state)))
@@ -227,14 +227,14 @@ class KeyValueReplica(
 
     lazy val dataManagerWrite: BroadcastIO[ClientCommWrite] = BroadcastIO(
       localUid,
-      delta => replicaActor.execute(() => handleIncomingWrite(delta)),
+      payload => replicaActor.execute(() => handleIncomingWrite(payload.data)),
       sendingActor = sendingActor,
       broadcast =
         Some(PlumtreeBroadcast(localUid.uid, deltaStorage = DeltaStorage.getStorage(deltaStorageType, () => ???)))
     )
     lazy val dataManagerRead: BroadcastIO[ClientCommRead] = BroadcastIO(
       localUid,
-      delta => replicaActor.execute(() => handleIncomingRead(delta)),
+      payload => replicaActor.execute(() => handleIncomingRead(payload.data)),
       sendingActor = sendingActor,
       broadcast =
         Some(PlumtreeBroadcast(localUid.uid, deltaStorage = DeltaStorage.getStorage(deltaStorageType, () => ???)))
@@ -272,10 +272,10 @@ class KeyValueReplica(
       }
 
     def publishWrite(delta: ClientCommWrite.WriteRes): Unit =
-      dataManagerWrite.broadcast(delta)
+      dataManagerWrite.broadcast(delta): Unit
 
     def publishRead(delta: ClientCommRead.ReadRes): Unit =
-      dataManagerRead.broadcast(delta)
+      dataManagerRead.broadcast(delta): Unit
   }
 
   // ============== CONN-INF ==============
@@ -289,7 +289,7 @@ class KeyValueReplica(
 
     val dataManager: BroadcastIO[ConnInformation] = BroadcastIO(
       localUid,
-      delta => replicaActor.execute(() => handleIncoming(delta)),
+      payload => replicaActor.execute(() => handleIncoming(payload.data)),
       sendingActor = sendingActor,
       broadcast = Some(
         PlumtreeBroadcast(

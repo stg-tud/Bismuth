@@ -18,6 +18,7 @@ trait BroadcastProtocol[State] {
   def addPeer(peer: Peer): Result[State]
   def removePeer(peer: Peer): Result[State]
 
+  /** Disseminate a local delta. [[Result.assigned]] contains the dot that receivers get in the [[Payload]]. */
   def broadcast(delta: State): Result[State]
 
   /** A timer requested via [[PlumtreeBroadcast.Event.StartTimer]] expired. */

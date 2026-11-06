@@ -38,7 +38,7 @@ class BroadcastIOHandshakeRaceTest extends munit.FunSuite {
       val uid = ReplicaId.gen()
       BroadcastIO[Set[String]](
         replicaId = uid,
-        receiveCallback = cb,
+        receiveCallback = payload => cb(payload.data),
         // same overlay setup as used by ex2021encfxtodo.ConnectionManager
         overlay = Some(FullMeshOverlay(PeerConnectInfo(uid.uid))),
       )

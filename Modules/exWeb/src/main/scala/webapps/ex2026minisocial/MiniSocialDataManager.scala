@@ -11,7 +11,7 @@ import reactives.default.*
 object MiniSocialDataManager {
 
   val (receivedCallback, dataManager: BroadcastIO[MiniSocial]) = Event.fromCallback {
-    BroadcastIO[MiniSocial](MiniSocialMain.replicaId, Event.handle)
+    BroadcastIO[MiniSocial](MiniSocialMain.replicaId, payload => Event.handle(payload.data))
   }
 
   def hookup(init: MiniSocial)(create: (

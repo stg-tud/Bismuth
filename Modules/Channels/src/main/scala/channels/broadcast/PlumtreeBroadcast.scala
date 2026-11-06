@@ -5,7 +5,7 @@ import channels.broadcast.PlumtreeBroadcast.{Peer, PeerRole}
 import channels.broadcast.PlumtreeMessage.*
 import channels.{DeltaStorage, NoHistory}
 import rdts.base.{Lattice, Uid}
-import rdts.time.Dots
+import rdts.time.{Dot, Dots}
 
 import scala.util.Random
 
@@ -56,6 +56,8 @@ object PlumtreeBroadcast {
   final case class Result[State](
       state: PlumtreeBroadcast[State],
       events: Seq[Event[State]],
+      /** The dot assigned to the delta of a local [[BroadcastProtocol.broadcast]]. */
+      assigned: Option[Dot] = None,
   )
 }
 
@@ -121,7 +123,7 @@ final case class PlumtreeBroadcast[State](
       localContext = localContext.merge(payload.dots),
       deltaStorage = deltaStorage.remember(payload),
     )
-    next.disseminate(payload, Set.empty)
+    next.disseminate(payload, Set.empty).copy(assigned = Some(nextDot))
   }
 
   /** Peers that announced knowledge we do not have yet. */

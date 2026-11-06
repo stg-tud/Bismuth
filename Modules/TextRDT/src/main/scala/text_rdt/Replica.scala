@@ -1,5 +1,7 @@
 package text_rdt
 
+import rdts.time.{Causal, CausalBuffer, Dot, Dots}
+
 import scala.collection.mutable
 
 final case class Replica[F <: FugueFactory](
@@ -38,6 +40,39 @@ final case class Replica[F <: FugueFactory](
       entry,
       (causalId, msg) => state.factoryContext.handleRemoteMessage(state.factory)(msg, editor)
     )
+
+  // ----------------------------------------------------------------------------------------------
+  // replication via an external dissemination layer (e.g., channels.BroadcastIO)
+  // requires a state with `collectOutgoing = true`
+  // ----------------------------------------------------------------------------------------------
+
+  type Ops = Vector[state.factoryContext.MSG]
+
+  /** Causal delivery of remote operations; `applied` contains the dots of all local and remote operation batches. */
+  var causalBuffer: CausalBuffer[Ops] = CausalBuffer()
+
+  /** Hand all local operations since the last call to `send` as one batch, together with their causal predecessors.
+    * `send` returns the dot the dissemination layer assigned to the batch (`None` if it was not sent).
+    */
+  def broadcast(send: Causal[Ops] => Option[Dot]): Unit =
+    if state.outgoing.nonEmpty then
+        val delta = Causal(causalBuffer.applied, state.outgoing.toVector)
+        state.outgoing.clear()
+        send(delta).foreach { dot =>
+          val (next, ready) = causalBuffer.markApplied(Dots.single(dot))
+          causalBuffer = next
+          applyRemote(ready)
+        }
+
+  /** Receive a batch delivered by the dissemination layer under `dots`. Applies it once all predecessors are applied. */
+  def receive(dots: Dots, delta: Causal[Ops]): Unit = {
+    val (next, ready) = causalBuffer.receive(dots, delta)
+    causalBuffer = next
+    applyRemote(ready)
+  }
+
+  private def applyRemote(batches: List[Ops]): Unit =
+    batches.foreach(_.foreach(msg => state.factoryContext.handleRemoteMessage(state.factory)(msg, editor)))
 
   def text(): String =
     state.text()

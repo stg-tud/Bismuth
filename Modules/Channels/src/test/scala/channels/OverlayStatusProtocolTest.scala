@@ -20,7 +20,7 @@ class OverlayStatusProtocolTest extends FunSuite {
     var status: Status            = OverlayStatusProtocol.empty
     val io: BroadcastIO[Status]   = BroadcastIO[Status](
       uid,
-      delta => status = status.merge(delta),
+      payload => status = status.merge(payload.data),
       overlay = Some(FullMeshOverlay(selfInfo)),
     )
 
@@ -28,7 +28,7 @@ class OverlayStatusProtocolTest extends FunSuite {
       given ReplicaId = uid
       val delta       = OverlayStatusProtocol.statusDelta(status, io, timestamp = round)
       status = status.merge(delta)
-      io.broadcast(delta)
+      io.broadcast(delta): Unit
     }
   }
 
@@ -102,7 +102,7 @@ class OverlayStatusProtocolTest extends FunSuite {
       var status: Status            = OverlayStatusProtocol.empty
       val io: BroadcastIO[Status]   = BroadcastIO[Status](
         uid,
-        delta => status = status.merge(delta),
+        payload => status = status.merge(payload.data),
         overlay = Some(HyParViewStateMachine.empty(selfInfo, config, random.between, _ => true)),
         resolver = resolver,
       )
@@ -117,7 +117,7 @@ class OverlayStatusProtocolTest extends FunSuite {
         given ReplicaId = uid
         val delta       = OverlayStatusProtocol.statusDelta(status, io, timestamp = round)
         status = status.merge(delta)
-        io.broadcast(delta)
+        io.broadcast(delta): Unit
       }
 
       def activeView: Set[rdts.base.Uid] =

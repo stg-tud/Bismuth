@@ -185,7 +185,7 @@ class MultiPaxosReplica(
         endpoints,
         BroadcastIO[MultiPaxos[Request]](
           ReplicaId(id),
-          delta => { publish(delta, Some(endpoints)); handleDelta(delta) },
+          payload => { publish(payload.data, Some(endpoints)); handleDelta(payload.data) },
           broadcast =
             Some(PlumtreeBroadcast(id, deltaStorage = DeltaStorage.getStorage(DeltaStorage.Type.KeepAll, () => ???)))
         )
@@ -240,7 +240,7 @@ class MultiPaxosReplica(
             systemConfig.matches(delta, uids)
         then
             log(s"sending delta $delta to $uids")
-            dataManager.broadcast(delta)
+            dataManager.broadcast(delta): Unit
 //        else
 //          log(s"no match for $uids with: $delta")
     }
