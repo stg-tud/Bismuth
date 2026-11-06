@@ -42,5 +42,9 @@ jobs:
       - name: install npm dependencies
         run: npm install
 
+      - name: install webapp npm dependencies
+        working-directory: Modules/exWeb
+        run: npm install
+
       - name: test
         run: sbt "test"

@@ -3,6 +3,7 @@ authors:
 
 test:
 	npm install
+	cd "Modules/exWeb/" && npm install
 	sbt test
 
 publishLocal:
