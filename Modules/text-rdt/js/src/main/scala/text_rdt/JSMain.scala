@@ -75,19 +75,19 @@ object JSMain {
     val url = new URL(
       document.location.href.asInstanceOf[String]
     )
-    if (url.searchParams.has("simple")) {
+    if url.searchParams.has("simple") then {
       val _ = JSMain(simpleTreeNodeD3Tree)
-    } else if (url.searchParams.has("complex")) {
+    } else if url.searchParams.has("complex") then {
       val _ = JSMain(complexTreeNodeD3Tree)
-    } else if (url.searchParams.has("simpleavl")) {
+    } else if url.searchParams.has("simpleavl") then {
       val _ = JSMain(simpleAVLTreeNodeD3Tree)
-    } else if (url.searchParams.has("complexavl")) {
+    } else if url.searchParams.has("complexavl") then {
       val _ = JSMain(complexAVLTreeNodeD3Tree)
-    } else if (url.searchParams.has("p2p")) {
+    } else if url.searchParams.has("p2p") then {
       val _ = JSP2P()
-    } else if (url.searchParams.has("doc")) {
+    } else if url.searchParams.has("doc") then {
       val _ = JSP2PAutomatic()
-    } else if (url.searchParams.has("tree")) {
+    } else if url.searchParams.has("tree") then {
       plotTree(
         s"body",
         read(url.searchParams.get("tree"))
@@ -162,7 +162,7 @@ private case class JSMain[F <: FugueFactory](
       "click",
       event => {
         val element = event.target.asInstanceOf[Element]
-        if (element.classList.contains("sync")) {
+        if element.classList.contains("sync") then {
           event.preventDefault()
 
           val dataReplica1 =

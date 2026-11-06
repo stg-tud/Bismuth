@@ -80,7 +80,7 @@ private case class JSP2PAutomatic() {
       urls = "stun:stun.l.google.com:19302"
     };
 
-    val theIceServers = if (turnPassword.isEmpty()) {
+    val theIceServers = if turnPassword.isEmpty() then {
       js.Array(stunServer)
     } else {
       js.Array(stunServer, turnServer)
@@ -108,7 +108,7 @@ private case class JSP2PAutomatic() {
 
         interval = org.scalajs.dom.window.setInterval(
           () => {
-            if (channel.readyState == "open") {
+            if channel.readyState == "open" then {
               channel.send("heads" + write(replica.state.causalBroadcast.cachedHeads))
               replica.state.causalBroadcast.causalState = replica.state.causalBroadcast.causalState.clone()
               replica.state.causalBroadcast.tick()
@@ -121,7 +121,7 @@ private case class JSP2PAutomatic() {
 
         channel.onmessage = event => {
 
-          if (event.data.toString().startsWith("heads")) {
+          if event.data.toString().startsWith("heads") then {
             val heads: ArrayBuffer[CausalID] =
               read(event.data.toString().stripPrefix("heads"))
             val potentiallyNewer2 =
@@ -134,7 +134,7 @@ private case class JSP2PAutomatic() {
             replica.state.causalBroadcast.causalState = replica.state.causalBroadcast.causalState.clone()
             replica.state.causalBroadcast.tick()
             channel.send("diff" + result)
-          } else if (event.data.toString().startsWith("diff")) {
+          } else if event.data.toString().startsWith("diff") then {
             val potentiallyNewer: Seq[
               (
                   text_rdt.CausalID,
@@ -155,9 +155,9 @@ private case class JSP2PAutomatic() {
       "connectionstatechange",
       event => {
         child5.value = connection
-          .asInstanceOf[typings.std.global.RTCPeerConnection]
+          .asInstanceOf[scala.scalajs.js.Dynamic]
           .connectionState
-          .toString()
+          .asInstanceOf[String]
       }
     )
 
@@ -166,7 +166,7 @@ private case class JSP2PAutomatic() {
     var candidates = Array[RTCIceCandidate]()
 
     connection.onicecandidate = event => {
-      if (event.candidate eq null) {
+      if event.candidate eq null then {
         child5.value = write(
           (
             sessionDescription.nn.`type`.toString(),
@@ -253,7 +253,7 @@ private case class JSP2PAutomatic() {
       }
     )
 
-    if (shouldOffer) {
+    if shouldOffer then {
       val offer = connection.createOffer().toFuture
       val _ = offer.andThen(offerResult => {
         offerResult match {

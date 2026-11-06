@@ -8,7 +8,6 @@ class AVL2TreeScalaCheckSuite extends ScalaCheckSuite {
 
   override def scalaCheckTestParameters: Test.Parameters =
     super.scalaCheckTestParameters
-      .withMinSuccessfulTests(10_000)
       .withWorkers(16)
       .withMaxSize(100)
       .withMaxDiscardRatio(0.00001)

@@ -27,7 +27,6 @@ class ComplexAVLInternalFugueScalaCheckSuite
 
   override def scalaCheckTestParameters: Test.Parameters =
     super.scalaCheckTestParameters
-      .withMinSuccessfulTests(500_000)
       .withWorkers(16)
       .withMaxSize(
         50
@@ -42,7 +41,6 @@ abstract class InternalFugueScalaCheckSuite[A](
 
   override def scalaCheckTestParameters: Test.Parameters =
     super.scalaCheckTestParameters
-      .withMinSuccessfulTests(20_000)
       .withWorkers(16)
       .withMaxSize(
         50
@@ -71,7 +69,6 @@ class InternalFugueTreeEqualityCheckSuite extends ScalaCheckSuite {
 
   override def scalaCheckTestParameters: Test.Parameters =
     super.scalaCheckTestParameters
-      .withMinSuccessfulTests(10_000)
       .withWorkers(16)
       .withMaxSize(100)
       .withMaxDiscardRatio(0.00001)

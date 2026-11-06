@@ -29,48 +29,49 @@ final class ProseMirror[F <: FugueFactory](
       .querySelector(elementSelector)
       .asInstanceOf[typings.prosemirrorView.mod.DOMNode],
     DirectEditorProps(state).setDispatchTransaction(
-      ((tr: Transaction) => {
-        tr.steps.foreach(step => {
-          val stepJson = step
-            .toJSON()
-            .asInstanceOf[scalajs.js.Dynamic]
-          stepJson.stepType
-            .asInstanceOf[String] match {
-            case "replace" =>
-              val replaceStep: ReplaceStep_ = step.asInstanceOf[ReplaceStep_]
-
-              val textBefore =
-                tr.docs(0).textBetween(0, replaceStep.from)
-              val textWithin =
-                tr.docs(0).textBetween(0, replaceStep.to)
-
-              val start = textBefore.size
-              val end = textWithin.size
-
-              val text = replaceStep.slice.content
-                .textBetween(
-                  0,
-                  replaceStep.slice.size
-                )
-
-              for (i <- end - 1 to start by -1) {
-                replica.delete(i)
-              }
-
-              for ((char, i) <- text.zipWithIndex) {
-                replica.insert(start + i, char)
-              }
-            case unknown =>
-              println("unknown case")
-          }
-        })
-        state = state.apply(tr)
-        view.updateState(state)
-
-        refresh()
-      }).asInstanceOf[Any => Unit]
+      ((tr: Transaction) => dispatchTransaction(tr)).asInstanceOf[Any => Unit]
     )
   ): @unchecked
+
+  def dispatchTransaction(tr: Transaction): Unit = {
+    tr.steps.foreach(step => {
+      val stepJson = step
+        .toJSON()
+        .asInstanceOf[scalajs.js.Dynamic]
+      stepJson.stepType
+        .asInstanceOf[String] match {
+        case "replace" =>
+          val replaceStep: ReplaceStep_ = step.asInstanceOf[ReplaceStep_]
+
+          val textBefore =
+            tr.docs(0).textBetween(0, replaceStep.from)
+          val textWithin =
+            tr.docs(0).textBetween(0, replaceStep.to)
+
+          val start = textBefore.size
+          val end = textWithin.size
+
+          val text = replaceStep.slice.content
+            .textBetween(
+              0,
+              replaceStep.slice.size
+            )
+
+          for (i <- end - 1 to start by -1) {
+            replica.delete(i)
+          }
+
+          for ((char, i) <- text.zipWithIndex) {
+            replica.insert(start + i, char)
+          }
+        case unknown =>
+          println("unknown case")
+      }
+    })
+    state = state.applyTransaction(tr)
+    view.updateState(state)
+    refresh()
+  }
 
   refresh()
 
@@ -85,7 +86,7 @@ final class ProseMirror[F <: FugueFactory](
     )
 
   override def insert(index: Int, character: Char): Unit = {
-    state = state.apply(
+    state = state.applyTransaction(
       state.tr
         .insertText(character.toString, index, index)
     )
@@ -94,7 +95,7 @@ final class ProseMirror[F <: FugueFactory](
   }
 
   override def delete(index: Int): Unit = {
-    state = state.apply(
+    state = state.applyTransaction(
       state.tr
         .delete(index, index + 1)
     )
@@ -103,7 +104,7 @@ final class ProseMirror[F <: FugueFactory](
   }
 
   private def refresh(): Unit = {
-    if (showTree) {
+    if showTree then {
       val root = replica.state.rootTreeNode.buildTree()
       plotTree(s"#editor${replica.state.replicaId}-graph", root)
       replica.state.factory match {
