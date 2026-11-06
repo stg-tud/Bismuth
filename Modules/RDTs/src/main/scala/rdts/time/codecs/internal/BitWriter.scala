@@ -3,7 +3,7 @@ package rdts.time.codecs.internal
 import scala.annotation.tailrec
 import scala.collection.mutable
 
-private[internal] class BitWriter {
+class BitWriter {
   private val byteArray: mutable.ArrayBuffer[Byte] = mutable.ArrayBuffer.empty
   private var pos: Int                             = 0
 
@@ -56,6 +56,6 @@ private[internal] class BitWriter {
   def toByteArray: Array[Byte] = byteArray.toArray
 }
 
-private[internal] object BitWriter {
+object BitWriter {
   def empty: BitWriter = new BitWriter()
 }

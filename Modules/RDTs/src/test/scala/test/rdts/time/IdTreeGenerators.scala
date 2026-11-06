@@ -1,6 +1,7 @@
-package rdts.time
+package test.rdts.time
 
 import org.scalacheck.Gen
+import rdts.time.IdTree
 import rdts.time.IdTree.{Branch, Leaf}
 
 import scala.language.implicitConversions

@@ -1,6 +1,7 @@
-package rdts.time.codecs.internal
+package test.rdts.time.codecs.internal
 
 import munit.FunSuite
+import rdts.time.codecs.internal.BitWriter
 
 class BitWriterTest extends FunSuite {
 

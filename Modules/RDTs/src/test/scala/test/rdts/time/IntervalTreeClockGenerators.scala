@@ -1,6 +1,7 @@
-package rdts.time
+package test.rdts.time
 
 import org.scalacheck.Gen
+import rdts.time.IntervalTreeClock
 
 object IntervalTreeClockGenerators {
   given genIntervalTreeClock: Gen[IntervalTreeClock] = for {

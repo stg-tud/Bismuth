@@ -4,7 +4,7 @@ import rdts.time.EventTree
 
 import scala.language.implicitConversions
 
-private[codecs] object EventTreeDecoder {
+object EventTreeDecoder {
   def decode(byteArray: Array[Byte]): EventTree =
     decode(BitReader(byteArray))
 

@@ -1,7 +1,8 @@
-package rdts.time.codecs.internal
+package test.rdts.time.codecs.internal
 
 import munit.FunSuite
-import rdts.time.codecs.internal.BitReaderTest.{byte, int}
+import rdts.time.codecs.internal.BitReader
+import test.rdts.time.codecs.internal.BitReaderTest.{byte, int}
 
 class BitReaderTest extends FunSuite {
 

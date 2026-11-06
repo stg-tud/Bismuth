@@ -4,7 +4,7 @@ import rdts.time.IdTree
 
 import scala.language.implicitConversions
 
-private[codecs] object IdTreeEncoder {
+object IdTreeEncoder {
 
   def encode(idTree: IdTree): BitWriter = {
     val bitWriter = BitWriter.empty

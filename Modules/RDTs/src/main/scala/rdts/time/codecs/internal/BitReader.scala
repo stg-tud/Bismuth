@@ -1,6 +1,6 @@
 package rdts.time.codecs.internal
 
-private[internal] class BitReader(private val byteArray: Array[Byte]) {
+class BitReader(private val byteArray: Array[Byte]) {
   private var pos = 0
 
   def readNextBit(): Int = {

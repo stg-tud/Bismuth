@@ -1,8 +1,9 @@
-package rdts.time.codecs
+package test.rdts.time.codecs
 
 import munit.{FunSuite, ScalaCheckSuite}
 import org.scalacheck.Gen
 import org.scalacheck.Prop.*
+import rdts.time.codecs.Codec
 
 trait CodecSpec[T: {Codec, Gen}] extends FunSuite with ScalaCheckSuite {
   val encoder: Codec[T] = summon[Codec[T]]

@@ -1,7 +1,8 @@
-package rdts.protocols.tendermint
+package test.rdts.protocols.tendermint
 
 import rdts.base.Uid
 import rdts.base.Lattice.syntax
+import rdts.protocols.tendermint.*
 import rdts.protocols.tendermint.TendermintState.given
 
 class TendermintTests extends munit.FunSuite:

@@ -1,9 +1,10 @@
-package rdts.time
+package test.rdts.time
 
 import munit.ScalaCheckSuite
 import org.scalacheck.Prop.*
 import org.scalacheck.Test.Parameters
-import rdts.time.IntervalTreeClockGenerators.genIntervalTreeClock
+import rdts.time.{EventTree, IntervalTreeClock}
+import test.rdts.time.IntervalTreeClockGenerators.genIntervalTreeClock
 
 class IntervalTreeClockTest extends ScalaCheckSuite {
 

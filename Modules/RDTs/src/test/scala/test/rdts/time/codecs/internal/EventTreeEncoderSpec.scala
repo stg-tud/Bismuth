@@ -1,8 +1,9 @@
-package rdts.time.codecs.internal
+package test.rdts.time.codecs.internal
 
 import munit.FunSuite
 import rdts.time.EventTree
 import rdts.time.EventTree.{Branch, Leaf}
+import rdts.time.codecs.internal.{EventTreeDecoder, EventTreeEncoder}
 
 import scala.language.implicitConversions
 

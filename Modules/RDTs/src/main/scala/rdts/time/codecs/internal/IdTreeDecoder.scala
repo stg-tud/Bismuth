@@ -2,7 +2,7 @@ package rdts.time.codecs.internal
 
 import rdts.time.IdTree
 
-private[codecs] object IdTreeDecoder {
+object IdTreeDecoder {
   def decode(byteArray: Array[Byte]): IdTree =
     decode(BitReader(byteArray))
 

@@ -1,12 +1,14 @@
-package rdts.time
+package test.rdts.time
 
 import munit.{FunSuite, ScalaCheckSuite}
 import org.scalacheck.Gen
 import org.scalacheck.Prop.*
 import org.scalacheck.Test.Parameters
+import rdts.time.EventTree
 import rdts.time.EventTree.{Branch, Leaf, seed, given}
-import rdts.time.EventTreeGenerators.{genEventTree, genEventTreeLeaf, genRandomEventTree}
-import rdts.time.IdTreeGenerators.genIdTree
+import rdts.time.IdTree
+import test.rdts.time.EventTreeGenerators.{genEventTree, genEventTreeLeaf, genRandomEventTree}
+import test.rdts.time.IdTreeGenerators.genIdTree
 
 import scala.language.implicitConversions
 

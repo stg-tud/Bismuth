@@ -2,7 +2,7 @@ package rdts.time.codecs.internal
 
 import rdts.time.EventTree
 
-private[codecs] object EventTreeEncoder {
+object EventTreeEncoder {
   def encode(eventTree: EventTree): BitWriter = {
     val bitWriter = BitWriter.empty
     encode(eventTree, bitWriter)
