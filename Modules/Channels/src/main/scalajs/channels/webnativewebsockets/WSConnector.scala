@@ -2,7 +2,7 @@ package channels.webnativewebsockets
 
 import channels.*
 import channels.JsArrayBufferMessageBuffer.convertToArrayBuffer
-import channels.connection.{Abort, ByteBufferMessageBuffer, Connection, LatentConnection, MessageBuffer, Receive}
+import channels.connection.{Abort, ByteBufferMessageBuffer, Connection, Connector, MessageBuffer, Receive}
 import de.rmgk.delay.{Async, Sync}
 import org.scalajs.dom
 
@@ -26,9 +26,9 @@ class WebsocketConnect(socket: dom.WebSocket) extends Connection {
 
 object WebsocketConnect {
 
-  def connect(url: String): LatentConnection[Connection] = new LatentConnection[Connection] {
+  def connect(url: String): Connector = new Connector {
 
-    override def prepare(incomingHandler: Receive): Async[Abort, Connection] = {
+    override def connect(incomingHandler: Receive): Async[Abort, Connection] = {
       Async.fromCallback {
 
         val socket = new dom.WebSocket(url)

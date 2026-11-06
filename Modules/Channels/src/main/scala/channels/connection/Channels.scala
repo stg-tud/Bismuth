@@ -63,28 +63,36 @@ trait Connection {
   */
 trait Receive {
 
-  /** The provided connection is not guaranteed to be useable until the first message is received.
-    * If you want to initiate sending messages on this connection, use the value returned by the prepare call of the latent connection instead.
+  /** Called once for every new connection, before any message on it is delivered. Returns the callback that
+    * receives the messages of `connection`; no received message is lost.
+    *
+    * `connection` can be sent on from this call on (implementations may delay such sends internally, but do not lose
+    * them). Transports that need more information before they can send (e.g., the protocol spoken by the remote side)
+    * call this only once they have it.
     */
-  def connectionEstablished(answers: Connection): Callback[MessageBuffer]
+  def connectionEstablished(connection: Connection): Callback[MessageBuffer]
 }
 
-/** Contains all the information required to try and establish a bidirectional connection.
-  * Only misses specification on how to handle messages, the abstract handler is acquired from `incoming`
-  * Note, may produce multiple connections (e.g., if this produces a server connection) thus triggering the async multiple times.
-  *
-  * Implementations should make it safe to establish multiple times, though the semantics of that is unclear.
-  */
-trait LatentConnection[+A] {
+/** Establishes exactly one connection, e.g., by dialing a remote address or by wrapping an existing channel. */
+trait Connector {
 
-  /** The returned async, when run, should establish connections with the given callback atomically.
-    * That is, no messages should be lost during setup.
-    * Similarly, the provider of the callback (the result of `incoming`) of this method should make sure that the other end of the callback is ready to receive callbacks before running the async.
+  /** When run, establishes one connection: `receiver.connectionEstablished(conn)` is called exactly once, and the
+    * returned async completes with that same `conn`. The two may happen in either order (and on different threads).
+    * If the async fails before `connectionEstablished` was called, no connection was established.
     *
-    * It is generally not assumed to be safe to run prepare twice (neither running a single async twice, nor running two different returned asyncs).
-    * Notably, “server” like implementations may try to bind a specific port, and immediately fail if that is not available.
-    *
-    * The async may produce multiple connections and will run `receiver` for each of them.
+    * Running the async again attempts a new, independent connection (if the implementation supports that).
     */
-  def prepare(receiver: Receive): Async[Abort, A]
+  def connect(receiver: Receive): Async[Abort, Connection]
+}
+
+/** Accepts any number of incoming connections. */
+trait Listener {
+
+  /** When run, starts listening and completes with a descriptor under which others can connect to us (it is
+    * connectable from then on). `receiver.connectionEstablished` is called once for every accepted connection.
+    * Listening stops when the `Abort` is triggered.
+    *
+    * Not assumed to be safe to run twice (e.g., an implementation may bind a fixed port and fail if it is taken).
+    */
+  def listen(receiver: Receive): Async[Abort, ConnectionDescriptor]
 }

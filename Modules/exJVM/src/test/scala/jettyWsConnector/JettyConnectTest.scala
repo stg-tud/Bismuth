@@ -7,14 +7,17 @@ import org.eclipse.jetty.http.pathmap.PathSpec
 
 import java.net.URI
 
-class EchoServerTestJetty extends EchoCommunicationTest[ConnectionDescriptor.WebSocket](
+class EchoServerTestJetty extends EchoCommunicationTest(
       { (_, _) =>
         val listener   = JettyWsListener.prepareServer(0)
         val echoServer = listener.listen(PathSpec.from("/registry/*"))
         listener.server.start()
         echoServer
       },
-      (_, _) => descriptor => JettyWsConnection.connect(URI.create(descriptor.url))
+      (_, _) => {
+        case ConnectionDescriptor.WebSocket(url) => Some(JettyWsConnection.connect(URI.create(url)))
+        case _                                   => None
+      }
     ) {
   override def supportsDisconnectDetection: Boolean = false
 }
@@ -23,7 +26,7 @@ object JettyConnectTest {
 
   def main(args: Array[String]): Unit = {
 
-    val prepared = JettyWsConnection.connect(URI.create("wss://echo.websocket.org/")).prepare: conn =>
+    val prepared = JettyWsConnection.connect(URI.create("wss://echo.websocket.org/")).connect: conn =>
         println("established connection")
         msg =>
           println(s"received ${msg.map(_.show)}")

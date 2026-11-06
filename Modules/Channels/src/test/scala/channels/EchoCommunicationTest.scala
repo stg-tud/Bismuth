@@ -1,7 +1,7 @@
 package channels
 
 import channels.TestUtil.printErrors
-import channels.connection.{Abort, ByteBufferMessageBuffer, Connection, ConnectionDescriptor, LatentConnection, MessageBuffer, NoMoreDataException}
+import channels.connection.{Abort, ByteBufferMessageBuffer, ChannelResolver, Connection, ConnectionDescriptor, Listener, MessageBuffer, NoMoreDataException}
 import de.rmgk.delay
 import de.rmgk.delay.{Async, Callback, Sync}
 
@@ -9,9 +9,12 @@ import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.{Failure, Success, Try}
 
-trait EchoCommunicationTest[CD <: ConnectionDescriptor](
-    serverConn: (ExecutionContext, Abort) => LatentConnection[CD],
-    clientConn: (ExecutionContext, Abort) => CD => LatentConnection[Connection]
+/** Echo tests for a transport: `serverConn` listens, and clients connect to the descriptor it reports through the
+  * resolver returned by `clientResolver` (the same way [[channels.BroadcastIO]] dials).
+  */
+trait EchoCommunicationTest(
+    serverConn: (ExecutionContext, Abort) => Listener,
+    clientResolver: (ExecutionContext, Abort) => ChannelResolver
 ) extends munit.FunSuite {
 
   def supportsMultipleConnections: Boolean                         = true
@@ -36,13 +39,17 @@ trait EchoCommunicationTest[CD <: ConnectionDescriptor](
     def async: Async[Any, Unit] = promise.async
   }
 
-  private def startServer(receiver: Connection => Callback[MessageBuffer])(using abort: Abort): Async[Abort, CD] =
-    serverConn(testExecutionContext, abort).prepare(receiver(_))
+  private def startServer(receiver: Connection => Callback[MessageBuffer])(using
+      abort: Abort
+  ): Async[Abort, ConnectionDescriptor] =
+    serverConn(testExecutionContext, abort).listen(receiver(_))
 
-  private def connectClient(descriptor: CD, receiver: Connection => Callback[MessageBuffer])(using
+  private def connectClient(descriptor: ConnectionDescriptor, receiver: Connection => Callback[MessageBuffer])(using
       abort: Abort
   ): Async[Abort, Connection] =
-    clientConn(testExecutionContext, abort)(descriptor).prepare(receiver(_))
+    clientResolver(testExecutionContext, abort).connect(descriptor) match
+        case Some(connector) => connector.connect(receiver(_))
+        case None            => Async(throw IllegalStateException(s"resolver can not connect to $descriptor"))
 
   private def sendAll(connection: Connection, messages: List[String]): Async[Any, Unit] = messages match {
     case Nil          => Sync(())

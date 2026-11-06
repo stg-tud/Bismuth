@@ -124,15 +124,13 @@ class BroadcastIO[State](
   // ------------------------------------------------------------------------------------------------
 
   /** Register an outgoing/client transport that yields a usable `Connection` (not dialed by the overlay). */
-  def addClientConnection(latentConnection: LatentConnection[Connection]): Unit =
-    Async.provided(globalAbort) {
-      acceptIncoming(latentConnection).bind
-    }.run(printExceptionHandler)
+  def addClientConnection(connector: Connector): Unit =
+    establish(connector, OverlayEvent.Incoming(_))(error => printExceptionHandler.fail(error))
 
   /** Register an incoming/server transport and learn its published local `ConnectionDescriptor`. */
-  def addServerConnection(latentConnection: LatentConnection[ConnectionDescriptor]): Unit =
+  def addServerConnection(listener: Listener): Unit =
     Async.provided(globalAbort) {
-      val descriptor = acceptIncoming(latentConnection).bind
+      val descriptor = listener.listen(incoming).bind
       transition(overlayStep(OverlayEvent.SelfDescriptorAdded(descriptor)))
     }.run(printExceptionHandler)
 
@@ -221,37 +219,39 @@ class BroadcastIO[State](
           }
         }
 
-  private def acceptIncoming[T](latentConnection: LatentConnection[T]): Async[Abort, T] =
-    latentConnection.prepare { (conn: Connection) =>
-      transition(overlayStep(OverlayEvent.Incoming(conn)))
-      messageReceiver(conn)
-    }
+  /** Connections accepted by a listener. */
+  private val incoming: Receive = (conn: Connection) => {
+    transition(overlayStep(OverlayEvent.Incoming(conn)))
+    messageReceiver(conn)
+  }
 
-  /** Establish a connection requested by the overlay; reports `Established` or `DialFailed`.
-    *
-    * A `LatentConnection[Connection]` hands us its connection exactly once, before `prepare` completes. The overlay
-    * learns about it right away (so no received message is ever for an unknown connection), but the resulting outputs
-    * (typically the first messages) are only performed once `prepare` completed and our receiver is installed.
+  /** Run `connector`, reporting the connection to the overlay as `event` once it is established. `failed` is called if
+    * no connection was established; a connection that fails after it was reported is reported as closed instead.
     */
+  private def establish(connector: Connector, event: Connection => OverlayEvent)(failed: Throwable => Unit): Unit = {
+    val established = AtomicReference[Connection | Null](null)
+    connector.connect { (conn: Connection) =>
+      established.set(conn)
+      transition(overlayStep(event(conn)))
+      messageReceiver(conn)
+    }.runIn(globalAbort) {
+      case Success(_)     => ()
+      case Failure(error) =>
+        established.get() match
+            case null => failed(error)
+            case conn =>
+              conn.close()
+              transition(overlayStep(OverlayEvent.Closed(conn)))
+    }
+  }
+
+  /** Establish a connection requested by the overlay; reports `Established` or `DialFailed`. */
   private def dial(attempt: AttemptId, to: Set[ConnectionDescriptor]): Unit =
     to.iterator.flatMap(resolver.connect).nextOption() match
-        case None                   => transition(overlayStep(OverlayEvent.DialFailed(attempt)))
-        case Some(latentConnection) =>
-          val established = AtomicReference[Option[(Connection, List[Output])]](None)
-          Async.provided(globalAbort) {
-            latentConnection.prepare { (conn: Connection) =>
-              established.set(Some((conn, locked(overlayStep(OverlayEvent.Established(attempt, conn))))))
-              messageReceiver(conn)
-            }.bind
-          }.run { result =>
-            (result, established.get()) match
-                case (Success(_), Some((_, outputs)))    => performAll(outputs)
-                case (Success(_), None)                  => transition(overlayStep(OverlayEvent.DialFailed(attempt)))
-                case (Failure(_), None)                  => transition(overlayStep(OverlayEvent.DialFailed(attempt)))
-                case (Failure(_), Some((conn, outputs))) =>
-                  // established but failed afterwards: drop the first messages and report the connection as closed
-                  conn.close()
-                  transition(overlayStep(OverlayEvent.Closed(conn)))
+        case None            => transition(overlayStep(OverlayEvent.DialFailed(attempt)))
+        case Some(connector) =>
+          establish(connector, OverlayEvent.Established(attempt, _)) { _ =>
+            transition(overlayStep(OverlayEvent.DialFailed(attempt)))
           }
 
   private def messageReceiver(conn: Connection): Callback[MessageBuffer] = {

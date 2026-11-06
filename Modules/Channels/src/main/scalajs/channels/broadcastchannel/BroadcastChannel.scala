@@ -2,7 +2,7 @@ package channels.broadcastchannel
 
 import channels.*
 import channels.JsArrayBufferMessageBuffer.convertToArrayBuffer
-import channels.connection.{Abort, Connection, LatentConnection, MessageBuffer, Receive}
+import channels.connection.{Abort, Connection, Connector, MessageBuffer, Receive}
 import de.rmgk.delay
 import de.rmgk.delay.{Async, Sync}
 import org.scalajs.dom
@@ -14,8 +14,8 @@ import scala.scalajs.js.typedarray.ArrayBuffer
 class BroadcastException(message: String, val event: MessageEvent) extends Exception(message)
 
 object BroadcastChannelConnector {
-  def named(name: String): LatentConnection[Connection] = new LatentConnection[Connection] {
-    override def prepare(incomingHandler: Receive): Async[Abort, Connection] = Async {
+  def named(name: String): Connector = new Connector {
+    override def connect(incomingHandler: Receive): Async[Abort, Connection] = Async {
 
       val bc         = new BroadcastChannel(name)
       val connection = BroadcastChannelConnection(bc)

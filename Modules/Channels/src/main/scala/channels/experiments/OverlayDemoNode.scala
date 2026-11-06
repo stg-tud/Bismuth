@@ -3,7 +3,7 @@ package channels.experiments
 import channels.JsoniterCodecs.given
 import channels.broadcast.PlumtreeBroadcast
 import channels.broadcast.PlumtreeMessage.Payload
-import channels.connection.{Abort, ChannelResolver, Connection, ConnectionDescriptor, LatentConnection, PeerConnectInfo}
+import channels.connection.{Abort, ChannelResolver, Connection, ConnectionDescriptor, Connector, Listener, PeerConnectInfo}
 import channels.overlay.HyParViewStateMachine
 import channels.overlay.HyParViewStateMachine.HyParViewConfig
 import channels.{BroadcastIO, MergingHistory, Timers}
@@ -15,7 +15,7 @@ import scala.util.Random
 
 class OverlayDemoNode(
     selfDetails: Set[ConnectionDescriptor],
-    listenEnvelope: Option[LatentConnection[ConnectionDescriptor]],
+    listenEnvelope: Option[Listener],
     envelopeResolver: ChannelResolver,
     random: Random = Random(0),
     config: HyParViewConfig = HyParViewConfig.fromEstimatedNetworkSize(10),
@@ -91,7 +91,7 @@ class OverlayDemoNode(
       publish(OverlayStatusProtocol.statusDelta(state, io, nowMillis()))
     }
 
-  def addOverlayConnection(latent: LatentConnection[Connection]): Unit =
+  def addOverlayConnection(latent: Connector): Unit =
     broadcastIO.foreach(_.addClientConnection(latent))
 
   def activeView: Set[Uid] = broadcastIO.collect {

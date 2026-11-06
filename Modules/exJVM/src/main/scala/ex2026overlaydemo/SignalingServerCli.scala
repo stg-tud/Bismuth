@@ -2,7 +2,7 @@ package ex2026overlaydemo
 
 import channels.*
 import channels.broadcast.PlumtreeMessage.Payload
-import channels.connection.{Abort, ConnectionDescriptor, LatentConnection}
+import channels.connection.{Abort, ConnectionDescriptor, Listener}
 import channels.experiments.{OverlayDemoNode, OverlayStatusProtocol, SignalingServer}
 
 import java.net.InetSocketAddress
@@ -19,7 +19,7 @@ object SignalingServerCli {
     val nioThread   = Executors.newSingleThreadExecutor()
     val nioResolver = new NioTcpConnectionDetailsResolver(nio)
 
-    def bindWebsocketServer(port: Int): (ConnectionDescriptor.TcpWebSocket, LatentConnection[ConnectionDescriptor]) = {
+    def bindWebsocketServer(port: Int): (ConnectionDescriptor.TcpWebSocket, Listener) = {
       val socket  = nio.defaultServerSocketChannel(new InetSocketAddress(host, port))()
       val address = socket.getLocalAddress.asInstanceOf[InetSocketAddress]
       (

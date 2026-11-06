@@ -2,7 +2,7 @@ package channels
 
 import channels.NioTCP.*
 import channels.WebsocketProtocol.WebsocketHeader
-import channels.connection.{Abort, ByteBufferMessageBuffer, Connection, ConnectionDescriptor, ConnectionInfo, LatentConnection, MessageBuffer, NoMoreDataException, Receive}
+import channels.connection.{Abort, ByteBufferMessageBuffer, Connection, ConnectionDescriptor, ConnectionInfo, Connector, Listener, MessageBuffer, NoMoreDataException, Receive}
 import de.rmgk.delay.{Async, Callback, Sync}
 
 import java.net.{InetSocketAddress, SocketAddress, StandardProtocolFamily, StandardSocketOptions, UnixDomainSocketAddress}
@@ -194,9 +194,9 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = BroadcastIO.executeImmedi
 
   def connect(
       bindsocket: () => SocketChannel,
-  ): LatentConnection[Connection] =
-    new LatentConnection[Connection] {
-      override def prepare(incoming: Receive): Async[Any, Connection] =
+  ): Connector =
+    new Connector {
+      override def connect(incoming: Receive): Async[Any, Connection] =
         Async.fromCallback {
           try
               val conn = handleConnectTo(bindsocket(), incoming)
@@ -252,16 +252,16 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = BroadcastIO.executeImmedi
     socket
   }
 
-  def listen(): LatentConnection[ConnectionDescriptor.TcpWebSocket | ConnectionDescriptor.Unix] =
+  def listen(): Listener =
     listen(
       defaultServerSocketChannel(new InetSocketAddress(0))
-    ).asInstanceOf[LatentConnection[ConnectionDescriptor.TcpWebSocket]]
+    )
 
   def listen(
       bindsocket: () => ServerSocketChannel,
-  ): LatentConnection[ConnectionDescriptor.TcpWebSocket | ConnectionDescriptor.Unix] =
-    new LatentConnection[ConnectionDescriptor.TcpWebSocket | ConnectionDescriptor.Unix] {
-      override def prepare(incoming: Receive)
+  ): Listener =
+    new Listener {
+      override def listen(incoming: Receive)
           : Async[Abort, ConnectionDescriptor.TcpWebSocket | ConnectionDescriptor.Unix] =
         Async.fromCallback { abort ?=>
           try {

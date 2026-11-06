@@ -75,12 +75,12 @@ class WebRTCConnectionView[S](val dataManager: BroadcastIO[S]) {
   }
 
   private def useLocalBroadcastChannel(renderedConnectionTable: Table) = {
-    val latentConnection = BroadcastChannelConnector.named("channels local broadcast for webrtc offers")
+    val connector = BroadcastChannelConnector.named("channels local broadcast for webrtc offers")
 
     var autoconnections: Map[Long, WebRTCHandling] = Map.empty
     val selfId                                     = Random.nextLong()
 
-    latentConnection.prepare { conn =>
+    connector.connect { conn =>
       {
         case Failure(ex)  => errorReporter.fail(ex)
         case Success(msg) =>

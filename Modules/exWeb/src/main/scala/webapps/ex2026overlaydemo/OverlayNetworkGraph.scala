@@ -2,7 +2,7 @@ package webapps.ex2026overlaydemo
 
 import channels.*
 import channels.JsoniterCodecs.given
-import channels.connection.{ChannelResolver, Connection, ConnectionDescriptor, LatentConnection}
+import channels.connection.{ChannelResolver, Connection, ConnectionDescriptor, Connector}
 import channels.experiments.{OverlayDemoNode, OverlayStatusProtocol}
 import com.github.plokhotnyuk.jsoniter_scala.core.{readFromString, writeToString}
 import org.scalajs.dom
@@ -106,7 +106,7 @@ object OverlayNetworkGraph {
     var signalingRef: Option[WebRtcSignalingBridge] = None
     val wsResolver = new channels.webnativewebsockets.WebSocketConnectionDetailsResolver
     val resolver   = new ChannelResolver {
-      override def connect(details: ConnectionDescriptor): Option[LatentConnection[Connection]] =
+      override def connect(details: ConnectionDescriptor): Option[Connector] =
         wsResolver.connect(details).orElse(signalingRef.flatMap(_.connect(details)))
     }
 

@@ -1,7 +1,7 @@
 package ex2021encfxtodo
 
 import channels.broadcast.PlumtreeMessage
-import channels.connection.SynchronousLocalConnection
+import channels.connection.{LocalMessageQueue, QueuedLocalConnection}
 import channels.experiments.Aead
 import channels.{BroadcastIO, experiments}
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
@@ -34,11 +34,13 @@ class BroadcastIOAeadTest extends FunSuite {
     val dd1 = BroadcastIO[Set[String]](ReplicaId.gen(), received1 += _, aead = aead)
     val dd2 = BroadcastIO[Set[String]](ReplicaId.gen(), received2 += _, aead = aead)
 
-    val sync = SynchronousLocalConnection("sync-aead")
-    dd1.addServerConnection(sync.server)
-    dd2.addClientConnection(sync.client("2"))
+    val queue = LocalMessageQueue()
+    val link  = QueuedLocalConnection("aead", queue)
+    dd1.addServerConnection(link.server)
+    dd2.addClientConnection(link.client("2"))
 
     dd1.broadcast(Set("secret"))
+    while queue.nonEmpty do queue.deliverAll(): Unit
 
     assertEquals(dd1.allPayloads.map(_.data).toSet, Set(Set("secret")))
     assertEquals(dd2.allPayloads.map(_.data).toSet, Set(Set("secret")))

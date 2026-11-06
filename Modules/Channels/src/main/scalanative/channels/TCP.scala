@@ -1,6 +1,6 @@
 package channels
 
-import channels.connection.{Abort, Connection, ConnectionDescriptor, JIOStreamConnection, LatentConnection, Receive}
+import channels.connection.{Abort, Connection, ConnectionDescriptor, JIOStreamConnection, Connector, Listener, Receive}
 import de.rmgk.delay.{Async, Callback}
 
 import java.net.{InetSocketAddress, ServerSocket, Socket, SocketException, SocketTimeoutException}
@@ -29,9 +29,9 @@ object TCP {
   def defaultSocket(socketAddress: InetSocketAddress): () => Socket =
     () => new Socket(socketAddress.getAddress, socketAddress.getPort)
 
-  def connect(bindsocket: () => Socket, executionContext: ExecutionContext): LatentConnection[Connection] =
-    new LatentConnection[Connection] {
-      override def prepare(incoming: Receive): Async[Any, Connection] =
+  def connect(bindsocket: () => Socket, executionContext: ExecutionContext): Connector =
+    new Connector {
+      override def connect(incoming: Receive): Async[Any, Connection] =
         TCP.syncAttempt {
           TCP.handleConnection(bindsocket(), incoming, executionContext)
         }
@@ -54,9 +54,9 @@ object TCP {
   def listen(
       bindsocket: () => ServerSocket,
       executionContext: ExecutionContext
-  ): LatentConnection[ConnectionDescriptor.Tcp] =
-    new LatentConnection[ConnectionDescriptor.Tcp] {
-      override def prepare(incoming: Receive): Async[Abort, ConnectionDescriptor.Tcp] =
+  ): Listener =
+    new Listener {
+      override def listen(incoming: Receive): Async[Abort, ConnectionDescriptor.Tcp] =
         Async.fromCallback { abort ?=>
           try
 

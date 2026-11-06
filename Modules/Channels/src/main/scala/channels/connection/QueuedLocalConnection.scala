@@ -1,6 +1,6 @@
 package channels.connection
 
-import de.rmgk.delay.{Async, Callback, Promise}
+import de.rmgk.delay.{Async, Callback, Promise, Sync}
 
 import scala.util.{Failure, Success, Try}
 
@@ -72,15 +72,20 @@ class LocalMessageQueue {
   }
 }
 
-/** Like [[SynchronousLocalConnection]], but message delivery is queued and manually executed. */
+/** In-memory connections between a single “server” and multiple “clients”, for tests.
+  *
+  * Sending only enqueues the message on the [[LocalMessageQueue]]; it is delivered when the queue is told to deliver.
+  * Each end looks up the receiver of the other end on delivery. Both ends are attached within `connect`, before any
+  * message can be delivered, so each end can send right away.
+  */
 class QueuedLocalConnection(val serverId: String, val messageQueue: LocalMessageQueue = LocalMessageQueue()) {
 
-  object server extends LatentConnection[ConnectionDescriptor.QueuedLocal] {
+  object server extends Listener {
 
     case class Establish(serverSendsOn: Connection, clientConnectionSendsTo: Promise[Callback[MessageBuffer]])
     val connectionEstablished: Promise[Callback[Establish]] = Promise()
 
-    def prepare(receiver: Receive): Async[Abort, ConnectionDescriptor.QueuedLocal] = Async.fromCallback[Establish] {
+    def listen(receiver: Receive): Async[Abort, ConnectionDescriptor.QueuedLocal] = Async.fromCallback[Establish] {
       connectionEstablished.succeed(Async.handler)
     }.map { connChan =>
       connChan.clientConnectionSendsTo.succeed(receiver.connectionEstablished(connChan.serverSendsOn))
@@ -88,35 +93,30 @@ class QueuedLocalConnection(val serverId: String, val messageQueue: LocalMessage
     }
   }
 
-  def client(id: String): LatentConnection[Connection] = new LatentConnection[Connection] {
-
-    val toServerMessages: Promise[Callback[MessageBuffer]] = Promise()
-
-    object toServer extends Connection {
-      def send(msg: MessageBuffer): Async[Any, Unit] = Async {
-        val cb = toServerMessages.async.bind
-        messageQueue.enqueue(cb, Success(msg))
+  /** One end of a connection: sends to the receiver of the other end, as soon as that one is attached. */
+  private class End(name: String, to: Promise[Callback[MessageBuffer]]) extends Connection {
+    private val deliver: Callback[MessageBuffer] = message =>
+      to.async.run {
+        case Success(receiver) => receiver.complete(message)
+        case Failure(error)    => throw error
       }
-      override def close(): Unit = Async {
-        val cb = toServerMessages.async.bind
-        messageQueue.enqueue(cb, Failure(ConnectionClosedException("closed")))
-      }.runIn(()) { _ => () }
-      override def toString: String = s"From[$id]"
-    }
+    override def send(message: MessageBuffer): Async[Any, Unit] =
+      Sync { messageQueue.enqueue(deliver, Success(message)) }
+    override def close(): Unit    = messageQueue.enqueue(deliver, Failure(ConnectionClosedException("closed")))
+    override def toString: String = name
+  }
 
-    def prepare(receiver: Receive): Async[Abort, Connection] = Async {
-      val callback = receiver.connectionEstablished(toServer)
+  def client(id: String): Connector = new Connector {
 
-      val toClient = new Connection {
-        override def close(): Unit = messageQueue.enqueue(callback, Failure(ConnectionClosedException("closed")))
-        override def send(message: MessageBuffer): Async[Any, Unit] = Async {
-          messageQueue.enqueue(callback, Success(message))
-        }
-        override def toString: String = s"To[$id]"
-      }
+    def connect(receiver: Receive): Async[Abort, Connection] = Async {
+      val toServerMessages = Promise[Callback[MessageBuffer]]()
+      val toClientMessages = Promise[Callback[MessageBuffer]]()
+      val toServer         = End(s"From[$id]", toServerMessages)
+      val toClient         = End(s"To[$id]", toClientMessages)
 
       val established = server.connectionEstablished.async.bind
       established.succeed(server.Establish(toClient, toServerMessages))
+      toClientMessages.succeed(receiver.connectionEstablished(toServer))
       toServer
     }
   }

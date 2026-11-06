@@ -85,7 +85,7 @@ class ChannelConnectionManager(
         println(
           s"Listening on ${listener.get.ifAddress.getHostAddress}:${listener.get.listenPort} as ${localPublicId}"
         )
-    listener.get.prepare { conn =>
+    listener.get.listen { conn =>
       receiveMessageHandler(conn)
     }.runIn(abort) {
       case Success(_)         =>
@@ -97,7 +97,7 @@ class ChannelConnectionManager(
 
   override def connectTo(host: String, port: Int): Unit = {
     if !disableLogging then println(s"Attempting to connect to $host:$port")
-    p2pTls.latentConnect(host, port, ec).prepare(receiveMessageHandler(_)).runIn(abort) {
+    p2pTls.latentConnect(host, port, ec).connect(receiveMessageHandler(_)).runIn(abort) {
       case Success(_)         => ()
       case Failure(exception) => if !disableLogging then exception.printStackTrace()
     }

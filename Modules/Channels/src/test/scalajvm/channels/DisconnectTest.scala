@@ -40,7 +40,7 @@ class DisconnectTest extends munit.FunSuite {
 
     val listen = serverNioTCP.listen(() => socket)
 
-    listen.prepare(conn =>
+    listen.listen(conn =>
       TestUtil.printErrors { mb =>
         conn.send(mb).run(TestUtil.printErrors(mb => ()))
       }
@@ -60,7 +60,7 @@ class DisconnectTest extends munit.FunSuite {
     ec.execute(() => clientNioTCP.loopSelection(Abort()))
     val connect = serverNioTCP.connect(() => socketChannel)
 
-    connect.prepare { conn =>
+    connect.connect { conn =>
       {
         case Success(mb) =>
         case Failure(ex) => assert(ex.isInstanceOf[NoMoreDataException])

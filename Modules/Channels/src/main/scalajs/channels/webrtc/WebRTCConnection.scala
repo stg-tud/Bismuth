@@ -2,7 +2,7 @@ package channels.webrtc
 
 import channels.*
 import channels.JsArrayBufferMessageBuffer.convertToArrayBuffer
-import channels.connection.{Abort, Connection, LatentConnection, MessageBuffer, Receive}
+import channels.connection.{Abort, Connection, Connector, MessageBuffer, Receive}
 import de.rmgk.delay.{Async, Sync}
 import org.scalajs.dom
 import org.scalajs.dom.RTCDataChannelState
@@ -94,7 +94,7 @@ object WebRTCConnection {
     }
   }
 
-  def openLatent(channel: dom.RTCDataChannel): LatentConnection[Connection] = new LatentConnection[Connection] {
+  def openLatent(channel: dom.RTCDataChannel): Connector = new Connector {
 
     def succeedConnection(incoming: Receive): WebRTCConnection = {
       rtcDebug(channel, "openLatent.succeedConnection() installing message handlers")
@@ -145,7 +145,7 @@ object WebRTCConnection {
       connector
     }
 
-    override def prepare(incomingHandler: Receive): Async[Abort, Connection] =
+    override def connect(incomingHandler: Receive): Async[Abort, Connection] =
       Async.fromCallback {
         rtcDebug(channel, "openLatent.prepare() called")
 

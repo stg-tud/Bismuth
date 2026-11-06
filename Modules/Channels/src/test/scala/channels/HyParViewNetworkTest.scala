@@ -1,6 +1,6 @@
 package channels
 
-import channels.connection.{ChannelResolver, Connection, ConnectionDescriptor, LatentConnection, LocalConnectionRegistry, LocalMessageQueue, PeerConnectInfo, QueuedLocalConnection}
+import channels.connection.{ChannelResolver, Connection, ConnectionDescriptor, Connector, LocalConnectionRegistry, LocalMessageQueue, PeerConnectInfo, QueuedLocalConnection}
 import channels.overlay.HyParViewStateMachine
 import channels.overlay.HyParViewStateMachine.{HyParViewConfig, Link}
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
@@ -49,7 +49,7 @@ class HyParViewNetworkTest extends munit.FunSuite {
       val replica  = ReplicaId.predefined(id)
       val info     = PeerConnectInfo(replica.uid, Set(ConnectionDescriptor.QueuedLocal(id)))
       val resolver = new ChannelResolver {
-        override def connect(details: ConnectionDescriptor): Option[LatentConnection[Connection]] = details match
+        override def connect(details: ConnectionDescriptor): Option[Connector] = details match
             case ConnectionDescriptor.QueuedLocal(target) if unreachable.contains((id, target)) => None
             case _ => registry.connect(details)
       }

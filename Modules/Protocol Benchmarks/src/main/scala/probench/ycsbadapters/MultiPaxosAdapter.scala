@@ -3,7 +3,7 @@ package probench.ycsbadapters
 import channels.connection.Abort
 import channels.{ConcurrencyHelper, NioTCP}
 import probench.KnowledgeGroups.*
-import probench.cli.addRetryingLatentConnection
+import probench.cli.addRetryingConnection
 import probench.{KnowledgeGroups, MultiPaxosReplica}
 import rdts.base.Uid
 import rdts.protocols.knowledgeGroups.MultiPaxos
@@ -49,7 +49,7 @@ object MultiPaxosAdapterConnectionPool {
     else
         println(s"adding connection to $ip:$port")
         // todo add other collections for other knowledge groups
-        addRetryingLatentConnection(
+        addRetryingConnection(
           multiPaxosReplica.dataManagers(members),
           nioTCP.connect(nioTCP.defaultSocketChannel(InetSocketAddress(ip, port))),
           1000,

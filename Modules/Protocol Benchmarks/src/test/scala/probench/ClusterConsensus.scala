@@ -1,6 +1,6 @@
 package probench
 
-import channels.connection.SynchronousLocalConnection
+import channels.connection.{LocalMessageQueue, QueuedLocalConnection}
 import probench.clients.ProBenchClient
 import probench.data.{ClusterState, KVOperation}
 import rdts.base.{ReplicaId, Uid}
@@ -13,21 +13,24 @@ import scala.concurrent.{Await, Future}
 class ClusterConsensus extends munit.FunSuite {
   test("simple consensus") {
 
+    val queue           = LocalMessageQueue()
+    def deliver(): Unit = while queue.nonEmpty do queue.deliverAll(): Unit
+
     val ids = Set("Node1", "Node2", "Node3").map(Uid.predefined)
     given Participants(ids)
     val nodes @ primary :: secondaries =
       ids.map { id =>
         KeyValueReplica(id, ids, offloadSending = false, offloadReplica = false, commitReads = true)
       }.toList: @unchecked
-    val connection = SynchronousLocalConnection("cluster-main")
+    val connection = QueuedLocalConnection("cluster-main", queue)
     primary.cluster.dataManager.addServerConnection(connection.server)
     secondaries.foreach { node => node.cluster.dataManager.addClientConnection(connection.client(node.uid.toString)) }
-    val connection2 = SynchronousLocalConnection("cluster-secondary")
+    val connection2 = QueuedLocalConnection("cluster-secondary", queue)
     secondaries.head.cluster.dataManager.addServerConnection(connection2.server)
     secondaries(1).cluster.dataManager.addClientConnection(connection2.client(secondaries(1).uid.toString))
 
-    val clientConnectionWrite = SynchronousLocalConnection("client-write")
-    val clientConnectionRead  = SynchronousLocalConnection("client-read")
+    val clientConnectionWrite = QueuedLocalConnection("client-write", queue)
+    val clientConnectionRead  = QueuedLocalConnection("client-read", queue)
 
     primary.client.dataManagerWrite.addServerConnection(clientConnectionWrite.server)
     primary.client.dataManagerRead.addServerConnection(clientConnectionRead.server)
@@ -39,14 +42,18 @@ class ClusterConsensus extends munit.FunSuite {
 
     client.printResults = false
 
+    deliver()
     client.write("test", "Hi")
     client.read("test")
+    deliver()
 
     // run broadcast repair (the data managers use the default manual timers)
     nodes.foreach: v =>
         val timers = v.cluster.dataManager.timers.asInstanceOf[channels.Timers.Manual]
         timers.fireAll()
+        deliver()
         timers.fireAll()
+        deliver()
 
     assertEquals(nodes(0).cluster.state, nodes(1).cluster.state)
     assertEquals(nodes(1).cluster.state, nodes(2).cluster.state)
@@ -63,6 +70,7 @@ class ClusterConsensus extends munit.FunSuite {
         nodes.filter(_.cluster.needsUpkeep()).exists { n =>
           investigateUpkeep(n.cluster.state)(using n.localUid)
           n.cluster.forceUpkeep()
+          deliver()
           true
         }
     do ()
@@ -94,6 +102,7 @@ class ClusterConsensus extends munit.FunSuite {
 
     client.write("test2", "Hi")
     client.read("test2")
+    deliver()
 
     runUpkeep()
 
@@ -106,17 +115,20 @@ class ClusterConsensus extends munit.FunSuite {
 
   test("consensus with one node") {
 
+    val queue           = LocalMessageQueue()
+    def deliver(): Unit = while queue.nonEmpty do queue.deliverAll(): Unit
+
     val ids = Set("Node1").map(Uid.predefined)
     given Participants(ids)
     val nodes @ primary :: x =
       ids.map { id =>
         KeyValueReplica(id, ids, offloadSending = false, offloadReplica = false, commitReads = true)
       }.toList: @unchecked
-    val connection = SynchronousLocalConnection("single-cluster")
+    val connection = QueuedLocalConnection("single-cluster", queue)
     primary.cluster.dataManager.addServerConnection(connection.server)
 
-    val clientConnectionWrites = SynchronousLocalConnection("single-client-write")
-    val clientConnectionReads  = SynchronousLocalConnection("single-client-read")
+    val clientConnectionWrites = QueuedLocalConnection("single-client-write", queue)
+    val clientConnectionReads  = QueuedLocalConnection("single-client-read", queue)
 
     primary.client.dataManagerWrite.addServerConnection(clientConnectionWrites.server)
     primary.client.dataManagerRead.addServerConnection(clientConnectionReads.server)
@@ -143,7 +155,9 @@ class ClusterConsensus extends munit.FunSuite {
 //    for n <- Range(0,100) do {
 //      Await.ready(client.writeWithResult(n.toString, "value"), 5.seconds)
 //    }
+    deliver()
     val f = Future.traverse(Range(0, 1000))(n => client.writeWithResult(n.toString, "value"))
+    deliver()
     Await.ready(f, 5.seconds)
 
     assertEquals(primary.cluster.state.closedRounds.size, 1000)
@@ -159,6 +173,7 @@ class ClusterConsensus extends munit.FunSuite {
         nodes.filter(_.cluster.needsUpkeep()).exists { n =>
           investigateUpkeep(n.cluster.state)(using n.localUid)
           n.cluster.forceUpkeep()
+          deliver()
           true
         }
     do ()
@@ -184,6 +199,7 @@ class ClusterConsensus extends munit.FunSuite {
 
     client.write("test2", "Hi")
     client.read("test2")
+    deliver()
 
     runUpkeep()
 

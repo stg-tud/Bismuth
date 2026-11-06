@@ -3,7 +3,7 @@ package ex2024DTN.rdt
 import channels.BroadcastIO
 import channels.broadcast.PlumtreeMessage
 import channels.broadcast.PlumtreeMessage.{Graft, IHave, Payload, Prune}
-import channels.connection.{Abort, Connection, LatentConnection, MessageBuffer, Receive}
+import channels.connection.{Abort, Connection, Connector, MessageBuffer, Receive}
 import channels.experiments.Aead
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
 import de.rmgk.delay.{Async, Callback, Sync, toAsync}
@@ -56,13 +56,13 @@ class Channel[T: JsonValueCodec](
     ec: ExecutionContext,
     monitoringClient: MonitoringClientInterface = NoMonitoringClient,
     operationMode: ClientOperationMode = ClientOperationMode.PushAll
-) extends LatentConnection[Connection] {
+) extends Connector {
 
   // We use a local dtnid instead of a remote replica ID to signify that the local DTNd is the one providing information.
   // If the local dtnd could be stopped and restarted without loosing data, this id should remain the same for performance reasons, but it will be correct even if it changes.
   val dtnid: Uid = Uid.gen()
 
-  override def prepare(receiver: Receive): Async[Abort, Connection] =
+  override def connect(receiver: Receive): Async[Abort, Connection] =
     Async {
       val client: Client = Client(host, port, appName, monitoringClient).toAsync(using ec).bind
       val conn           = ClientContext[T](client, ec, operationMode)

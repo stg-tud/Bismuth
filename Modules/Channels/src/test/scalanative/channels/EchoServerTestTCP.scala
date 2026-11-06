@@ -4,7 +4,7 @@ import channels.connection.ConnectionDescriptor
 
 import java.net.{InetAddress, InetSocketAddress, ServerSocket, SocketException}
 
-class EchoServerTestTCP extends EchoCommunicationTest[ConnectionDescriptor.Tcp](
+class EchoServerTestTCP extends EchoCommunicationTest(
       { (ec, _) =>
         val socket = new ServerSocket
 
@@ -18,6 +18,9 @@ class EchoServerTestTCP extends EchoCommunicationTest[ConnectionDescriptor.Tcp](
 
         TCP.listen(() => socket, ec)
       },
-      (ec, _) =>
-        descriptor => TCP.connect(TCP.defaultSocket(new InetSocketAddress(descriptor.host, descriptor.port)), ec)
+      (ec, _) => {
+        case ConnectionDescriptor.Tcp(host, port) =>
+          Some(TCP.connect(TCP.defaultSocket(new InetSocketAddress(host, port)), ec))
+        case _ => None
+      }
     )

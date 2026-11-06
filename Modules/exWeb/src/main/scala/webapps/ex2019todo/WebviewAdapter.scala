@@ -1,6 +1,6 @@
 package webapps.ex2019todo
 
-import channels.connection.{Abort, ByteBufferMessageBuffer, Connection, LatentConnection, MessageBuffer, Receive}
+import channels.connection.{Abort, ByteBufferMessageBuffer, Connection, Connector, MessageBuffer, Receive}
 import de.rmgk.delay.{Async, Sync}
 
 import scala.scalajs.js
@@ -27,8 +27,8 @@ object WebviewAdapterChannel {
     override def close(): Unit = ()
   }
 
-  def listen(): LatentConnection[Connection] = new LatentConnection[Connection] {
-    def prepare(incomingHandler: Receive): Async[Abort, Connection] = Sync {
+  def listen(): Connector = new Connector {
+    def connect(incomingHandler: Receive): Async[Abort, Connection] = Sync {
       val conn = WebviewConnectionContext
       val cb   = incomingHandler.connectionEstablished(conn)
       receiveCallback = { (msg: String) =>

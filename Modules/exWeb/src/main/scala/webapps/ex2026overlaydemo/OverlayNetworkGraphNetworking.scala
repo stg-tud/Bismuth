@@ -1,7 +1,7 @@
 package webapps.ex2026overlaydemo
 
 import channels.*
-import channels.connection.{Abort, Connection, ConnectionDescriptor, LatentConnection, Receive}
+import channels.connection.{Abort, Connection, ConnectionDescriptor, Connector, Receive}
 import channels.experiments.OverlayStatusProtocol.Status
 import channels.experiments.{OverlayDemoNode, SignalingClient, SignalingServer}
 import channels.webnativewebsockets.WebSocketConnectionDetailsResolver
@@ -169,11 +169,11 @@ object OverlayNetworkGraphNetworking {
           case ConnectionDescriptor.WebRtc(peerId) => peerId != Uid.unwrap(node.localUid.uid) && client.isConnected
           case _                                   => false
 
-    def connect(details: ConnectionDescriptor): Option[LatentConnection[Connection]] = details match
+    def connect(details: ConnectionDescriptor): Option[Connector] = details match
         case ConnectionDescriptor.WebRtc(peerId) if client.isConnected && peerId != Uid.unwrap(node.localUid.uid) =>
           val target = Uid.predefined(peerId)
-          Some(new LatentConnection[Connection] {
-            override def prepare(receiver: Receive): Async[Abort, Connection] = {
+          Some(new Connector {
+            override def connect(receiver: Receive): Async[Abort, Connection] = {
               Async.fromCallback { abort ?=>
                 val connector                         = createRtcConnector()
                 val channel                           = createOverlayDataChannel(connector)
@@ -186,7 +186,7 @@ object OverlayNetworkGraphNetworking {
                   catch case _: Throwable => ()
                   Async.handler.fail(err)
                 }
-                WebRTCConnection.openLatent(channel).prepare(receiver).runIn(abort) {
+                WebRTCConnection.openLatent(channel).connect(receiver).runIn(abort) {
                   case Success(conn) =>
                     Async.handler.succeed(conn)
                   case Failure(err) =>

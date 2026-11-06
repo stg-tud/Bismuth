@@ -1,6 +1,6 @@
 package channels
 
-import channels.connection.{Abort, ByteBufferMessageBuffer, Connection, ConnectionDescriptor, ConnectionInfo, LatentConnection, MessageBuffer, Receive}
+import channels.connection.{Abort, ByteBufferMessageBuffer, Connection, ConnectionDescriptor, ConnectionInfo, Connector, Listener, MessageBuffer, Receive}
 import de.rmgk.delay.{Async, Callback}
 
 import java.net.{DatagramPacket, DatagramSocket, InetAddress, InetSocketAddress, SocketAddress, SocketTimeoutException}
@@ -12,14 +12,14 @@ object UDP {
   def listen(
       socketFactory: () => DatagramSocket,
       executionContext: ExecutionContext
-  ): LatentConnection[ConnectionDescriptor.Udp] =
-    new Listener(socketFactory, executionContext)
+  ): Listener =
+    new Server(socketFactory, executionContext)
 
   def connect(
       target: SocketAddress,
       socketFactory: () => DatagramSocket,
       executionContext: ExecutionContext
-  ): LatentConnection[Connection] =
+  ): Connector =
     new Client(target, socketFactory, executionContext)
 
   abstract private class Base(socketFactory: () => DatagramSocket, executionContext: ExecutionContext) {
@@ -84,9 +84,9 @@ object UDP {
 
   }
 
-  private class Listener(socketFactory: () => DatagramSocket, executionContext: ExecutionContext)
-      extends Base(socketFactory, executionContext), LatentConnection[ConnectionDescriptor.Udp] {
-    override def prepare(receiver: Receive): Async[Abort, ConnectionDescriptor.Udp] = Async {
+  private class Server(socketFactory: () => DatagramSocket, executionContext: ExecutionContext)
+      extends Base(socketFactory, executionContext), Listener {
+    override def listen(receiver: Receive): Async[Abort, ConnectionDescriptor.Udp] = Async {
       val datagramSocket = socketFactory()
       startServerReceiver(datagramSocket, receiver)
       val host =
@@ -97,8 +97,8 @@ object UDP {
   }
 
   private class Client(target: SocketAddress, socketFactory: () => DatagramSocket, executionContext: ExecutionContext)
-      extends Base(socketFactory, executionContext), LatentConnection[Connection] {
-    override def prepare(receiver: Receive): Async[Abort, Connection] = Async {
+      extends Base(socketFactory, executionContext), Connector {
+    override def connect(receiver: Receive): Async[Abort, Connection] = Async {
       val datagramSocket = socketFactory()
       val conn           = UDPDatagramWrapper(target, datagramSocket)
       val callback       = receiver.connectionEstablished(conn)

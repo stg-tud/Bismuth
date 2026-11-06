@@ -48,6 +48,9 @@ class PaperGroups extends munit.FunSuite {
         )
     ).toMap
 
+    val queue           = channels.connection.LocalMessageQueue()
+    def deliver(): Unit = while queue.nonEmpty do queue.deliverAll(): Unit
+
     // setup connections
     // we need one data manager per set of ids. They can theoretically be reused between knowledge groups if they have the same set of ids
     // leader and followers share slots
@@ -57,7 +60,7 @@ class PaperGroups extends munit.FunSuite {
             case primary :: Nil         => ()
             case primary :: secondaries =>
               println(s"Setting up connection for $allIds with $primary as server and $secondaries as clients")
-              val connection = channels.connection.SynchronousLocalConnection(primary.toString)
+              val connection = channels.connection.QueuedLocalConnection(primary.toString, queue)
               replicas(primary).dataManagers(allIds).addServerConnection(connection.server)
               secondaries.foreach(id =>
                 replicas(id).dataManagers(allIds).addClientConnection(connection.client(id.toString))
@@ -71,16 +74,20 @@ class PaperGroups extends munit.FunSuite {
     def settle(): Unit =
       // run broadcast repair (the data managers use the default manual timers)
       for _ <- 1 to 5 do
+          deliver()
           replicas.values.foreach(
             _.dataManagers.values.foreach(_.timers.asInstanceOf[channels.Timers.Manual].fireAll())
           )
+          deliver()
 
     settle()
     assertEquals(replicas(leader).dataManagers.size, 2)
     assertEquals(replicas(follower1).dataManagers.size, 1)
 
     replicas(leader).startLeaderElection()
+    deliver()
     replicas(client).request("0")
+    deliver()
 
     // assert(!replicas(client).state.requests.elements.isEmpty)
     assert(replicas(leader).state.requests.elements.isEmpty)
@@ -126,6 +133,9 @@ class PaperGroups extends munit.FunSuite {
         )
     ).toMap
 
+    val queue           = channels.connection.LocalMessageQueue()
+    def deliver(): Unit = while queue.nonEmpty do queue.deliverAll(): Unit
+
     // setup connections
     // we need one data manager per set of ids. They can theoretically be reused between knowledge groups if they have the same set of ids
     // leader and followers share slots
@@ -135,7 +145,7 @@ class PaperGroups extends munit.FunSuite {
             case primary :: Nil         => ()
             case primary :: secondaries =>
               println(s"Setting up connection for $allIds with $primary as server and $secondaries as clients")
-              val connection = channels.connection.SynchronousLocalConnection(primary.toString)
+              val connection = channels.connection.QueuedLocalConnection(primary.toString, queue)
               replicas(primary).dataManagers(allIds).addServerConnection(connection.server)
               secondaries.foreach(id =>
                 replicas(id).dataManagers(allIds).addClientConnection(connection.client(id.toString))
@@ -149,9 +159,11 @@ class PaperGroups extends munit.FunSuite {
     def settle(): Unit =
       // run broadcast repair (the data managers use the default manual timers)
       for _ <- 1 to 5 do
+          deliver()
           replicas.values.foreach(
             _.dataManagers.values.foreach(_.timers.asInstanceOf[channels.Timers.Manual].fireAll())
           )
+          deliver()
 
     settle()
     replicas(leader).startLeaderElection()

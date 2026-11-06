@@ -1,17 +1,17 @@
 package channels.connection
 
-import channels.connection.{Connection, ConnectionDescriptor, LatentConnection, QueuedLocalConnection, SynchronousLocalConnection}
+import channels.connection.{ConnectionDescriptor, Connector, Listener, QueuedLocalConnection}
 import rdts.base.Uid
 
 /** vibecoded as part of the hyparview experiments */
 
 trait ChannelResolver {
-  def connect(details: ConnectionDescriptor): Option[LatentConnection[Connection]]
+  def connect(details: ConnectionDescriptor): Option[Connector]
 }
 
 object ChannelResolver {
   def disconnected: ChannelResolver = new ChannelResolver {
-    override def connect(details: ConnectionDescriptor): Option[LatentConnection[Connection]] = None
+    override def connect(details: ConnectionDescriptor): Option[Connector] = None
   }
 }
 
@@ -19,21 +19,14 @@ case class PeerConnectInfo(uid: Uid, channelConnectors: Set[ConnectionDescriptor
 
 class LocalConnectionRegistry(
     queued: collection.Map[String, QueuedLocalConnection],
-    synchronous: collection.Map[String, SynchronousLocalConnection] = Map.empty,
 ) extends ChannelResolver {
-  def queuedServer(details: ConnectionDescriptor): Option[LatentConnection[ConnectionDescriptor]] =
+  def queuedServer(details: ConnectionDescriptor): Option[Listener] =
     details match
         case ConnectionDescriptor.QueuedLocal(id) => queued.get(id).map(_.server)
         case _                                    => None
 
-  def synchronousServer(details: ConnectionDescriptor): Option[LatentConnection[ConnectionDescriptor]] =
+  override def connect(details: ConnectionDescriptor): Option[Connector] =
     details match
-        case ConnectionDescriptor.SynchronousLocal(id) => synchronous.get(id).map(_.server)
-        case _                                         => None
-
-  override def connect(details: ConnectionDescriptor): Option[LatentConnection[Connection]] =
-    details match
-        case ConnectionDescriptor.QueuedLocal(id)      => queued.get(id).map(_.client(id))
-        case ConnectionDescriptor.SynchronousLocal(id) => synchronous.get(id).map(_.client(id))
-        case _                                         => None
+        case ConnectionDescriptor.QueuedLocal(id) => queued.get(id).map(_.client(id))
+        case _                                    => None
 }

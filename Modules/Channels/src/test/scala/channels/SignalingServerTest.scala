@@ -1,6 +1,6 @@
 package channels
 
-import channels.connection.{Abort, ChannelResolver, Connection, ConnectionDescriptor, LatentConnection, SynchronousLocalConnection}
+import channels.connection.{Abort, ChannelResolver, ConnectionDescriptor, Connector, LocalMessageQueue, QueuedLocalConnection}
 import channels.experiments.{SignalingClient, SignalingServer}
 import de.rmgk.delay.Async
 import munit.FunSuite
@@ -19,14 +19,15 @@ class SignalingServerTest extends FunSuite {
 
   final private class Fixture {
     val abort: Abort                        = Abort()
-    val link: SynchronousLocalConnection    = SynchronousLocalConnection("signal")
-    val serverDetails: ConnectionDescriptor = ConnectionDescriptor.SynchronousLocal("signal")
+    val queue: LocalMessageQueue            = LocalMessageQueue()
+    val link: QueuedLocalConnection         = QueuedLocalConnection("signal", queue)
+    val serverDetails: ConnectionDescriptor = ConnectionDescriptor.QueuedLocal("signal")
     val server: SignalingServer             = SignalingServer(debug = false)
     server.addIncomingConnection(link.server)
 
     def resolverFor(id: String): ChannelResolver = new ChannelResolver {
-      override def connect(details: ConnectionDescriptor): Option[LatentConnection[Connection]] =
-        if details == serverDetails then Some(link.client(s"$id"))
+      override def connect(details: ConnectionDescriptor): Option[Connector] =
+        if details == serverDetails then Some(QueueDrainingConnection.drainingAfterSend(link.client(s"$id"), queue))
         else None
     }
   }

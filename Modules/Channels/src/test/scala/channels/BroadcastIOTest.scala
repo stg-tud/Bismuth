@@ -2,7 +2,7 @@ package channels
 
 import channels.BroadcastIO
 import channels.JsoniterCodecs.given
-import channels.connection.{ConnectionDescriptor, LocalConnectionRegistry, LocalMessageQueue, PeerConnectInfo, QueuedLocalConnection, SynchronousLocalConnection}
+import channels.connection.{ConnectionDescriptor, LocalConnectionRegistry, LocalMessageQueue, PeerConnectInfo, QueuedLocalConnection}
 import channels.overlay.FullMeshOverlay
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
@@ -20,15 +20,18 @@ class BroadcastIOTest extends munit.FunSuite {
       BroadcastIO[Set[String]](uid, _ => ())
     }
 
-    val sync = SynchronousLocalConnection("sync-basics")
+    val queue = LocalMessageQueue()
+    val link  = QueuedLocalConnection("basics", queue)
 
-    dd2.addClientConnection(sync.client("2"))
-    dd1.addServerConnection(sync.server)
-    dd3.addClientConnection(sync.client("3"))
+    dd2.addClientConnection(link.client("2"))
+    dd1.addServerConnection(link.server)
+    dd3.addClientConnection(link.client("3"))
 
     dd1.broadcast(Set("a"))
     dd2.broadcast(Set("b"))
     dd3.broadcast(Set("c"))
+
+    while queue.nonEmpty do queue.deliverAll(): Unit
 
     assertEquals(
       dd1.allPayloads.map(_.data).toSet,

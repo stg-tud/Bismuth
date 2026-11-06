@@ -1,6 +1,6 @@
 package channels
 
-import channels.connection.{Abort, Connection, ConnectionDescriptor, ConnectionInfo, LatentConnection, LocalMessageQueue, MessageBuffer, QueuedLocalConnection, Receive, SynchronousLocalConnection}
+import channels.connection.{Abort, Connection, ConnectionDescriptor, ConnectionInfo, Connector, Listener, LocalMessageQueue, MessageBuffer, QueuedLocalConnection, Receive}
 import de.rmgk.delay.{Async, Callback, Sync}
 
 import scala.util.{Failure, Success}
@@ -24,12 +24,28 @@ final class QueueDrainingConnection(inner: Connection, queue: LocalMessageQueue)
   }
 }
 
-final class ImmediateServer[CD <: ConnectionDescriptor, Establish](
-    descriptor: CD,
+object QueueDrainingConnection {
+
+  /** Wraps the connection produced by `connector`, so that every send on it delivers all queued messages. */
+  def drainingAfterSend(connector: Connector, queue: LocalMessageQueue): Connector = new Connector {
+    override def connect(receiver: Receive): Async[Abort, Connection] = {
+      var wrapped: QueueDrainingConnection | Null = null
+      connector.connect(new Receive {
+        override def connectionEstablished(answers: Connection): Callback[MessageBuffer] = {
+          wrapped = QueueDrainingConnection(answers, queue)
+          receiver.connectionEstablished(wrapped.nn)
+        }
+      }).map(_ => wrapped.nn)
+    }
+  }
+}
+
+final class ImmediateServer[Establish](
+    descriptor: ConnectionDescriptor,
     register: Callback[Establish] => Unit,
     connect: (Receive, Establish) => Unit
-) extends LatentConnection[CD] {
-  override def prepare(receiver: Receive): Async[Abort, CD] = Sync {
+) extends Listener {
+  override def listen(receiver: Receive): Async[Abort, ConnectionDescriptor] = Sync {
     register(new Callback[Establish] {
       override def complete(result: scala.util.Try[Establish]): Unit = result match {
         case Success(establish) => connect(receiver, establish)
@@ -40,52 +56,27 @@ final class ImmediateServer[CD <: ConnectionDescriptor, Establish](
   }
 }
 
-class EchoServerTestSynchronousLocal extends EchoCommunicationTest[ConnectionDescriptor.SynchronousLocal](
-      { (_, _) =>
-        EchoServerTestSynchronousLocal.current = SynchronousLocalConnection("echo-sync")
-        val current = EchoServerTestSynchronousLocal.current
-        ImmediateServer[ConnectionDescriptor.SynchronousLocal, current.server.Establish](
-          ConnectionDescriptor.SynchronousLocal("echo-sync"),
-          cb => current.server.connectionEstablished.succeed(cb),
-          (receiver, establish) =>
-            establish.clientConnectionSendsTo.succeed(receiver.connectionEstablished(establish.serverSendsOn))
-        )
-      },
-      (_, _) => _ => EchoServerTestSynchronousLocal.current.client("client")
-    ) {
-  override def supportsDisconnectDetection: Boolean = false
-}
-
-object EchoServerTestSynchronousLocal {
-  var current: SynchronousLocalConnection = scala.compiletime.uninitialized
-}
-
-class EchoServerTestQueuedLocal extends EchoCommunicationTest[ConnectionDescriptor.QueuedLocal](
+class EchoServerTestQueuedLocal extends EchoCommunicationTest(
       { (_, _) =>
         val queue = LocalMessageQueue()
         EchoServerTestQueuedLocal.current =
           EchoServerTestQueuedLocal.QueuedState(queue, QueuedLocalConnection("echo-queued", queue))
         val current = EchoServerTestQueuedLocal.current
-        ImmediateServer[ConnectionDescriptor.QueuedLocal, current.link.server.Establish](
+        ImmediateServer[current.link.server.Establish](
           ConnectionDescriptor.QueuedLocal("echo-queued"),
           cb => current.link.server.connectionEstablished.succeed(cb),
           (receiver, establish) =>
             establish.clientConnectionSendsTo.succeed(receiver.connectionEstablished(establish.serverSendsOn))
         )
       },
-      (_, _) =>
-        _ =>
-          new LatentConnection[Connection] {
-            override def prepare(receiver: Receive): Async[Abort, Connection] = {
-              var wrapped: QueueDrainingConnection | Null = null
-              EchoServerTestQueuedLocal.current.link.client("client").prepare(new Receive {
-                override def connectionEstablished(answers: Connection): Callback[MessageBuffer] = {
-                  wrapped = QueueDrainingConnection(answers, EchoServerTestQueuedLocal.current.queue)
-                  receiver.connectionEstablished(wrapped.nn)
-                }
-              }).map(_ => wrapped.nn)
-            }
-          }
+      (_, _) => {
+        case ConnectionDescriptor.QueuedLocal("echo-queued") =>
+          Some(QueueDrainingConnection.drainingAfterSend(
+            EchoServerTestQueuedLocal.current.link.client("client"),
+            EchoServerTestQueuedLocal.current.queue
+          ))
+        case _ => None
+      }
     )
 
 object EchoServerTestQueuedLocal {

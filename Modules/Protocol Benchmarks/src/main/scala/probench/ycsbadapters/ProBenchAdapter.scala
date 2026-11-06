@@ -2,7 +2,7 @@ package probench.ycsbadapters
 
 import channels.connection.Abort
 import channels.{ConcurrencyHelper, NioTCP}
-import probench.cli.addRetryingLatentConnection
+import probench.cli.addRetryingConnection
 import probench.clients.ProBenchClient
 import probench.ycsbadapters.ProBenchAdapterConnectionPool.syncClient
 import rdts.base.Uid
@@ -46,13 +46,13 @@ object ProBenchAdapterConnectionPool {
     if connections.contains(ip, port) then ()
     else
         println(s"adding connection to $ip:$port")
-        addRetryingLatentConnection(
+        addRetryingConnection(
           pbClient.writeDataManager,
           nioTCP.connect(nioTCP.defaultSocketChannel(InetSocketAddress(ip, port))),
           1000,
           10
         )
-        addRetryingLatentConnection(
+        addRetryingConnection(
           pbClient.readDataManager,
           nioTCP.connect(nioTCP.defaultSocketChannel(InetSocketAddress(ip, port - 1))),
           1000,

@@ -3,17 +3,20 @@ package channels
 import channels.connection.ConnectionDescriptor
 
 import java.net.{DatagramSocket, InetSocketAddress, StandardProtocolFamily, UnixDomainSocketAddress}
-import java.nio.channels.{ServerSocketChannel, SocketChannel}
+import java.nio.channels.ServerSocketChannel
 import java.nio.file.Files
 
-class EchoServerTestUDP extends EchoCommunicationTest[ConnectionDescriptor.Udp](
+class EchoServerTestUDP extends EchoCommunicationTest(
       (ec, _) => {
         // don’t do this normally, but we need a free random socket
         val ds = new DatagramSocket()
         UDP.listen(() => ds, ec)
       },
-      (ec, _) =>
-        descriptor => UDP.connect(InetSocketAddress(descriptor.host, descriptor.port), () => new DatagramSocket(), ec)
+      (ec, _) => {
+        case ConnectionDescriptor.Udp(host, port) =>
+          Some(UDP.connect(InetSocketAddress(host, port), () => new DatagramSocket(), ec))
+        case _ => None
+      }
     ) {
   override def supportsDisconnectDetection: Boolean = false
 }
@@ -26,7 +29,7 @@ def domainSocketHelperNonensese(name: String): UnixDomainSocketAddress = {
   UnixDomainSocketAddress.of(socketPath)
 }
 
-class EchoServerTestNioTCP extends EchoCommunicationTest[ConnectionDescriptor.TcpWebSocket | ConnectionDescriptor.Unix](
+class EchoServerTestNioTCP extends EchoCommunicationTest(
       { (ec, abort) =>
         val socket = ServerSocketChannel.open(StandardProtocolFamily.UNIX)
 
@@ -43,24 +46,8 @@ class EchoServerTestNioTCP extends EchoCommunicationTest[ConnectionDescriptor.Tc
         nioTCP.listen(bindsocket = () => socket)
       },
       (ec, abort) => {
-        case descriptor: ConnectionDescriptor.Unix =>
-          def socketChannel: SocketChannel = {
-            val channel = SocketChannel.open(StandardProtocolFamily.UNIX)
-            channel.connect(UnixDomainSocketAddress.of(descriptor.path))
-            channel.configureBlocking(false)
-            channel
-          }
-
-          val nioTCP = new NioTCP(ConcurrencyHelper.makeExecutionContext(false))
-
-          ec.execute(() => nioTCP.loopSelection(abort))
-
-          nioTCP.connect(() => socketChannel)
-        case descriptor: ConnectionDescriptor.TcpWebSocket =>
-          val nioTCP = new NioTCP(ConcurrencyHelper.makeExecutionContext(false))
-
-          ec.execute(() => nioTCP.loopSelection(abort))
-
-          nioTCP.connect(nioTCP.defaultSocketChannel(InetSocketAddress(descriptor.host, descriptor.port)))
+        val nioTCP = new NioTCP(ConcurrencyHelper.makeExecutionContext(false))
+        ec.execute(() => nioTCP.loopSelection(abort))
+        NioTcpConnectionDetailsResolver(nioTCP)
       }
     )

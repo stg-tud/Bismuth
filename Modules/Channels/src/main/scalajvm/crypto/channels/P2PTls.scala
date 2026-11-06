@@ -1,6 +1,6 @@
 package crypto.channels
 
-import channels.connection.{Abort, ByteBufferMessageBuffer, Connection, ConnectionDescriptor, ConnectionInfo, LatentConnection, MessageBuffer, Receive}
+import channels.connection.{Abort, ByteBufferMessageBuffer, Connection, ConnectionDescriptor, ConnectionInfo, Connector, Listener, MessageBuffer, Receive}
 import crypto.PublicIdentity
 import crypto.channels.{P2PX509TrustManager, X509Util}
 import de.rmgk.delay.{Async, Sync}
@@ -42,9 +42,9 @@ class P2PTls(privateIdentity: PrivateIdentity) {
     latentListener(addr, 0, ec)
   }
 
-  def latentConnect(host: String, port: Int, ec: ExecutionContext): LatentConnection[Connection] =
-    new LatentConnection[Connection] {
-      override def prepare(receiver: Receive): Async[Abort, Connection] = Async[Abort] {
+  def latentConnect(host: String, port: Int, ec: ExecutionContext): Connector =
+    new Connector {
+      override def connect(receiver: Receive): Async[Abort, Connection] = Async[Abort] {
         val socket = sslFactory.getSslSocketFactory
           .createSocket(host, port)
           .asInstanceOf[SSLSocket]
@@ -76,7 +76,7 @@ class P2PTls(privateIdentity: PrivateIdentity) {
       val ifAddress: InetAddress,
       _listenPort: Int = 0,
       executionContext: ExecutionContext
-  ) extends LatentConnection[ConnectionDescriptor.Tcp] {
+  ) extends Listener {
     require(_listenPort >= 0 && _listenPort <= 0xffff)
 
     private lazy val serverSocket: SSLServerSocket = sslFactory.getSslServerSocketFactory
@@ -89,7 +89,7 @@ class P2PTls(privateIdentity: PrivateIdentity) {
       */
     def listenPort: Int = serverSocket.getLocalPort
 
-    override def prepare(receiver: Receive): Async[Abort, ConnectionDescriptor.Tcp] =
+    override def listen(receiver: Receive): Async[Abort, ConnectionDescriptor.Tcp] =
       Async.fromCallback { (abort: Abort) ?=>
         try
             serverSocket // binds port if required

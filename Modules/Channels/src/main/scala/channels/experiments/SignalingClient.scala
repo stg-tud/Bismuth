@@ -71,7 +71,7 @@ class SignalingClient(
                   promise.future.onComplete(Async.handler.complete)
                   resolver.connect(server) match
                       case Some(latent) =>
-                        latent.prepare(receive(_)).runIn(abort) {
+                        latent.connect(receive(_)).runIn(abort) {
                           case Success(conn) =>
                             synchronized {
                               connection = Some(conn)

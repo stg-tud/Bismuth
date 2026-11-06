@@ -1,7 +1,7 @@
 package channels.experiments
 
 import channels.JsoniterCodecs.given
-import channels.connection.{Abort, ByteBufferMessageBuffer, Connection, LatentConnection, Receive}
+import channels.connection.{Abort, ByteBufferMessageBuffer, Connection, Connector, Listener, Receive}
 import channels.experiments.SignalingServer.Message
 import com.github.plokhotnyuk.jsoniter_scala.core.{readFromByteBuffer, writeToArray}
 import rdts.base.Uid
@@ -55,8 +55,14 @@ class SignalingServer(debug: Boolean) {
 
   def stop(): Unit = abort.abort()
 
-  def addIncomingConnection(latent: LatentConnection[?]): Unit =
-    latent.prepare(receive).runIn(abort) {
+  def addIncomingConnection(connector: Connector): Unit =
+    connector.connect(receive).runIn(abort) {
+      case Success(_)  => ()
+      case Failure(ex) => ex.printStackTrace()
+    }
+
+  def addIncomingConnection(listener: Listener): Unit =
+    listener.listen(receive).runIn(abort) {
       case Success(_)  => ()
       case Failure(ex) => ex.printStackTrace()
     }

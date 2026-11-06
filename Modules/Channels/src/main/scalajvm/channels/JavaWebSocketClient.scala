@@ -1,6 +1,6 @@
 package channels
 
-import channels.connection.{ByteBufferMessageBuffer, Connection, ConnectionDescriptor, ConnectionInfo, LatentConnection, MessageBuffer, NoMoreDataException, Receive}
+import channels.connection.{ByteBufferMessageBuffer, Connection, ConnectionDescriptor, ConnectionInfo, Connector, Listener, MessageBuffer, NoMoreDataException, Receive}
 import de.rmgk.delay.{Async, Callback, toAsync}
 
 import java.net.URI
@@ -10,9 +10,9 @@ import java.util.concurrent.CompletionStage
 
 object JavaWebSocketClient {
 
-  def connect(client: HttpClient, uri: URI): LatentConnection[Connection] =
-    new LatentConnection[Connection] {
-      override def prepare(incoming: Receive): Async[Any, Connection] =
+  def connect(client: HttpClient, uri: URI): Connector =
+    new Connector {
+      override def connect(incoming: Receive): Async[Any, Connection] =
         Async {
           val listener = new JavaWebSocketListener()
           val socket   = client.newWebSocketBuilder().buildAsync(uri, listener).toAsync.bind

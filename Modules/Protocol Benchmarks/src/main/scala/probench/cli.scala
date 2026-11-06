@@ -1,6 +1,6 @@
 package probench
 
-import channels.connection.{Abort, Connection, LatentConnection}
+import channels.connection.{Abort, Connector}
 import channels.{BroadcastIO, DeltaStorage, *}
 import de.rmgk.options.*
 import de.rmgk.options.Result.{Err, Ok}
@@ -21,15 +21,15 @@ object cli {
   private val executor: ExecutorService = Executors.newCachedThreadPool()
   private val ec: ExecutionContext      = ExecutionContext.fromExecutor(executor)
 
-  def addRetryingLatentConnection[A](
+  def addRetryingConnection(
       dataManager: BroadcastIO[?],
-      connection: LatentConnection[A],
+      connection: Connector,
       delay: Long,
       tries: Int
   ): Unit =
 
     // TODO, does not actually retry anymore 😬
-    dataManager.addClientConnection(connection.asInstanceOf[LatentConnection[Connection]])
+    dataManager.addClientConnection(connection)
 
   def main(args: Array[String]): Unit = {
 
@@ -218,7 +218,7 @@ object cli {
 
                 cluster.value.foreach { (host, port) =>
                   println(s"Connecting to $host:$port")
-                  addRetryingLatentConnection(
+                  addRetryingConnection(
                     node.dataManagers(Set(leader, follower1, follower2, follower3, follower4)),
                     nioTCP.connect(nioTCP.defaultSocketChannel(socketPath(host, port))),
                     1000,
@@ -283,14 +283,14 @@ object cli {
 
                 cluster.value.foreach { (host, port) =>
                   println(s"Connecting to $host:$port")
-                  addRetryingLatentConnection(
+                  addRetryingConnection(
                     node.dataManagers(Set(leader, follower1, follower2, follower3, follower4)),
                     nioTCP.connect(nioTCP.defaultSocketChannel(socketPath(host, port))),
                     1000,
                     10
                   )
                   println(s"Connecting to $host:${port + 1}")
-                  addRetryingLatentConnection(
+                  addRetryingConnection(
                     node.dataManagers(Set(client, leader, follower1, follower2, follower3, follower4)),
                     nioTCP.connect(nioTCP.defaultSocketChannel(socketPath(host, port + 1))),
                     1000,
@@ -374,7 +374,7 @@ object cli {
                 if uid == Uid.predefined("proxy1") then {
                   cluster.value.foreach { (host, port) =>
                     println(s"Connecting to $host:$port")
-                    addRetryingLatentConnection(
+                    addRetryingConnection(
                       node.dataManagers(Set(leader, proxy1)),
                       nioTCP.connect(nioTCP.defaultSocketChannel(socketPath(host, port))),
                       1000,
@@ -385,7 +385,7 @@ object cli {
                 if uid == Uid.predefined("proxy2") then {
                   cluster.value.foreach { (host, port) =>
                     println(s"Connecting to $host:$port")
-                    addRetryingLatentConnection(
+                    addRetryingConnection(
                       node.dataManagers(Set(leader, proxy2)),
                       nioTCP.connect(nioTCP.defaultSocketChannel(socketPath(host, port + 1))),
                       1000,
@@ -396,7 +396,7 @@ object cli {
                 if (uid == Uid.predefined("follower1")) || (uid == Uid.predefined("follower3")) then {
                   cluster.value.foreach { (host, port) =>
                     println(s"Connecting to $host:$port")
-                    addRetryingLatentConnection(
+                    addRetryingConnection(
                       node.dataManagers(Set(proxy1, follower1, follower3)),
                       nioTCP.connect(nioTCP.defaultSocketChannel(socketPath(host, port))),
                       1000,
@@ -407,7 +407,7 @@ object cli {
                 if (uid == Uid.predefined("follower2")) || (uid == Uid.predefined("follower4")) then {
                   cluster.value.foreach { (host, port) =>
                     println(s"Connecting to $host:$port")
-                    addRetryingLatentConnection(
+                    addRetryingConnection(
                       node.dataManagers(Set(proxy2, follower2, follower4)),
                       nioTCP.connect(nioTCP.defaultSocketChannel(socketPath(host, port))),
                       1000,
@@ -475,28 +475,28 @@ object cli {
 
           cluster.value.foreach { (host, port) =>
             println(s"Connecting to $host:${port + 1}")
-            addRetryingLatentConnection(
+            addRetryingConnection(
               node.connInf.dataManager,
               nioTCP.connect(nioTCP.defaultSocketChannel(socketPath(host, port + 1))),
               1000,
               10
             )
             println(s"Connecting to $host:$port")
-            addRetryingLatentConnection(
+            addRetryingConnection(
               node.cluster.dataManager,
               nioTCP.connect(nioTCP.defaultSocketChannel(socketPath(host, port))),
               1000,
               10
             )
 //            println(s"Connecting to $host:${port - 1}")
-//            addRetryingLatentConnection(
+//            addRetryingConnection(
 //              node.client.dataManagerWrite,
 //              nioTCP.connect(nioTCP.defaultSocketChannel(socketPath(host, port - 1))),
 //              1000,
 //              10
 //            )
 //            println(s"Connecting to $host:${port - 2}")
-//            addRetryingLatentConnection(
+//            addRetryingConnection(
 //              node.client.dataManagerRead,
 //              nioTCP.connect(nioTCP.defaultSocketChannel(socketPath(host, port - 2))),
 //              1000,
@@ -534,7 +534,7 @@ object cli {
           val abort  = Abort()
           ec.execute(() => nioTCP.loopSelection(abort))
 
-          addRetryingLatentConnection(
+          addRetryingConnection(
             client.writeDataManager,
             nioTCP.connect(nioTCP.defaultSocketChannel(socketPath(ip, port))),
             1000,
@@ -569,7 +569,7 @@ object cli {
           val abort  = Abort()
           ec.execute(() => nioTCP.loopSelection(abort))
 
-          addRetryingLatentConnection(
+          addRetryingConnection(
             client.writeDataManager,
             nioTCP.connect(nioTCP.defaultSocketChannel(socketPath(ip, port))),
             1000,
