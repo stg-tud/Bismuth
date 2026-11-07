@@ -1,6 +1,7 @@
 // Compiles the scitzen documentation (documentation/) for the website.
 // Runs before `astro build` / `astro dev`; in dev, recompiles when files in documentation/ change and reloads the browser.
-// The html is read by src/lib/scitzen.ts, the resources (images etc.) are copied to public/documentation/resources.
+// The html is read by src/lib/scitzen.ts. The resources (images, linked source files, …) that the html references
+// relative to documentation/<article>.html are served from scitzen.out/web/resources in dev and copied into the build output.
 import { execFile } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
@@ -9,13 +10,18 @@ import { promisify } from "node:util";
 
 const run = promisify(execFile);
 
+const types = { ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".gif": "image/gif", ".svg": "image/svg+xml", ".webp": "image/webp", ".pdf": "application/pdf", ".css": "text/css", ".js": "text/javascript" };
+/** everything else scitzen copies is mostly source code, which browsers should display as text */
+const contentType = (file) => types[path.extname(file).toLowerCase()] ?? "text/plain; charset=utf-8";
+
 /** @returns {import("astro").AstroIntegration} */
 export default function scitzen() {
 	const website = fileURLToPath(new URL("..", import.meta.url));
 	const docs = path.join(website, "documentation");
 	const out = path.join(docs, "scitzen.out");
 	const template = path.join(website, "scitzen-template.html.scim");
-	const resourcesTarget = path.join(website, "public/documentation/resources");
+	const resources = path.join(out, "web/resources");
+	let base = "/";
 
 	/** compiles a single file (relative to documentation/; non-article files select nothing), or the whole project if `target` is "." */
 	async function compile(logger, target = ".") {
@@ -27,9 +33,6 @@ export default function scitzen() {
 			logger.error(`compiling documentation/ failed: ${reason}`);
 			return false;
 		}
-		fs.rmSync(resourcesTarget, { recursive: true, force: true });
-		const resources = path.join(out, "web/resources");
-		if (fs.existsSync(resources)) fs.cpSync(resources, resourcesTarget, { recursive: true });
 		logger.info(`compiled ${target === "." ? "documentation/" : target} in ${Date.now() - start}ms`);
 		return true;
 	}
@@ -37,12 +40,24 @@ export default function scitzen() {
 	return {
 		name: "scitzen",
 		hooks: {
-			"astro:config:setup": async ({ command, logger }) => {
+			"astro:config:setup": async ({ command, config, logger }) => {
+				base = config.base.replace(/\/?$/, "/");
 				if (command !== "dev" && command !== "build") return;
 				const ok = await compile(logger);
 				if (!ok && command === "build") throw new Error("scitzen compilation failed");
 			},
 			"astro:server:setup": ({ server, logger }) => {
+				// vite strips the base from request urls before they reach this middleware, accept both forms
+				const prefixes = [`${base}documentation/resources/`, "/documentation/resources/"];
+				server.middlewares.use((req, res, next) => {
+					const pathname = decodeURIComponent((req.url ?? "").split("?")[0]);
+					const prefix = prefixes.find((p) => pathname.startsWith(p));
+					if (!prefix) return next();
+					const file = path.join(resources, pathname.slice(prefix.length));
+					if (!file.startsWith(resources + path.sep) || !fs.statSync(file, { throwIfNoEntry: false })?.isFile()) return next();
+					res.setHeader("Content-Type", contentType(file));
+					fs.createReadStream(file).pipe(res);
+				});
 				// changed files are compiled individually (scitzen only regenerates the output of the given file).
 				// scitzen does not clean up the output of deleted articles, so deletions clear the output and rebuild everything
 				const pending = new Set();
@@ -72,6 +87,9 @@ export default function scitzen() {
 				server.watcher.on("change", (file) => schedule(file, "change"));
 				server.watcher.on("add", (file) => schedule(file, "add"));
 				server.watcher.on("unlink", (file) => schedule(file, "unlink"));
+			},
+			"astro:build:done": ({ dir }) => {
+				if (fs.existsSync(resources)) fs.cpSync(resources, path.join(fileURLToPath(dir), "documentation/resources"), { recursive: true, dereference: true });
 			},
 		},
 	};

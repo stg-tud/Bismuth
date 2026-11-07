@@ -1,4 +1,3 @@
 .astro/
 node_modules/
 target/
-public/documentation/
