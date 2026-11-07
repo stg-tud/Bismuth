@@ -69,17 +69,18 @@ open-in-podman command="fish":
 	rm -rf target/out # need to delete out otherwise host sbt will not work
 
 
-# collect website inputs: scitzen articles (rendered with the minimal template the website ingests) and the Scala.js output of the web demos
+# collect website inputs: the Scala.js output of the web demos (the scitzen documentation is compiled by astro, see Website/integrations/scitzen.mjs)
 [private]
 websitePrepare: webappsPrepare
 	sbt examplesJS/fullLinkJS
-	cd Documentation && scitzen compile --html --html-template ../Website/scitzen-template.html.scim .
-	rm -rf Website/public/documentation
-	mkdir -p Website/public/documentation
-	cp -r Documentation/scitzen.out/web/resources Website/public/documentation/
 
 websiteServe: websitePrepare
 	cd Website && pnpm exec astro dev
+
+# production build (fullLinkJS, bundled assets) served like on github pages, i.e., under /Bismuth/
+websitePreview: websitePrepare
+	cd Website && pnpm exec astro build --outDir ../target/website-preview
+	cd Website && pnpm exec astro preview --outDir ../target/website-preview
 
 # build into the `website` branch (worktree in website-deploy/, published by github pages from docs/) and commit; push manually
 websiteDeploy: websitePrepare

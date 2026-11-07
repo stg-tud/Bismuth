@@ -1,5 +1,6 @@
 import { defineConfig } from "astro/config";
 import { fileURLToPath } from "node:url";
+import scitzen from "./integrations/scitzen.mjs";
 
 /** `scalajs:examples` resolves to the Scala.js output of `sbt examplesJS/fastLinkJS` in dev and `fullLinkJS` in builds */
 const scalajsExamples = {
@@ -53,5 +54,5 @@ export default defineConfig({
 	// "preserve": pages/x/index.astro -> x/index.html, but documentation/[article].astro -> documentation/<article>.html,
 	// i.e., scitzen articles keep their original relative position to their resources/
 	build: { format: "preserve" },
-	integrations: [scalajsExamples],
+	integrations: [scalajsExamples, scitzen()],
 });
