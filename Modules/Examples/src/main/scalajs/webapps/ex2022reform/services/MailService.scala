@@ -1,0 +1,131 @@
+package webapps.ex2022reform.services
+
+import cats.effect.SyncIO
+import webapps.ex2022reform.JSImplicits
+import webapps.ex2022reform.entity.{Hiwi, Supervisor}
+import webapps.ex2022reform.npm.JSUtils.toGermanDate
+import org.scalajs.dom.*
+import outwatch.*
+import outwatch.dsl.*
+
+import scala.collection.mutable.ArrayBuffer
+import scala.concurrent.{Future, Promise}
+
+class MailService {
+  @scala.annotation.unused
+  private object MailBody
+
+  @scala.annotation.unused
+  class MailAnswer(val accepted: Seq[String], val rejected: Seq[String]) {}
+
+  def sendMail(using
+      jsImplicits: JSImplicits
+  )(
+      to: String,
+      from: String,
+      fromName: String,
+      mail: Mail,
+      bcc: Seq[String] = Seq.empty,
+  ): Future[MailAnswer] = {
+    val promise = Promise[MailAnswer]()
+    val element = document.createElement("div")
+    Outwatch.renderInto[SyncIO](element, mail.body).unsafeRunSync()
+
+    if jsImplicits.discovery.tokenIsValid(jsImplicits.discovery.token.now) then {
+      println("[MailService] sending mail disabled (scala-loci removed)")
+      promise.failure(new Exception("Mail service disabled"))
+    }
+
+    promise.future
+  }
+}
+
+class MailAttachment(
+    val filename: String,
+    val content: ArrayBuffer[Short],
+    val contentType: String = "application/pdf",
+) {}
+
+/** Please note the following: In order for emails to be displayed correctly:
+  *   - all images are absolute links (https://...)
+  *   - all styles be inline (with styleAttr)
+  */
+
+abstract class Mail(val subject: String) {
+  val body: VNode
+  val attachments: Seq[MailAttachment] = Seq.empty
+}
+
+class ReminderMail(hiwi: Hiwi, supervisor: Supervisor, due: Long, missingDocuments: Seq[String])
+    extends Mail("Reminder") {
+  val body: VNode = div(
+    p("Hallo ", hiwi.firstName.getOrElse(""), " ", hiwi.lastName.getOrElse(""), ","),
+    p("Wir möchten Sie freundlich daran erinnern Ihre Unterlagen bis zum ", i(toGermanDate(due)), " einzureichen."),
+    p("Es fehlen noch folgende Unterlage(n): ", ol(missingDocuments.map(li(_)))),
+    Signature(supervisor.name.getOrElse("")),
+  )
+}
+
+class DekanatMail(hiwi: Hiwi, supervisor: Supervisor, letter: ArrayBuffer[Short])
+    extends Mail("Hiwistelle Software Technology Group") {
+  val body: VNode = div(
+    p("Sehr geehrte Damen und Herren, "),
+    p(
+      "Im Anhang finden Sie ein förmliches Anschreiben bezüglich der Anstellung des Hiwis ",
+      hiwi.firstName.getOrElse(""),
+      " ",
+      hiwi.lastName.getOrElse(""),
+      ".",
+    ),
+    Signature(supervisor.name.getOrElse("")),
+  )
+
+  override val attachments: Seq[MailAttachment] = Seq(
+    new MailAttachment(
+      s"Anstellung-${hiwi.firstName.getOrElse("")}-${hiwi.lastName.getOrElse("")}.pdf",
+      letter,
+      "application/pdf",
+    ),
+  )
+}
+
+class ContractEmail(hiwi: Hiwi, supervisor: Supervisor, due: Long, contract: ArrayBuffer[Short])
+    extends Mail("Hiwistelle Software Technology Group") {
+  val body: VNode = div(
+    p("Hallo ", hiwi.firstName.getOrElse(""), " ", hiwi.lastName.getOrElse(""), ","),
+    p(
+      "Im Anhang findest du den Arbeitsvertrag. Bitte schicke uns den Vertrag ausgefüllt bis zum ",
+      i(toGermanDate(due)),
+      " zurück.",
+    ),
+    p("Vielen Dank!"),
+    Signature(supervisor.name.getOrElse("")),
+  )
+
+  override val attachments: Seq[MailAttachment] = Seq(
+    new MailAttachment(
+      s"Vertrag-${hiwi.firstName.getOrElse("")}-${hiwi.lastName.getOrElse("")}.pdf",
+      contract,
+      "application/pdf",
+    ),
+  )
+}
+
+object Signature {
+  def apply(name: String): VNode =
+    p(
+      "Mit freundlichen Grüßen,",
+      br,
+      name,
+      br,
+      "--",
+      br,
+      "Software Technology Group",
+      br,
+      "Hochschulstraße 10",
+      br,
+      "64289 Darmstadt",
+      br,
+      a(href := "https://www.stg.tu-darmstadt.de/", "https://www.stg.tu-darmstadt.de/"),
+    )
+}

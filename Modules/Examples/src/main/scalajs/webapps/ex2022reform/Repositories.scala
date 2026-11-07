@@ -1,0 +1,31 @@
+package webapps.ex2022reform
+
+import webapps.ex2022reform.entity.{Document, *}
+import webapps.ex2022reform.npm.IIndexedDB
+import webapps.ex2022reform.repo.Repository
+
+case class Repositories(
+    projects: Repository[Project],
+    users: Repository[User],
+    hiwis: Repository[Hiwi],
+    supervisors: Repository[Supervisor],
+    contractSchemas: Repository[ContractSchema],
+    paymentLevels: Repository[PaymentLevel],
+    salaryChanges: Repository[SalaryChange],
+    requiredDocuments: Repository[Document],
+    contracts: Repository[Contract],
+)
+
+object Repositories {
+  def apply()(using indexedDb: IIndexedDB): Repositories = this(
+    Repository("project", Project.empty),
+    Repository("user", User.empty),
+    Repository("hiwi", Hiwi.empty),
+    Repository("supervisor", Supervisor.empty),
+    Repository("contract-schema", ContractSchema.empty),
+    Repository("payment-level", PaymentLevel.empty),
+    Repository("salary-change", SalaryChange.empty),
+    Repository("required-document", Document.empty),
+    Repository("contracts", Contract.empty),
+  )
+}

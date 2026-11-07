@@ -1,0 +1,31 @@
+package webapps.ex2022reform.entity
+
+import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
+import com.github.plokhotnyuk.jsoniter_scala.macros.*
+import webapps.ex2022reform.BasicCodecs.given
+import rdts.base.*
+
+case class PaymentLevel(
+    title: Attribute[String] = Attribute.empty,
+    pdfCheckboxName: Attribute[String] = Attribute.empty,
+    _exists: Attribute[Boolean] = Attribute.empty,
+) extends Entity[PaymentLevel]
+    derives Lattice,
+      Bottom {
+
+  // empty for required fields, default for optional fields
+  def default: PaymentLevel = PaymentLevel(Attribute.empty, Attribute.empty, Attribute(true))
+
+  def identifier: Attribute[String] = title
+
+  def withExists(exists: Boolean): PaymentLevel =
+    this.copy(_exists = _exists.set(exists))
+
+  override def exists: Boolean = _exists.getOrElse(true)
+}
+
+object PaymentLevel {
+  val empty: PaymentLevel = PaymentLevel()
+
+  given codec: JsonValueCodec[PaymentLevel] = JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))
+}

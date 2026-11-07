@@ -207,6 +207,7 @@ export const demos = [
 	{ id: "unit-conversion", title: "Unit Conversion", summary: "Reactive unit conversion." },
 	{ id: "overlay-graph", title: "Overlay Graph", summary: "Visualization of the overlay network." },
 	{ id: "mini-social", title: "Mini Social", summary: "A tiny replicated social network." },
+	{ id: "reform", title: "Reform", summary: "Manages student assistant contracts, with all data stored in the browser." },
 ];
 
 export interface TreeEntry {
@@ -253,11 +254,6 @@ export const repoTree: TreeEntry[] = [
 				summary: "Case studies and benchmarks: browser demos such as the todo list, calendar, and the Tabular spreadsheet, and JVM experiments from early Swing examples to BFT, access control, and blockchain.",
 			},
 			{ name: "Webview/", sbt: ["webview"], summary: "Runs the web demos in a native window, using Scala Native." },
-			{
-				name: "Reform/",
-				sbt: ["reform"],
-				summary: "Manages student assistant contracts, with all data stored in the browser and shared peer to peer.",
-			},
 		],
 	},
 	{ name: "Documentation/", summary: "Scitzen project for the manuals." },

@@ -1,0 +1,216 @@
+package webapps.ex2022reform.components
+
+import webapps.ex2022reform.components.common.{Button, ButtonStyle, LabeledInput}
+import webapps.ex2022reform.given
+import webapps.ex2022reform.utils.FutureExtensions.*
+import webapps.ex2022reform.webrtc.{PendingConnection, WebRTC}
+import webapps.ex2022reform.{given_ExecutionContext, *}
+import org.scalajs.dom.{RTCConfiguration, RTCIceServer, window}
+import outwatch.*
+import outwatch.dsl.*
+import reactives.default.*
+
+import scala.scalajs.js
+
+// NOTE: scala-loci removed – WebRTC connections via the library no longer work.
+// The UI is kept as a stub.
+
+private val webrtcConfig = new RTCConfiguration {
+  iceServers = js.Array(
+    new RTCIceServer {
+      urls = s"stun:${Globals.VITE_TURN_SERVER_HOST}:${Globals.VITE_TURN_SERVER_PORT}"
+    },
+  )
+}
+
+sealed private trait State {
+  def render(using state: Var[State]): VNode
+}
+
+private def showConnectionToken(connection: PendingConnection)(using jsImplicits: JSImplicits) =
+  connection.session.map { session =>
+    div(
+      cls := "flex gap-1 mt-2",
+      button(
+        data.token := PendingConnection.sessionAsToken(session),
+        cls := "w-fit h-fit btn btn-square rounded-xl bg-purple-200 p-2 min-h-10 border-0 hover:bg-purple-300 shadow-md group tooltip tooltip-top",
+        data.tip := "Copy",
+        icons.Clipboard(cls := "w-6 h-6 text-purple-600"),
+        onClick.foreach(_ =>
+          window.navigator.clipboard
+            .writeText(PendingConnection.sessionAsToken(session))
+            .toFuture
+            .toastOnError(),
+        ),
+      ),
+      a(
+        cls := "w-fit h-fit btn btn-square rounded-xl bg-purple-200 p-2 min-h-10 border-0 hover:bg-purple-300 shadow-md group",
+        icons.Mail(cls := "w-6 h-6 text-purple-600"),
+        href := s"mailto:?subject=REForm%20Invitation&body=Hey%2C%0A${session.alias}%20would%20like%20you%20to%20accept%20the%20following%20invitation%20to%20connect%20to%20REForm%20by%20opening%20the%20following%20URL%20in%20your%20Browser%3A%0A%0A${PendingConnection
+            .sessionAsToken(session)}%2F%0A%0ASee%20you%20there%2C%0AThe%20REForm%20Team",
+      ),
+      a(
+        cls := "w-fit h-fit btn btn-square rounded-xl bg-green-600 p-2 min-h-10 border-0 hover:bg-white shadow-md group",
+        icons.Whatsapp(cls := "w-6 h-6 group-hover:text-green-600 text-white"),
+        href := s"whatsapp://send?text=Hey%2C%0A${session.alias}%20would%20like%20you%20to%20accept%20the%20following%20invitation%20to%20connect%20to%20REForm%20by%20opening%20the%20following%20URL%20in%20your%20Browser%3A%0A%0A${PendingConnection
+            .sessionAsToken(session)}%2F%0A%0ASee%20you%20there%2C%0AThe%20REForm%20Team",
+      ),
+    )
+  }
+
+private case class Init()(using jsImplicits: JSImplicits) extends State {
+  private def initializeHostSession(using state: Var[State]): Unit = {
+    println("[ManualConnection] scala-loci removed – host session creation is a stub")
+    val pendingConnection =
+      PendingConnection.webrtcIntermediate(WebRTC.offer(webrtcConfig), alias.now)
+    state.set(HostPending(pendingConnection))
+  }
+
+  private val alias                                   = Var("")
+  override def render(using state: Var[State]): VNode =
+    div(
+      cls := "form-control w-full text-sm",
+      LabeledInput("What is your name?")(
+        tpe         := "text",
+        placeholder := "Your name",
+        onInput.value --> alias,
+        value := "",
+      ),
+      Button(
+        ButtonStyle.Primary,
+        cls := "w-full mt-2",
+        "Create Invitation",
+        disabled <-- Signal { alias.value.isBlank },
+        onClick.foreach(_ => initializeHostSession),
+      ),
+    )
+}
+
+private case class ClientAskingForHostSessionToken()(using jsImplicits: JSImplicits) extends State {
+  private val sessionToken                            = Var("")
+  private val alias                                   = Var("")
+  override def render(using state: Var[State]): VNode = div(
+    cls := "p1",
+    LabeledInput("What is your name?")(tpe := "text", placeholder := "Your name", onInput.value --> alias, value := ""),
+    LabeledInput("Please enter the code your peer has provided:")(
+      tpe         := "text",
+      placeholder := "Token",
+      cls         := "input input-bordered w-full text-sm p-2 h-fit",
+      value       := "",
+      onInput.value --> sessionToken,
+    ),
+    Button(
+      ButtonStyle.Primary,
+      "Connect",
+      cls := "w-full mt-2",
+      disabled <-- Signal { alias.value.isBlank || sessionToken.value.isBlank },
+      onClick.foreach(_ => connectToHost),
+    ),
+  )
+
+  private def connectToHost(using state: Var[State]): Unit = {
+    println("[ManualConnection] scala-loci removed – client connection is a stub")
+    val connection = PendingConnection.webrtcIntermediate(WebRTC.answer(webrtcConfig), alias.now)
+    connection.connector.set(PendingConnection.tokenAsSession(sessionToken.now).session)
+    state.set(ClientWaitingForHostConfirmation(connection, PendingConnection.tokenAsSession(sessionToken.now).alias))
+  }
+}
+
+private case class ClientWaitingForHostConfirmation(connection: PendingConnection, alias: String)(using
+    jsImplicits: JSImplicits,
+) extends State {
+  println("[ManualConnection] scala-loci removed – client waiting for host is a stub")
+
+  override def render(using state: Var[State]): VNode = div(
+    cls := "p-1",
+    span(
+      cls := "label label-text text-slate-500 dark:text-gray-300",
+      "Please share the code with the peer that invited you to finish the connection.",
+    ),
+    showConnectionToken(connection),
+  )
+}
+
+private case class HostPending(connection: PendingConnection)(using
+    jsImplicits: JSImplicits,
+) extends State {
+  private val sessionTokenFromClient = Var("")
+
+  println("[ManualConnection] scala-loci removed – host pending is a stub")
+
+  override def render(using state: Var[State]): VNode = div(
+    cls := "p-1",
+    span(
+      cls := "label label-text text-slate-500 dark:text-gray-300",
+      "Please share the Invitation with one peer. The peer will respond with an code which finishes the connection.",
+    ),
+    showConnectionToken(connection),
+    LabeledInput("Please enter the code your peer has provided:")(
+      tpe         := "text",
+      placeholder := "Token",
+      value       := "",
+      onInput.value --> sessionTokenFromClient,
+    ),
+    Button(
+      ButtonStyle.Primary,
+      "Finish Connection",
+      cls := "w-full mt-2",
+      disabled <-- Signal { sessionTokenFromClient.value.isBlank },
+      onClick.foreach(_ => confirmConnectionToClient()),
+    ),
+  )
+
+  private def confirmConnectionToClient(): Unit = {
+    println("[ManualConnection] scala-loci removed – confirm connection is a stub")
+    connection.connector.set(PendingConnection.tokenAsSession(sessionTokenFromClient.now).session)
+  }
+}
+
+class ManualConnectionDialog(using
+    jsImplicits: JSImplicits,
+)(private val state: Var[State] = Var(Init())) {
+
+  private val mode = Var("host")
+  ignoreDisconnectable(mode.observe { v =>
+    if v == "host" then {
+      state.set(Init())
+    } else {
+      state.set(ClientAskingForHostSessionToken())
+    }
+  })
+
+  def render: VMod =
+    div(
+      div(
+        cls := "flex rounded-xl mt-2 gap-1 text-center",
+        input(
+          tpe     := "radio",
+          name    := "mode",
+          idAttr  := "hostMode",
+          cls     := "hidden peer/host",
+          checked := true,
+          value   := "host",
+          onInput.value --> mode,
+        ),
+        input(
+          tpe    := "radio",
+          name   := "mode",
+          cls    := "hidden peer/client",
+          value  := "client",
+          idAttr := "clientMode",
+          onInput.value --> mode,
+        ),
+        label(
+          forId := "hostMode",
+          cls := "dark:bg-gray-700 dark:text-gray-300 grow bg-white p-2 w-fill rounded-l-xl cursor-pointer uppercase font-bold text-xs text-purple-600 peer-checked/host:text-purple-600 peer-checked/host:bg-purple-200 shadow",
+          "Host",
+        ),
+        label(
+          forId := "clientMode",
+          cls := "dark:bg-gray-700 dark:text-gray-300 grow bg-white p-2 w-fill rounded-r-xl cursor-pointer uppercase font-bold text-xs text-purple-600 peer-checked/client:text-purple-600 peer-checked/client:bg-purple-200 shadow",
+          "Client",
+        ),
+      ),
+      Signal { state.value.render(using state) },
+    )
+}

@@ -9,6 +9,33 @@ const scalajsExamples = {
 			const variant = command === "dev" ? "examples-fastopt" : "examples-opt";
 			updateConfig({
 				vite: {
+					// outwatch (Reform) accesses `.default` of namespace imports of the CommonJS snabbdom fork
+					legacy: { inconsistentCjsInterop: true },
+					// vite does not discover the npm imports of the (dynamically imported) Scala.js output up front;
+					// discovering them while the app loads makes vite re-optimize and fail the in-flight module requests
+					optimizeDeps: {
+						include: [
+							"orderedmap",
+							"prosemirror-keymap",
+							"prosemirror-model",
+							"prosemirror-state",
+							"prosemirror-transform",
+							"prosemirror-view",
+							"react",
+							"react-dom/client",
+							"@reform-org/idb",
+							"@popperjs/core",
+							"luxon",
+							"pdf-lib",
+							"snabbdom",
+							"snabbdom/modules/attributes",
+							"snabbdom/modules/class",
+							"snabbdom/modules/eventlisteners",
+							"snabbdom/modules/props",
+							"snabbdom/modules/style",
+							"snabbdom/tovnode",
+						],
+					},
 					resolve: {
 						alias: {
 							"scalajs:examples": fileURLToPath(new URL(`./target/generated_js/${variant}/main.js`, import.meta.url)),

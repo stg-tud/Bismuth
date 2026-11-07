@@ -35,7 +35,6 @@ lazy val bismuth = project.in(file(".")).settings(Settings.strictScalacFlags).ag
   proBench,
   rdts.js(s3v),
   rdts.jvm(s3v),
-  reform,
   rdts.native(s3v),
   reactives.js(s3v),
   reactives.jvm(s3v),
@@ -167,6 +166,8 @@ lazy val examples = projectMatrix.in(file("Modules/Examples"))
         "com.github.japgolly.scalajs-react" %% "extra"                     % "3.0.0",
         "com.lihaoyi"                       %% "scalatags"                 % "0.13.1" % Compile,
         "com.olvind"                        %% "scalablytyped-runtime"     % "2.4.2",
+        "com.github.cornerman"              %% "colibri-router"            % "0.8.6",
+        "io.github.outwatch"                %% "outwatch"                  % "1.1.0",
         "org.scala-js"                      %% "scalajs-java-securerandom" % "1.0.0" `cross` CrossVersion.for3Use2_13,
         scalajsDom,
       ),
@@ -301,29 +302,6 @@ lazy val reactives = projectMatrix.in(file("Modules/Reactives"))
   )
   .nativePlatform(
     scalaVersions = Seq(s3v),
-  )
-
-lazy val reform = project
-  .in(file("Modules/Reform"))
-  .enablePlugins(ScalaJSPlugin)
-  .dependsOn(reactives.js(s3v), rdts.js(s3v))
-  .settings(
-    name                                := "Reform",
-    Compile / scalaJSModuleInitializers := Seq(
-      ModuleInitializer.mainMethod("de.tu_darmstadt.informatik.st.reform.Main", "main").withModuleID("main")
-    ),
-    Test / scalaJSUseTestModuleInitializer := true,
-    Test / jsEnv                           := Def.uncached { new org.scalajs.jsenv.nodejs.NodeJSEnv() },
-    Test / scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule)),
-    Compile / scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.ESModule)),
-    Compile / fastLinkJS / scalaJSLinkerOutputDirectory := target.value / "reform-fastopt",
-    Compile / fullLinkJS / scalaJSLinkerOutputDirectory := target.value / "reform-opt",
-    libraryDependencies ++= jsoniterScala,
-    libraryDependencies ++= Seq(
-      "com.github.cornerman" %% "colibri-router"            % "0.8.6",
-      "io.github.outwatch"   %% "outwatch"                  % "1.1.0",
-      "org.scala-js"         %% "scalajs-java-securerandom" % "1.0.0" `cross` CrossVersion.for3Use2_13,
-    ),
   )
 
 lazy val webview = project.in(file("Modules/Webview"))

@@ -20,6 +20,7 @@ const appHandlers = {
 	"overlay-graph": "OverlayNetworkGraph",
 	"mini-social": "MiniSocial",
 	"text-rdt": "TextRDT",
+	reform: "Reform",
 };
 
 /** Launch the case study whose page we are on. */

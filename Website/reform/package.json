@@ -1,0 +1,6 @@
+{
+	"name": "reform-js",
+	"private": true,
+	"type": "module",
+	"description": "JS helpers of the Reform case study (Modules/Examples/src/main/scalajs/webapps/ex2022reform), imported from Scala.js as `reform-js/...`"
+}
