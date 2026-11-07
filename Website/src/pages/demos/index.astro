@@ -20,11 +20,13 @@ const first = demos[0];
 	</section>
 	<section class="section bg-light">
 		<div class="container">
-			<div class="demo-tabs" role="tablist">
+			<div class="demo-cards" role="tablist">
 				{
 					demos.map((d) => (
 						<button role="tab" data-demo={d.id} data-summary={d.summary} aria-selected={d === first ? "true" : "false"}>
-							{d.title}
+							<span class="icon" aria-hidden="true">{d.icon}</span>
+							<strong>{d.title}</strong>
+							<span class="text">{d.summary}</span>
 						</button>
 					))
 				}
@@ -43,12 +45,13 @@ const first = demos[0];
 	const frame = document.getElementById("demo-frame") as HTMLIFrameElement;
 	const open = document.getElementById("demo-open") as HTMLAnchorElement;
 	const summary = document.getElementById("demo-summary")!;
-	for (const btn of document.querySelectorAll<HTMLButtonElement>(".demo-tabs button")) {
+	for (const btn of document.querySelectorAll<HTMLButtonElement>(".demo-cards button")) {
 		btn.addEventListener("click", () => {
-			document.querySelectorAll(".demo-tabs button").forEach((b) => b.setAttribute("aria-selected", "false"));
+			document.querySelectorAll(".demo-cards button").forEach((b) => b.setAttribute("aria-selected", "false"));
 			btn.setAttribute("aria-selected", "true");
 			const demo = url(`/examples/${btn.dataset.demo}.html`);
 			frame.src = demo;
+			frame.scrollIntoView({ behavior: "smooth", block: "nearest" });
 			open.href = demo;
 			summary.firstChild!.textContent = `${btn.dataset.summary} `;
 		});

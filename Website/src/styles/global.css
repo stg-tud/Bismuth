@@ -181,12 +181,16 @@ a.lib-link.primary:hover { background: var(--yellow-500); color: var(--gray-950)
 .lib-link.disabled { background: var(--gray-100); color: var(--gray-600); border: 1px dashed var(--gray-200); }
 
 /* Demos page */
-.demo-tabs { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
-.demo-tabs button {
-	font-family: "Barlow", sans-serif; font-weight: 700; border: none; cursor: pointer; padding: 8px 16px; border-radius: 50px;
-	background: var(--indigo-100); color: var(--indigo-900);
+.demo-cards { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); margin-bottom: 1.5rem; }
+.demo-cards button {
+	display: flex; flex-direction: column; gap: 0.3rem; text-align: left; cursor: pointer; padding: 1rem 1.25rem;
+	font: inherit; color: inherit; background: white; border: 1px solid var(--indigo-200); border-radius: 8px;
 }
-.demo-tabs button[aria-selected="true"] { background: var(--indigo-700); color: white; }
+.demo-cards button:hover { background: var(--indigo-100); }
+.demo-cards button[aria-selected="true"] { border-color: var(--indigo-700); box-shadow: inset 0 0 0 1px var(--indigo-700); }
+.demo-cards .icon { font-size: 1.75rem; }
+.demo-cards strong { font-family: "Barlow", sans-serif; font-size: 1.1rem; color: var(--indigo-900); }
+.demo-cards .text { font-size: 14px; color: var(--gray-600); }
 .demo-frame { width: 100%; height: 640px; border: 1px solid var(--indigo-200); border-radius: 5px; background: white; }
 
 /* Footer */

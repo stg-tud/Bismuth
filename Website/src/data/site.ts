@@ -201,13 +201,14 @@ export const libraries: Library[] = [
 
 // Web case studies, pages in src/pages/examples/ (Scala.js output from `sbt examplesJS/fastLinkJS`)
 export const demos = [
-	{ id: "todolist", title: "Todo List", summary: "A collaborative todo list based on TodoMVC." },
-	{ id: "calendar", title: "Calendar", summary: "A shared appointment calendar across replicas." },
-	{ id: "tabular", title: "Tabular", summary: "A replicated spreadsheet." },
-	{ id: "unit-conversion", title: "Unit Conversion", summary: "Reactive unit conversion." },
-	{ id: "overlay-graph", title: "Overlay Graph", summary: "Visualization of the overlay network." },
-	{ id: "mini-social", title: "Mini Social", summary: "A tiny replicated social network." },
-	{ id: "reform", title: "Reform", summary: "Manages student assistant contracts, with all data stored in the browser." },
+	{ id: "todolist", icon: "✅", title: "Todo List", summary: "A classic collaborative todo list based on TodoMVC." },
+	{ id: "calendar", icon: "📅", title: "Calendar", summary: "A shared appointment calendar across replicas." },
+	{ id: "tabular", icon: "📊", title: "Tabular", summary: "A collaborative spreadsheet with offline sync." },
+	{ id: "text-rdt", icon: "📝", title: "Collaborative Text", summary: "A Fugue-based collaborative rich text editor with peer-to-peer sync." },
+	{ id: "mini-social", icon: "💬", title: "Mini Social", summary: "A tiny replicated social feed." },
+	{ id: "overlay-graph", icon: "🕸️", title: "Overlay Graph", summary: "A live visualization of the overlay network." },
+	{ id: "unit-conversion", icon: "⚖️", title: "Unit Conversion", summary: "A quick unit converter built with pure scalatags." },
+	{ id: "reform", icon: "📄", title: "Reform", summary: "Management of student assistant contracts, with all data stored in the browser." },
 ];
 
 export interface TreeEntry {

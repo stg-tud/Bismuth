@@ -29,15 +29,15 @@ webappsServe: webappsPrepare
 
 webappsWebviewNative:
 	# connect to a running vite dev server (start it with `just webappsServe`)
-	sbt 'webview / run "http://localhost:5173/Bismuth/examples/"'
+	sbt 'webview / run "http://localhost:5173/Bismuth/demos/"'
 
 webappsWebviewJVM:
 	# connect to a running vite dev server (start it with `just webappsServe`)
-	sbt 'examples / runMain ex2026webview.Webview "http://localhost:5173/Bismuth/examples/"'
+	sbt 'examples / runMain ex2026webview.Webview "http://localhost:5173/Bismuth/demos/"'
 
 webappsWebviewJavaGi: # launch a web app in a java-gi (GTK4 + Libadwaita + WebKitGTK) browser window
 	# requires GTK4, libadwaita and webkitgtk-6.0 native libraries at runtime
-	sbt 'examples / runMain ex2026webview.JavaGiWebview "http://localhost:5173/Bismuth/examples/"'
+	sbt 'examples / runMain ex2026webview.JavaGiWebview "http://localhost:5173/Bismuth/demos/"'
 
 serve-scaladoc project="reactives" port="8081":
 	sbt '{{project}}/doc'

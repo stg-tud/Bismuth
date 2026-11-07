@@ -2,6 +2,7 @@
 // Standalone page (no site chrome) hosting one Scala.js web case study.
 // The JS is produced by `sbt examplesJS/fastLinkJS` / `fullLinkJS` into Website/target/generated_js.
 import "../examples/style.css";
+import { url } from "../lib/url";
 
 interface Props {
 	title: string;
@@ -28,7 +29,7 @@ const { title, app, footer = true } = Astro.props;
 		{
 			footer && (
 				<footer class="info">
-					<p><a href="index.html">← All Case Studies</a></p>
+					<p><a href={url("/demos/")} target="_top">← All Case Studies</a></p>
 					<p>Created by the <a href="https://www.st.informatik.tu-darmstadt.de/">Software Technology Group</a></p>
 					<slot name="footer" />
 				</footer>
