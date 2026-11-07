@@ -159,7 +159,6 @@ object Counters {
 }
 
 @State(Scope.Benchmark)
-@Fork(jvmArgsAppend = Array("-Dtextrdt.assertions=disabled"))
 class MyRealWorldBenchmarkLocal {
 
   import Counters.*
@@ -230,12 +229,7 @@ class MyRealWorldBenchmarkLocal {
 }
 
 @State(Scope.Benchmark)
-@Fork(jvmArgsAppend =
-  Array(
-    "-Dtextrdt.assertions=disabled",
-    "-Xmx8G"
-  )
-)
+@Fork(jvmArgsAppend = Array("-Xmx8G"))
 class MyRealWorldBenchmarkLargeLocal {
 
   import Counters.*
@@ -320,7 +314,7 @@ class MyRealWorldBenchmarkLargeLocal {
 }
 
 @State(Scope.Benchmark)
-@Fork(jvmArgsAppend = Array("-Dtextrdt.assertions=disabled", "-Xmx8G"))
+@Fork(jvmArgsAppend = Array("-Xmx8G"))
 class MyRealWorldBenchmarkLargeRemote {
 
   import Counters.*
@@ -442,7 +436,6 @@ class MyRealWorldBenchmarkLargeRemote {
 }
 
 @State(Scope.Thread)
-@Fork(jvmArgsAppend = Array("-Dtextrdt.assertions=disabled"))
 class MyTerribleBenchmarkSequentialInserts {
 
   import Counters.*
@@ -510,7 +503,6 @@ class MyTerribleBenchmarkSequentialInserts {
 }
 
 @State(Scope.Thread)
-@Fork(jvmArgsAppend = Array("-Dtextrdt.assertions=disabled"))
 class MyTerribleBenchmarkEvilInsert {
 
   import Counters.*

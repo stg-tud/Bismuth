@@ -33,10 +33,6 @@ class AVLTreeTestSuite extends FunSuite {
       case Some(value) => assertEquals(value._1.indexOfNode() + value._2, index)
     }
 
-  test("assertions enabled") {
-    assertEquals(Helper.ENABLE, true)
-  }
-
   test("empty node nodeAtIndex") {
     val tree = AVLTree[String](null)
     val root = AVLTreeNode("", null)

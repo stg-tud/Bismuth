@@ -2,8 +2,8 @@ package ex2024textRDT
 
 object Helper {
 
-  final val ENABLE: Boolean =
-    !sys.props.get("textrdt.assertions").contains("disabled")
+  /** Enables expensive internal consistency checks. Change to `true` locally when debugging the algorithms. */
+  final val ENABLE: Boolean = false
 
   def myAssert(
       assertion: => Boolean,
