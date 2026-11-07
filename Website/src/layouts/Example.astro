@@ -2,6 +2,7 @@
 // Standalone page (no site chrome) hosting one Scala.js web case study.
 // The JS is produced by `sbt examplesJS/fastLinkJS` / `fullLinkJS` into Website/target/generated_js.
 import "../examples/style.css";
+import "../examples/plain.css";
 import { url } from "../lib/url";
 
 interface Props {
@@ -9,8 +10,10 @@ interface Props {
 	app: string;
 	/** show the default footer */
 	footer?: boolean;
+	/** the app renders plain HTML, style it with examples/plain.css */
+	plain?: boolean;
 }
-const { title, app, footer = true } = Astro.props;
+const { title, app, footer = true, plain = false } = Astro.props;
 ---
 
 <!doctype html>
@@ -20,7 +23,7 @@ const { title, app, footer = true } = Astro.props;
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<title>{title} · WebApp Case Studies</title>
 	</head>
-	<body data-app={app}>
+	<body data-app={app} class:list={{ "plain-app": plain }}>
 		<section id="app">
 			<noscript>
 				<div style="padding:2em;text-align:center;font-size:2em">Please enable JavaScript!</div>

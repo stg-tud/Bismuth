@@ -1,0 +1,153 @@
+/* Shared look for case studies that render plain, unstyled HTML (calendar, mini social, unit conversion).
+   Scoped to `body.plain-app`, set by the Example layout. */
+
+body.plain-app {
+	margin: 0;
+	padding: 2rem 1rem;
+	min-height: 100vh;
+	box-sizing: border-box;
+	background: #f1f5f9;
+	color: #0f172a;
+	font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.plain-app *,
+.plain-app *::before,
+.plain-app *::after {
+	box-sizing: border-box;
+}
+
+.plain-app #app {
+	max-width: 960px;
+	margin: 0 auto;
+	padding: 1.5rem 2rem;
+	background: #fff;
+	border: 1px solid #e2e8f0;
+	border-radius: 12px;
+	box-shadow: 0 10px 30px -12px rgb(15 23 42 / 0.2);
+	overflow-x: auto;
+}
+
+.plain-app h1 { font-size: 1.75rem; margin: 0 0 1rem; }
+.plain-app h2 { font-size: 1.15rem; margin: 0 0 0.75rem; }
+.plain-app #app > div > p:first-child { font-size: 1.25rem; font-weight: 600; margin-top: 0; }
+
+/* form controls */
+.plain-app input:not([type="button"]):not([type="submit"]),
+.plain-app select,
+.plain-app textarea {
+	font: inherit;
+	color: inherit;
+	padding: 0.4rem 0.6rem;
+	margin: 0.2rem 0.4rem 0.2rem 0;
+	background: #fff;
+	border: 1px solid #cbd5e1;
+	border-radius: 8px;
+	outline: none;
+}
+.plain-app input:focus,
+.plain-app select:focus,
+.plain-app textarea:focus {
+	border-color: #6366f1;
+	box-shadow: 0 0 0 3px rgb(99 102 241 / 0.2);
+}
+.plain-app textarea {
+	width: 100%;
+	min-height: 5rem;
+	font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+	resize: vertical;
+}
+
+.plain-app button,
+.plain-app input[type="button"],
+.plain-app input[type="submit"] {
+	font: inherit;
+	cursor: pointer;
+	padding: 0.4rem 0.9rem;
+	margin: 0.2rem 0.4rem 0.2rem 0;
+	color: #3730a3;
+	background: #eef2ff;
+	border: 1px solid #c7d2fe;
+	border-radius: 8px;
+}
+.plain-app button:hover,
+.plain-app input[type="button"]:hover,
+.plain-app input[type="submit"]:hover {
+	background: #e0e7ff;
+	border-color: #a5b4fc;
+}
+
+.plain-app p > input:only-child { width: 100%; }
+
+/* tables (mini social, WebRTC connection view) */
+.plain-app table {
+	width: 100%;
+	margin: 0.5rem 0 1rem;
+	border-collapse: collapse;
+}
+.plain-app th,
+.plain-app td {
+	padding: 0.5rem 0.6rem;
+	text-align: left;
+	vertical-align: top;
+	border-bottom: 1px solid #e2e8f0;
+}
+.plain-app th {
+	font-size: 0.8rem;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: #64748b;
+	background: #f8fafc;
+}
+
+.plain-app hr { border: none; border-top: 1px solid #e2e8f0; margin: 1.5rem 0; }
+.plain-app pre {
+	padding: 0.75rem 1rem;
+	overflow-x: auto;
+	font-size: 12px;
+	background: #f8fafc;
+	border: 1px solid #e2e8f0;
+	border-radius: 8px;
+}
+
+/* calendar */
+.plain-app #app > div:has(#work-appointment-container) {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+	gap: 1.5rem;
+}
+.plain-app #app > div:has(#work-appointment-container) > h1 { grid-column: 1 / -1; margin: 0; }
+.plain-app #work-appointment-container,
+.plain-app #vacation-container {
+	padding: 1rem 1.25rem;
+	background: #f8fafc;
+	border: 1px solid #e2e8f0;
+	border-radius: 10px;
+}
+.plain-app .new-appointment-form {
+	display: grid;
+	grid-template-columns: auto 1fr;
+	gap: 0.4rem 0.75rem;
+	align-items: center;
+}
+.plain-app .new-appointment-form > * { margin: 0; }
+.plain-app .new-appointment-title,
+.plain-app .new-appointment-submit { grid-column: 1 / -1; }
+.plain-app .new-appointment-submit { justify-self: start; }
+.plain-app #work-appointment-container ul,
+.plain-app #vacation-container ul { list-style: none; padding: 0; margin: 1rem 0 0; }
+.plain-app #work-appointment-container li,
+.plain-app #vacation-container li {
+	padding: 0.6rem 0.75rem;
+	margin-bottom: 0.5rem;
+	background: #fff;
+	border: 1px solid #e2e8f0;
+	border-radius: 8px;
+}
+.plain-app li br { display: none; }
+.plain-app li > span:first-child { display: block; font-weight: 500; margin-bottom: 0.3rem; }
+.plain-app li input { width: 7rem; }
+
+/* footer below the card */
+.plain-app .info { margin-top: 2rem; color: #94a3b8; }
