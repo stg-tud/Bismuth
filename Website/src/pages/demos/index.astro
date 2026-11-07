@@ -1,8 +1,6 @@
 ---
-import { url } from "../../lib/url";
 import Base from "../../layouts/Base.astro";
 import { demos } from "../../data/site";
-const first = demos[0];
 ---
 
 <Base title="Demos">
@@ -23,7 +21,7 @@ const first = demos[0];
 			<div class="demo-cards" role="tablist">
 				{
 					demos.map((d) => (
-						<button role="tab" data-demo={d.id} data-summary={d.summary} aria-selected={d === first ? "true" : "false"}>
+						<button role="tab" data-demo={d.id} data-summary={d.summary} aria-selected="false">
 							<span class="icon" aria-hidden="true">{d.icon}</span>
 							<strong>{d.title}</strong>
 							<span class="text">{d.summary}</span>
@@ -31,10 +29,11 @@ const first = demos[0];
 					))
 				}
 			</div>
-			<p id="demo-summary">
-				{first.summary} <a id="demo-open" href={url(`/examples/${first.id}.html`)} target="_blank">Open in new tab ↗</a>
+			<p id="demo-hint">Select a demo above to run it here.</p>
+			<p id="demo-summary" hidden>
+				<span></span> <a id="demo-open" target="_blank">Open in new tab ↗</a>
 			</p>
-			<iframe id="demo-frame" class="demo-frame" src={url(`/examples/${first.id}.html`)} title="Demo" loading="lazy"></iframe>
+			<iframe id="demo-frame" class="demo-frame" title="Demo" hidden></iframe>
 		</div>
 	</section>
 </Base>
@@ -45,15 +44,25 @@ const first = demos[0];
 	const frame = document.getElementById("demo-frame") as HTMLIFrameElement;
 	const open = document.getElementById("demo-open") as HTMLAnchorElement;
 	const summary = document.getElementById("demo-summary")!;
-	for (const btn of document.querySelectorAll<HTMLButtonElement>(".demo-cards button")) {
-		btn.addEventListener("click", () => {
-			document.querySelectorAll(".demo-cards button").forEach((b) => b.setAttribute("aria-selected", "false"));
-			btn.setAttribute("aria-selected", "true");
-			const demo = url(`/examples/${btn.dataset.demo}.html`);
-			frame.src = demo;
-			frame.scrollIntoView({ behavior: "smooth", block: "nearest" });
-			open.href = demo;
-			summary.firstChild!.textContent = `${btn.dataset.summary} `;
-		});
+	const hint = document.getElementById("demo-hint")!;
+	const buttons = [...document.querySelectorAll<HTMLButtonElement>(".demo-cards button")];
+
+	// nothing is loaded until a demo is selected; the selected demo is kept in the url hash (e.g. demos/#tabular), so it survives reloads and can be linked
+	function select(btn: HTMLButtonElement, scroll: boolean) {
+		buttons.forEach((b) => b.setAttribute("aria-selected", String(b === btn)));
+		const demo = url(`/examples/${btn.dataset.demo}.html`);
+		if (frame.getAttribute("src") !== demo) frame.src = demo;
+		open.href = demo;
+		summary.querySelector("span")!.textContent = btn.dataset.summary ?? "";
+		summary.hidden = false;
+		frame.hidden = false;
+		hint.hidden = true;
+		history.replaceState(null, "", `#${btn.dataset.demo}`);
+		if (scroll) frame.scrollIntoView({ behavior: "smooth", block: "nearest" });
 	}
+
+	for (const btn of buttons) btn.addEventListener("click", () => select(btn, true));
+
+	const initial = buttons.find((b) => b.dataset.demo === location.hash.slice(1));
+	if (initial) select(initial, false);
 </script>
