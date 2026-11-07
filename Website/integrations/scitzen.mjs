@@ -17,7 +17,7 @@ export default function scitzen() {
 	const template = path.join(website, "scitzen-template.html.scim");
 	const resourcesTarget = path.join(website, "public/documentation/resources");
 
-	/** compiles a single file (relative to Documentation/), or the whole project if `target` is "." */
+	/** compiles a single file (relative to Documentation/; non-article files select nothing), or the whole project if `target` is "." */
 	async function compile(logger, target = ".") {
 		const start = Date.now();
 		try {
@@ -43,8 +43,8 @@ export default function scitzen() {
 				if (!ok && command === "build") throw new Error("scitzen compilation failed");
 			},
 			"astro:server:setup": ({ server, logger }) => {
-				// changed .scim articles are compiled individually; anything else (deletions, the project file,
-				// images, bibliographies, …) may affect several articles and recompiles everything
+				// changed files are compiled individually (scitzen only regenerates the output of the given file).
+				// scitzen does not clean up the output of deleted articles, so deletions clear the output and rebuild everything
 				const pending = new Set();
 				let full = false;
 				let timer;
@@ -52,15 +52,16 @@ export default function scitzen() {
 				const isSource = (file) => file.startsWith(docs + path.sep) && !file.startsWith(out + path.sep);
 				const schedule = (file, event) => {
 					if (!isSource(file)) return;
-					const rel = path.relative(docs, file);
-					if (event === "unlink" || !rel.endsWith(".scim") || path.basename(rel) === "scitzen-project.scim") full = true;
-					else pending.add(rel);
+					if (event === "unlink") full = true;
+					else pending.add(path.relative(docs, file));
 					clearTimeout(timer);
 					timer = setTimeout(() => {
-						const targets = full ? ["."] : [...pending];
+						const clean = full;
+						const targets = clean ? ["."] : [...pending];
 						pending.clear();
 						full = false;
 						running = running.then(async () => {
+							if (clean) fs.rmSync(out, { recursive: true, force: true });
 							let ok = true;
 							for (const target of targets) ok = (await compile(logger, target)) && ok;
 							if (ok) server.ws.send({ type: "full-reload" });
