@@ -55,11 +55,12 @@ class AVLTreeTestSuite extends FunSuite {
     root.rotateLeft(tree)
     assertEquals(
       tree.root.toString(),
+      // normalize CRLF (e.g., from Windows checkouts)
       """AVLTreeNode(
-  left = AVLTreeNode(left = null, value = "a", right = null),
-  value = "b",
-  right = AVLTreeNode(left = null, value = "c", right = null)
-)"""
+        |  left = AVLTreeNode(left = null, value = "a", right = null),
+        |  value = "b",
+        |  right = AVLTreeNode(left = null, value = "c", right = null)
+        |)""".stripMargin.replace("\r\n", "\n")
     )
   }
 
@@ -124,11 +125,12 @@ class AVLTreeTestSuite extends FunSuite {
     tree.insert(nodeR, nodeRR, Side.Right)
     assertEquals(
       tree.root.toString(),
+      // normalize CRLF (e.g., from Windows checkouts)
       """AVLTreeNode(
-  left = AVLTreeNode(left = null, value = "a", right = null),
-  value = "b",
-  right = AVLTreeNode(left = null, value = "c", right = null)
-)"""
+        |  left = AVLTreeNode(left = null, value = "a", right = null),
+        |  value = "b",
+        |  right = AVLTreeNode(left = null, value = "c", right = null)
+        |)""".stripMargin.replace("\r\n", "\n")
     )
     assertEquals(tree.values(), Seq("a", "b", "c"))
     assertEquals(root.indexOfNode(), 0)
