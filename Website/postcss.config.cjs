@@ -1,7 +1,7 @@
-// tailwind is only used by the Reform case study (reform/index.css is the only file with @tailwind directives)
+// tailwind is used by the Reform and Tabular case studies; their CSS files select their tailwind config via `@config`
 module.exports = {
 	plugins: {
-		tailwindcss: { config: "./reform/tailwind.config.cjs" },
+		tailwindcss: {},
 		autoprefixer: {},
 	},
 };

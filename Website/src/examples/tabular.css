@@ -1,0 +1,19 @@
+@config "./tabular.tailwind.config.cjs";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@keyframes tabular-scale-in {
+	from {
+		transform: scale(0.95);
+		opacity: 0;
+	}
+	to {
+		transform: scale(1);
+		opacity: 1;
+	}
+}
+.tabular-animate-scale-in {
+	animation: tabular-scale-in 0.15s ease-out;
+}
