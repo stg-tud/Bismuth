@@ -1,9 +1,9 @@
-package typings.prosemirrorState
+package webapps.ex2024textRDT.typings.prosemirrorState
 
 import org.scalablytyped.runtime.StObject
-import typings.prosemirrorModel.mod.Schema
-import typings.prosemirrorTransform.mod.Transform
-import typings.prosemirrorView.mod.EditorView
+import webapps.ex2024textRDT.typings.prosemirrorModel.mod.Schema
+import webapps.ex2024textRDT.typings.prosemirrorTransform.mod.Transform
+import webapps.ex2024textRDT.typings.prosemirrorView.mod.EditorView
 
 import scala.scalajs.js
 import scala.scalajs.js.annotation.{JSImport, JSName}

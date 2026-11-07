@@ -1,7 +1,7 @@
-package typings.prosemirrorKeymap
+package webapps.ex2024textRDT.typings.prosemirrorKeymap
 
 import org.scalablytyped.runtime.StringDictionary
-import typings.prosemirrorState.mod.{Command, Plugin}
+import webapps.ex2024textRDT.typings.prosemirrorState.mod.{Command, Plugin}
 
 import scala.scalajs.js
 import scala.scalajs.js.annotation.JSImport

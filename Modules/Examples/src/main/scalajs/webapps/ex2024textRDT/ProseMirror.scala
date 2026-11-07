@@ -7,9 +7,9 @@ import ex2024textRDT.fugue.avl.AVLTreeNode
 import ex2024textRDT.fugue.complexavl.{*}
 import ex2024textRDT.fugue.simpleavl.{*}
 import ex2024textRDT.fugue.{*}
-import typings.prosemirrorState.mod.{EditorState, Transaction}
-import typings.prosemirrorTransform.mod.ReplaceStep_
-import typings.prosemirrorView.mod.{DirectEditorProps, EditorView}
+import webapps.ex2024textRDT.typings.prosemirrorState.mod.{EditorState, Transaction}
+import webapps.ex2024textRDT.typings.prosemirrorTransform.mod.ReplaceStep_
+import webapps.ex2024textRDT.typings.prosemirrorView.mod.{DirectEditorProps, EditorView}
 
 import scala.scalajs.js
 
@@ -30,7 +30,7 @@ final class ProseMirror[F <: FugueFactory](
   private val view: EditorView = EditorView(
     org.scalajs.dom.document
       .querySelector(elementSelector)
-      .asInstanceOf[typings.prosemirrorView.mod.DOMNode],
+      .asInstanceOf[webapps.ex2024textRDT.typings.prosemirrorView.mod.DOMNode],
     DirectEditorProps(state).setDispatchTransaction(
       ((tr: Transaction) => dispatchTransaction(tr)).asInstanceOf[Any => Unit]
     )

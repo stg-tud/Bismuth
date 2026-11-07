@@ -1,4 +1,4 @@
-package typings.orderedmap
+package webapps.ex2024textRDT.typings.orderedmap
 
 import org.scalablytyped.runtime.StringDictionary
 

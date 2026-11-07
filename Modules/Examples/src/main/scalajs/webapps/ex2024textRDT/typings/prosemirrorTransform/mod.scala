@@ -1,6 +1,6 @@
-package typings.prosemirrorTransform
+package webapps.ex2024textRDT.typings.prosemirrorTransform
 
-import typings.prosemirrorModel.mod.{Node, Slice}
+import webapps.ex2024textRDT.typings.prosemirrorModel.mod.{Node, Slice}
 
 import scala.scalajs.js
 import scala.scalajs.js.annotation.JSImport

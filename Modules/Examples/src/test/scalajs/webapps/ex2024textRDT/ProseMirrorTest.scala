@@ -4,7 +4,7 @@ import munit.FunSuite
 import org.scalajs.dom
 import ex2024textRDT.*
 import ex2024textRDT.debug.{*, given}
-import typings.prosemirrorState.mod.EditorState
+import webapps.ex2024textRDT.typings.prosemirrorState.mod.EditorState
 
 import scala.scalajs.js
 import scala.util.Random

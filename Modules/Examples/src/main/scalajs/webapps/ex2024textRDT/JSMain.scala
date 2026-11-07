@@ -5,16 +5,16 @@ import org.scalablytyped.runtime.StringDictionary
 import org.scalajs.dom.{Element, HTMLElement, URL, document}
 import ex2024textRDT.*
 import ex2024textRDT.debug.{*, given}
-import typings.prosemirrorKeymap.mod.keymap
-import typings.prosemirrorModel.mod.{NodeSpec, Schema, SchemaSpec, TagParseRule}
-import typings.prosemirrorModel.prosemirrorModelStrings.full
-import typings.prosemirrorState.mod.{Command, EditorState, EditorStateConfig, Plugin}
+import webapps.ex2024textRDT.typings.prosemirrorKeymap.mod.keymap
+import webapps.ex2024textRDT.typings.prosemirrorModel.mod.{NodeSpec, Schema, SchemaSpec, TagParseRule}
+import webapps.ex2024textRDT.typings.prosemirrorModel.prosemirrorModelStrings.full
+import webapps.ex2024textRDT.typings.prosemirrorState.mod.{Command, EditorState, EditorStateConfig, Plugin}
 
 import scala.scalajs.js
 
 val schema = Schema[Any, Any](
   SchemaSpec(
-    typings.orderedmap.mod.default.from(
+    webapps.ex2024textRDT.typings.orderedmap.mod.default.from(
       StringDictionary(
         ("text", NodeSpec()),
         (

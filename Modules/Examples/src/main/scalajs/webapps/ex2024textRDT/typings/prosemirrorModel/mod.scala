@@ -1,8 +1,8 @@
-package typings.prosemirrorModel
+package webapps.ex2024textRDT.typings.prosemirrorModel
 
 import org.scalablytyped.runtime.{StObject, StringDictionary}
-import typings.orderedmap.mod.OrderedMap
-import typings.prosemirrorModel.prosemirrorModelStrings.full
+import webapps.ex2024textRDT.typings.orderedmap.mod.OrderedMap
+import webapps.ex2024textRDT.typings.prosemirrorModel.prosemirrorModelStrings.full
 
 import scala.scalajs.js
 import scala.scalajs.js.annotation.JSImport

@@ -4,7 +4,7 @@ import org.scalajs.dom.{Element, document}
 import ex2024textRDT.*
 import ex2024textRDT.debug.{given}
 import ex2024textRDT.fugue.complexavl.ComplexAVLFugueFactory.complexAVLFugueFactory
-import typings.prosemirrorState.mod.EditorState
+import webapps.ex2024textRDT.typings.prosemirrorState.mod.EditorState
 import webapps.WebRTCConnectionView
 
 import java.util.UUID
