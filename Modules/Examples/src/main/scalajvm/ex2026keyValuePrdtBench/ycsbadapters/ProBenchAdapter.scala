@@ -1,10 +1,10 @@
-package probench.ycsbadapters
+package ex2026keyValuePrdtBench.ycsbadapters
 
 import channels.connection.Abort
 import channels.{ConcurrencyHelper, NioTCP}
-import probench.cli.addRetryingConnection
-import probench.clients.ProBenchClient
-import probench.ycsbadapters.ProBenchAdapterConnectionPool.syncClient
+import ex2026keyValuePrdtBench.cli.addRetryingConnection
+import ex2026keyValuePrdtBench.clients.ProBenchClient
+import ex2026keyValuePrdtBench.ycsbadapters.ProBenchAdapterConnectionPool.syncClient
 import rdts.base.Uid
 import site.ycsb.{ByteIterator, DB, Status, StringByteIterator}
 

@@ -1,4 +1,4 @@
-package probench.data
+package ex2026keyValuePrdtBench.data
 
 import channels.broadcast.PlumtreeMessage
 import channels.broadcast.PlumtreeMessage.Payload

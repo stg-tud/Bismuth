@@ -1,10 +1,10 @@
-package probench.clients
+package ex2026keyValuePrdtBench.clients
 
 import channels.broadcast.PlumtreeBroadcast
 import channels.{BroadcastIO, KeepAllHistory}
-import probench.data
-import probench.data.Codecs.given
-import probench.data.{ClientCommRead, ClientCommWrite, KVOperation}
+import ex2026keyValuePrdtBench.data
+import ex2026keyValuePrdtBench.data.Codecs.given
+import ex2026keyValuePrdtBench.data.{ClientCommRead, ClientCommWrite, KVOperation}
 import rdts.base.{ReplicaId, Uid}
 
 import scala.collection.mutable

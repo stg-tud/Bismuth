@@ -1,4 +1,4 @@
-package probench.benchmark
+package ex2026keyValuePrdtBench.benchmark
 
 case class BenchmarkData(
     name: String,

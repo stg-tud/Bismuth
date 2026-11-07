@@ -1,4 +1,4 @@
-package probench.ycsbadapters
+package ex2026keyValuePrdtBench.ycsbadapters
 
 import io.etcd.jetcd
 import io.etcd.jetcd.{ByteSequence, Client, KV}

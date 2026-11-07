@@ -1,6 +1,6 @@
-package probench.data
+package ex2026keyValuePrdtBench.data
 
-import probench.data.RequestResponseQueue.Req
+import ex2026keyValuePrdtBench.data.RequestResponseQueue.Req
 import rdts.base.{Lattice, ReplicaId}
 
 import scala.util.Random

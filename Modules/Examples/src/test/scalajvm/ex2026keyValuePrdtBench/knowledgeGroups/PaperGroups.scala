@@ -1,5 +1,5 @@
 package test.rdts.protocols.knowledgeGroups
-import probench.{KnowledgeGroups, MultiPaxosReplica, Request}
+import ex2026keyValuePrdtBench.{KnowledgeGroups, MultiPaxosReplica, Request}
 import rdts.base.{ReplicaId, Uid}
 import rdts.protocols.knowledgeGroups.MultiPaxos
 

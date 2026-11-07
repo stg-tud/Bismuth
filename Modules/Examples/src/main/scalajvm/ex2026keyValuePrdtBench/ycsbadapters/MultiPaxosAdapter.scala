@@ -1,11 +1,11 @@
-package probench.ycsbadapters
+package ex2026keyValuePrdtBench.ycsbadapters
 
 import channels.connection.Abort
 import channels.{ConcurrencyHelper, NioTCP}
-import probench.KnowledgeGroups.*
-import probench.cli.addRetryingConnection
-import probench.ycsbadapters.MultiPaxosAdapterConnectionPool.multiPaxosReplica
-import probench.{KnowledgeGroups, MultiPaxosReplica}
+import ex2026keyValuePrdtBench.KnowledgeGroups.*
+import ex2026keyValuePrdtBench.cli.addRetryingConnection
+import ex2026keyValuePrdtBench.ycsbadapters.MultiPaxosAdapterConnectionPool.multiPaxosReplica
+import ex2026keyValuePrdtBench.{KnowledgeGroups, MultiPaxosReplica}
 import rdts.base.Uid
 import rdts.protocols.knowledgeGroups.MultiPaxos
 import site.ycsb.{ByteIterator, DB, Status, StringByteIterator}

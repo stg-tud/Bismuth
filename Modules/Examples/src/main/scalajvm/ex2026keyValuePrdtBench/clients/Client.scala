@@ -1,7 +1,7 @@
-package probench.clients
+package ex2026keyValuePrdtBench.clients
 
-import probench.benchmark.{BenchmarkData, CSVWriter}
-import probench.data.KVOperation
+import ex2026keyValuePrdtBench.benchmark.{BenchmarkData, CSVWriter}
+import ex2026keyValuePrdtBench.data.KVOperation
 import rdts.base.Uid
 
 import java.nio.file.Path

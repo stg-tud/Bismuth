@@ -1,12 +1,12 @@
-package probench
+package ex2026keyValuePrdtBench
 
 import channels.DeltaStorage.Type.*
 import channels.broadcast.PlumtreeBroadcast
 import channels.broadcast.PlumtreeMessage.Payload
 import channels.{BroadcastIO, ConcurrencyHelper, DeltaStorage}
-import probench.data.*
-import probench.data.ClientComm.*
-import probench.data.Codecs.given
+import ex2026keyValuePrdtBench.data.*
+import ex2026keyValuePrdtBench.data.ClientComm.*
+import ex2026keyValuePrdtBench.data.Codecs.given
 import rdts.base.Lattice.syntax
 import rdts.base.{Lattice, ReplicaId, Uid}
 import rdts.datatypes.LastWriterWins
@@ -218,7 +218,7 @@ class KeyValueReplica(
 
   type Time = Long
   class Client {
-    import probench.data.ClientComm.given
+    import ex2026keyValuePrdtBench.data.ClientComm.given
 
     val readQueue: ConcurrentLinkedQueue[(Time, ClientCommRead.ReadReq)]           = ConcurrentLinkedQueue()
     val writeRequestQueue: ConcurrentLinkedQueue[(Time, ClientCommWrite.WriteReq)] = ConcurrentLinkedQueue()

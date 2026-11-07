@@ -1,11 +1,11 @@
-package probench
+package ex2026keyValuePrdtBench
 
 import channels.connection.{Abort, Connector}
 import channels.{BroadcastIO, DeltaStorage, *}
 import de.rmgk.options.*
 import de.rmgk.options.Result.{Err, Ok}
-import probench.KnowledgeGroups.*
-import probench.clients.*
+import ex2026keyValuePrdtBench.KnowledgeGroups.*
+import ex2026keyValuePrdtBench.clients.*
 import rdts.base.Uid
 import rdts.protocols.knowledgeGroups.MultiPaxos
 

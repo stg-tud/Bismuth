@@ -1,11 +1,11 @@
-package probench
+package ex2026keyValuePrdtBench
 
 import channels.broadcast.PlumtreeBroadcast
 import channels.broadcast.PlumtreeMessage.Payload
 import channels.{BroadcastIO, DeltaStorage}
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
-import probench.KnowledgeGroups.leader
+import ex2026keyValuePrdtBench.KnowledgeGroups.leader
 import rdts.base.{Lattice, ReplicaId, Uid}
 import rdts.datatypes.ReplicatedSet
 import rdts.protocols.knowledgeGroups.MultiPaxos

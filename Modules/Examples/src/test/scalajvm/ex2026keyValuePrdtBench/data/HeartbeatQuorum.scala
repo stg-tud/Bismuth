@@ -1,4 +1,4 @@
-package probench.data
+package ex2026keyValuePrdtBench.data
 
 import rdts.base.{ReplicaId, Uid}
 import rdts.datatypes.LastWriterWins

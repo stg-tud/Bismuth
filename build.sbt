@@ -30,7 +30,6 @@ lazy val bismuth = project.in(file(".")).settings(Settings.strictScalacFlags).ag
   lore.js(s3v),
   lore.jvm(s3v),
   loreCompilerPlugin,
-  proBench,
   rdts.js(s3v),
   rdts.jvm(s3v),
   rdts.native(s3v),
@@ -128,6 +127,8 @@ lazy val examples = projectMatrix.in(file("Modules/Examples"))
           "com.softwaremill.sttp.client4" %% "core"                         % "4.1.1",
           "io.bullet"                     %% "borer-core"                   % "1.19.0",
           "io.bullet"                     %% "borer-derivation"             % "1.19.0",
+          "io.etcd"                        % "jetcd-core"                   % "0.8.7",
+          "site.ycsb"                      % "core"                         % "0.17.0",
           "org.conscrypt"                  % "conscrypt-openjdk-uber"       % "2.9.0",
           "org.eclipse.jetty.websocket"    % "jetty-websocket-jetty-api"    % jettyVersion,
           "org.eclipse.jetty.websocket"    % "jetty-websocket-jetty-client" % jettyVersion,
@@ -241,23 +242,6 @@ lazy val scripts = project.in(file("Modules/scripts"))
     ),
     fork                   := true,
     run / baseDirectory    := (ThisBuild / baseDirectory).value,
-  )
-
-lazy val proBench = project.in(file("Modules/Protocol Benchmarks"))
-  .dependsOn(
-    reactives.jvm(s3v),
-    channels.jvm(s3v),
-    rdts.jvm(s3v) % "compile->compile;test->test"
-  )
-  .settings(
-    Settings.strictScalacFlags,
-    libraryDependencies ++= jsoniterScala,
-    libraryDependencies ++= Seq(
-      "io.etcd"   % "jetcd-core" % "0.8.7",
-      "site.ycsb" % "core"       % "0.17.0",
-      pprint,
-      slips,
-    ),
   )
 
 lazy val rdts = projectMatrix.in(file("Modules/RDTs"))

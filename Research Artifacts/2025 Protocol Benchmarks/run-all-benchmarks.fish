@@ -14,7 +14,7 @@ set -lx BENCH_RESULTS_DIR benchmark-results
 
 set -l oldPath $PWD
 cd ../..
-sbt -client proBench/Universal/packageBin
+sbt -client examples/Universal/packageBin
 cd $oldPath
 rm -rf target/bin
 unzip -qq "../../Modules/Protocol Benchmarks/target/universal/probench.zip" -d target/bin

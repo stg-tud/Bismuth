@@ -1,4 +1,4 @@
-package probench
+package ex2026keyValuePrdtBench
 
 import de.rmgk.script.*
 
@@ -43,7 +43,7 @@ object TestMain {
     process"rsync --info=progress2 --no-inc-recursive --archive --compress --delete root@46.224.69.9:ycsb-core.jar ${workdir}".run()
     process"rsync --info=progress2 --no-inc-recursive --archive --compress --delete root@46.224.69.9:workloads ${workdir}".run()
 
-    process"""java -cp ycsb-core.jar:../jars/* site.ycsb.Client -db probench.ycsbadapters.ProBenchAdapter -P workloads/writeonly -s -p pb.endpoints=localhost:8110  -p ${operationcount} -p recordcount=1000 -p measurementtype=histogram -threads ${threads}""".directory(
+    process"""java -cp ycsb-core.jar:../jars/* site.ycsb.Client -db ex2026keyValuePrdtBench.ycsbadapters.ProBenchAdapter -P workloads/writeonly -s -p pb.endpoints=localhost:8110  -p ${operationcount} -p recordcount=1000 -p measurementtype=histogram -threads ${threads}""".directory(
       Path.of("target/ycsb").toFile
     ).run()
 

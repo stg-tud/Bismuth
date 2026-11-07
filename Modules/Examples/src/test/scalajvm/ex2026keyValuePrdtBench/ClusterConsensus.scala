@@ -1,8 +1,8 @@
-package probench
+package ex2026keyValuePrdtBench
 
 import channels.connection.{LocalMessageQueue, QueuedLocalConnection}
-import probench.clients.ProBenchClient
-import probench.data.{ClusterState, KVOperation}
+import ex2026keyValuePrdtBench.clients.ProBenchClient
+import ex2026keyValuePrdtBench.data.{ClusterState, KVOperation}
 import rdts.base.{ReplicaId, Uid}
 import rdts.protocols.Participants
 

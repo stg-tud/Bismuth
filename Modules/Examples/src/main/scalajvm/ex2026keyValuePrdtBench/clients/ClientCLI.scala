@@ -1,4 +1,4 @@
-package probench.clients
+package ex2026keyValuePrdtBench.clients
 
 import rdts.base.Uid
 

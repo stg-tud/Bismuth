@@ -245,14 +245,9 @@ export const repoTree: TreeEntry[] = [
 				summary: "Verifies LoRe code embedded in Scala by compiling it to Dafny. Currently dormant.",
 			},
 			{
-				name: "Protocol Benchmarks/",
-				sbt: ["proBench"],
-				summary: "Benchmarks for consensus protocols built from replicated data types, compared against etcd.",
-			},
-			{
 				name: "Examples/",
 				sbt: ["examples", "examplesJS"],
-				summary: "Case studies and benchmarks: browser demos such as the todo list, calendar, and the Tabular spreadsheet, and JVM experiments from early Swing examples to BFT, access control, and blockchain.",
+				summary: "Case studies and benchmarks: browser demos such as the todo list, calendar, and the Tabular spreadsheet, and JVM experiments from early Swing examples to BFT, access control, blockchain, and benchmarks of consensus protocols built from replicated data types against etcd.",
 			},
 			{ name: "Webview/", sbt: ["webview"], summary: "Runs the web demos in a native window, using Scala Native." },
 		],

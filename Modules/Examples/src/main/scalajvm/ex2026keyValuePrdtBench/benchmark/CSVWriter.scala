@@ -1,4 +1,4 @@
-package probench.benchmark
+package ex2026keyValuePrdtBench.benchmark
 
 import java.io.{BufferedWriter, FileOutputStream, OutputStreamWriter}
 import java.nio.file.Path

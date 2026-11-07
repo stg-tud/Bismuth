@@ -1,6 +1,6 @@
-package probench.data
+package ex2026keyValuePrdtBench.data
 
-import probench.data.RequestResponseQueue.{Req, Res, Timestamp, given}
+import ex2026keyValuePrdtBench.data.RequestResponseQueue.{Req, Res, Timestamp, given}
 import rdts.base.*
 import rdts.datatypes.ObserveRemoveMap
 import rdts.datatypes.ObserveRemoveMap.lattice
