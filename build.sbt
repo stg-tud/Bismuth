@@ -223,6 +223,17 @@ lazy val loreCompilerPluginExamples = project.in(file("Modules/LoRe Compiler Plu
     }
   )
 
+lazy val scripts = project.in(file("Modules/scripts"))
+  .settings(
+    libraryDependencies ++= Seq(
+      slips,
+      "ch.epfl.scala" % "bsp4j"   % "2.1.1",
+      "com.lihaoyi"  %% "upickle" % "4.1.0",
+    ),
+    fork                   := true,
+    run / baseDirectory    := (ThisBuild / baseDirectory).value,
+  )
+
 lazy val proBench = project.in(file("Modules/Protocol Benchmarks"))
   .dependsOn(
     reactives.jvm(s3v),
