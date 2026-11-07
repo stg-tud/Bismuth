@@ -1,7 +1,7 @@
 package test.rdts.bespoke
 
 import rdts.base.{Bottom, Lattice, ReplicaId}
-import rdts.datatypes.{LastWriterWins as LWW, RemoveWinsArray as ReplicatedList, ReplicatedTree}
+import rdts.datatypes.{ReplicatedTree, LastWriterWins as LWW, RemoveWinsArray as ReplicatedList}
 import rdts.experiments.{DeltaHistory, UndoRedoReplica}
 import rdts.time.Dot
 

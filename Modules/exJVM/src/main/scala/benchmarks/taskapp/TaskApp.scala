@@ -1,8 +1,8 @@
 package benchmarks.taskapp
 
 import rdts.base.{Bottom, Lattice, ReplicaId}
-import rdts.datatypes.{LastWriterWins as LWW, ReplicatedTree}
-import rdts.experiments.{DeltaHistory, RemoveWinsArrayExperiment as ReplicatedList, UndoRedoReplica}
+import rdts.datatypes.{ReplicatedTree, LastWriterWins as LWW}
+import rdts.experiments.{DeltaHistory, UndoRedoReplica, RemoveWinsArrayExperiment as ReplicatedList}
 import rdts.time.Dot
 
 object TaskApp {

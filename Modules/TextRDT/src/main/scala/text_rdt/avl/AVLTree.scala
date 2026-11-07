@@ -373,13 +373,13 @@ final class AVLTreeNode[T: AVLTreeNodeValueSize] {
       case left =>
         left.values()
     })
-      ++ Seq(value)
-      ++ (right match {
-        case null =>
-          Seq.empty
-        case right =>
-          right.values()
-      })
+    ++ Seq(value)
+    ++ (right match {
+      case null =>
+        Seq.empty
+      case right =>
+        right.values()
+    })
 
   def collectNodes(): Set[AVLTreeNode[T]] =
     (left match {

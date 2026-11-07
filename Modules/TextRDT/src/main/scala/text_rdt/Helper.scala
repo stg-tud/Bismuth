@@ -2,7 +2,7 @@ package text_rdt
 
 object Helper {
 
-  final val ENABLE =
+  final val ENABLE: Boolean =
     !sys.props.get("textrdt.assertions").contains("disabled")
 
   def myAssert(

@@ -2,7 +2,7 @@ package test.rdts.bespoke
 import munit.Assertions
 import rdts.base.Lattice.syntax.merge
 import rdts.base.{Lattice, ReplicaId, Uid}
-import rdts.datatypes.{LastWriterWins as LWW, ReplicatedTree}
+import rdts.datatypes.{ReplicatedTree, LastWriterWins as LWW}
 import rdts.time.Dot
 
 import scala.language.implicitConversions

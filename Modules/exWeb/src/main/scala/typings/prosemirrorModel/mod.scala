@@ -1,8 +1,9 @@
 package typings.prosemirrorModel
 
+import org.scalablytyped.runtime.{StObject, StringDictionary}
 import typings.orderedmap.mod.OrderedMap
 import typings.prosemirrorModel.prosemirrorModelStrings.full
-import org.scalablytyped.runtime.{StObject, StringDictionary}
+
 import scala.scalajs.js
 import scala.scalajs.js.annotation.JSImport
 

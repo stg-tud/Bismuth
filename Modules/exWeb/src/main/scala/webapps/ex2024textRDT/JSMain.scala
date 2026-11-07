@@ -1,24 +1,14 @@
 package webapps.ex2024textRDT
 
+import com.github.plokhotnyuk.jsoniter_scala.core.readFromString
+import org.scalablytyped.runtime.StringDictionary
+import org.scalajs.dom.{Element, HTMLElement, URL, document}
 import text_rdt.*
 import text_rdt.given
-
-import org.scalablytyped.runtime.StringDictionary
-import org.scalajs.dom.Element
-import org.scalajs.dom.HTMLElement
-import org.scalajs.dom.URL
-import org.scalajs.dom.document
 import typings.prosemirrorKeymap.mod.keymap
-import typings.prosemirrorModel.mod.NodeSpec
-import typings.prosemirrorModel.mod.Schema
-import typings.prosemirrorModel.mod.SchemaSpec
-import typings.prosemirrorModel.mod.TagParseRule
+import typings.prosemirrorModel.mod.{NodeSpec, Schema, SchemaSpec, TagParseRule}
 import typings.prosemirrorModel.prosemirrorModelStrings.full
-import typings.prosemirrorState.mod.Command
-import typings.prosemirrorState.mod.EditorState
-import typings.prosemirrorState.mod.EditorStateConfig
-import typings.prosemirrorState.mod.Plugin
-import com.github.plokhotnyuk.jsoniter_scala.core.readFromString
+import typings.prosemirrorState.mod.{Command, EditorState, EditorStateConfig, Plugin}
 
 import scala.scalajs.js
 
@@ -88,7 +78,7 @@ object JSMain {
       val _ = JSP2P()
     } else if url.searchParams.has("tree") then {
       plotTree(
-        s"body",
+        "body",
         readFromString[MyD3TreeNode](url.searchParams.get("tree"))
       )
       val node = document.querySelector("svg")

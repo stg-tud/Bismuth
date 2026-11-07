@@ -2,6 +2,7 @@ package typings.prosemirrorKeymap
 
 import org.scalablytyped.runtime.StringDictionary
 import typings.prosemirrorState.mod.{Command, Plugin}
+
 import scala.scalajs.js
 import scala.scalajs.js.annotation.JSImport
 

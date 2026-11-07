@@ -1,9 +1,9 @@
 package channels
 
-import channels.broadcast.{BroadcastTimer, PlumtreeBroadcast}
 import channels.broadcast.PlumtreeBroadcast.Event.Send
 import channels.broadcast.PlumtreeBroadcast.{Event, Peer, PeerRole}
 import channels.broadcast.PlumtreeMessage.*
+import channels.broadcast.{BroadcastTimer, PlumtreeBroadcast}
 import channels.{KeepAllHistory, NoHistory}
 import munit.FunSuite
 import rdts.base.Uid
@@ -32,7 +32,7 @@ class PlumtreeBroadcastTest extends FunSuite {
       )
     )
 
-    val expectedPayload                        = Payload(Dots.single(self, 0), "v1")
+    val expectedPayload                           = Payload(Dots.single(self, 0), "v1")
     val PlumtreeBroadcast.Result(next, events, _) = state.broadcast("v1")
 
     assert(next.localContext.contains(expectedPayload.dots))
@@ -57,7 +57,7 @@ class PlumtreeBroadcastTest extends FunSuite {
       )
     )
 
-    val msg                                    = payload(Uid.predefined("origin"), 0, "hello")
+    val msg                                       = payload(Uid.predefined("origin"), 0, "hello")
     val PlumtreeBroadcast.Result(next, events, _) = state.handleMessage(sender, msg)
 
     assert(next.localContext.contains(msg.dots))

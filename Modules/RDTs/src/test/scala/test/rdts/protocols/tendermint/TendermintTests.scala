@@ -1,15 +1,15 @@
 package test.rdts.protocols.tendermint
 
-import rdts.base.Uid
 import rdts.base.Lattice.syntax
+import rdts.base.Uid
 import rdts.protocols.tendermint.*
 import rdts.protocols.tendermint.TendermintState.given
 
 class TendermintTests extends munit.FunSuite:
 
-    val members = (0 until 4).map(i => Uid(s"v$i")).toSet
-    val vs      = ValidatorSet(members, TrustModel.Classical)
-    val vs4     = vs
+    val members: Set[Uid] = (0 until 4).map(i => Uid(s"v$i")).toSet
+    val vs: ValidatorSet  = ValidatorSet(members, TrustModel.Classical)
+    val vs4               = vs
 
     private def signed(uid: String): Evidence = Evidence(None, Uid(uid), MockSignature())
     private def tee(uid: String, ctr: Long)   = Evidence(Some(ctr), Uid(uid), MockSignature())

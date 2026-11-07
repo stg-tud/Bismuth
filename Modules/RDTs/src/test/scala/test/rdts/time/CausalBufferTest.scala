@@ -46,7 +46,7 @@ class CausalBufferTest extends munit.FunSuite {
   }
 
   test("predecessors may include own dots (merged deltas)") {
-    val merged   = d(a, 0).union(d(a, 1))
+    val merged     = d(a, 0).union(d(a, 1))
     val (_, ready) = CausalBuffer[String]().receive(merged, Causal(d(a, 0), "merged"))
     assertEquals(ready, List("merged"))
   }

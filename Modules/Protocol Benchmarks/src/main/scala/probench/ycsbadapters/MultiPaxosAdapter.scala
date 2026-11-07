@@ -4,6 +4,7 @@ import channels.connection.Abort
 import channels.{ConcurrencyHelper, NioTCP}
 import probench.KnowledgeGroups.*
 import probench.cli.addRetryingConnection
+import probench.ycsbadapters.MultiPaxosAdapterConnectionPool.multiPaxosReplica
 import probench.{KnowledgeGroups, MultiPaxosReplica}
 import rdts.base.Uid
 import rdts.protocols.knowledgeGroups.MultiPaxos
@@ -16,7 +17,6 @@ import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.jdk.CollectionConverters.*
 import scala.language.unsafeNulls
-import MultiPaxosAdapterConnectionPool.multiPaxosReplica
 
 object MultiPaxosAdapterConnectionPool {
   private val receiveEC: ExecutionContext = ExecutionContext.fromExecutor(Executors.newSingleThreadExecutor())

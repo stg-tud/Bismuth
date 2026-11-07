@@ -25,11 +25,11 @@ object TestMain {
         peerPortPort(number).toString,
         "--cluster"
       )
-        ++ (1 to number).map(i => s"localhost:${peerPortPort(i)}").toList
-        ++ List(
-          "--initial-cluster-ids",
-          (1 to total).map(i => s"node$i").mkString(" ")
-        ))
+      ++ (1 to number).map(i => s"localhost:${peerPortPort(i)}").toList
+      ++ List(
+        "--initial-cluster-ids",
+        (1 to total).map(i => s"node$i").mkString(" ")
+      ))
 
     (1 to nodes).foreach { n =>
       println(s"starting node $n")

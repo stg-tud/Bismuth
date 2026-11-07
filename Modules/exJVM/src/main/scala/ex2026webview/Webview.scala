@@ -13,7 +13,7 @@ import java.nio.file.Path
 object Webview {
   def main(args: Array[String]): Unit = {
     if args.isEmpty then
-        println(s"requires a url or a path to an html file as a first argument")
+        println("requires a url or a path to an html file as a first argument")
         return
 
     val target = args.head

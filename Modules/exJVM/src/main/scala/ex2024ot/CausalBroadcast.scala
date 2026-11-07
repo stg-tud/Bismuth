@@ -2,9 +2,9 @@ package ex2024ot
 
 import text_rdt.{CollaborativeTextEditingAlgorithm, RID}
 
-// Causal history used by [[OTAlgorithm]] to determine concurrent operations for transformation.
-
 import scala.collection.mutable
+
+// Causal history used by [[OTAlgorithm]] to determine concurrent operations for transformation.
 
 final case class CausalBroadcast[MSG](replicaId: RID, batching: Boolean = true) {
 

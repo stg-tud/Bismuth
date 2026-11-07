@@ -2,8 +2,9 @@ package text_rdt.avl2
 
 import text_rdt.Helper.myAssert
 import text_rdt.{Helper, Side, pprintAVL}
-import scala.math.Ordered.orderingToOrdered
+
 import scala.annotation.tailrec
+import scala.math.Ordered.orderingToOrdered
 
 object AVL2TreeNode {
 

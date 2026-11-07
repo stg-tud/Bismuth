@@ -7,7 +7,7 @@ import dotty.tools.dotc.core.Constants.Constant
 import dotty.tools.dotc.core.Contexts.Context
 import dotty.tools.dotc.core.Names.Name
 import dotty.tools.dotc.core.StdNames.nme
-import dotty.tools.dotc.core.Types.{AppliedType, CachedTypeRef, Type as ScalaType, TypeRef}
+import dotty.tools.dotc.core.Types.{AppliedType, CachedTypeRef, TypeRef, Type as ScalaType}
 import dotty.tools.dotc.report
 import dotty.tools.dotc.util.SourcePosition
 import lore.ast.{Type as LoReType, *}

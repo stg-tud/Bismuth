@@ -57,9 +57,9 @@ private def nullableCodec[A <: AnyRef](using codec: JsonValueCodec[A]): JsonValu
     override def nullValue: A | Null = null
   }
 
-given simpleIDCodec: JsonValueCodec[SimpleID]                 = JsonCodecMaker.make
+given simpleIDCodec: JsonValueCodec[SimpleID]                  = JsonCodecMaker.make
 given nullableSimpleIDCodec: JsonValueCodec[SimpleID | Null]   = nullableCodec[SimpleID]
-given complexIDCodec: JsonValueCodec[ComplexID]               = JsonCodecMaker.make
+given complexIDCodec: JsonValueCodec[ComplexID]                = JsonCodecMaker.make
 given nullableComplexIDCodec: JsonValueCodec[ComplexID | Null] = nullableCodec[ComplexID]
 
 given simpleMessageCodec: JsonValueCodec[Message[SimpleID]]   = JsonCodecMaker.make

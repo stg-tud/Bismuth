@@ -31,8 +31,8 @@ case class ParallelMultiPaxos[A](
     }
 
     // public API
-    def nextDecisionRound = commitIndex + 1
-    def closedRounds      = log
+    def nextDecisionRound: Long = commitIndex + 1
+    def closedRounds            = log
 
     def leader(using Participants): Option[Uid] = currentPaxos.flatMap(_.currentLeaderElection) match
         case Some(leaderElection) => leaderElection.result

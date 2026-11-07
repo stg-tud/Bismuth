@@ -10,14 +10,14 @@ case class KnowledgeGroup[A](ids: Set[Uid], path: A => A, enabled: A => Boolean)
 }
 
 case class PrdtSystem[A](knowledgeGroups: Set[KnowledgeGroup[A]]) {
-  def groupsFor(uid: Uid) =
+  def groupsFor(uid: Uid): Set[KnowledgeGroup[A]] =
     knowledgeGroups.filter(_.ids.contains(uid))
 
-  def matches(delta: A, receiver: Uid)(using Bottom[A], ReplicaId) =
+  def matches(delta: A, receiver: Uid)(using Bottom[A], ReplicaId): Boolean =
       val localReplicaId = summon[ReplicaId].uid
       knowledgeGroups.exists(g => g.ids.contains(localReplicaId) && g.ids.contains(receiver) && g.matches(delta))
 
-  def matches(delta: A, receivers: Set[Uid])(using Bottom[A], ReplicaId) =
+  def matches(delta: A, receivers: Set[Uid])(using Bottom[A], ReplicaId): Boolean =
       val localReplicaId = summon[ReplicaId].uid
       knowledgeGroups.exists(g => g.ids.contains(localReplicaId) && g.ids == receivers && g.matches(delta))
 

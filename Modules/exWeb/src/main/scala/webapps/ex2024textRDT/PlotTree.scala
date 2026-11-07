@@ -1,9 +1,8 @@
 package webapps.ex2024textRDT
 
+import org.scalajs.dom.{SVGTextElement, document}
 import text_rdt.*
 
-import org.scalajs.dom.document
-import org.scalajs.dom.SVGTextElement
 import scala.scalajs.js
 
 case class LayoutReturn(
@@ -90,9 +89,9 @@ def plotTreeNode(node: MyD3TreeNode): String =
       plotTreeNode(child)
     )
     .mkString
-    + s"""<text font-size="smaller" font-family="'Noto Sans Mono', 'Noto Sans Symbols 2'" id="x${node.value.toList
-        .map(_.toInt.toHexString)
-        .mkString}" shape-rendering="geometricPrecision" x="${node.x}" y="${node.y}" dominant-baseline="hanging" text-anchor="middle">${node.value}</text>
+  + s"""<text font-size="smaller" font-family="'Noto Sans Mono', 'Noto Sans Symbols 2'" id="x${node.value.toList
+      .map(_.toInt.toHexString)
+      .mkString}" shape-rendering="geometricPrecision" x="${node.x}" y="${node.y}" dominant-baseline="hanging" text-anchor="middle">${node.value}</text>
         """
 
 def plotTreeInternal(selector: String, myRoot: MyD3TreeNode) = {

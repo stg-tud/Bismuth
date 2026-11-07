@@ -2,12 +2,11 @@ package text_rdt
 
 import text_rdt.Helper.myAssert
 import text_rdt.avl.AVLTreeNode
-
-import scala.collection.mutable
-import scala.collection.View
 import text_rdt.avl2.AVL2TreeNode
-import scala.math.Ordered.orderingToOrdered
+
 import scala.collection.mutable.SortedSet
+import scala.collection.{View, mutable}
+import scala.math.Ordered.orderingToOrdered
 
 final case class ComplexAVLTreeNode(
     rid: RID | Null,

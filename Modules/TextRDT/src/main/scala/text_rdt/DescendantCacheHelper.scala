@@ -1,8 +1,7 @@
 package text_rdt
 
-import text_rdt.avl2.AVL2TreeNode
-import text_rdt.avl2.AVL2Tree
 import text_rdt.avl.AVLTreeNode
+import text_rdt.avl2.{AVL2Tree, AVL2TreeNode}
 
 object DescendantCacheHelper {
 

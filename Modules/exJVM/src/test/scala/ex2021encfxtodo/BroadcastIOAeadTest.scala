@@ -7,7 +7,7 @@ import channels.{BroadcastIO, experiments}
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import com.google.crypto.tink.aead.AeadConfig
-import com.google.crypto.tink.{Aead as TinkAead, KeyTemplates, KeysetHandle, RegistryConfiguration}
+import com.google.crypto.tink.{KeyTemplates, KeysetHandle, RegistryConfiguration, Aead as TinkAead}
 import munit.FunSuite
 import rdts.base.ReplicaId
 

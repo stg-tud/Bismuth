@@ -2,8 +2,8 @@ package ex2024ot
 
 import text_rdt.{CollaborativeTextEditingAlgorithm, RID}
 
-import scala.collection.mutable
 import scala.annotation.tailrec
+import scala.collection.mutable
 
 type CausalID = mutable.HashMap[RID, Int]
 

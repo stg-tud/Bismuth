@@ -1,6 +1,7 @@
 package typings.prosemirrorTransform
 
 import typings.prosemirrorModel.mod.{Node, Slice}
+
 import scala.scalajs.js
 import scala.scalajs.js.annotation.JSImport
 

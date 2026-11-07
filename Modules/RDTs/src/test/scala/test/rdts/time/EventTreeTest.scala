@@ -4,9 +4,8 @@ import munit.{FunSuite, ScalaCheckSuite}
 import org.scalacheck.Gen
 import org.scalacheck.Prop.*
 import org.scalacheck.Test.Parameters
-import rdts.time.EventTree
 import rdts.time.EventTree.{Branch, Leaf, seed, given}
-import rdts.time.IdTree
+import rdts.time.{EventTree, IdTree}
 import test.rdts.time.EventTreeGenerators.{genEventTree, genEventTreeLeaf, genRandomEventTree}
 import test.rdts.time.IdTreeGenerators.genIdTree
 

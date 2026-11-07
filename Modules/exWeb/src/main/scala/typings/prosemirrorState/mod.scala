@@ -1,9 +1,10 @@
 package typings.prosemirrorState
 
+import org.scalablytyped.runtime.StObject
 import typings.prosemirrorModel.mod.Schema
 import typings.prosemirrorTransform.mod.Transform
 import typings.prosemirrorView.mod.EditorView
-import org.scalablytyped.runtime.StObject
+
 import scala.scalajs.js
 import scala.scalajs.js.annotation.{JSImport, JSName}
 

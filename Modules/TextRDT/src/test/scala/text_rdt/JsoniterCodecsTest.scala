@@ -101,7 +101,9 @@ class JsoniterCodecsTest extends FunSuite {
       Message.Insert(SimpleID("B", 2), 'y', SimpleID("A", 1), Side.Left),
       Message.Delete(SimpleID("A", 1))
     )
-    simple.foreach(msg => assertEquals(readFromString(writeToString(msg)(using simpleMessageCodec))(using simpleMessageCodec), msg))
+    simple.foreach(msg =>
+      assertEquals(readFromString(writeToString(msg)(using simpleMessageCodec))(using simpleMessageCodec), msg)
+    )
 
     val complex: Seq[Message[ComplexID]] = Seq(
       Message.Insert(ComplexID("A", 1, 0), 'x', null, Side.Right),

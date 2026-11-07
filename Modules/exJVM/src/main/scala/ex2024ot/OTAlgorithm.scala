@@ -87,7 +87,7 @@ final case class OTAlgorithm(replicaId: String, val operations: Vector[OTOperati
 
   val operationsPerSite: mutable.HashMap[RID, mutable.ArrayBuffer[OTOperation]] = mutable.HashMap()
 
-  val causalBroadcast = CausalBroadcast[OTOperation](replicaId, false)
+  val causalBroadcast: CausalBroadcast[OTOperation] = CausalBroadcast[OTOperation](replicaId, false)
 
   val text: StringBuilder = StringBuilder()
 

@@ -172,7 +172,7 @@ final case class OpenNetwork(
         )
         require(
           replacementSlices.keySet == nextMembers,
-          s"replacement slices must define exactly the remaining members"
+          "replacement slices must define exactly the remaining members"
         )
         require(
           replacementSlices.values.flatten.flatten.toSet.subsetOf(nextMembers),

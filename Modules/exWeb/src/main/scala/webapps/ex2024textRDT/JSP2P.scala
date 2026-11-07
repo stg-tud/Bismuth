@@ -1,7 +1,8 @@
 package webapps.ex2024textRDT
 
-import org.scalajs.dom.document
+import org.scalajs.dom.{Element, document}
 import text_rdt.*
+import text_rdt.ComplexAVLFugueFactory.complexAVLFugueFactory
 import text_rdt.given
 import typings.prosemirrorState.mod.EditorState
 import webapps.WebRTCConnectionView
@@ -17,23 +18,23 @@ private case class JSP2P() {
   <div id="peers"></div>
   """
 
-  val replicaId = UUID.randomUUID().nn.toString()
+  val replicaId: String = UUID.randomUUID().nn.toString()
 
-  val newEditor = document.createElement("div")
+  val newEditor: Element = document.createElement("div")
   newEditor.id = s"editor${replicaId}-parent"
-  val child1 = document.createElement("h3")
-  child1.innerText = s"Editor"
-  val child2 = document.createElement("div")
+  val child1: Element = document.createElement("h3")
+  child1.innerText = "Editor"
+  val child2: Element = document.createElement("div")
   child2.classList.add("my-border")
   child2.id = s"editor${replicaId}"
-  val child3 = document.createElement("pre")
+  val child3: Element = document.createElement("pre")
   child3.id = s"editor${replicaId}-info"
-  val child4 = document.createElement("button")
+  val child4: Element = document.createElement("button")
   child4.id = s"editor${replicaId}-toggle-graph"
   child4.innerText = "Toggle graphs"
-  val child5 = document.createElement("div")
+  val child5: Element = document.createElement("div")
   child5.id = s"editor${replicaId}-graph"
-  val child6 = document.createElement("div")
+  val child6: Element = document.createElement("div")
   child6.id = s"editor${replicaId}-graph-avl"
   val _ = newEditor.appendChild(child1)
   val _ = newEditor.appendChild(child2)
@@ -51,12 +52,12 @@ private case class JSP2P() {
       replicaId
     )(using complexAVLTreeNodeD3Tree.factoryContext)
 
-  val replica =
+  val replica: Replica[complexAVLTreeNodeD3Tree.factoryContext.type] =
     Replica[complexAVLTreeNodeD3Tree.factoryContext.type](
       replicaState,
     )
 
-  val prosemirror =
+  val prosemirror: ProseMirror[complexAVLFugueFactory.type] =
     ProseMirror(
       s"#editor${replicaId}",
       EditorState.create(editorStateConfig),
@@ -66,7 +67,7 @@ private case class JSP2P() {
 
   replica.editor = prosemirror
 
-  val replication = TextReplication(replica)
+  val replication: TextReplication[complexAVLTreeNodeD3Tree.factoryContext.type] = TextReplication(replica)
   prosemirror.onLocalChange = () => replication.publish()
 
   val _ = document

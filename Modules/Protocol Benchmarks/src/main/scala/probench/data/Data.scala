@@ -4,8 +4,8 @@ import channels.broadcast.PlumtreeMessage
 import channels.broadcast.PlumtreeMessage.Payload
 import rdts.base.{Lattice, ReplicaId, Uid}
 import rdts.datatypes.LastWriterWins
-import rdts.protocols.{Participants, Vote, Voting}
 import rdts.protocols.spanner.ParallelMultiPaxos
+import rdts.protocols.{Participants, Vote, Voting}
 
 enum KVOperation[Key, Value] {
   def key: Key

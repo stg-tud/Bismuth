@@ -1,10 +1,9 @@
 package webapps.ex2024textRDT
 
-import text_rdt.*
-import text_rdt.given
-
 import munit.FunSuite
 import org.scalajs.dom
+import text_rdt.*
+import text_rdt.given
 import typings.prosemirrorState.mod.EditorState
 
 import scala.scalajs.js

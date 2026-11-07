@@ -1,8 +1,8 @@
 package test.rdts.time.codecs
 
 import rdts.time.EventTree
-import test.rdts.time.EventTreeGenerators.genEventTree
 import rdts.time.codecs.EventTreeCodec
+import test.rdts.time.EventTreeGenerators.genEventTree
 
 class EventTreeCodecSpec extends CodecSpec[EventTree] {
   def printByteArray(array: Array[Byte]): Unit = {

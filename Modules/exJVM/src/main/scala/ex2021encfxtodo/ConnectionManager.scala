@@ -88,7 +88,7 @@ class ConnectionManager[State: JsonValueCodec](
 
 object ConnectionManager {
 
-  val demokey =
+  val demokey: String =
     """{"primaryKeyId":2175398082,"key":[{"keyData":{"typeUrl":"type.googleapis.com/google.crypto.tink.XChaCha20Poly1305Key","value":"GiC9IjJ4Kab5ReDkVMle76U4ryd+BxylGYtDbuQvc8GnSg==","keyMaterialType":"SYMMETRIC"},"status":"ENABLED","keyId":2175398082,"outputPrefixType":"TINK"}]}""".stripMargin
 
   private def loadOrCreateDemoAead(): Aead = {

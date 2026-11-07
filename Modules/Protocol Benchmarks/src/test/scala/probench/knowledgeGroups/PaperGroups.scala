@@ -3,18 +3,18 @@ import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import probench.{KnowledgeGroups, MultiPaxosReplica, Request}
 import rdts.base.{ReplicaId, Uid}
-import rdts.protocols.knowledgeGroups.MultiPaxos
 import rdts.protocols.Participants
+import rdts.protocols.knowledgeGroups.MultiPaxos
 
 class PaperGroups extends munit.FunSuite {
-  val client    = Uid.predefined("client")
-  val leader    = Uid.predefined("leader")
-  val follower1 = Uid.predefined("follower1")
-  val follower2 = Uid.predefined("follower2")
-  val follower3 = Uid.predefined("follower3")
-  val follower4 = Uid.predefined("follower4")
-  val proxy1    = Uid.predefined("proxy1")
-  val proxy2    = Uid.predefined("proxy2")
+  val client: Uid    = Uid.predefined("client")
+  val leader: Uid    = Uid.predefined("leader")
+  val follower1: Uid = Uid.predefined("follower1")
+  val follower2: Uid = Uid.predefined("follower2")
+  val follower3: Uid = Uid.predefined("follower3")
+  val follower4: Uid = Uid.predefined("follower4")
+  val proxy1: Uid    = Uid.predefined("proxy1")
+  val proxy2: Uid    = Uid.predefined("proxy2")
 
   test("ClientServerSystem Smoke Test") {
     val a = MultiPaxos[Request]()

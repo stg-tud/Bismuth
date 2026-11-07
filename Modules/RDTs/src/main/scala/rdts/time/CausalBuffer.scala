@@ -35,7 +35,7 @@ final case class CausalBuffer[A](applied: Dots = Dots.empty, pending: List[(Dots
   @tailrec
   private def drain(acc: List[A]): (CausalBuffer[A], List[A]) =
     pending.find(isReady) match
-        case None                 => (this, acc.reverse)
+        case None                        => (this, acc.reverse)
         case Some(ready @ (dots, delta)) =>
           copy(applied = applied.union(dots), pending = pending.filterNot(_ eq ready)).drain(delta.value :: acc)
 }

@@ -6,9 +6,9 @@ import org.scalacheck.Test.Parameters
 import org.scalacheck.{Arbitrary, Gen, Prop}
 import rdts.base.{Lattice, ReplicaId}
 import rdts.protocols.Participants
+import rdts.protocols.spanner.ParallelMultiPaxos
 
 import scala.util.Try
-import rdts.protocols.spanner.ParallelMultiPaxos
 
 class ParallelMultiPaxosSuite extends munit.ScalaCheckSuite {
   override def scalaCheckTestParameters: Parameters =

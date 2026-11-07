@@ -1,6 +1,6 @@
 package rdts.protocols
 
-import rdts.base.{Bottom, Lattice, ReplicaId, Orderings, Uid}
+import rdts.base.{Bottom, Lattice, Orderings, ReplicaId, Uid}
 import rdts.datatypes.ReplicatedSet
 
 case class Ownership(epoch: Long, owner: Uid)

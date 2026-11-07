@@ -24,16 +24,16 @@ given Lattice[Payload[MultiPaxos[Request]]] =
   Lattice.derived
 
 object KnowledgeGroups {
-  val client    = Uid.predefined("client")
-  val leader    = Uid.predefined("leader")
-  val follower1 = Uid.predefined("follower1")
-  val follower2 = Uid.predefined("follower2")
-  val follower3 = Uid.predefined("follower3")
-  val follower4 = Uid.predefined("follower4")
-  val proxy1    = Uid.predefined("proxy1")
-  val proxy2    = Uid.predefined("proxy2")
+  val client: Uid    = Uid.predefined("client")
+  val leader: Uid    = Uid.predefined("leader")
+  val follower1: Uid = Uid.predefined("follower1")
+  val follower2: Uid = Uid.predefined("follower2")
+  val follower3: Uid = Uid.predefined("follower3")
+  val follower4: Uid = Uid.predefined("follower4")
+  val proxy1: Uid    = Uid.predefined("proxy1")
+  val proxy2: Uid    = Uid.predefined("proxy2")
   // client server config
-  val clientServer =
+  val clientServer: PrdtSystem[MultiPaxos[Request]] =
     PrdtSystem[MultiPaxos[Request]](Set(
       KnowledgeGroup( // leader and followers share slots
         ids = Set(leader, follower1, follower2, follower3, follower4),
@@ -52,7 +52,7 @@ object KnowledgeGroups {
       )
     ))
 
-  val compartmentalized = PrdtSystem[MultiPaxos[Request]](Set(
+  val compartmentalized: PrdtSystem[MultiPaxos[Request]] = PrdtSystem[MultiPaxos[Request]](Set(
     KnowledgeGroup( // leader proxy1 for uneven rounds, and then only phase2a or leaderElection
       ids = Set(leader, proxy1),
       path = m => MultiPaxos[Request](slots = m.slots),
@@ -101,7 +101,7 @@ object KnowledgeGroups {
     )
   ))
 
-  val occamsRazor = PrdtSystem[MultiPaxos[Request]](Set(
+  val occamsRazor: PrdtSystem[MultiPaxos[Request]] = PrdtSystem[MultiPaxos[Request]](Set(
     KnowledgeGroup( // leader and followers share slots
       ids = Set(leader, follower1, follower2, follower3, follower4),
       path = m => MultiPaxos[Request](slots = m.slots),
@@ -144,7 +144,7 @@ class MultiPaxosReplica(
   private def log(msg: String): Unit =
     if false then println(s"[$id] $msg")
 
-  def handleDelta(delta: MultiPaxos[Request])(using Participants) = {
+  def handleDelta(delta: MultiPaxos[Request])(using Participants): Unit = {
     log(s"received delta: $delta")
     maybeReturnResult(delta)
     currentStateLock.synchronized {
@@ -228,7 +228,7 @@ class MultiPaxosReplica(
     publish(delta)
   }
 
-  def publish(delta: MultiPaxos[Request], source: Option[Set[Uid]] = None) = {
+  def publish(delta: MultiPaxos[Request], source: Option[Set[Uid]] = None): Unit = {
     currentStateLock.synchronized {
       state = state.merge(delta)
     }

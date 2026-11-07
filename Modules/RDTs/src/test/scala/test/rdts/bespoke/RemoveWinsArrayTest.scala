@@ -1,7 +1,7 @@
 package test.rdts.bespoke
 import rdts.base.Lattice.syntax.merge
 import rdts.base.{Lattice, Uid}
-import rdts.datatypes.{LastWriterWins as LWW, RemoveWinsArray}
+import rdts.datatypes.{RemoveWinsArray, LastWriterWins as LWW}
 
 import scala.language.implicitConversions
 

@@ -85,7 +85,9 @@ object TextReplication {
     override def nullValue: Vector[A] = Vector.empty
   }
 
-  def causalCodec[A](using dotsCodec: JsonValueCodec[Dots])(using
+  def causalCodec[A](using
+      dotsCodec: JsonValueCodec[Dots]
+  )(using
       codec: JsonValueCodec[A]
   ): JsonValueCodec[Causal[A]] = new JsonValueCodec[Causal[A]] {
     override def decodeValue(in: JsonReader, default: Causal[A]): Causal[A] = {

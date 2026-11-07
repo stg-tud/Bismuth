@@ -1,9 +1,7 @@
 package text_rdt
 
 import text_rdt.Helper.myAssert
-import text_rdt.avl.AVLTree
-import text_rdt.avl.AVLTreeNode
-import text_rdt.avl.AVLTreeNodeValueSize
+import text_rdt.avl.{AVLTree, AVLTreeNode, AVLTreeNodeValueSize}
 import text_rdt.avl2.AVL2TreeNode
 
 import scala.collection.mutable
@@ -180,7 +178,7 @@ object ComplexAVLFugueFactory {
         )
       }
 
-      def handleRemoteMessage(message: MSG, editor: Editory): Unit = {
+      def handleRemoteMessage(message: MSG, editor: Editory): Unit =
         message match {
           case ComplexAVLMessage.Insert(
                 rid,
@@ -222,7 +220,6 @@ object ComplexAVLFugueFactory {
               }
             }
         }
-      }
 
       override def dupe(): ComplexAVLFugueFactory = factory
 

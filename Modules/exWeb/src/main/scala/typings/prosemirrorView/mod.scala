@@ -1,8 +1,9 @@
 package typings.prosemirrorView
 
-import typings.prosemirrorState.mod.{EditorState, Transaction}
 import org.scalablytyped.runtime.StObject
 import org.scalajs.dom.Element
+import typings.prosemirrorState.mod.{EditorState, Transaction}
+
 import scala.scalajs.js
 import scala.scalajs.js.annotation.JSImport
 

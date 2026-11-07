@@ -56,7 +56,6 @@ class ComplexAVLInternalFugueTestSuite
   }
 }
 
-
 abstract class InternalFugueTestSuite[A](
     val factoryConstructor: String => A
 )(using algorithm: CollaborativeTextEditingAlgorithm[A]) extends FunSuite {

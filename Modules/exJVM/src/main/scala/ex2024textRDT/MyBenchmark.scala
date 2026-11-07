@@ -1,17 +1,16 @@
 package ex2024textRDT
 
-import text_rdt.*
-
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReader, JsonValueCodec, JsonWriter, readFromString}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import org.openjdk.jmh.annotations.*
+import text_rdt.*
 
+import java.lang.management.ManagementFactory
+import javax.management.ObjectName
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.compiletime.uninitialized
 import scala.io.Source
-import java.lang.management.ManagementFactory
-import javax.management.ObjectName
 
 enum FixtureOperation {
   case Insert(position: Int, character: Char)
@@ -603,14 +602,14 @@ class MyTerribleBenchmarkEvilInsert {
     for i <- 0 until count do
         replicaToSyncInto.insert(i, 'p')
     replicaToSyncInto.applyRemoteUnchecked(
-          (1 to until).map(i =>
-            Message.Insert(
-              SimpleID("b", i),
-              '.',
-              SimpleID("a", i),
-              Side.Right
-            )
-          )
+      (1 to until).map(i =>
+        Message.Insert(
+          SimpleID("b", i),
+          '.',
+          SimpleID("a", i),
+          Side.Right
+        )
+      )
     )
 
     val result = replicaToSyncInto
@@ -642,18 +641,18 @@ class MyTerribleBenchmarkEvilInsert {
           'p'
         )
     replicaToSyncInto.applyRemoteUnchecked(
-          (0 until until).map(i =>
-            ComplexAVLMessage.Insert(
-              "b",
-              i,
-              0,
-              StringBuilder("c"),
-              "a",
-              1,
-              i,
-              Side.Right
-            )
-          )
+      (0 until until).map(i =>
+        ComplexAVLMessage.Insert(
+          "b",
+          i,
+          0,
+          StringBuilder("c"),
+          "a",
+          1,
+          i,
+          Side.Right
+        )
+      )
     )
 
     val result = replicaToSyncInto
@@ -717,18 +716,18 @@ class MyTerribleBenchmarkEvilInsert {
           'p'
         )
     replicaToSyncInto.applyRemoteUnchecked(
-          (0 until count).map(i =>
-            ComplexAVLMessage.Insert(
-              s"b$i",
-              0,
-              0,
-              StringBuilder("c"),
-              "a",
-              1,
-              count - 1,
-              Side.Right
-            )
-          )
+      (0 until count).map(i =>
+        ComplexAVLMessage.Insert(
+          s"b$i",
+          0,
+          0,
+          StringBuilder("c"),
+          "a",
+          1,
+          count - 1,
+          Side.Right
+        )
+      )
     )
     for i <- 1 until until * 2 - 2 by 2 do
         replicaToSyncInto.insert(
@@ -759,18 +758,18 @@ class MyTerribleBenchmarkEvilInsert {
       )
     val replicaToSyncInto = Replica(replicaStateToSyncInto, StringEditory())
     replicaToSyncInto.applyRemoteUnchecked(
-          (0 until until).map(i =>
-            ComplexAVLMessage.Insert(
-              s"b$i",
-              0,
-              0,
-              StringBuilder("c"),
-              null,
-              0,
-              0,
-              Side.Right
-            )
-          )
+      (0 until until).map(i =>
+        ComplexAVLMessage.Insert(
+          s"b$i",
+          0,
+          0,
+          StringBuilder("c"),
+          null,
+          0,
+          0,
+          Side.Right
+        )
+      )
     )
 
     val result = replicaToSyncInto

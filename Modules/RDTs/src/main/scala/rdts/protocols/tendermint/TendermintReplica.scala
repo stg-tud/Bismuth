@@ -12,8 +12,8 @@
 package rdts.protocols.tendermint
 
 import rdts.base.{Bottom, ReplicaId, Uid}
-import rdts.protocols.tendermint.TendermintState.given
 import rdts.protocols.tendermint.Step.*
+import rdts.protocols.tendermint.TendermintState.given
 
 /** Local, non-replicated registers L and timeout counters C of a replica
   * (Sec. 7: S = ⟨B, C, L⟩). Replicated state lives exclusively in the lattice.
