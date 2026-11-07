@@ -1,4 +1,4 @@
 .astro/
 node_modules/
-public/examples/
+target/
 public/documentation/

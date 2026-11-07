@@ -1,0 +1,20 @@
+---
+import Example from "../../layouts/Example.astro";
+
+export function getStaticPaths() {
+	return [
+		{ params: { app: "todolist" }, props: { title: "Todo List" } },
+		{ params: { app: "calendar" }, props: { title: "Calendar" } },
+		{ params: { app: "tabular" }, props: { title: "Tabular" } },
+		{ params: { app: "unit-conversion" }, props: { title: "Unit Conversion" } },
+		{ params: { app: "overlay-graph" }, props: { title: "Overlay Graph" } },
+		{ params: { app: "mini-social" }, props: { title: "Mini Social" } },
+	];
+}
+const { app } = Astro.params;
+const { title } = Astro.props;
+---
+
+<Example title={title} app={app}>
+	{app === "todolist" && <p slot="footer">Todo List based on <a href="https://todomvc.com">TodoMVC</a></p>}
+</Example>

@@ -1,5 +1,9 @@
 {
+	"private": true,
+	"workspaces": [
+		"Website"
+	],
 	"dependencies": {
-		"jsdom": "29.1.1"
+		"jsdom": "^31.0.0"
 	}
 }

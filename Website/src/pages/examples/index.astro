@@ -1,23 +1,16 @@
+---
+import "../../examples/style.css";
+---
+
 <!doctype html>
 <html lang="en">
-
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>WebApp Case Studies</title>
-	<link rel="stylesheet" href="style.css">
-
-	<script src="https://cdn.tailwindcss.com"></script>
-	<script>
-		tailwind.config = {
-			theme: {
-				extend: {
-					fontFamily: {
-						'sans': ['Inter', 'system-ui', 'sans-serif'],
-					}
-				}
-			}
-		}
+	<script is:inline src="https://cdn.tailwindcss.com"></script>
+	<script is:inline>
+		tailwind.config = { theme: { extend: { fontFamily: { sans: ["Inter", "system-ui", "sans-serif"] } } } };
 	</script>
 </head>
 
@@ -86,5 +79,4 @@
 		</footer>
 	</main>
 </body>
-
 </html>

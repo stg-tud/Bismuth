@@ -3,7 +3,6 @@ authors:
 
 test:
 	npm install
-	cd "Modules/Examples/" && npm install
 	sbt test
 
 publishLocal:
@@ -20,25 +19,26 @@ runSimpleCaseStudy:
 	sbt 'examples / run'
 
 webappsPrepare:
-	cd "Modules/Examples/" && npm install
+	npm install # npm workspace: installs Website dependencies (incl. those of the web case studies) into the root node_modules
 	# the custom main.js conditionally includes both variants so we need fast/full main.js variants to exist otherwise the bundler barfs
 	sbt examplesJS/fastLinkJS
 	sbt examplesJS/fullLinkJS
 
+# the case studies are pages of the website (Website/src/pages/examples); rerun `sbt examplesJS/fastLinkJS` (or `sbt ~examplesJS/fastLinkJS`) and astro reloads
 webappsServe: webappsPrepare
-	"Modules/Examples/node_modules/vite/bin/vite.js" "Modules/Examples/"
+	cd Website && npx astro dev --port 5173
 
 webappsWebviewNative:
 	# connect to a running vite dev server (start it with `just webappsServe`)
-	sbt 'webview / run "http://localhost:5173/"'
+	sbt 'webview / run "http://localhost:5173/Bismuth/examples/"'
 
 webappsWebviewJVM:
 	# connect to a running vite dev server (start it with `just webappsServe`)
-	sbt 'examples / runMain ex2026webview.Webview "http://localhost:5173/"'
+	sbt 'examples / runMain ex2026webview.Webview "http://localhost:5173/Bismuth/examples/"'
 
 webappsWebviewJavaGi: # launch a web app in a java-gi (GTK4 + Libadwaita + WebKitGTK) browser window
 	# requires GTK4, libadwaita and webkitgtk-6.0 native libraries at runtime
-	sbt 'examples / runMain ex2026webview.JavaGiWebview "http://localhost:5173/"'
+	sbt 'examples / runMain ex2026webview.JavaGiWebview "http://localhost:5173/Bismuth/examples/"'
 
 reformPrepare:
 	if [ ! -f "Modules/Reform/.env" ] && [ -f "Modules/Reform/env.example" ]; then cp "Modules/Reform/env.example" "Modules/Reform/.env"; fi
@@ -82,15 +82,13 @@ open-in-podman command="fish":
 	rm -rf target/out # need to delete out otherwise host sbt will not work
 
 
-# collect website inputs: scitzen articles (rendered with the minimal template the website ingests) and the web demos
+# collect website inputs: scitzen articles (rendered with the minimal template the website ingests) and the Scala.js output of the web demos
 [private]
 websitePrepare: webappsPrepare
 	cd Documentation && scitzen compile --html --html-template ../Website/scitzen-template.html.scim .
-	rm -rf Website/public/documentation Website/public/examples
+	rm -rf Website/public/documentation
 	mkdir -p Website/public/documentation
 	cp -r Documentation/scitzen.out/web/resources Website/public/documentation/
-	"Modules/Examples/node_modules/vite/bin/vite.js" build "Modules/Examples/" --outDir "$PWD/Website/public/examples" --emptyOutDir
-	cd Website && npm install
 
 websiteServe: websitePrepare
 	cd Website && npx astro dev

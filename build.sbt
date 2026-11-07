@@ -183,20 +183,20 @@ lazy val examples = projectMatrix.in(file("Modules/Examples"))
         (Compile / scalaJSLinkerConfig).value
           .withModuleKind(ModuleKind.CommonJSModule)
           .withModuleSplitStyle(ModuleSplitStyle.FewestModules),
-      // let node resolve jsdom and the prosemirror packages from this module's node_modules
+      // let node resolve jsdom and the prosemirror packages from the npm workspace root node_modules
       Test / jsEnv := Def.uncached {
         new org.scalajs.jsenv.nodejs.NodeJSEnv(
           org.scalajs.jsenv.nodejs.NodeJSEnv.Config().withEnv(
-            Map("NODE_PATH" -> ((LocalRootProject / baseDirectory).value / "Modules/Examples/node_modules").getAbsolutePath)
+            Map("NODE_PATH" -> ((LocalRootProject / baseDirectory).value / "node_modules").getAbsolutePath)
           )
         )
       },
       // fix the output directory to make it “guessable” by JS import (see main.js)
       // (matrix rows have their baseDirectory under .sbt/matrix, so anchor to the module dir instead)
       Compile / fastLinkJS / scalaJSLinkerOutputDirectory :=
-        (LocalRootProject / baseDirectory).value / "Modules/Examples/target/generated_js/examples-fastopt",
+        (LocalRootProject / baseDirectory).value / "Website/target/generated_js/examples-fastopt",
       Compile / fullLinkJS / scalaJSLinkerOutputDirectory :=
-        (LocalRootProject / baseDirectory).value / "Modules/Examples/target/generated_js/examples-opt",
+        (LocalRootProject / baseDirectory).value / "Website/target/generated_js/examples-opt",
     )
   )
 

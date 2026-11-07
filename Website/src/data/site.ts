@@ -199,7 +199,7 @@ export const libraries: Library[] = [
 	},
 ];
 
-// Pages built by the Examples vite bundle (copied into /examples/)
+// Web case studies, pages in src/pages/examples/ (Scala.js output from `sbt examplesJS/fastLinkJS`)
 export const demos = [
 	{ id: "todolist", title: "Todo List", summary: "A collaborative todo list based on TodoMVC." },
 	{ id: "calendar", title: "Calendar", summary: "A shared appointment calendar across replicas." },

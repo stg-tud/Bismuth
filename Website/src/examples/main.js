@@ -13,8 +13,8 @@ import "prosemirror-view/style/prosemirror.css";
 
 const useFullopt = import.meta.env?.PROD;
 const modulePromise = useFullopt
-	? import("./target/generated_js/examples-opt/main.js")
-	: import("./target/generated_js/examples-fastopt/main.js");
+	? import("../../target/generated_js/examples-opt/main.js")
+	: import("../../target/generated_js/examples-fastopt/main.js");
 
 const appHandlers = {
 	todolist: "Todolist",
