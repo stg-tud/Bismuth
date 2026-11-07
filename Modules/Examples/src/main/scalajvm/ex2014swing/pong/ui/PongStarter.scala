@@ -30,22 +30,14 @@ object PongStarter extends SimpleSwingApplication {
 class PongWindow {
 
   val tick: Evt[Unit] = Evt[Unit]()
-  tick observe { (_: Unit) => frame.repaint() }
 
   val mouse = new Mouse
   val ball  = new Pong(tick, mouse)
 
   // drawing code
-  val frame: MainFrame = new MainFrame {
-    title = "Pong"
-    resizable = false
-    contents = new Panel() {
-
-      /** forward mouse events to EScala wrapper class. Should be replaced once reactive GUI lib is complete */
-      listenTo(this.mouse.moves, this.mouse.clicks)
-      reactions += PongWindow.this.mouse.react
-
-      preferredSize = new Dimension(Pong.Max_X, Pong.Max_Y)
+  // lazy, so the Swing components are wired up after construction
+  lazy val canvas: Panel = {
+    val canvas = new Panel() {
       val scoreFont                                    = new Font("Tahoma", java.awt.Font.PLAIN, 32)
       override def paintComponent(g: Graphics2D): Unit =
         transaction(ball.x, ball.y, ball.leftRacket.area, ball.rightRacket.area) { t ?=>
@@ -70,5 +62,19 @@ class PongWindow {
           g.drawString(t.now(ball.score), Pong.Max_X / 2 - 50, 40)
         }
     }
+    canvas.preferredSize = new Dimension(Pong.Max_X, Pong.Max_Y)
+    canvas.listenTo(canvas.mouse.moves, canvas.mouse.clicks)
+    canvas.reactions += mouse.react
+    canvas
   }
+  lazy val frame: MainFrame = {
+    val frame = new MainFrame
+    frame.title = "Pong"
+    frame.resizable = false
+    frame.contents = canvas
+    frame
+  }
+
+  // redraw code
+  tick observe { (_: Unit) => frame.repaint() }
 }

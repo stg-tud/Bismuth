@@ -40,16 +40,18 @@ class SignalVersion {
     if (d / width) % 2 == 0 then d % width else width - d % width
   }
 
-  tick.changed `observe` ((_: Int) => frame.repaint())
 
   // drawing code
-  val frame: MainFrame = new MainFrame {
-    contents = new Panel() {
-      preferredSize = new Dimension(600, 600)
-      override def paintComponent(g: Graphics2D): Unit =
-        transaction(x, y) { t ?=>
-          g.fillOval(t.now(x), t.now(y), Size, Size)
-        }
-    }
+  val canvas: Panel = new Panel() {
+    override def paintComponent(g: Graphics2D): Unit =
+      transaction(x, y) { t ?=>
+        g.fillOval(t.now(x), t.now(y), Size, Size)
+      }
   }
+  canvas.preferredSize = new Dimension(600, 600)
+  val frame: MainFrame = new MainFrame
+  frame.contents = canvas
+
+  // redraw code
+  tick.changed `observe` ((_: Int) => frame.repaint())
 }

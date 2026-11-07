@@ -23,21 +23,19 @@ object ElevatorApplication extends SimpleSwingApplication {
 
 class ElevatorApplication(val elevator: Elevator) {
   // drawing code
-  val frame: MainFrame = new MainFrame {
-    contents = new GridPanel(0, 2) {
-      contents += new ElevatorPainter(elevator)
-      contents += new GridPanel(elevator.nFloors, 1) {
-        for i <- 0 until elevator.nFloors do {
-          vGap = 8
-          contents += new Button {
-            this.bounds
-            text = elevator.nameOfFloor(i)
-            reactions += { case _ => elevator.callToFloor.fire(i) }
-          }
-        }
-      }
-    }
-  }
+  val floorButtons: GridPanel = new GridPanel(elevator.nFloors, 1)
+  floorButtons.vGap = 8
+  for i <- 0 until elevator.nFloors do
+      floorButtons.contents += new Button(Action(elevator.nameOfFloor(i)) { elevator.callToFloor.fire(i) })
+
+  val layout: GridPanel = new GridPanel(0, 2)
+  val painter: ElevatorPainter = new ElevatorPainter(elevator)
+  painter.preferredSize = new Dimension(painter.sizeX, painter.sizeY)
+  layout.contents += painter
+  layout.contents += floorButtons
+
+  val frame: MainFrame = new MainFrame
+  frame.contents = layout
   elevator.tick observe { _ => frame.repaint() }
 }
 
@@ -46,8 +44,6 @@ class ElevatorPainter(e: Elevator) extends Panel {
   val FloorWidth: Int = (0.9 * e.FloorHeight).toInt
   val sizeX: Int      = FloorWidth + 50
   val sizeY: Int      = FloorHeight * e.nFloors + 50
-
-  preferredSize = new Dimension(sizeX, sizeY)
 
   override def paintComponent(g: Graphics2D): Unit =
     draw(g, new Rectangle(0, 0, 0, 0))

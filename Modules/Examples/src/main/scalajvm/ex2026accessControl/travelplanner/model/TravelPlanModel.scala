@@ -14,6 +14,9 @@ import scalafx.collections.ObservableBuffer
 import java.util.concurrent.atomic.AtomicReference
 import scala.concurrent.ExecutionContext.global
 
+// The init checker (-Wsafe-init) cannot verify this constructor:
+// handlers that capture the model are registered during construction.
+@scala.annotation.nowarn("msg=initialized|initialization")
 class TravelPlanModel(
     private val localIdentity: PrivateIdentity,
     syncProvider: (stateChanged: TravelPlan => Unit) => Sync[TravelPlan]

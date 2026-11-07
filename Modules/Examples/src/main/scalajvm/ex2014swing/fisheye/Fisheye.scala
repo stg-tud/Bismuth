@@ -60,20 +60,10 @@ class Fisheye {
   addBox(Color.RED)
   addBox(Color.MAGENTA)
 
-  // redraw code
-  mouse.position.changed observe { _ => frame.repaint() }
-
   // drawing code
-  val frame: MainFrame = new MainFrame {
-    title = "Fisheye boxes"
-    resizable = false
-    contents = new Panel() {
-
-      /** forward mouse events to EScala wrapper class. To replace once reactive GUI lib is complete */
-      listenTo(this.mouse.moves, this.mouse.clicks)
-      reactions += Fisheye.this.mouse.react
-
-      preferredSize = new Dimension(Max_X, Max_Y)
+  // lazy, so the Swing components are wired up after construction
+  lazy val canvas: Panel = {
+    val canvas = new Panel() {
       // val scoreFont = new Font("Tahoma", java.awt.Font.PLAIN, 32)
       override def paintComponent(g: Graphics2D): Unit =
         for box <- boxes do {
@@ -81,5 +71,19 @@ class Fisheye {
           g.fill(box.area.now)
         }
     }
+    canvas.preferredSize = new Dimension(Max_X, Max_Y)
+    canvas.listenTo(canvas.mouse.moves, canvas.mouse.clicks)
+    canvas.reactions += mouse.react
+    canvas
   }
+  lazy val frame: MainFrame = {
+    val frame = new MainFrame
+    frame.title = "Fisheye boxes"
+    frame.resizable = false
+    frame.contents = canvas
+    frame
+  }
+
+  // redraw code
+  mouse.position.changed observe { _ => frame.repaint() }
 }

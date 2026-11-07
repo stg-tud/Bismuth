@@ -3,6 +3,9 @@ package ex2026accessControl.permission_pane
 import scalafx.beans.property.BooleanProperty
 import scalafx.scene.control.CheckBox
 
+// The init checker (-Wsafe-init) cannot verify this constructor:
+// handlers that capture the view model are registered during construction.
+@scala.annotation.nowarn("msg=initialized|initialization")
 class PermissionSelectionViewModel private (
     val children: Map[String, PermissionSelectionViewModel],
     val uiText: String,

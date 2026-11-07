@@ -3,6 +3,9 @@ package ex2014reswingexamples.texteditor
 import java.awt.{Cursor, Dimension, FontMetrics, Rectangle}
 import javax.swing.{JComponent, JViewport, Scrollable, SwingConstants, UIManager}
 
+// The init checker (-Wsafe-init) cannot verify this constructor:
+// the constructor calls Swing setters on the component itself.
+@scala.annotation.nowarn("msg=initialized|initialization")
 class JScrollableComponent extends JComponent with Scrollable {
   setFont(UIManager.getFont("TextField.font"))
   setCursor(new Cursor(Cursor.TEXT_CURSOR))

@@ -31,6 +31,9 @@ class ReactiveLabel(text: Signal[String]) extends Label(text.now) {
   * plain Swing text area whose text, caret position and line count are exposed
   * as reactive signals.
   */
+// The init checker (-Wsafe-init) cannot verify this constructor:
+// the component registers itself as a listener during construction.
+@scala.annotation.nowarn("msg=initialized|initialization")
 class ReactiveTextArea(text0: String) extends scala.swing.TextArea(text0) with Reactor {
   private val textVar      = Var(text)
   private val caretVar     = Var(caret.position)

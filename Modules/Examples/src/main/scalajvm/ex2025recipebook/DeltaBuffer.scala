@@ -14,7 +14,7 @@ abstract class DeltaBuffer[A, Self <: DeltaBuffer[A, Self]](buffer: Set[MetaDelt
 
   def getDeltas(seen: Dots): Set[MetaDelta[A]] = buffer.filterNot(d => seen.contains(d.id))
 
-  inline def getSize: Int = buffer.size
+  def getSize: Int = buffer.size
 
 }
 

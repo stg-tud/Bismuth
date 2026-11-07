@@ -9,6 +9,9 @@ import scala.xml.{NodeSeq, XML}
 /** The Fetcher is responsible to fetch the xml data
   * After fetching the data an event is triggered
   */
+// The init checker (-Wsafe-init) cannot verify this constructor:
+// handlers that capture the fetcher are registered during construction.
+@scala.annotation.nowarn("msg=initialized|initialization")
 class Fetcher(val urls: Signal[Set[URL]]) {
   lazy val rssFetched: Event[(NodeSeq, URL)] = fetch.after map { (_: (URL, NodeSeq)).swap } // #EVT //#EF
   lazy val state: Signal[String]             =                                              // #SIG

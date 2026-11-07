@@ -46,7 +46,9 @@ object MainWindow extends SimpleSwingApplication {
 
     contents += statusBar
     contents += counterBar
-    contents += new MillDrawer(game)
+    val drawer = new MillDrawer(game)
+    drawer.preferredSize = new Dimension(500, 500)
+    contents += drawer
   }
 
   def setSystemLookAndFeel(): Unit = {
@@ -56,7 +58,6 @@ object MainWindow extends SimpleSwingApplication {
 }
 
 class MillDrawer(val game: MillGame) extends ReactiveComponent {
-  preferredSize = new Dimension(500, 500)
 
   val DotRadius            = 5
   val StoneRadius          = 15

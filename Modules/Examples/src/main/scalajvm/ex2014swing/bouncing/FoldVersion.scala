@@ -26,28 +26,29 @@ class FoldVersion {
   val speed        = new Point(10, 8)
 
   val tick: Evt[Unit] = Evt[Unit]()
-  // Implementing switch with fold
-  val xx: Signal[Int] = tick.fold(initPosition.x) { (pos, _) =>
-    pos + (if xSwitch.now then speed.x else -speed.x)
+  // Implementing switch with fold: the direction switches whenever the position leaves the bounds
+  def bounce(speed: Int, max: Int)(state: (Int, Boolean)): (Int, Boolean) = {
+    val (pos, switched) = state
+    val next            = pos + (if switched then speed else -speed)
+    (next, if next < 0 || next + Size > max then !switched else switched)
   }
 
-  val yy: Signal[Int] = tick.fold(initPosition.y) { (pos, _) =>
-    pos + (if ySwitch.now then speed.y else -speed.y)
-  }
+  val xState: Signal[(Int, Boolean)] = tick.fold((initPosition.x, false)) { (state, _) => bounce(speed.x, Max_X)(state) }
+  val yState: Signal[(Int, Boolean)] = tick.fold((initPosition.y, false)) { (state, _) => bounce(speed.y, Max_Y)(state) }
 
-  val xSwitch: Signal[Boolean] = (xx.changed && (x => x < 0 || x + Size > Max_X)).fold(false) { (a, _) => !a }
-  val ySwitch: Signal[Boolean] = (yy.changed && (y => y < 0 || y + Size > Max_Y)).fold(false) { (a, _) => !a }
-
-  tick observe { (_: Unit) => frame.repaint() }
+  val xx: Signal[Int] = xState.map(_._1)
+  val yy: Signal[Int] = yState.map(_._1)
 
   // drawing code
-  val frame: MainFrame = new MainFrame {
-    contents = new Panel() {
-      preferredSize = new Dimension(600, 600)
-      override def paintComponent(g: Graphics2D): Unit =
-        transaction(xx, yy) { t ?=>
-          g.fillOval(t.now(xx), t.now(yy), Size, Size)
-        }
-    }
+  val canvas: Panel = new Panel() {
+    override def paintComponent(g: Graphics2D): Unit =
+      transaction(xx, yy) { t ?=>
+        g.fillOval(t.now(xx), t.now(yy), Size, Size)
+      }
   }
+  canvas.preferredSize = new Dimension(600, 600)
+  val frame: MainFrame = new MainFrame
+  frame.contents = canvas
+
+  tick observe { (_: Unit) => frame.repaint() }
 }

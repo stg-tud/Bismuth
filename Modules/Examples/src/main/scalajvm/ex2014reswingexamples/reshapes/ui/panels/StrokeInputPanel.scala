@@ -24,6 +24,9 @@ class StrokeInputPanel extends FlowPanel {
   val color       = colorWindow.color
 }
 
+// The init checker (-Wsafe-init) cannot verify this constructor:
+// button actions capture the window under construction.
+@scala.annotation.nowarn("msg=initialized|initialization")
 class ColorWindow extends Frame {
   title = "Choose color"
 

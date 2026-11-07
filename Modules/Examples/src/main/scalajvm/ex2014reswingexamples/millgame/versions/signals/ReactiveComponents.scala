@@ -25,9 +25,13 @@ class ReactiveLabel(
   * Direct Swing + reactives replacement for the old `ReComponent` from the
   * `reswing` library.
   */
+// The init checker (-Wsafe-init) cannot verify this constructor:
+// the component registers itself as a listener during construction.
+@scala.annotation.nowarn("msg=initialized|initialization")
 class ReactiveComponent extends Component with Reactor {
-  private val sizeVar   = Var(size)
-  private val boundsVar = Var(bounds)
+  // a component has no size before it is laid out; the vars are updated on resize/move events
+  private val sizeVar   = Var(new Dimension())
+  private val boundsVar = Var(new Rectangle())
 
   val sizeS: Signal[Dimension]   = sizeVar
   val boundsS: Signal[Rectangle] = boundsVar

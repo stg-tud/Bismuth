@@ -11,6 +11,9 @@ import scala.swing.event.*
   * This is a direct Swing + reactives replacement for the old `ReListView` and
   * `ReListViewEx` classes that used to be built on the `reswing` library.
   */
+// The init checker (-Wsafe-init) cannot verify this constructor:
+// the component registers itself as a listener during construction.
+@scala.annotation.nowarn("msg=initialized|initialization")
 class ReListViewEx[A](visibleRows: Int) extends ListView[A] with Reactor {
   visibleRowCount = visibleRows
 

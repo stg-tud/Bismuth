@@ -43,25 +43,31 @@ class FollowMouse {
 
   // redraw code
   val stateChanged: Event[Any] = mouse.position.changed.||[Any](tick)
-  stateChanged observe { _ => frame.repaint() }
 
   // drawing code
   def top              = frame
-  val frame: MainFrame = new MainFrame {
-    title = "Rotating around the mouse"
-    resizable = false
-    contents = new Panel() {
-
-      /** forward mouse events to EScala wrapper class. Should be replaced once reactive GUI lib is complete */
-      listenTo(this.mouse.moves, this.mouse.clicks)
-      reactions += FollowMouse.this.mouse.react
-
-      preferredSize = new Dimension(Max_X, Max_Y)
+  // lazy, so the Swing components are wired up after construction
+  lazy val canvas: Panel = {
+    val canvas = new Panel() {
       // val scoreFont = new Font("Tahoma", java.awt.Font.PLAIN, 32)
       override def paintComponent(g: Graphics2D): Unit = {
         g.setColor(java.awt.Color.DARK_GRAY)
         g.fillOval(x.now, y.now, Size, Size)
       }
     }
+    canvas.preferredSize = new Dimension(Max_X, Max_Y)
+    canvas.listenTo(canvas.mouse.moves, canvas.mouse.clicks)
+    canvas.reactions += mouse.react
+    canvas
   }
+  lazy val frame: MainFrame = {
+    val frame = new MainFrame
+    frame.title = "Rotating around the mouse"
+    frame.resizable = false
+    frame.contents = canvas
+    frame
+  }
+
+  // redraw code
+  stateChanged observe { _ => frame.repaint() }
 }

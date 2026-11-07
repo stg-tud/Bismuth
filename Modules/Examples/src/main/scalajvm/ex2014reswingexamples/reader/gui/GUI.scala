@@ -41,6 +41,9 @@ class ReactiveLabel(text: String) extends Label(text) {
   * The connections between the displayed content is mainly coordinated
   * by an initialized content mediator
   */
+// The init checker (-Wsafe-init) cannot verify this constructor:
+// nested anonymous Swing components access fields of the GUI under construction.
+@scala.annotation.nowarn("msg=initialized|initialization")
 class GUI(
     store: FeedStore,
     notifications: Signal[String] = Signal { "" },

@@ -3,6 +3,9 @@ package ex2014basic.elevator
 import ex2014basic.datastructures.SQueue
 import reactives.default.*
 
+// The init checker (-Wsafe-init) cannot verify this constructor:
+// speed, acceleration, and position signals depend on each other in a cycle, so some reference fields defined later.
+@scala.annotation.nowarn("msg=initialized|initialization")
 class Elevator(val nFloors: Int) {
   // some constants
   val FloorHeight    = 120
@@ -54,7 +57,7 @@ class Elevator(val nFloors: Int) {
 
   val waitingTime: Signal[Int] = Fold(0)(
     reachedFloor branch { _ => WaitingTime },
-    tick branch { _ => if isWaiting.now then Fold.current - 1 else Fold.current }
+    tick branch { _ => if Fold.current > 0 then Fold.current - 1 else Fold.current }
   )
 
   val stoppedWaiting: Event[Int] = waitingTime.changed.filter(_ == 0)

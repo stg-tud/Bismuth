@@ -66,26 +66,11 @@ class CatchUp {
 
   // GUI redrawing code
   val stateChanged: Event[Any] = mouse.position.changed.||[Any](tick)
-  stateChanged observe { _ => frame.repaint() }
 
   // GUI
-  val frame: MainFrame = new MainFrame {
-    title = "Catch up!"
-    resizable = false
-    contents = new Panel() {
-      listenTo(this.mouse.moves, this.mouse.clicks)
-
-      /** forward mouse events to EScala wrapper class.
-        * Should be replaced once reactive GUI lib is complete
-        */
-      reactions += {
-        case e: MouseMoved    => CatchUp.this.mouse.mouseMovedE.fire(e.point)
-        case e: MousePressed  => CatchUp.this.mouse.mousePressedE.fire(e.point)
-        case e: MouseDragged  => CatchUp.this.mouse.mouseDraggedE.fire(e.point)
-        case e: MouseReleased => CatchUp.this.mouse.mouseReleasedE.fire(e.point)
-      }
-
-      preferredSize = new Dimension(Max_X, Max_Y)
+  // lazy, so the Swing components are wired up after construction
+  lazy val canvas: Panel = {
+    val canvas = new Panel() {
       val myFont                                       = new Font("Tahoma", java.awt.Font.PLAIN, SizeY)
       override def paintComponent(g: Graphics2D): Unit =
         transaction(catchBox, caught, upBox, scoreString) { t ?=>
@@ -104,5 +89,24 @@ class CatchUp {
           g.drawString(t.now(scoreString), Max_X / 2 - 100, 40)
         }
     }
+    canvas.preferredSize = new Dimension(Max_X, Max_Y)
+    canvas.listenTo(canvas.mouse.moves, canvas.mouse.clicks)
+    canvas.reactions += {
+      case e: MouseMoved    => mouse.mouseMovedE.fire(e.point)
+      case e: MousePressed  => mouse.mousePressedE.fire(e.point)
+      case e: MouseDragged  => mouse.mouseDraggedE.fire(e.point)
+      case e: MouseReleased => mouse.mouseReleasedE.fire(e.point)
+    }
+    canvas
   }
+  lazy val frame: MainFrame = {
+    val frame = new MainFrame
+    frame.title = "Catch up!"
+    frame.resizable = false
+    frame.contents = canvas
+    frame
+  }
+
+  // redraw code
+  stateChanged observe { _ => frame.repaint() }
 }

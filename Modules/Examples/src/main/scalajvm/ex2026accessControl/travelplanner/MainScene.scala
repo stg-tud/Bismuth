@@ -16,6 +16,9 @@ import scalafx.scene.{Group, Scene}
 import scala.concurrent.ExecutionContext.global
 
 // Initial screen with creation / join functionality
+// The init checker (-Wsafe-init) cannot verify this constructor:
+// button handlers that capture the scene are registered during construction.
+@scala.annotation.nowarn("msg=initialized|initialization")
 class MainScene(travelPlanModelFactory: TravelPlanModelFactory) extends Scene {
   var tpm: TravelPlanModel = null
   val group: Group         = Group()

@@ -1,34 +1,15 @@
 package ex2014swing.path
 
 import java.awt.{Color, Graphics2D, Point, geom}
-import scala.annotation.unused
 import scala.swing.Swing.*
 import scala.swing.event.*
 import scala.swing.{Frame, MainFrame, Panel, SimpleSwingApplication}
 
 object LinePainting extends SimpleSwingApplication {
 
-  lazy val ui: Panel = new Panel {
-    background = Color.white
-    preferredSize = (1000, 500)
-    focusable = true
-    listenTo(mouse.clicks, mouse.moves, keys)
-
-    reactions += {
-      case e: MousePressed =>
-        moveTo(e.point)
-        requestFocusInWindow()
-        ()
-      case e: MouseDragged        => lineTo(e.point)
-      case e: MouseReleased       => lineTo(e.point)
-      case KeyTyped(_, 'c', _, _) =>
-        path = new geom.GeneralPath
-        repaint()
-      case _: FocusLost => repaint()
-    }
-
-    /* records the dragging */
-    @unused var path = new geom.GeneralPath
+  /** records the dragging and paints it */
+  class LinePanel extends Panel {
+    var path = new geom.GeneralPath
 
     def lineTo(p: Point): Unit = { path.lineTo(p.x.toFloat, p.y.toFloat); repaint() }
     def moveTo(p: Point): Unit = { path.moveTo(p.x.toFloat, p.y.toFloat); repaint() }
@@ -45,6 +26,28 @@ object LinePainting extends SimpleSwingApplication {
       g.setColor(Color.black)
       g.draw(path)
     }
+  }
+
+  lazy val ui: Panel = {
+    val panel = new LinePanel
+    panel.background = Color.white
+    panel.preferredSize = (1000, 500)
+    panel.focusable = true
+    panel.listenTo(panel.mouse.clicks, panel.mouse.moves, panel.keys)
+
+    panel.reactions += {
+      case e: MousePressed =>
+        panel.moveTo(e.point)
+        panel.requestFocusInWindow()
+        ()
+      case e: MouseDragged        => panel.lineTo(e.point)
+      case e: MouseReleased       => panel.lineTo(e.point)
+      case KeyTyped(_, 'c', _, _) =>
+        panel.path = new geom.GeneralPath
+        panel.repaint()
+      case _: FocusLost => panel.repaint()
+    }
+    panel
   }
 
   def top: Frame =

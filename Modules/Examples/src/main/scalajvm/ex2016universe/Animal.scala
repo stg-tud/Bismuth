@@ -41,6 +41,9 @@ object Animal {
   case object Sleeping                   extends AnimalState
 }
 
+// The init checker (-Wsafe-init) cannot verify this constructor:
+// the fold closure calls methods that use fields of subclasses, which are not yet initialized.
+@scala.annotation.nowarn("msg=initialized|initialization")
 abstract class Animal(using _world: World) extends BoardElement {
 
   final override def isAnimal: Boolean = true

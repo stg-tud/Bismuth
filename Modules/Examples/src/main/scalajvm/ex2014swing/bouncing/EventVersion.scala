@@ -50,15 +50,15 @@ class EventVersion {
   xBounce observe { _ => speed.x = -speed.x }
   yBounce observe { _ => speed.y = -speed.y }
 
+  // drawing code
+  val canvas: Panel = new Panel() {
+    override def paintComponent(g: Graphics2D): Unit =
+      g.fillOval(x.n, y.n, Size, Size)
+  }
+  canvas.preferredSize = new Dimension(600, 600)
+  val frame: MainFrame = new MainFrame
+  frame.contents = canvas
+
   // handle repaint
   hasTicked observe { _ => frame.repaint() }
-
-  // drawing code
-  val frame: MainFrame = new MainFrame {
-    contents = new Panel() {
-      preferredSize = new Dimension(600, 600)
-      override def paintComponent(g: Graphics2D): Unit =
-        g.fillOval(x.n, y.n, Size, Size)
-    }
-  }
 }

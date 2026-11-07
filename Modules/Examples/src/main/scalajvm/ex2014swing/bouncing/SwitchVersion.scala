@@ -26,27 +26,29 @@ class SwitchVersion {
   val speed        = new Point(10, 8)
 
   val tick: Evt[Unit] = Evt[Unit]()
-  // Using switch
 
-  val x: Signal[Int] = tick.fold(initPosition.x) { (pos, _) => pos + speedX.now }
-  val y: Signal[Int] = tick.fold(initPosition.y) { (pos, _) => pos + speedY.now }
+  // Using switch: position and speed depend on each other, which local lazy vals allow
+  // (unlike class fields, which would be accessed before they are initialized)
+  private def bouncing(init: Int, speed: Int, max: Int): Signal[Int] = {
+    lazy val pos: Signal[Int]      = tick.fold(init) { (pos, _) => pos + speedS.now }
+    lazy val bounce: Event[Int]    = pos.changed && (p => p < 0 || p + Size > max)
+    lazy val speedS: Signal[Int]   = bounce.toggle(Var(speed), Var(-speed))
+    pos
+  }
 
-  val xBounce: Event[Int] = x.changed && (x => x < 0 || x + Size > Max_X)
-  val yBounce: Event[Int] = y.changed && (y => y < 0 || y + Size > Max_Y)
-
-  val speedX: Signal[Int] = xBounce.toggle(Var(speed.x), Var(-speed.x))
-  val speedY: Signal[Int] = yBounce.toggle(Var(speed.y), Var(-speed.y))
-
-  tick observe { (_: Unit) => frame.repaint() }
+  val x: Signal[Int] = bouncing(initPosition.x, speed.x, Max_X)
+  val y: Signal[Int] = bouncing(initPosition.y, speed.y, Max_Y)
 
   // drawing code
-  val frame: MainFrame = new MainFrame {
-    contents = new Panel() {
-      preferredSize = new Dimension(600, 600)
-      override def paintComponent(g: Graphics2D): Unit =
-        transaction(x, y) { t ?=>
-          g.fillOval(t.now(x), t.now(y), Size, Size)
-        }
-    }
+  val canvas: Panel = new Panel() {
+    override def paintComponent(g: Graphics2D): Unit =
+      transaction(x, y) { t ?=>
+        g.fillOval(t.now(x), t.now(y), Size, Size)
+      }
   }
+  canvas.preferredSize = new Dimension(600, 600)
+  val frame: MainFrame = new MainFrame
+  frame.contents = canvas
+
+  tick observe { (_: Unit) => frame.repaint() }
 }
