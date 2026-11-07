@@ -3,8 +3,8 @@ package webapps.ex2024textRDT
 import com.github.plokhotnyuk.jsoniter_scala.core.readFromString
 import org.scalablytyped.runtime.StringDictionary
 import org.scalajs.dom.{Element, HTMLElement, URL, document}
-import text_rdt.*
-import text_rdt.debug.{*, given}
+import ex2024textRDT.*
+import ex2024textRDT.debug.{*, given}
 import typings.prosemirrorKeymap.mod.keymap
 import typings.prosemirrorModel.mod.{NodeSpec, Schema, SchemaSpec, TagParseRule}
 import typings.prosemirrorModel.prosemirrorModelStrings.full

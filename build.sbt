@@ -40,8 +40,8 @@ lazy val bismuth = project.in(file(".")).settings(Settings.strictScalacFlags).ag
   reactives.js(s3v),
   reactives.jvm(s3v),
   reactives.native(s3v),
-  textRdt.jvm(s3v),
-  textRdt.js(s3v),
+  exShared.jvm(s3v),
+  exShared.js(s3v),
 )
 
 lazy val publishedProjects =
@@ -100,7 +100,7 @@ lazy val exJVM = project.in(file("Modules/exJVM"))
   .dependsOn(
     reactives.jvm(s3v),
     channels.jvm(s3v) % "compile->compile;test->test",
-    textRdt.jvm(s3v)  % "compile->compile;test->test",
+    exShared.jvm(s3v) % "compile->compile;test->test",
   )
   .settings(
     Settings.javaOutputVersion(21),
@@ -144,7 +144,7 @@ lazy val exJVM = project.in(file("Modules/exJVM"))
 
 lazy val exWeb = project.in(file("Modules/exWeb"))
   .enablePlugins(ScalaJSPlugin)
-  .dependsOn(channels.js(s3v), rdts.js(s3v), lore.js(s3v), textRdt.js(s3v))
+  .dependsOn(channels.js(s3v), rdts.js(s3v), lore.js(s3v), exShared.js(s3v))
   .settings(
     libraryDependencies ++= Seq(
       "com.github.japgolly.scalajs-react" %% "core"                      % "3.0.0",
@@ -309,12 +309,15 @@ lazy val reform = project
     ),
   )
 
-// imported from https://github.com/mohe2015/bachelor-thesis-collaborative-text-editing
-lazy val textRdt = projectMatrix
-  .in(file("Modules/TextRDT"))
+/** Cross-platform code shared by the exJVM and exWeb case studies.
+  * `ex2024textRDT` is imported from https://github.com/mohe2015/bachelor-thesis-collaborative-text-editing
+  */
+lazy val exShared = projectMatrix
+  .in(file("Modules/exShared"))
   .dependsOn(rdts)
   .settings(
     Settings.strictScalacFlags,
+    publish / skip := true,
     libraryDependencies ++= jsoniterScala,
     libraryDependencies += pprint,
   )

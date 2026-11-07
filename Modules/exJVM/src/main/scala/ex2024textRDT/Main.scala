@@ -17,11 +17,11 @@ def peakMemory(): Unit = {
     test.count = 100
     test.setupReplicaWithOperationsApplied()
     val replica = test.remoteMethod().get
-    test.replicaWithOperationsApplied = null.asInstanceOf[text_rdt.Replica[
-      text_rdt.fugue.simple.SimpleFugueFactory.simpleFugueFactory.type |
-        text_rdt.fugue.complex.ComplexFugueFactory.complexFugueFactory.type |
-        text_rdt.fugue.simpleavl.SimpleAVLFugueFactory.simpleAVLFugueFactory.type |
-        text_rdt.fugue.complexavl.ComplexAVLFugueFactory.complexAVLFugueFactory.type
+    test.replicaWithOperationsApplied = null.asInstanceOf[ex2024textRDT.Replica[
+      ex2024textRDT.fugue.simple.SimpleFugueFactory.simpleFugueFactory.type |
+        ex2024textRDT.fugue.complex.ComplexFugueFactory.complexFugueFactory.type |
+        ex2024textRDT.fugue.simpleavl.SimpleAVLFugueFactory.simpleAVLFugueFactory.type |
+        ex2024textRDT.fugue.complexavl.ComplexAVLFugueFactory.complexAVLFugueFactory.type
     ]]
     print(replica.state.rootTreeNode)
   } */

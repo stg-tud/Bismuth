@@ -1,6 +1,6 @@
 package ex2024ot
 
-import text_rdt.{CollaborativeTextEditingAlgorithm, RID}
+import ex2024textRDT.{CollaborativeTextEditingAlgorithm, RID}
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer

@@ -1,6 +1,6 @@
 package ex2024ot
 
-import text_rdt.RID
+import ex2024textRDT.RID
 
 import scala.annotation.tailrec
 import scala.collection.mutable

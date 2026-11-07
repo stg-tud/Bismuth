@@ -1,0 +1,24 @@
+package ex2024textRDT
+
+object Helper {
+
+  final val ENABLE: Boolean =
+    !sys.props.get("textrdt.assertions").contains("disabled")
+
+  def myAssert(
+      assertion: => Boolean,
+      message: => Any
+  ): Unit =
+    if ENABLE then {
+      if !assertion then {
+        throw new java.lang.AssertionError("assertion failed: " + message)
+      }
+    }
+
+  def myAssert(assertion: => Boolean): Unit =
+    if ENABLE then {
+      if !assertion then {
+        throw new java.lang.AssertionError("assertion failed")
+      }
+    }
+}

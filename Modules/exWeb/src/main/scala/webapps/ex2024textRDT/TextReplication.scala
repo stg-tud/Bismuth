@@ -5,7 +5,7 @@ import channels.{BroadcastIO, JsoniterCodecs, Timers}
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReader, JsonValueCodec, JsonWriter}
 import rdts.base.ReplicaId
 import rdts.time.{Causal, Dots}
-import text_rdt.{FugueFactory, Replica}
+import ex2024textRDT.{FugueFactory, Replica}
 
 /** Replicates a Fugue [[Replica]] over a [[BroadcastIO]].
   *
