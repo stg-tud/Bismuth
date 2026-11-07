@@ -31,11 +31,12 @@ serve-scaladoc project="reactives" port="8081":
 	sbt '{{project}}/doc'
 	jwebserver -b 0.0.0.0 -p {{port}} -d "$(sbt --batch --error 'show {{project}}/Compile/doc/target' | sed -n 's#^\s*\[info\] ##p' | head -n 1)"
 
-intellij-bsp-import-fix:
-	fish Scripts/patch-bsp-shared-test-modules.fish
+# run with the project closed in IntelliJ, otherwise it overwrites the patched module files again
+intellij-bsp-import-fix *args:
+	sbt 'scripts/run patch-bsp-shared-test-modules {{args}}'
 
 selectScheduler scheduler="levelled":
-	scala-cli --jvm=system --server=false Scripts/select-scheduler.scala -- {{scheduler}}
+	sbt 'scripts/run select-scheduler {{scheduler}}'
 
 
 # collect website inputs: the Scala.js output of the web demos (the scitzen documentation is compiled by astro, see Website/integrations/scitzen.mjs)

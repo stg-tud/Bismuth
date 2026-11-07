@@ -10,6 +10,11 @@ import de.rmgk.options.*
               rejectUnknown()
               () => selectScheduler(selection)
           },
+          subcommand("patch-bsp-shared-test-modules", "add module dependencies IntelliJ drops from shared test modules") {
+              val dryRun = flag("--dry-run", "only print what would be changed").value
+              rejectUnknown()
+              () => patchBspSharedTestModules(dryRun)
+          },
         )
     }
     result match
