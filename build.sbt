@@ -1,7 +1,5 @@
 import org.scalajs.linker.interface.{ESVersion, ModuleInitializer, ModuleSplitStyle}
 
-import scala.scalanative.build.{LTO, Mode, NativeConfig}
-
 // for some reason, project matrix REALLY likes to require this everywhere
 lazy val s3v = "3.10.0"
 scalaVersion := s3v
@@ -124,16 +122,10 @@ lazy val examples = projectMatrix.in(file("Modules/Examples"))
       Settings.jolSettings,
       libraryDependencies ++= {
         val jettyVersion  = "12.1.14"
-        val javaGiVerison = "1.0.0-RC3"
         Seq(
           "com.github.alexandrnikitin"     % "bloom-filter_2.13"            % "0.13.1",
           "com.google.crypto.tink"         % "tink"                         % "1.24.0",
           "com.softwaremill.sttp.client4" %% "core"                         % "4.1.1",
-          "io.avaje.webview"               % "avaje-webview"                % "0.30",
-          "org.java-gi"                    % "gtk"                          % javaGiVerison,
-          "org.java-gi"                    % "adw"                          % javaGiVerison,
-          "org.java-gi"                    % "glib"                         % javaGiVerison,
-          "org.java-gi"                    % "webkit"                       % javaGiVerison,
           "io.bullet"                     %% "borer-core"                   % "1.19.0",
           "io.bullet"                     %% "borer-derivation"             % "1.19.0",
           "org.conscrypt"                  % "conscrypt-openjdk-uber"       % "2.9.0",
@@ -302,47 +294,6 @@ lazy val reactives = projectMatrix.in(file("Modules/Reactives"))
   )
   .nativePlatform(
     scalaVersions = Seq(s3v),
-  )
-
-lazy val webview = project.in(file("Modules/Webview"))
-  .enablePlugins(ScalaNativePlugin)
-  .dependsOn(channels.native(s3v))
-  .settings(
-    Settings.strictScalacFlags,
-    libraryDependencies ++= jsoniterScala,
-    nativeConfig ~= { c =>
-      val d = c.withLTO(LTO.thin)
-        .withMode(Mode.releaseFast)
-        .withIncrementalCompilation(true)
-
-      // The below disables LTO for macos as that seems to cause problems.
-      // Windows not implemented, macos has known issues.
-      def fromCommand(args: String*): List[String] = {
-        val process = new ProcessBuilder(args *).start()
-        process.waitFor()
-        val res = new String(process.getInputStream.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8)
-        if (process.exitValue() != 0)
-          throw new IllegalStateException(s"command failed: ${args.mkString(" ")}\n$res")
-        res.split(raw"\s+").toList
-      }
-
-      val osname = sys.props.get("os.name").map(_.toLowerCase)
-      osname match {
-        case Some(win) if win.contains("win")                           => d
-        case Some(mac) if mac.contains("mac") || mac.contains("darwin") =>
-          d.withLTO(LTO.none)
-            .withLinkingOptions(d.linkingOptions ++ Seq("-framework", "WebKit"))
-            .withCompileOptions(co => co ++ Seq("-framework", "WebKit"))
-        case Some(linux) if linux.contains("linux") =>
-          d
-            .withLinkingOptions(d.linkingOptions ++ fromCommand("pkg-config", "--libs", "gtk4", "webkitgtk-6.0"))
-            .withCompileOptions(co => co ++ fromCommand("pkg-config", "--cflags", "gtk4", "webkitgtk-6.0"))
-        case other =>
-          println(s"unknown OS: $other")
-          d
-      }
-
-    }
   )
 
 ////////////////// PUBLISHING SETTINGS

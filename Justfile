@@ -27,18 +27,6 @@ webappsPrepare:
 webappsServe: webappsPrepare
 	cd Website && pnpm exec astro dev --port 5173
 
-webappsWebviewNative:
-	# connect to a running vite dev server (start it with `just webappsServe`)
-	sbt 'webview / run "http://localhost:5173/Bismuth/demos/"'
-
-webappsWebviewJVM:
-	# connect to a running vite dev server (start it with `just webappsServe`)
-	sbt 'examples / runMain ex2026webview.Webview "http://localhost:5173/Bismuth/demos/"'
-
-webappsWebviewJavaGi: # launch a web app in a java-gi (GTK4 + Libadwaita + WebKitGTK) browser window
-	# requires GTK4, libadwaita and webkitgtk-6.0 native libraries at runtime
-	sbt 'examples / runMain ex2026webview.JavaGiWebview "http://localhost:5173/Bismuth/demos/"'
-
 serve-scaladoc project="reactives" port="8081":
 	sbt '{{project}}/doc'
 	jwebserver -b 0.0.0.0 -p {{port}} -d "$(sbt --batch --error 'show {{project}}/Compile/doc/target' | sed -n 's#^\s*\[info\] ##p' | head -n 1)"
@@ -48,25 +36,6 @@ intellij-bsp-import-fix:
 
 selectScheduler scheduler="levelled":
 	scala-cli --jvm=system --server=false Scripts/select-scheduler.scala -- {{scheduler}}
-
-update-webview-in-podman: (open-in-podman "fish ./Scripts/update-webview.fish")
-
-open-in-podman command="fish":
-	podman build --file Scripts/Devcontainerfile --tag bismuth-dev-image .
-	mkdir -p target/bismut-dev-container-home
-	rm -rf target/out # need to delete out otherwise will conflict with host sbt
-	# largely stolen from distrobox
-	podman run --privileged --network host --ipc host --pid host --ulimit host \
-		--volume "$(pwd)":"$(pwd)":rslave \
-		--volume "$(pwd)/target/bismut-dev-container-home":/root:rslave \
-		--env "DISPLAY=$DISPLAY" \
-		--env "WAYLAND_DISPLAY=$WAYLAND_DISPLAY" \
-		--name bismuth-dev-container --replace \
-		--workdir "$(pwd)" \
-		--rm --tty --interactive \
-		bismuth-dev-image \
-		{{command}}
-	rm -rf target/out # need to delete out otherwise host sbt will not work
 
 
 # collect website inputs: the Scala.js output of the web demos (the scitzen documentation is compiled by astro, see Website/integrations/scitzen.mjs)

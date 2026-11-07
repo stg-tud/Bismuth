@@ -16,6 +16,5 @@ package-lock.json
 pnpm-lock.yaml
 scitzen.out/
 target/
-webview.h
 yarn.lock
 ycsb-core.jar
