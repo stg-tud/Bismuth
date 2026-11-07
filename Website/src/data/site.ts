@@ -199,7 +199,7 @@ export const libraries: Library[] = [
 	},
 ];
 
-// Pages built by the exWeb vite bundle (copied into /examples/)
+// Pages built by the Examples vite bundle (copied into /examples/)
 export const demos = [
 	{ id: "todolist", title: "Todo List", summary: "A collaborative todo list based on TodoMVC." },
 	{ id: "calendar", title: "Calendar", summary: "A shared appointment calendar across replicas." },
@@ -248,14 +248,9 @@ export const repoTree: TreeEntry[] = [
 				summary: "Benchmarks for consensus protocols built from replicated data types, compared against etcd.",
 			},
 			{
-				name: "exJVM/",
-				sbt: ["exJVM"],
-				summary: "Case studies and benchmarks on the JVM, from early Swing examples to BFT, access control, and blockchain experiments.",
-			},
-			{
-				name: "exWeb/",
-				sbt: ["exWeb"],
-				summary: "The browser demos, such as the todo list, calendar, and the Tabular spreadsheet.",
+				name: "Examples/",
+				sbt: ["examples", "examplesJS"],
+				summary: "Case studies and benchmarks: browser demos such as the todo list, calendar, and the Tabular spreadsheet, and JVM experiments from early Swing examples to BFT, access control, and blockchain.",
 			},
 			{ name: "Webview/", sbt: ["webview"], summary: "Runs the web demos in a native window, using Scala Native." },
 			{

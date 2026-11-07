@@ -27,8 +27,8 @@ def jsoniterScala = Seq(
 lazy val bismuth = project.in(file(".")).settings(Settings.strictScalacFlags).aggregate(
   channels.js(s3v),
   channels.jvm(s3v),
-  exJVM,
-  exWeb,
+  examples.js(s3v),
+  examples.jvm(s3v),
   lore.js(s3v),
   lore.jvm(s3v),
   loreCompilerPlugin,
@@ -40,8 +40,6 @@ lazy val bismuth = project.in(file(".")).settings(Settings.strictScalacFlags).ag
   reactives.js(s3v),
   reactives.jvm(s3v),
   reactives.native(s3v),
-  exShared.jvm(s3v),
-  exShared.js(s3v),
 )
 
 lazy val publishedProjects =
@@ -95,92 +93,106 @@ lazy val channels = projectMatrix.in(file("Modules/Channels"))
   )
   .nativePlatform(scalaVersions = Seq(s3v))
 
-lazy val exJVM = project.in(file("Modules/exJVM"))
-  .enablePlugins(JmhPlugin)
+/** Case studies and benchmarks. Shared code (e.g., `ex2024textRDT`, imported from
+  * https://github.com/mohe2015/bachelor-thesis-collaborative-text-editing) lives in `src/main/scala`,
+  * platform-specific case studies in `src/main/scalajvm` and `src/main/scalajs`.
+  */
+lazy val examples = projectMatrix.in(file("Modules/Examples"))
   .dependsOn(
-    reactives.jvm(s3v),
-    channels.jvm(s3v) % "compile->compile;test->test",
-    exShared.jvm(s3v) % "compile->compile;test->test",
+    reactives,
+    rdts,
+    lore,
+    channels % "compile->compile;test->test",
   )
   .settings(
-    Settings.javaOutputVersion(21),
-    fork := true,
-    Settings.jolSettings,
+    publish / skip := true,
     libraryDependencies ++= jsoniterScala,
-    libraryDependencies ++= {
-      val jettyVersion  = "12.1.14"
-      val javaGiVerison = "1.0.0-RC3"
-      Seq(
-        "com.github.alexandrnikitin"     % "bloom-filter_2.13"            % "0.13.1",
-        "com.google.crypto.tink"         % "tink"                         % "1.24.0",
-        "com.softwaremill.sttp.client4" %% "core"                         % "4.1.1",
-        "io.avaje.webview"               % "avaje-webview"                % "0.30",
-        "org.java-gi"                    % "gtk"                          % javaGiVerison,
-        "org.java-gi"                    % "adw"                          % javaGiVerison,
-        "org.java-gi"                    % "glib"                         % javaGiVerison,
-        "org.java-gi"                    % "webkit"                       % javaGiVerison,
-        "io.bullet"                     %% "borer-core"                   % "1.19.0",
-        "io.bullet"                     %% "borer-derivation"             % "1.19.0",
-        "org.conscrypt"                  % "conscrypt-openjdk-uber"       % "2.9.0",
-        "org.eclipse.jetty.websocket"    % "jetty-websocket-jetty-api"    % jettyVersion,
-        "org.eclipse.jetty.websocket"    % "jetty-websocket-jetty-client" % jettyVersion,
-        "org.eclipse.jetty.websocket"    % "jetty-websocket-jetty-server" % jettyVersion,
-        "org.scala-lang.modules"        %% "scala-swing"                  % "3.0.0",
-        "org.scala-lang.modules"        %% "scala-xml"                    % "2.5.0",
-        "org.slf4j"                      % "slf4j-nop"                    % "2.0.20" % Test,
-        decline,
-        pprint,
-        scalafx,
-        slips,
-      )
-    },
-    javaOptions ++= Seq(
-      "-XX:+IgnoreUnrecognizedVMOptions",
-      "--sun-misc-unsafe-memory-access=allow",
-      "--enable-native-access=ALL-UNNAMED",
-      "--enable-final-field-mutation=ALL-UNNAMED"
-    ), // Reduce warnings for JavaFX application
+    libraryDependencies += pprint,
   )
-
-lazy val exWeb = project.in(file("Modules/exWeb"))
-  .enablePlugins(ScalaJSPlugin)
-  .dependsOn(channels.js(s3v), rdts.js(s3v), lore.js(s3v), exShared.js(s3v))
-  .settings(
-    libraryDependencies ++= Seq(
-      "com.github.japgolly.scalajs-react" %% "core"                      % "3.0.0",
-      "com.github.japgolly.scalajs-react" %% "extra"                     % "3.0.0",
-      "com.lihaoyi"                       %% "scalatags"                 % "0.13.1" % Compile,
-      "com.olvind"                        %% "scalablytyped-runtime"     % "2.4.2",
-      "org.scala-js"                      %% "scalajs-java-securerandom" % "1.0.0" `cross` CrossVersion.for3Use2_13,
-      pprint,
-      scalajsDom,
-    ) ++ jsoniterScala,
-    Settings.strictScalacFlags,
-    Compile / scalaJSLinkerConfig :=
-      scalaJSLinkerConfig.value
-        // WASM does NOT work when running on webview (and is documented to not work on chrome)
-        // vite also seems to not really work with WASM – it kinda does in dev mode, but not when bundling
-        // also disable module splitting when working with wasm
-        .withESFeatures(_.withUseWebAssembly(false))
-        .withModuleKind(ModuleKind.ESModule)
-        .withModuleSplitStyle(ModuleSplitStyle.SmallModulesFor(List("webapps")))
-        .withESFeatures(_.withESVersion(ESVersion.ES2015)),
-    Test / scalaJSLinkerConfig :=
-      (Compile / scalaJSLinkerConfig).value
-        .withModuleKind(ModuleKind.CommonJSModule)
-        .withModuleSplitStyle(ModuleSplitStyle.FewestModules),
-    // let node resolve jsdom and the prosemirror packages from this module's node_modules
-    Test / jsEnv := Def.uncached {
-      new org.scalajs.jsenv.nodejs.NodeJSEnv(
-        org.scalajs.jsenv.nodejs.NodeJSEnv.Config().withEnv(
-          Map("NODE_PATH" -> (baseDirectory.value / "node_modules").getAbsolutePath)
+  .jvmPlatform(
+    scalaVersions = Seq(s3v),
+    axisValues = Nil,
+    configure = _.enablePlugins(JmhPlugin).settings(
+      // the shared code requires explicit nulls; legacy JVM case studies opt out per file via `unsafeNulls`
+      Settings.explicitNulls(),
+      Settings.javaOutputVersion(21),
+      fork := true,
+      Settings.jolSettings,
+      libraryDependencies ++= {
+        val jettyVersion  = "12.1.14"
+        val javaGiVerison = "1.0.0-RC3"
+        Seq(
+          "com.github.alexandrnikitin"     % "bloom-filter_2.13"            % "0.13.1",
+          "com.google.crypto.tink"         % "tink"                         % "1.24.0",
+          "com.softwaremill.sttp.client4" %% "core"                         % "4.1.1",
+          "io.avaje.webview"               % "avaje-webview"                % "0.30",
+          "org.java-gi"                    % "gtk"                          % javaGiVerison,
+          "org.java-gi"                    % "adw"                          % javaGiVerison,
+          "org.java-gi"                    % "glib"                         % javaGiVerison,
+          "org.java-gi"                    % "webkit"                       % javaGiVerison,
+          "io.bullet"                     %% "borer-core"                   % "1.19.0",
+          "io.bullet"                     %% "borer-derivation"             % "1.19.0",
+          "org.conscrypt"                  % "conscrypt-openjdk-uber"       % "2.9.0",
+          "org.eclipse.jetty.websocket"    % "jetty-websocket-jetty-api"    % jettyVersion,
+          "org.eclipse.jetty.websocket"    % "jetty-websocket-jetty-client" % jettyVersion,
+          "org.eclipse.jetty.websocket"    % "jetty-websocket-jetty-server" % jettyVersion,
+          "org.scala-lang.modules"        %% "scala-swing"                  % "3.0.0",
+          "org.scala-lang.modules"        %% "scala-xml"                    % "2.5.0",
+          "org.slf4j"                      % "slf4j-nop"                    % "2.0.20" % Test,
+          decline,
+          scalafx,
+          slips,
         )
-      )
-    },
-    // fix the output directory to make it “guessable” by JS import
-    // (in sbt 2.0 target.value is centralized under target/out, so anchor to the module dir instead)
-    fastLinkJS / crossTarget := baseDirectory.value / "target" / "generated_js",
-    fullLinkJS / crossTarget := baseDirectory.value / "target" / "generated_js",
+      },
+      javaOptions ++= Seq(
+        "-XX:+IgnoreUnrecognizedVMOptions",
+        "--sun-misc-unsafe-memory-access=allow",
+        "--enable-native-access=ALL-UNNAMED",
+        "--enable-final-field-mutation=ALL-UNNAMED"
+      ), // Reduce warnings for JavaFX application
+    )
+  )
+  .jsPlatform(
+    scalaVersions = Seq(s3v),
+    axisValues = Nil,
+    configure = _.settings(
+      Settings.strictScalacFlags,
+      libraryDependencies ++= Seq(
+        "com.github.japgolly.scalajs-react" %% "core"                      % "3.0.0",
+        "com.github.japgolly.scalajs-react" %% "extra"                     % "3.0.0",
+        "com.lihaoyi"                       %% "scalatags"                 % "0.13.1" % Compile,
+        "com.olvind"                        %% "scalablytyped-runtime"     % "2.4.2",
+        "org.scala-js"                      %% "scalajs-java-securerandom" % "1.0.0" `cross` CrossVersion.for3Use2_13,
+        scalajsDom,
+      ),
+      Compile / scalaJSLinkerConfig :=
+        scalaJSLinkerConfig.value
+          // WASM does NOT work when running on webview (and is documented to not work on chrome)
+          // vite also seems to not really work with WASM – it kinda does in dev mode, but not when bundling
+          // also disable module splitting when working with wasm
+          .withESFeatures(_.withUseWebAssembly(false))
+          .withModuleKind(ModuleKind.ESModule)
+          .withModuleSplitStyle(ModuleSplitStyle.SmallModulesFor(List("webapps")))
+          .withESFeatures(_.withESVersion(ESVersion.ES2015)),
+      Test / scalaJSLinkerConfig :=
+        (Compile / scalaJSLinkerConfig).value
+          .withModuleKind(ModuleKind.CommonJSModule)
+          .withModuleSplitStyle(ModuleSplitStyle.FewestModules),
+      // let node resolve jsdom and the prosemirror packages from this module's node_modules
+      Test / jsEnv := Def.uncached {
+        new org.scalajs.jsenv.nodejs.NodeJSEnv(
+          org.scalajs.jsenv.nodejs.NodeJSEnv.Config().withEnv(
+            Map("NODE_PATH" -> ((LocalRootProject / baseDirectory).value / "Modules/Examples/node_modules").getAbsolutePath)
+          )
+        )
+      },
+      // fix the output directory to make it “guessable” by JS import (see main.js)
+      // (matrix rows have their baseDirectory under .sbt/matrix, so anchor to the module dir instead)
+      Compile / fastLinkJS / scalaJSLinkerOutputDirectory :=
+        (LocalRootProject / baseDirectory).value / "Modules/Examples/target/generated_js/examples-fastopt",
+      Compile / fullLinkJS / scalaJSLinkerOutputDirectory :=
+        (LocalRootProject / baseDirectory).value / "Modules/Examples/target/generated_js/examples-opt",
+    )
   )
 
 lazy val lore = projectMatrix.in(file("Modules/Lore"))
@@ -308,21 +320,6 @@ lazy val reform = project
       "org.scala-js"         %% "scalajs-java-securerandom" % "1.0.0" `cross` CrossVersion.for3Use2_13,
     ),
   )
-
-/** Cross-platform code shared by the exJVM and exWeb case studies.
-  * `ex2024textRDT` is imported from https://github.com/mohe2015/bachelor-thesis-collaborative-text-editing
-  */
-lazy val exShared = projectMatrix
-  .in(file("Modules/exShared"))
-  .dependsOn(rdts)
-  .settings(
-    Settings.strictScalacFlags,
-    publish / skip := true,
-    libraryDependencies ++= jsoniterScala,
-    libraryDependencies += pprint,
-  )
-  .jvmPlatform(scalaVersions = Seq(s3v))
-  .jsPlatform(scalaVersions = Seq(s3v))
 
 lazy val webview = project.in(file("Modules/Webview"))
   .enablePlugins(ScalaNativePlugin)

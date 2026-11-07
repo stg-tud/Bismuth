@@ -43,7 +43,7 @@ jobs:
         run: npm install
 
       - name: install webapp npm dependencies
-        working-directory: Modules/exWeb
+        working-directory: Modules/Examples
         run: npm install
 
       - name: test

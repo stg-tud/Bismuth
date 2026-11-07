@@ -3,7 +3,7 @@ authors:
 
 test:
 	npm install
-	cd "Modules/exWeb/" && npm install
+	cd "Modules/Examples/" && npm install
 	sbt test
 
 publishLocal:
@@ -17,16 +17,16 @@ sonaRelease:
 	sbt 'sonaRelease'
 
 runSimpleCaseStudy:
-	sbt 'exJVM / run'
+	sbt 'examples / run'
 
 webappsPrepare:
-	cd "Modules/exWeb/" && npm install
+	cd "Modules/Examples/" && npm install
 	# the custom main.js conditionally includes both variants so we need fast/full main.js variants to exist otherwise the bundler barfs
-	sbt exWeb/fastLinkJS
-	sbt exWeb/fullLinkJS
+	sbt examplesJS/fastLinkJS
+	sbt examplesJS/fullLinkJS
 
 webappsServe: webappsPrepare
-	"Modules/exWeb/node_modules/vite/bin/vite.js" "Modules/exWeb/"
+	"Modules/Examples/node_modules/vite/bin/vite.js" "Modules/Examples/"
 
 webappsWebviewNative:
 	# connect to a running vite dev server (start it with `just webappsServe`)
@@ -34,11 +34,11 @@ webappsWebviewNative:
 
 webappsWebviewJVM:
 	# connect to a running vite dev server (start it with `just webappsServe`)
-	sbt 'exJVM / runMain ex2026webview.Webview "http://localhost:5173/"'
+	sbt 'examples / runMain ex2026webview.Webview "http://localhost:5173/"'
 
 webappsWebviewJavaGi: # launch a web app in a java-gi (GTK4 + Libadwaita + WebKitGTK) browser window
 	# requires GTK4, libadwaita and webkitgtk-6.0 native libraries at runtime
-	sbt 'exJVM / runMain ex2026webview.JavaGiWebview "http://localhost:5173/"'
+	sbt 'examples / runMain ex2026webview.JavaGiWebview "http://localhost:5173/"'
 
 reformPrepare:
 	if [ ! -f "Modules/Reform/.env" ] && [ -f "Modules/Reform/env.example" ]; then cp "Modules/Reform/env.example" "Modules/Reform/.env"; fi
@@ -82,14 +82,14 @@ open-in-podman command="fish":
 	rm -rf target/out # need to delete out otherwise host sbt will not work
 
 
-# collect website inputs: scitzen articles (rendered with the minimal template the website ingests) and the exWeb demos
+# collect website inputs: scitzen articles (rendered with the minimal template the website ingests) and the web demos
 [private]
 websitePrepare: webappsPrepare
 	cd Documentation && scitzen compile --html --html-template ../Website/scitzen-template.html.scim .
 	rm -rf Website/public/documentation Website/public/examples
 	mkdir -p Website/public/documentation
 	cp -r Documentation/scitzen.out/web/resources Website/public/documentation/
-	"Modules/exWeb/node_modules/vite/bin/vite.js" build "Modules/exWeb/" --outDir "$PWD/Website/public/examples" --emptyOutDir
+	"Modules/Examples/node_modules/vite/bin/vite.js" build "Modules/Examples/" --outDir "$PWD/Website/public/examples" --emptyOutDir
 	cd Website && npm install
 
 websiteServe: websitePrepare
