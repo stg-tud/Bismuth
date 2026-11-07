@@ -4,11 +4,6 @@ import munit.ScalaCheckSuite
 import org.scalacheck.Test
 import text_rdt.helper.scalacheck
 
-class OTAlgorithmScalaCheckSuite
-    extends InternalFugueScalaCheckSuite(replicaId => OTAlgorithm(replicaId, Vector.empty)) {}
-
-object OTAlgorithmScalaCheckSuite {}
-
 class SimpleInternalFugueScalaCheckSuite
     extends InternalFugueScalaCheckSuite(replicaId =>
       Replica(ReplicaState(replicaId)(using SimpleFugueFactory.simpleFugueFactory), StringEditory())
@@ -46,6 +41,9 @@ abstract class InternalFugueScalaCheckSuite[A](
     val factoryConstructor: String => A
 )(using algorithm: CollaborativeTextEditingAlgorithm[A]) extends ScalaCheckSuite {
 
+  /** Whether the algorithm converges for arbitrary concurrent histories. The OT baseline (dOPT) does not. */
+  protected def convergesForArbitraryHistories: Boolean = true
+
   override def scalaCheckTestParameters: Test.Parameters =
     super.scalaCheckTestParameters
       .withWorkers(16)
@@ -63,7 +61,7 @@ abstract class InternalFugueScalaCheckSuite[A](
   }
 
   property("All replicas should converge".tag(scalacheck)) {
-    assume(this.getClass().getName() != "text_rdt.OTAlgorithmScalaCheckSuite")
+    assume(convergesForArbitraryHistories)
     InternalMultiReplicaConvergenceTest(factoryConstructor).property()
   }
 

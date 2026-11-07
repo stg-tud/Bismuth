@@ -1,7 +1,8 @@
-package text_rdt
+package ex2024ot
+
+import text_rdt.{CollaborativeTextEditingAlgorithm, RID}
 
 // Causal history used by [[OTAlgorithm]] to determine concurrent operations for transformation.
-// Fugue replicas use an external dissemination layer instead (see [[Replica.broadcast]]).
 
 import scala.collection.mutable
 

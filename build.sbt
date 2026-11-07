@@ -99,7 +99,7 @@ lazy val exJVM = project.in(file("Modules/exJVM"))
   .dependsOn(
     reactives.jvm(s3v),
     channels.jvm(s3v) % "compile->compile;test->test",
-    textRdt.jvm(s3v),
+    textRdt.jvm(s3v)  % "compile->compile;test->test",
   )
   .settings(
     Settings.javaOutputVersion(21),

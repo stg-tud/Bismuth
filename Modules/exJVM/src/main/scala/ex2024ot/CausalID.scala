@@ -1,4 +1,6 @@
-package text_rdt
+package ex2024ot
+
+import text_rdt.{CollaborativeTextEditingAlgorithm, RID}
 
 import scala.collection.mutable
 import scala.annotation.tailrec

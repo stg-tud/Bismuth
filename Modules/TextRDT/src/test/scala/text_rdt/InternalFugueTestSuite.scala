@@ -56,11 +56,13 @@ class ComplexAVLInternalFugueTestSuite
   }
 }
 
-class OTAlgorithmTestSuite extends InternalFugueTestSuite(replicaId => OTAlgorithm(replicaId, Vector.empty))
 
 abstract class InternalFugueTestSuite[A](
     val factoryConstructor: String => A
 )(using algorithm: CollaborativeTextEditingAlgorithm[A]) extends FunSuite {
+
+  /** Whether the algorithm converges for arbitrary concurrent histories. The OT baseline (dOPT) does not. */
+  protected def convergesForArbitraryHistories: Boolean = true
 
   test("regression-1") {
     val replicaStateA = factoryConstructor("A")
@@ -473,7 +475,7 @@ abstract class InternalFugueTestSuite[A](
   against the same group of operations in different orders, thus
   breaking PC-CP2. https://dl.acm.org/doi/pdf/10.1145/1180875.1180918 */
   test("regression-35") {
-    assume(this.getClass().getName() != "text_rdt.OTAlgorithmTestSuite")
+    assume(convergesForArbitraryHistories)
     val replicaA = factoryConstructor("1863976979")
     val replicaB = factoryConstructor("320716343")
     val replicaC = factoryConstructor("2135938835")
