@@ -20,8 +20,8 @@ def scalafx    = "org.scalafx"   %% "scalafx"     % "27.0.0-R39"
 def upickle = "com.lihaoyi" %% "upickle" % "4.4.3"
 
 def jsoniterScala = Seq(
-  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core"   % "2.42.0",
-  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % "2.42.0" % Provided
+  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core"   % "2.42.3",
+  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % "2.42.3" % Provided
 )
 
 lazy val bismuth = project.in(file(".")).settings(Settings.strictScalacFlags).aggregate(
@@ -113,15 +113,15 @@ lazy val exJVM = project.in(file("Modules/exJVM"))
       Seq(
         "com.github.alexandrnikitin"     % "bloom-filter_2.13"            % "0.13.1",
         "com.google.crypto.tink"         % "tink"                         % "1.24.0",
-        "com.softwaremill.sttp.client4" %% "core"                         % "4.1.0",
-        "io.avaje.webview"               % "avaje-webview"                % "0.29",
+        "com.softwaremill.sttp.client4" %% "core"                         % "4.1.1",
+        "io.avaje.webview"               % "avaje-webview"                % "0.30",
         "org.java-gi"                    % "gtk"                          % javaGiVerison,
         "org.java-gi"                    % "adw"                          % javaGiVerison,
         "org.java-gi"                    % "glib"                         % javaGiVerison,
         "org.java-gi"                    % "webkit"                       % javaGiVerison,
-        "io.bullet"                     %% "borer-core"                   % "1.18.0",
-        "io.bullet"                     %% "borer-derivation"             % "1.18.0",
-        "org.conscrypt"                  % "conscrypt-openjdk-uber"       % "2.8.0",
+        "io.bullet"                     %% "borer-core"                   % "1.19.0",
+        "io.bullet"                     %% "borer-derivation"             % "1.19.0",
+        "org.conscrypt"                  % "conscrypt-openjdk-uber"       % "2.9.0",
         "org.eclipse.jetty.websocket"    % "jetty-websocket-jetty-api"    % jettyVersion,
         "org.eclipse.jetty.websocket"    % "jetty-websocket-jetty-client" % jettyVersion,
         "org.eclipse.jetty.websocket"    % "jetty-websocket-jetty-server" % jettyVersion,
@@ -228,8 +228,6 @@ lazy val scripts = project.in(file("Modules/scripts"))
   .settings(
     libraryDependencies ++= Seq(
       slips,
-      "ch.epfl.scala" % "bsp4j" % "2.1.1",
-      upickle,
     ),
     fork                   := true,
     run / baseDirectory    := (ThisBuild / baseDirectory).value,
