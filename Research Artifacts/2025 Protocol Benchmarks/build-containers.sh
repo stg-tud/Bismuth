@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 (
-	cd ../../..
+	cd ../..
 	#sbt "clean; proBench/Universal/packageBin"
 	sbt "proBench/Universal/packageBin"
 )

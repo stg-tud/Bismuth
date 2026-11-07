@@ -6,7 +6,7 @@ set -lx ID (random)
 
 if not set -q jarspath
 	set -l oldPath $PWD
-	cd ../../../
+	cd ../..
 	set -g jarspath (sbt --error "print proBench/packageJars")
 	cd $oldPath
 end
