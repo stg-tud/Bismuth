@@ -6,15 +6,11 @@
 // The heavy Scala.js bundle is loaded lazily below and shared across all pages,
 // so there is still only a single compiled application bundle.
 //
-// The chosen variant (fastopt vs fullopt) is decided by the bundler (vite):
-// when building a distributable file we use the optimized fullopt.js; when
-// serving in development we fall back to the fastopt variant.
+// The Scala.js bundle is resolved by the `scalajs:examples` alias in astro.config.mjs:
+// fastopt when running `astro dev`, fullopt for `astro build`.
 import "prosemirror-view/style/prosemirror.css";
 
-const useFullopt = import.meta.env?.PROD;
-const modulePromise = useFullopt
-	? import("../../target/generated_js/examples-opt/main.js")
-	: import("../../target/generated_js/examples-fastopt/main.js");
+const modulePromise = import("scalajs:examples");
 
 const appHandlers = {
 	todolist: "Todolist",

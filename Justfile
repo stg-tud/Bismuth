@@ -20,9 +20,8 @@ runSimpleCaseStudy:
 
 webappsPrepare:
 	npm install # npm workspace: installs Website dependencies (incl. those of the web case studies) into the root node_modules
-	# the custom main.js conditionally includes both variants so we need fast/full main.js variants to exist otherwise the bundler barfs
+	# astro dev uses the fastLinkJS output, astro build the fullLinkJS output (see Website/astro.config.mjs)
 	sbt examplesJS/fastLinkJS
-	sbt examplesJS/fullLinkJS
 
 # the case studies are pages of the website (Website/src/pages/examples); rerun `sbt examplesJS/fastLinkJS` (or `sbt ~examplesJS/fastLinkJS`) and astro reloads
 webappsServe: webappsPrepare
@@ -85,6 +84,7 @@ open-in-podman command="fish":
 # collect website inputs: scitzen articles (rendered with the minimal template the website ingests) and the Scala.js output of the web demos
 [private]
 websitePrepare: webappsPrepare
+	sbt examplesJS/fullLinkJS
 	cd Documentation && scitzen compile --html --html-template ../Website/scitzen-template.html.scim .
 	rm -rf Website/public/documentation
 	mkdir -p Website/public/documentation
