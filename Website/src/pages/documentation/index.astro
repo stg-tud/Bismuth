@@ -151,6 +151,18 @@ sbt 'reactivesJS/test'</code></pre>
 													{c.sbt && <span class="tree-sbt">{c.sbt.map((p) => <code>{p}</code>)}</span>}
 												</span>
 											</div>
+											{c.children && (
+												<ul>
+													{c.children.map((g) => (
+														<li>
+															<div class="tree-row">
+																<code class="tree-name">{g.name}</code>
+																<span class="tree-summary">{g.summary}</span>
+															</div>
+														</li>
+													))}
+												</ul>
+											)}
 										</li>
 									))}
 								</ul>
