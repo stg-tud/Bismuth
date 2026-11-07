@@ -79,7 +79,6 @@ class SimpleParallelMultiPaxosSpec[A: Arbitrary](
           result
 
       override def postCondition(state: State, result: Try[Result]): Prop =
-          given Participants(state.keySet.map(_.uid))
           val res: Map[ReplicaId, MultiPaxos[A]] = result.get
           Prop.forAll(genId2(res)) {
             (index1, index2) =>

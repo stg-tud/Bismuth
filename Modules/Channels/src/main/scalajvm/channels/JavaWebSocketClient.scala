@@ -1,6 +1,6 @@
 package channels
 
-import channels.connection.{ByteBufferMessageBuffer, Connection, ConnectionDescriptor, ConnectionInfo, Connector, Listener, MessageBuffer, NoMoreDataException, Receive}
+import channels.connection.{ByteBufferMessageBuffer, Connection, ConnectionDescriptor, ConnectionInfo, Connector, MessageBuffer, NoMoreDataException, Receive}
 import de.rmgk.delay.{Async, Callback, toAsync}
 
 import java.net.URI

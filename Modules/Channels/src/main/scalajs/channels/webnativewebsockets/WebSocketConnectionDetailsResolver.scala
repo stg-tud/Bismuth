@@ -1,6 +1,6 @@
 package channels.webnativewebsockets
 
-import channels.connection.{ChannelResolver, Connection, ConnectionDescriptor, Connector}
+import channels.connection.{ChannelResolver, ConnectionDescriptor, Connector}
 
 /** vibecoded */
 class WebSocketConnectionDetailsResolver extends ChannelResolver {

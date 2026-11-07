@@ -1,6 +1,6 @@
 package channels
 
-import channels.connection.{ChannelResolver, Connection, ConnectionDescriptor, Connector, LocalConnectionRegistry, LocalMessageQueue, PeerConnectInfo, QueuedLocalConnection}
+import channels.connection.{ChannelResolver, ConnectionDescriptor, Connector, LocalConnectionRegistry, LocalMessageQueue, PeerConnectInfo, QueuedLocalConnection}
 import channels.overlay.HyParViewStateMachine
 import channels.overlay.HyParViewStateMachine.{HyParViewConfig, Link}
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec

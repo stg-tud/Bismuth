@@ -4,10 +4,9 @@ import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Prop.propBoolean
 import org.scalacheck.Test.Parameters
 import org.scalacheck.{Arbitrary, Gen, Prop}
-import rdts.base.{Lattice, ReplicaId}
+import rdts.base.ReplicaId
 import rdts.protocols.Participants
 import rdts.protocols.knowledgeGroups.MultiPaxos
-import rdts.protocols.spanner.ParallelMultiPaxos
 
 import scala.util.Try
 
@@ -74,7 +73,6 @@ class KnowledgeGroupMultiPaxosSpec[A: Arbitrary](
   case class Request(proposer: ReplicaId, value: A, receivers: Set[ReplicaId])
       extends BroadCastCommand(proposer, receivers):
       override def delta(states: Map[ReplicaId, MultiPaxos[A]]): MultiPaxos[A] =
-          given Participants(states.keySet.map(_.uid))
           states(proposer).request(value)(using proposer)
 
   case class Upkeep(id: ReplicaId, receivers: Set[ReplicaId]) extends BroadCastCommand(id, receivers):
@@ -84,7 +82,6 @@ class KnowledgeGroupMultiPaxosSpec[A: Arbitrary](
           states(id).upkeep
 
       override def postCondition(state: State, result: Try[Result]): Prop =
-          given Participants(state.keySet.map(_.uid))
           val res: Map[ReplicaId, MultiPaxos[A]] = result.get
           Prop.forAll(genId2(res)) {
             (index1, index2) =>
@@ -104,7 +101,6 @@ class KnowledgeGroupMultiPaxosSpec[A: Arbitrary](
   case class StartElection(initiator: ReplicaId, slot: Long, receivers: Set[ReplicaId])
       extends BroadCastCommand(initiator, receivers):
       override def delta(states: Map[ReplicaId, MultiPaxos[A]]): MultiPaxos[A] =
-          given Participants(states.keySet.map(_.uid))
           given ReplicaId = initiator
           states(initiator).startLeaderElection(slot)
 }

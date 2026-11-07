@@ -1,9 +1,6 @@
 package test.rdts.protocols.knowledgeGroups
-import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
-import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import probench.{KnowledgeGroups, MultiPaxosReplica, Request}
 import rdts.base.{ReplicaId, Uid}
-import rdts.protocols.Participants
 import rdts.protocols.knowledgeGroups.MultiPaxos
 
 class PaperGroups extends munit.FunSuite {
@@ -18,7 +15,6 @@ class PaperGroups extends munit.FunSuite {
 
   test("ClientServerSystem Smoke Test") {
     val a = MultiPaxos[Request]()
-    given Participants(Set(leader, follower1, follower2))
     given ReplicaId(leader)
     val delta = a.startLeaderElection(0)
 
@@ -27,11 +23,7 @@ class PaperGroups extends munit.FunSuite {
   }
 
   test("test local connections with client-server knowledge groups".ignore) {
-    given JsonValueCodec[MultiPaxos[Int]] =
-      JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))
-
     val ids = List(leader, client, follower1, follower2, follower3, follower4)
-    given Participants(Set(leader, follower1, follower2, follower3, follower4))
 
     val systemConfig = KnowledgeGroups.clientServer
 
@@ -111,12 +103,8 @@ class PaperGroups extends munit.FunSuite {
   }
 
   test("test local connections with compartmentalization") {
-    given JsonValueCodec[MultiPaxos[Int]] =
-      JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))
-
     val ids =
       List(leader, proxy1, proxy2, client, follower1, follower2, follower3, follower4)
-    given Participants(Set(leader, follower1, follower2, follower3, follower4))
 
     val systemConfig = KnowledgeGroups.compartmentalized
 

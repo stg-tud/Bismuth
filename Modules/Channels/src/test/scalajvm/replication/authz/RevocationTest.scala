@@ -117,8 +117,7 @@ class RevocationTest extends FunSuite {
       * oracle
       */
     def broadcastIndices(): Set[Int] = {
-      val broadcast               = antiEntropy.nn.broadcastedDeltas
-      def author(eventHash: Hash) = replica.graph.events(eventHash)._1.author
+      val broadcast = antiEntropy.nn.broadcastedDeltas
       broadcast.foreach(d =>
         everyDelta.put(
           replica.graph.events(d.eventHash)._2,

@@ -7,7 +7,6 @@ import text_rdt.*
 
 import java.lang.management.ManagementFactory
 import javax.management.ObjectName
-import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.compiletime.uninitialized
 import scala.io.Source

@@ -96,17 +96,17 @@ class RequestResponseQueueTest extends munit.ScalaCheckSuite {
       delta
     }
 
-    val req1                    = mod(_.request("one")._2)
-    val req2                    = mod(_.request("two")._2)
+    mod(_.request("one")._2)
+    mod(_.request("two")._2)
     val requestOne: Req[String] = queue.requestsSorted.head
-    val res1                    = mod(q => q.respond(q.requestsSorted.head, "1"))
-    val res2                    = mod(q => q.respond(q.requestsSorted.head, "2"))
+    mod(q => q.respond(q.requestsSorted.head, "1"))
+    mod(q => q.respond(q.requestsSorted.head, "2"))
 
     // assertEquals(queue.requests.values.map(_.value).toList, List())
     assertEquals(queue.firstUnansweredRequest, None)
     assertEquals(queue.responses.queryAllEntries.map(_.value).toList, List("1", "2"))
 
-    val receive = mod(q => q.receive(requestOne.timestamp))
+    mod(q => q.receive(requestOne.timestamp))
 
     assertEquals(queue.requestsSorted.map(_.value), List.empty)
     assertEquals(queue.responses.queryAllEntries.map(_.value).toSet, Set("2"))

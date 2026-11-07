@@ -625,8 +625,8 @@ object ComplexAVLFugueFactory {
           }
         nodeToSplit.value.rightChildrenBuffer = null
 
-        val value      = nodeToSplit.value
-        val afterEmpty = value.rightChildrenBuffer match {
+        val value = nodeToSplit.value
+        value.rightChildrenBuffer match {
           case null =>
             value.rightChildrenBuffer = nodeRightSplit
             factory.avlTree.insertBasedOn(

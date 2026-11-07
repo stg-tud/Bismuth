@@ -1,6 +1,6 @@
 package ex2024ot
 
-import text_rdt.{CollaborativeTextEditingAlgorithm, RID}
+import text_rdt.RID
 
 import scala.collection.mutable
 

@@ -3,7 +3,7 @@ package channels.experiments
 import channels.JsoniterCodecs.given
 import channels.broadcast.PlumtreeBroadcast
 import channels.broadcast.PlumtreeMessage.Payload
-import channels.connection.{Abort, ChannelResolver, Connection, ConnectionDescriptor, Connector, Listener, PeerConnectInfo}
+import channels.connection.{Abort, ChannelResolver, ConnectionDescriptor, Connector, Listener, PeerConnectInfo}
 import channels.overlay.HyParViewStateMachine
 import channels.overlay.HyParViewStateMachine.HyParViewConfig
 import channels.{BroadcastIO, MergingHistory, Timers}
