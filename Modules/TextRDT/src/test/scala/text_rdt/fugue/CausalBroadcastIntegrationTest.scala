@@ -1,4 +1,5 @@
 package text_rdt
+package fugue
 
 import rdts.base.Uid
 import rdts.time.{Causal, Dot, Dots}

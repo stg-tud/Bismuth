@@ -1,5 +1,7 @@
 package text_rdt
+package fugue
 
+import text_rdt.debug.{*, given}
 import com.github.plokhotnyuk.jsoniter_scala.core.{readFromString, writeToString}
 import munit.FunSuite
 

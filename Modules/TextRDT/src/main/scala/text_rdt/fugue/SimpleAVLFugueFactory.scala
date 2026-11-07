@@ -1,4 +1,5 @@
 package text_rdt
+package fugue
 
 import text_rdt.avl.{AVLTree, AVLTreeNode, AVLTreeNodeValueSize}
 import text_rdt.avl2.{AVL2Tree, AVL2TreeNode}
@@ -126,7 +127,7 @@ object SimpleAVLFugueFactory {
       override def dupe(): SimpleAVLFugueFactory = factory
 
       override def createRootNode(): AVLTreeNode[SimpleAVLTreeNode] = {
-        val node = AVLTreeNode[text_rdt.SimpleAVLTreeNode] { self =>
+        val node = AVLTreeNode[text_rdt.fugue.SimpleAVLTreeNode] { self =>
           val leftmostDescendantCacheRoot =
             AVL2Tree[AVLTreeNode[SimpleAVLTreeNode]](null, self)
           val leftmostDescendantCacheNode =

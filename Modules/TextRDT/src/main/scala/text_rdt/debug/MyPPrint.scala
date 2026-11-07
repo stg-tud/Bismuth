@@ -1,5 +1,7 @@
 package text_rdt
+package debug
 
+import text_rdt.fugue.{*, given}
 import pprint.PPrinter
 import text_rdt.avl.AVLTreeNode
 import text_rdt.avl2.AVL2TreeNode

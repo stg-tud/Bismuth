@@ -1,4 +1,5 @@
 package text_rdt
+package fugue
 
 final case class SimpleID(rid: RID, counter: Int) {}
 

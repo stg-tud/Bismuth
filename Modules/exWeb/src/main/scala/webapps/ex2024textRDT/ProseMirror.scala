@@ -2,6 +2,8 @@ package webapps.ex2024textRDT
 
 import org.scalajs.dom.{URL, document}
 import text_rdt.*
+import text_rdt.fugue.*
+import text_rdt.debug.{*, given}
 import text_rdt.avl.AVLTreeNode
 import typings.prosemirrorState.mod.{EditorState, Transaction}
 import typings.prosemirrorTransform.mod.ReplaceStep_

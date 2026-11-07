@@ -1,4 +1,5 @@
 package text_rdt
+package fugue
 
 import scala.math.Ordered.orderingToOrdered
 

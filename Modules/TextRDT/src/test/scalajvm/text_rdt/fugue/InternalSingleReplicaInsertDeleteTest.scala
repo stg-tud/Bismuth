@@ -1,4 +1,5 @@
 package text_rdt
+package fugue
 
 import org.scalacheck.commands.Commands
 import org.scalacheck.{Gen, Prop}

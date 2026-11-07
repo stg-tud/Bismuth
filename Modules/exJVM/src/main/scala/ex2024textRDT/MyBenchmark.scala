@@ -4,6 +4,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReader, JsonValueCodec, J
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import org.openjdk.jmh.annotations.*
 import text_rdt.*
+import text_rdt.fugue.{*, given}
 
 import java.lang.management.ManagementFactory
 import javax.management.ObjectName
@@ -185,9 +186,9 @@ class MyRealWorldBenchmarkLocal {
   private def localMethod(
       size: Int
   ): Replica[
-    text_rdt.SimpleFugueFactory.simpleFugueFactory.type |
-    text_rdt.ComplexFugueFactory.complexFugueFactory.type |
-    text_rdt.SimpleAVLFugueFactory.simpleAVLFugueFactory.type |
+    text_rdt.fugue.SimpleFugueFactory.simpleFugueFactory.type |
+    text_rdt.fugue.ComplexFugueFactory.complexFugueFactory.type |
+    text_rdt.fugue.SimpleAVLFugueFactory.simpleAVLFugueFactory.type |
     ComplexAVLFugueFactory.complexAVLFugueFactory.type
   ] = {
     val replicaStateA = ReplicaState[
@@ -259,9 +260,9 @@ class MyRealWorldBenchmarkLargeLocal {
 
   def localMethod(
   ): Replica[
-    text_rdt.SimpleFugueFactory.simpleFugueFactory.type |
-    text_rdt.ComplexFugueFactory.complexFugueFactory.type |
-    text_rdt.SimpleAVLFugueFactory.simpleAVLFugueFactory.type |
+    text_rdt.fugue.SimpleFugueFactory.simpleFugueFactory.type |
+    text_rdt.fugue.ComplexFugueFactory.complexFugueFactory.type |
+    text_rdt.fugue.SimpleAVLFugueFactory.simpleAVLFugueFactory.type |
     ComplexAVLFugueFactory.complexAVLFugueFactory.type
   ] = {
     val replicaStateA = ReplicaState[
@@ -331,9 +332,9 @@ class MyRealWorldBenchmarkLargeRemote {
   var count: Int = uninitialized
 
   var replicaWithOperationsApplied: Replica[
-    text_rdt.SimpleFugueFactory.simpleFugueFactory.type |
-    text_rdt.ComplexFugueFactory.complexFugueFactory.type |
-    text_rdt.SimpleAVLFugueFactory.simpleAVLFugueFactory.type |
+    text_rdt.fugue.SimpleFugueFactory.simpleFugueFactory.type |
+    text_rdt.fugue.ComplexFugueFactory.complexFugueFactory.type |
+    text_rdt.fugue.SimpleAVLFugueFactory.simpleAVLFugueFactory.type |
     ComplexAVLFugueFactory.complexAVLFugueFactory.type
   ] = uninitialized
 
@@ -342,9 +343,9 @@ class MyRealWorldBenchmarkLargeRemote {
     replicaWithOperationsApplied = localMethod()
 
   private def localMethod(): Replica[
-    text_rdt.SimpleFugueFactory.simpleFugueFactory.type |
-    text_rdt.ComplexFugueFactory.complexFugueFactory.type |
-    text_rdt.SimpleAVLFugueFactory.simpleAVLFugueFactory.type |
+    text_rdt.fugue.SimpleFugueFactory.simpleFugueFactory.type |
+    text_rdt.fugue.ComplexFugueFactory.complexFugueFactory.type |
+    text_rdt.fugue.SimpleAVLFugueFactory.simpleAVLFugueFactory.type |
     ComplexAVLFugueFactory.complexAVLFugueFactory.type
   ] = {
 

@@ -1,5 +1,7 @@
 package text_rdt
+package debug
 
+import text_rdt.fugue.{*, given}
 import text_rdt.avl.AVLTreeNode
 
 import scala.collection.mutable

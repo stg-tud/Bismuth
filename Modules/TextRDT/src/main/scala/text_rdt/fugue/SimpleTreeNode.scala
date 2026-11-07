@@ -1,5 +1,7 @@
 package text_rdt
+package fugue
 
+import text_rdt.debug.pprintNonAVL
 import scala.collection.mutable
 
 given simpleTreeNode: TreeNodey[SimpleTreeNode] with {

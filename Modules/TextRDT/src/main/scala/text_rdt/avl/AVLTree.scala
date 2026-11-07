@@ -1,7 +1,8 @@
 package text_rdt.avl
 
 import text_rdt.Helper.myAssert
-import text_rdt.{Helper, Side, pprintAVL}
+import text_rdt.{Helper, Side}
+import text_rdt.debug.pprintAVL
 
 import scala.annotation.tailrec
 import scala.compiletime.uninitialized

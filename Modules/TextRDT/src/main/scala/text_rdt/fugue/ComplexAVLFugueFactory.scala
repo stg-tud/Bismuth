@@ -1,4 +1,5 @@
 package text_rdt
+package fugue
 
 import text_rdt.Helper.myAssert
 import text_rdt.avl.{AVLTree, AVLTreeNode, AVLTreeNodeValueSize}
@@ -771,7 +772,7 @@ object ComplexAVLFugueFactory {
                   assert(parent.value.to + 1 == node.value.offset)
                   parent.value.rightChildrenBuffer match {
                     case singleRightChild: text_rdt.avl.AVLTreeNode[
-                          text_rdt.ComplexAVLTreeNode
+                          text_rdt.fugue.ComplexAVLTreeNode
                         ]
                         if
                         singleRightChild.eq(node) &&
@@ -801,7 +802,7 @@ object ComplexAVLFugueFactory {
         } else if ComplexAVLTreeNodeSingle(node, index).isRightEdge then {
           node.value.rightChildrenBuffer match {
             case singleRightChild: text_rdt.avl.AVLTreeNode[
-                  text_rdt.ComplexAVLTreeNode
+                  text_rdt.fugue.ComplexAVLTreeNode
                 ]
                 if
                 singleRightChild.value._values == null &&

@@ -1,5 +1,7 @@
 package text_rdt
+package fugue
 
+import text_rdt.debug.pprintNonAVL
 import text_rdt.Helper.myAssert
 import text_rdt.avl.AVLTreeNode
 import text_rdt.avl2.AVL2TreeNode

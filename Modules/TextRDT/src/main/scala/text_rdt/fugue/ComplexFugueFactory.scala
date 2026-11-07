@@ -1,7 +1,7 @@
 package text_rdt
+package fugue
 
 import text_rdt.Helper.myAssert
-import text_rdt.complexId
 
 import scala.annotation.tailrec
 import scala.collection.mutable

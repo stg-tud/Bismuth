@@ -1,4 +1,5 @@
 package text_rdt
+package fugue
 
 import scala.annotation.{tailrec, targetName}
 import scala.collection.mutable

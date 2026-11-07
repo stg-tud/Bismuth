@@ -4,6 +4,8 @@ import munit.FunSuite
 import org.scalajs.dom
 import text_rdt.*
 import text_rdt.given
+import text_rdt.fugue.{*, given}
+import text_rdt.debug.{*, given}
 import typings.prosemirrorState.mod.EditorState
 
 import scala.scalajs.js

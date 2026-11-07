@@ -1,4 +1,5 @@
 package text_rdt
+package fugue
 
 import munit.ScalaCheckSuite
 import org.scalacheck.Test
