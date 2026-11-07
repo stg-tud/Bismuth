@@ -17,6 +17,7 @@ def pprint     = "com.lihaoyi"   %% "pprint"      % "0.9.6"
 def scalajsDom = "org.scala-js"  %% "scalajs-dom" % "2.8.1"
 def slips      = "de.rmgk.slips" %% "slips"       % "0.20.0"
 def scalafx    = "org.scalafx"   %% "scalafx"     % "27.0.0-R39"
+def upickle = "com.lihaoyi" %% "upickle" % "4.4.3"
 
 def jsoniterScala = Seq(
   "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core"   % "2.42.0",
@@ -204,7 +205,7 @@ lazy val loreCompilerPlugin = project.in(file("Modules/LoRe Compiler Plugin"))
   .settings(
     Settings.javaOutputVersion(17),
     libraryDependencies ++= Seq(
-      "com.lihaoyi"    %% "upickle"         % "4.4.3",
+      upickle,
       "org.scala-lang" %% "scala3-compiler" % scalaVersion.value % "provided",
     ),
   )
@@ -227,8 +228,8 @@ lazy val scripts = project.in(file("Modules/scripts"))
   .settings(
     libraryDependencies ++= Seq(
       slips,
-      "ch.epfl.scala" % "bsp4j"   % "2.1.1",
-      "com.lihaoyi"  %% "upickle" % "4.1.0",
+      "ch.epfl.scala" % "bsp4j" % "2.1.1",
+      upickle,
     ),
     fork                   := true,
     run / baseDirectory    := (ThisBuild / baseDirectory).value,

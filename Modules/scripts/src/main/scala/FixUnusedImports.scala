@@ -5,7 +5,6 @@
 package scripts
 
 import ch.epfl.scala.bsp4j.*
-import de.rmgk.options.*
 import de.rmgk.script.*
 import org.eclipse.lsp4j.jsonrpc.Launcher
 
@@ -20,22 +19,24 @@ val root = Path.of(".").toAbsolutePath.normalize
 /** Unused import positions: file -> line -> columns. */
 type Hits = Map[Path, Map[Int, Set[Int]]]
 
-class Client extends BuildClient:
+class Client extends BuildClient {
     private val diagnostics = mutable.Map.empty[(String, String), List[Diagnostic]]
 
-    def hits: Hits = synchronized:
+    def hits: Hits = synchronized {
         val positions = for
             ((uri, _), diags) <- diagnostics.toList
             d                 <- diags if d.getMessage.toLowerCase.contains("unused import")
         yield (Path.of(URI(uri)), d.getRange.getStart)
-        positions.groupBy(_._1).view.mapValues: ps =>
+        positions.groupBy(_._1).view.mapValues { ps =>
             ps.map(_._2).groupMap(_.getLine.toInt)(_.getCharacter.toInt).view.mapValues(_.toSet).toMap
-        .toMap
+        }.toMap
+    }
 
-    override def onBuildPublishDiagnostics(p: PublishDiagnosticsParams): Unit = synchronized:
+    override def onBuildPublishDiagnostics(p: PublishDiagnosticsParams): Unit = synchronized {
         val key = (p.getTextDocument.getUri, p.getBuildTarget.getUri)
         val old = if p.getReset then Nil else diagnostics.getOrElse(key, Nil)
         diagnostics(key) = old ++ p.getDiagnostics.asScala
+    }
 
     override def onBuildLogMessage(p: LogMessageParams): Unit             = System.err.println(s"  [sbt] ${p.getMessage}")
     override def onBuildShowMessage(p: ShowMessageParams): Unit           = ()
@@ -43,6 +44,7 @@ class Client extends BuildClient:
     override def onBuildTaskProgress(p: TaskProgressParams): Unit         = ()
     override def onBuildTaskFinish(p: TaskFinishParams): Unit             = ()
     override def onBuildTargetDidChange(p: DidChangeBuildTarget): Unit    = ()
+}
 
 trait Server extends BuildServer with ScalaBuildServer
 
@@ -79,17 +81,19 @@ def collectUnusedImports(clean: Boolean): Hits =
     client.hits
 
 /** A comma separated element of an import line, with its position in that line. */
-case class Part(start: Int, text: String):
-    def end                          = start + text.length
-    def covers(col: Int)             = start <= col && col <= end
+case class Part(start: Int, text: String) {
+    def end              = start + text.length
+    def covers(col: Int) = start <= col && col <= end
+}
 
 /** Splits on commas that are not nested in braces. */
 def splitTop(s: String, offset: Int): List[Part] =
     var depth = 0
-    val cuts = s.indices.filter: i =>
+    val cuts = s.indices.filter { i =>
         if s(i) == '{' then depth += 1
         if s(i) == '}' then depth -= 1
         s(i) == ',' && depth == 0
+    }
     val bounds = (-1 +: cuts :+ s.length).sliding(2).toList
     bounds.map { case Seq(from, to) =>
         val raw = s.substring(from + 1, to)
@@ -122,25 +126,18 @@ def rewrite(line: String, cols: Set[Int]): Option[Option[String]] = line match
         Option.when(matched == cols)(Option.when(kept.nonEmpty)(kept.mkString(prefix, ", ", "")))
     case _ => None
 
-@main def fixUnusedImports(args: String*): Unit =
-    val result = parseArguments(args.toList):
-        val clean  = flag("--clean", "clean all targets first, otherwise only recompiled files report warnings").value
-        val dryRun = flag("--dry-run", "only report what would change").value
-        val unknown = ReadRemaining.value
-        if unknown.nonEmpty then throw ParseException(Result.Err("unknown arguments", remaining = Some(unknown)))
-        val hits  = collectUnusedImports(clean)
-        var fixed = 0
-        for (file, byLine) <- hits.toList.sortBy(_._1) do
-            val lines = Files.readAllLines(file).asScala.toVector
-            val results = byLine.map((n, cols) => n -> rewrite(lines(n), cols))
-            for case (n, None) <- results do System.err.println(s"cannot fix: ${root.relativize(file)}:${n + 1}: ${lines(n).trim}")
-            val updates = results.collect { case (n, Some(r)) => n -> r }
-            if updates.nonEmpty then
-                fixed += updates.size
-                println(s"${root.relativize(file)}: ${updates.size} line(s) fixed")
-                val newLines = lines.indices.flatMap(n => updates.getOrElse(n, Some(lines(n))))
-                if !dryRun then Files.writeString(file, newLines.mkString("", "\n", "\n")): Unit
+def fixUnusedImports(clean: Boolean, dryRun: Boolean): Unit =
+    val hits  = collectUnusedImports(clean)
+    var fixed = 0
+    for (file, byLine) <- hits.toList.sortBy(_._1) do
+        val lines = Files.readAllLines(file).asScala.toVector
+        val results = byLine.map((n, cols) => n -> rewrite(lines(n), cols))
+        for case (n, None) <- results do System.err.println(s"cannot fix: ${root.relativize(file)}:${n + 1}: ${lines(n).trim}")
+        val updates = results.collect { case (n, Some(r)) => n -> r }
+        if updates.nonEmpty then
+            fixed += updates.size
+            println(s"${root.relativize(file)}: ${updates.size} line(s) fixed")
+            val newLines = lines.indices.flatMap(n => updates.getOrElse(n, Some(lines(n))))
+            if !dryRun then Files.writeString(file, newLines.mkString("", "\n", "\n")): Unit
 
-        System.err.println(if hits.isEmpty then "no unused imports found (try --clean)" else s"$fixed import line(s) fixed")
-
-    if result.isInstanceOf[Result.Err] then sys.exit(1)
+    System.err.println(if hits.isEmpty then "no unused imports found (try --clean)" else s"$fixed import line(s) fixed")
