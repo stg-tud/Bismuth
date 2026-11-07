@@ -2,11 +2,7 @@ package text_rdt.fugue
 
 import org.scalacheck.commands.Commands
 import org.scalacheck.{Gen, Prop}
-import text_rdt.fugue.complex.{*, given}
-import text_rdt.fugue.complexavl.{*, given}
-import text_rdt.fugue.simple.{*, given}
-import text_rdt.fugue.simpleavl.{*, given}
-import text_rdt.{*, given}
+import text_rdt.{*}
 
 import scala.collection.mutable
 

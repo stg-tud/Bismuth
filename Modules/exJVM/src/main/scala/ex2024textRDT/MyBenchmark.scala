@@ -4,11 +4,11 @@ import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReader, JsonValueCodec, J
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import org.openjdk.jmh.annotations.*
 import text_rdt.*
-import text_rdt.fugue.complex.{*, given}
-import text_rdt.fugue.complexavl.{*, given}
-import text_rdt.fugue.simple.{*, given}
-import text_rdt.fugue.simpleavl.{*, given}
-import text_rdt.fugue.{*, given}
+import text_rdt.fugue.complex.{*}
+import text_rdt.fugue.complexavl.{*}
+import text_rdt.fugue.simple.{*}
+import text_rdt.fugue.simpleavl.{*}
+import text_rdt.fugue.{*}
 
 import java.lang.management.ManagementFactory
 import javax.management.ObjectName

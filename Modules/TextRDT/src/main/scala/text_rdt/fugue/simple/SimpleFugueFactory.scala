@@ -1,7 +1,7 @@
 package text_rdt.fugue.simple
 
 import text_rdt.fugue.{*, given}
-import text_rdt.{*, given}
+import text_rdt.{*}
 
 import scala.annotation.{tailrec, targetName}
 import scala.collection.mutable

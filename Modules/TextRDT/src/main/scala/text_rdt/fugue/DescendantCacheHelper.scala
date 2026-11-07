@@ -2,7 +2,7 @@ package text_rdt.fugue
 
 import text_rdt.fugue.avl.AVLTreeNode
 import text_rdt.fugue.avl2.{AVL2Tree, AVL2TreeNode}
-import text_rdt.{*, given}
+import text_rdt.{*}
 
 object DescendantCacheHelper {
 

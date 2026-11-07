@@ -1,6 +1,6 @@
 package text_rdt.fugue
 
-import text_rdt.{*, given}
+import text_rdt.{*}
 
 final case class SimpleID(rid: RID, counter: Int) {}
 

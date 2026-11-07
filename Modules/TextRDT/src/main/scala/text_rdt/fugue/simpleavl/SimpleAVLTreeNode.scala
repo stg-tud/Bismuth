@@ -4,8 +4,8 @@ import text_rdt.Helper.myAssert
 import text_rdt.debug.pprintNonAVL
 import text_rdt.fugue.avl.AVLTreeNode
 import text_rdt.fugue.avl2.AVL2TreeNode
-import text_rdt.fugue.{*, given}
-import text_rdt.{*, given}
+import text_rdt.fugue.{*}
+import text_rdt.{*}
 
 import scala.collection.mutable
 

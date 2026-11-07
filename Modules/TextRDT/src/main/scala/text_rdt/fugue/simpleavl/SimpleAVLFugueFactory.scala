@@ -3,7 +3,7 @@ package text_rdt.fugue.simpleavl
 import text_rdt.fugue.avl.{AVLTree, AVLTreeNode, AVLTreeNodeValueSize}
 import text_rdt.fugue.avl2.{AVL2Tree, AVL2TreeNode}
 import text_rdt.fugue.{*, given}
-import text_rdt.{*, given}
+import text_rdt.{*}
 
 import scala.collection.mutable
 import scala.math.Ordered.orderingToOrdered

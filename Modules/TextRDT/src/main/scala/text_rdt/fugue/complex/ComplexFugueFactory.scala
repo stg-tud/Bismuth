@@ -2,7 +2,7 @@ package text_rdt.fugue.complex
 
 import text_rdt.Helper.myAssert
 import text_rdt.fugue.{*, given}
-import text_rdt.{*, given}
+import text_rdt.{*}
 
 import scala.annotation.tailrec
 import scala.collection.mutable

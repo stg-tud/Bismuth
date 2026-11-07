@@ -3,10 +3,7 @@ package text_rdt.fugue
 import com.github.plokhotnyuk.jsoniter_scala.core.{readFromString, writeToString}
 import munit.FunSuite
 import text_rdt.debug.{*, given}
-import text_rdt.fugue.complex.{*, given}
 import text_rdt.fugue.complexavl.{*, given}
-import text_rdt.fugue.simple.{*, given}
-import text_rdt.fugue.simpleavl.{*, given}
 import text_rdt.{*, given}
 
 class JsoniterCodecsTest extends FunSuite {
