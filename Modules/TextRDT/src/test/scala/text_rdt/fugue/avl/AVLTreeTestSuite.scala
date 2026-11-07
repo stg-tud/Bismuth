@@ -1,4 +1,4 @@
-package text_rdt.avl
+package text_rdt.fugue.avl
 
 import munit.diff.Printer
 import munit.{FunSuite, Location}

@@ -1,10 +1,14 @@
-package text_rdt
-package debug
+package text_rdt.debug
 
-import text_rdt.fugue.{*, given}
 import pprint.PPrinter
-import text_rdt.avl.AVLTreeNode
-import text_rdt.avl2.AVL2TreeNode
+import text_rdt.fugue.avl.AVLTreeNode
+import text_rdt.fugue.avl2.AVL2TreeNode
+import text_rdt.fugue.complex.{*, given}
+import text_rdt.fugue.complexavl.{*, given}
+import text_rdt.fugue.simple.{*, given}
+import text_rdt.fugue.simpleavl.{*, given}
+import text_rdt.fugue.{*, given}
+import text_rdt.{*, given}
 
 lazy val pprintNonAVL: PPrinter = {
   pprint.copy(

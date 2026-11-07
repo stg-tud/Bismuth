@@ -1,8 +1,8 @@
-package text_rdt.avl2
+package text_rdt.fugue.avl2
 
 import text_rdt.Helper.myAssert
-import text_rdt.{Helper, Side}
 import text_rdt.debug.pprintAVL
+import text_rdt.{Helper, Side}
 
 import scala.annotation.tailrec
 import scala.math.Ordered.orderingToOrdered

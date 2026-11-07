@@ -1,8 +1,12 @@
-package text_rdt
-package fugue
+package text_rdt.fugue
 
 import rdts.base.Uid
 import rdts.time.{Causal, Dot, Dots}
+import text_rdt.fugue.complex.{*, given}
+import text_rdt.fugue.complexavl.{*, given}
+import text_rdt.fugue.simple.{*, given}
+import text_rdt.fugue.simpleavl.{*, given}
+import text_rdt.{*, given}
 
 import scala.collection.mutable
 

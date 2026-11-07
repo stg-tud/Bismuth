@@ -1,9 +1,10 @@
-package text_rdt
-package fugue
+package text_rdt.fugue.complexavl
 
 import text_rdt.Helper.myAssert
-import text_rdt.avl.{AVLTree, AVLTreeNode, AVLTreeNodeValueSize}
-import text_rdt.avl2.AVL2TreeNode
+import text_rdt.fugue.avl.{AVLTree, AVLTreeNode, AVLTreeNodeValueSize}
+import text_rdt.fugue.avl2.AVL2TreeNode
+import text_rdt.fugue.{*, given}
+import text_rdt.{*, given}
 
 import scala.collection.mutable
 
@@ -771,8 +772,8 @@ object ComplexAVLFugueFactory {
                 case Some(parent) =>
                   assert(parent.value.to + 1 == node.value.offset)
                   parent.value.rightChildrenBuffer match {
-                    case singleRightChild: text_rdt.avl.AVLTreeNode[
-                          text_rdt.fugue.ComplexAVLTreeNode
+                    case singleRightChild: text_rdt.fugue.avl.AVLTreeNode[
+                          ComplexAVLTreeNode
                         ]
                         if
                         singleRightChild.eq(node) &&
@@ -801,8 +802,8 @@ object ComplexAVLFugueFactory {
           }
         } else if ComplexAVLTreeNodeSingle(node, index).isRightEdge then {
           node.value.rightChildrenBuffer match {
-            case singleRightChild: text_rdt.avl.AVLTreeNode[
-                  text_rdt.fugue.ComplexAVLTreeNode
+            case singleRightChild: text_rdt.fugue.avl.AVLTreeNode[
+                  ComplexAVLTreeNode
                 ]
                 if
                 singleRightChild.value._values == null &&

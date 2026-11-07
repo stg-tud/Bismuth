@@ -1,8 +1,9 @@
-package text_rdt
-package fugue
+package text_rdt.fugue.simpleavl
 
-import text_rdt.avl.{AVLTree, AVLTreeNode, AVLTreeNodeValueSize}
-import text_rdt.avl2.{AVL2Tree, AVL2TreeNode}
+import text_rdt.fugue.avl.{AVLTree, AVLTreeNode, AVLTreeNodeValueSize}
+import text_rdt.fugue.avl2.{AVL2Tree, AVL2TreeNode}
+import text_rdt.fugue.{*, given}
+import text_rdt.{*, given}
 
 import scala.collection.mutable
 import scala.math.Ordered.orderingToOrdered
@@ -127,7 +128,7 @@ object SimpleAVLFugueFactory {
       override def dupe(): SimpleAVLFugueFactory = factory
 
       override def createRootNode(): AVLTreeNode[SimpleAVLTreeNode] = {
-        val node = AVLTreeNode[text_rdt.fugue.SimpleAVLTreeNode] { self =>
+        val node = AVLTreeNode[SimpleAVLTreeNode] { self =>
           val leftmostDescendantCacheRoot =
             AVL2Tree[AVLTreeNode[SimpleAVLTreeNode]](null, self)
           val leftmostDescendantCacheNode =

@@ -1,5 +1,7 @@
-package text_rdt
-package fugue
+package text_rdt.fugue.simple
+
+import text_rdt.fugue.{*, given}
+import text_rdt.{*, given}
 
 final case class Node(
     id: SimpleID | Null,

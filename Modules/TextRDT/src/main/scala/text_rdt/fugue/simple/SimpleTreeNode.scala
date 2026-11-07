@@ -1,7 +1,9 @@
-package text_rdt
-package fugue
+package text_rdt.fugue.simple
 
 import text_rdt.debug.pprintNonAVL
+import text_rdt.fugue.{*, given}
+import text_rdt.{*, given}
+
 import scala.collection.mutable
 
 given simpleTreeNode: TreeNodey[SimpleTreeNode] with {

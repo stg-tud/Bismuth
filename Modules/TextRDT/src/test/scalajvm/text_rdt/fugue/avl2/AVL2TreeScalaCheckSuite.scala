@@ -1,4 +1,4 @@
-package text_rdt.avl2
+package text_rdt.fugue.avl2
 
 import munit.ScalaCheckSuite
 import org.scalacheck.Test

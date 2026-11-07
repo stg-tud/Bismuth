@@ -1,5 +1,7 @@
-package text_rdt
-package fugue
+package text_rdt.fugue.complexavl
+
+import text_rdt.fugue.{*, given}
+import text_rdt.{*, given}
 
 enum ComplexAVLMessage {
   case Insert(

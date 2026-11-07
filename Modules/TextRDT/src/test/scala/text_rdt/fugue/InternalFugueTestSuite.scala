@@ -1,7 +1,11 @@
-package text_rdt
-package fugue
+package text_rdt.fugue
 
 import munit.FunSuite
+import text_rdt.fugue.complex.{*, given}
+import text_rdt.fugue.complexavl.{*, given}
+import text_rdt.fugue.simple.{*, given}
+import text_rdt.fugue.simpleavl.{*, given}
+import text_rdt.{*, given}
 
 class SimpleInternalFugueTestSuite
     extends InternalFugueTestSuite(replicaId =>

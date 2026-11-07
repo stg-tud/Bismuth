@@ -1,4 +1,4 @@
-package text_rdt.avl
+package text_rdt.fugue.avl
 
 import org.scalacheck.commands.Commands
 import org.scalacheck.{Gen, Prop}

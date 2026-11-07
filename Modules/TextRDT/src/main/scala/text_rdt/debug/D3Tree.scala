@@ -1,8 +1,12 @@
-package text_rdt
-package debug
+package text_rdt.debug
 
+import text_rdt.fugue.avl.AVLTreeNode
+import text_rdt.fugue.complex.{*, given}
+import text_rdt.fugue.complexavl.{*, given}
+import text_rdt.fugue.simple.{*, given}
+import text_rdt.fugue.simpleavl.{*, given}
 import text_rdt.fugue.{*, given}
-import text_rdt.avl.AVLTreeNode
+import text_rdt.{*, given}
 
 import scala.collection.mutable
 

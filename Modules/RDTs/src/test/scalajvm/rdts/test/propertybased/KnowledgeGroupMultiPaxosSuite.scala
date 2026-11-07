@@ -73,7 +73,7 @@ class KnowledgeGroupMultiPaxosSpec[A: Arbitrary](
   case class Request(proposer: ReplicaId, value: A, receivers: Set[ReplicaId])
       extends BroadCastCommand(proposer, receivers):
       override def delta(states: Map[ReplicaId, MultiPaxos[A]]): MultiPaxos[A] =
-          states(proposer).request(value)(using proposer)
+        states(proposer).request(value)(using proposer)
 
   case class Upkeep(id: ReplicaId, receivers: Set[ReplicaId]) extends BroadCastCommand(id, receivers):
       override def delta(states: Map[ReplicaId, MultiPaxos[A]]): MultiPaxos[A] =

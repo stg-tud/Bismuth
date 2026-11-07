@@ -1,10 +1,8 @@
-package text_rdt
-package fugue
+package text_rdt.fugue
 
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
-
-given complexAVLMessageCodec: JsonValueCodec[ComplexAVLMessage] = JsonCodecMaker.make
+import text_rdt.{*, given}
 
 given simpleIDCodec: JsonValueCodec[SimpleID]                  = JsonCodecMaker.make
 given nullableSimpleIDCodec: JsonValueCodec[SimpleID | Null]   = nullableCodec[SimpleID]

@@ -1,5 +1,6 @@
-package text_rdt
-package fugue
+package text_rdt.fugue
+
+import text_rdt.{*, given}
 
 import scala.math.Ordered.orderingToOrdered
 

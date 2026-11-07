@@ -1,8 +1,9 @@
-package text_rdt
-package fugue
+package text_rdt.fugue.complex
 
-import text_rdt.debug.pprintNonAVL
 import text_rdt.Helper.myAssert
+import text_rdt.debug.pprintNonAVL
+import text_rdt.fugue.{*, given}
+import text_rdt.{*, given}
 
 import scala.collection.mutable
 
