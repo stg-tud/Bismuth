@@ -11,6 +11,12 @@ given effe: AVLTreeNodeValueSize[String] with {
   }
 }
 
+/** Value-based mirror of an [[AVLTreeNode]] (which uses identity equality), for structural assertions. */
+final case class Shape(left: Shape | Null, value: String, right: Shape | Null)
+
+def shape(node: AVLTreeNode[String] | Null): Shape | Null =
+  if node == null then null else Shape(shape(node.left), node.value, shape(node.right))
+
 class AVLTreeTestSuite extends FunSuite {
 
   override val printer: Printer = Printer.apply { case value: AVLTreeNode[?] =>
@@ -38,8 +44,8 @@ class AVLTreeTestSuite extends FunSuite {
     val nodeR = AVLTreeNode[String]("b", null)
     tree.insert(root, nodeR, Side.Right)
     assertEquals(
-      tree.root.toString(),
-      """AVLTreeNode(left = null, value = "", right = AVLTreeNode(left = null, value = "b", right = null))"""
+      shape(tree.root),
+      Shape(null, "", Shape(null, "b", null))
     )
   }
 
@@ -54,13 +60,8 @@ class AVLTreeTestSuite extends FunSuite {
     nodeR.right = nodeRR
     root.rotateLeft(tree)
     assertEquals(
-      tree.root.toString(),
-      // normalize CRLF (e.g., from Windows checkouts)
-      """AVLTreeNode(
-        |  left = AVLTreeNode(left = null, value = "a", right = null),
-        |  value = "b",
-        |  right = AVLTreeNode(left = null, value = "c", right = null)
-        |)""".stripMargin.replace("\r\n", "\n")
+      shape(tree.root),
+      Shape(Shape(null, "a", null), "b", Shape(null, "c", null))
     )
   }
 
@@ -74,8 +75,8 @@ class AVLTreeTestSuite extends FunSuite {
     val root = AVLTreeNode("a", null)
     tree.insert(null, root, Side.Left)
     assertEquals(
-      tree.root.toString(),
-      """AVLTreeNode(left = null, value = "a", right = null)"""
+      shape(tree.root),
+      Shape(null, "a", null)
     )
   }
 
@@ -84,8 +85,8 @@ class AVLTreeTestSuite extends FunSuite {
     val root = AVLTreeNode("a", null)
     tree.insert(null, root, Side.Right)
     assertEquals(
-      tree.root.toString(),
-      """AVLTreeNode(left = null, value = "a", right = null)"""
+      shape(tree.root),
+      Shape(null, "a", null)
     )
   }
 
@@ -96,8 +97,8 @@ class AVLTreeTestSuite extends FunSuite {
     val nodeR = AVLTreeNode("b", null)
     tree.insert(root, nodeR, Side.Right)
     assertEquals(
-      tree.root.toString(),
-      """AVLTreeNode(left = null, value = "a", right = AVLTreeNode(left = null, value = "b", right = null))"""
+      shape(tree.root),
+      Shape(null, "a", Shape(null, "b", null))
     )
   }
 
@@ -108,8 +109,8 @@ class AVLTreeTestSuite extends FunSuite {
     val nodeL = AVLTreeNode("b", null)
     tree.insert(root, nodeL, Side.Left)
     assertEquals(
-      tree.root.toString(),
-      """AVLTreeNode(left = AVLTreeNode(left = null, value = "b", right = null), value = "a", right = null)"""
+      shape(tree.root),
+      Shape(Shape(null, "b", null), "a", null)
     )
   }
 
@@ -124,13 +125,8 @@ class AVLTreeTestSuite extends FunSuite {
     val nodeRR = AVLTreeNode("c", null)
     tree.insert(nodeR, nodeRR, Side.Right)
     assertEquals(
-      tree.root.toString(),
-      // normalize CRLF (e.g., from Windows checkouts)
-      """AVLTreeNode(
-        |  left = AVLTreeNode(left = null, value = "a", right = null),
-        |  value = "b",
-        |  right = AVLTreeNode(left = null, value = "c", right = null)
-        |)""".stripMargin.replace("\r\n", "\n")
+      shape(tree.root),
+      Shape(Shape(null, "a", null), "b", Shape(null, "c", null))
     )
     assertEquals(tree.values(), Seq("a", "b", "c"))
     assertEquals(root.indexOfNode(), 0)
