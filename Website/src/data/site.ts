@@ -257,8 +257,7 @@ export const repoTree: TreeEntry[] = [
 			{ name: "Webview/", sbt: ["webview"], summary: "Runs the web demos in a native window, using Scala Native." },
 		],
 	},
-	{ name: "Documentation/", summary: "Scitzen project for the manuals." },
 	{ name: "Research Artifacts/", summary: "Evaluation scripts, results, and notebooks of published papers." },
 	{ name: "Scripts/", summary: "Helper scripts." },
-	{ name: "Website/", summary: "This website." },
+	{ name: "Website/", summary: "This website, including the manuals (a scitzen project in Website/documentation/) and the web pages of the demos." },
 ];
