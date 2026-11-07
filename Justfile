@@ -2,7 +2,7 @@ authors:
 	git shortlog --summary --numbered
 
 test:
-	npm install
+	cd Website && pnpm install
 	sbt test
 
 publishLocal:
@@ -19,13 +19,13 @@ runSimpleCaseStudy:
 	sbt 'examples / run'
 
 webappsPrepare:
-	npm install # npm workspace: installs Website dependencies (incl. those of the web case studies) into the root node_modules
+	cd Website && pnpm install # includes the dependencies of the web case studies (and jsdom for their tests)
 	# astro dev uses the fastLinkJS output, astro build the fullLinkJS output (see Website/astro.config.mjs)
 	sbt examplesJS/fastLinkJS
 
 # the case studies are pages of the website (Website/src/pages/examples); rerun `sbt examplesJS/fastLinkJS` (or `sbt ~examplesJS/fastLinkJS`) and astro reloads
 webappsServe: webappsPrepare
-	cd Website && npx astro dev --port 5173
+	cd Website && pnpm exec astro dev --port 5173
 
 webappsWebviewNative:
 	# connect to a running vite dev server (start it with `just webappsServe`)
@@ -41,15 +41,15 @@ webappsWebviewJavaGi: # launch a web app in a java-gi (GTK4 + Libadwaita + WebKi
 
 reformPrepare:
 	if [ ! -f "Modules/Reform/.env" ] && [ -f "Modules/Reform/env.example" ]; then cp "Modules/Reform/env.example" "Modules/Reform/.env"; fi
-	cd "Modules/Reform/" && npm install
+	cd "Modules/Reform/" && pnpm install
 	sbt reform/fastLinkJS
 	sbt reform/fullLinkJS
 
 reformServe: reformPrepare
-	cd "Modules/Reform/" && ./node_modules/vite/bin/vite.js
+	cd "Modules/Reform/" && pnpm exec vite
 
 reformBundle: reformPrepare
-	cd "Modules/Reform/" && ./node_modules/vite/bin/vite.js build
+	cd "Modules/Reform/" && pnpm exec vite build
 
 serve-scaladoc project="reactives" port="8081":
 	sbt '{{project}}/doc'
@@ -91,7 +91,7 @@ websitePrepare: webappsPrepare
 	cp -r Documentation/scitzen.out/web/resources Website/public/documentation/
 
 websiteServe: websitePrepare
-	cd Website && npx astro dev
+	cd Website && pnpm exec astro dev
 
 # build into the `website` branch (worktree in website-deploy/, published by github pages from docs/) and commit; push manually
 websiteDeploy: websitePrepare
@@ -100,6 +100,6 @@ websiteDeploy: websitePrepare
 		else git worktree add --orphan -b website website-deploy; fi; \
 	fi
 	rm -rf website-deploy/docs
-	cd Website && npx astro build --outDir ../website-deploy/docs
+	cd Website && pnpm exec astro build --outDir ../website-deploy/docs
 	touch website-deploy/docs/.nojekyll
 	cd website-deploy && git add -A docs && git commit -m "deploy website from main $(git -C .. rev-parse --short HEAD)"

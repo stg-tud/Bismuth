@@ -183,11 +183,11 @@ lazy val examples = projectMatrix.in(file("Modules/Examples"))
         (Compile / scalaJSLinkerConfig).value
           .withModuleKind(ModuleKind.CommonJSModule)
           .withModuleSplitStyle(ModuleSplitStyle.FewestModules),
-      // let node resolve jsdom and the prosemirror packages from the npm workspace root node_modules
+      // let node resolve jsdom and the prosemirror packages from the website node_modules
       Test / jsEnv := Def.uncached {
         new org.scalajs.jsenv.nodejs.NodeJSEnv(
           org.scalajs.jsenv.nodejs.NodeJSEnv.Config().withEnv(
-            Map("NODE_PATH" -> ((LocalRootProject / baseDirectory).value / "node_modules").getAbsolutePath)
+            Map("NODE_PATH" -> ((LocalRootProject / baseDirectory).value / "Website/node_modules").getAbsolutePath)
           )
         )
       },

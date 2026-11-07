@@ -1,0 +1,3 @@
+# pnpm settings for this package
+# never run lifecycle/build scripts of dependencies (or of this package) during install
+ignoreScripts: true

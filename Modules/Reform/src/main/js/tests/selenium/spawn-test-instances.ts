@@ -7,7 +7,7 @@ const rl = readline.createInterface({
 });
 
 console.log(
-	"usage: npm run spawn-test-instances -- <count> <url>",
+	"usage: pnpm run spawn-test-instances -- <count> <url>",
 );
 
 if (process.env.SELENIUM_BROWSER === undefined) {

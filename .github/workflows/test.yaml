@@ -39,12 +39,13 @@ jobs:
         with:
           node-version: "24"
 
-      - name: install npm dependencies
-        run: npm install
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12
 
-      - name: install webapp npm dependencies
-        working-directory: Modules/Examples
-        run: npm install
+      - name: install npm dependencies
+        working-directory: Website
+        run: pnpm install
 
       - name: test
         run: sbt "test"

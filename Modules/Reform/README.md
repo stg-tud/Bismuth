@@ -44,7 +44,7 @@ Warning: Firefox is not able to load the Source maps, use Chromium.
 
 Install node modules:
 ```
-npm install
+pnpm install
 ```
 
 Compile to javascript:
@@ -54,7 +54,7 @@ sbt ~reformJS/fastLinkJS
 
 In another terminal start the web dev server: 
 ```bash
-npm run dev
+pnpm run dev
 ```
 
 To start the always-online-peer (headless peer running inside the jvm)
@@ -65,7 +65,7 @@ sbt reformJVM/run
 Open peered instances of the frontend in your browser:
 
 ```
-npm run spawn-test-instances -- 2 http://localhost:5173/
+pnpm run spawn-test-instances -- 2 http://localhost:5173/
 ```
 
 Developing using a temp dir:
@@ -83,7 +83,7 @@ sbt dependencyBrowseTreeHTML
 
 Tun javascript tests:
 ```
-npm run test
+pnpm run test
 ```
 
 Run jvm tests:
@@ -94,7 +94,7 @@ sbt reformJVM/test reformJS/test
 
 If you want to run the selenium tests you need to run:
 ```bash
-npm run selenium
+pnpm run selenium
 ```
 
 ## Developing SSO Login
