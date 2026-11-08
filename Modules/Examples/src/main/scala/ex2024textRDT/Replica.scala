@@ -18,7 +18,7 @@ final case class Replica[F <: FugueFactory](
   }
 
   // ----------------------------------------------------------------------------------------------
-  // replication via an external dissemination layer (e.g., channels.BroadcastIO)
+  // replication via an external dissemination layer (e.g., channels.PlumtreeIO)
   // ----------------------------------------------------------------------------------------------
 
   type Ops = Vector[state.factoryContext.MSG]

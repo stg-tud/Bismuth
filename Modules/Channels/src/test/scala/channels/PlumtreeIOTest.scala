@@ -1,7 +1,7 @@
 package channels
 
 import channels.connection.Peer
-import channels.BroadcastIO
+import channels.PlumtreeIO
 import channels.JsoniterCodecs.given
 import channels.connection.{ConnectionDescriptor, LocalConnectionRegistry, LocalMessageQueue, PeerConnectInfo, QueuedLocalConnection}
 import channels.overlay.FullMeshOverlay
@@ -10,7 +10,7 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import rdts.base.ReplicaId
 import rdts.datatypes.ReplicatedSet
 
-class BroadcastIOTest extends munit.FunSuite {
+class PlumtreeIOTest extends munit.FunSuite {
 
   test("basics") {
 
@@ -19,7 +19,7 @@ class BroadcastIOTest extends munit.FunSuite {
     // I have no clue why this syntax is still not deprecated xD
     val dd1, dd2, dd3 = {
       val uid = ReplicaId.gen()
-      BroadcastIO[Set[String]](uid, _ => ())
+      PlumtreeIO[Set[String]](uid, _ => ())
     }
 
     val queue = LocalMessageQueue()
@@ -50,7 +50,7 @@ class BroadcastIOTest extends munit.FunSuite {
 
     given JsonValueCodec[Set[String]] = JsonCodecMaker.make
 
-    val nodes = Vector.fill(5)(BroadcastIO[Set[String]](ReplicaId.gen(), _ => ()))
+    val nodes = Vector.fill(5)(PlumtreeIO[Set[String]](ReplicaId.gen(), _ => ()))
 
     val queue = LocalMessageQueue()
 
@@ -88,7 +88,7 @@ class BroadcastIOTest extends munit.FunSuite {
 
     given JsonValueCodec[Set[String]] = JsonCodecMaker.make
 
-    val dd1, dd2, dd3 = BroadcastIO[Set[String]](ReplicaId.gen(), _ => ())
+    val dd1, dd2, dd3 = PlumtreeIO[Set[String]](ReplicaId.gen(), _ => ())
 
     val queue  = LocalMessageQueue()
     val queued = QueuedLocalConnection("queued-basics", queue)
@@ -148,7 +148,7 @@ class BroadcastIOTest extends munit.FunSuite {
     final case class Node(id: String) {
       val uid: ReplicaId               = ReplicaId.gen()
       val selfInfo: PeerConnectInfo    = PeerConnectInfo(Peer.Claimed(uid.uid), Set(ConnectionDescriptor.QueuedLocal(id)))
-      val io: BroadcastIO[Set[String]] = BroadcastIO[Set[String]](
+      val io: PlumtreeIO[Set[String]] = PlumtreeIO[Set[String]](
         uid,
         _ => (),
         overlay = Some(FullMeshOverlay(selfInfo)),
@@ -204,7 +204,7 @@ class BroadcastIOTest extends munit.FunSuite {
     final case class Node(id: String) {
       val uid: ReplicaId               = ReplicaId.gen()
       val selfInfo: PeerConnectInfo    = PeerConnectInfo(Peer.Claimed(uid.uid), Set(ConnectionDescriptor.QueuedLocal(id)))
-      val io: BroadcastIO[Set[String]] = BroadcastIO[Set[String]](
+      val io: PlumtreeIO[Set[String]] = PlumtreeIO[Set[String]](
         uid,
         _ => (),
         overlay = Some(FullMeshOverlay(selfInfo)),
@@ -283,8 +283,8 @@ class BroadcastIOTest extends munit.FunSuite {
 
     class Node(val uid: ReplicaId) {
       var state: ReplicatedSet[String]                      = ReplicatedSet.empty[String]
-      val dissemination: BroadcastIO[ReplicatedSet[String]] =
-        BroadcastIO[ReplicatedSet[String]](
+      val dissemination: PlumtreeIO[ReplicatedSet[String]] =
+        PlumtreeIO[ReplicatedSet[String]](
           uid,
           payload => state = state.merge(payload.data)
         )

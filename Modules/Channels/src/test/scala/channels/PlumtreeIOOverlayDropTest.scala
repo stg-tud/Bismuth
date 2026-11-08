@@ -9,7 +9,7 @@ import rdts.base.{ReplicaId, Uid}
 
 /** Deterministic reproduction of the rare CI stall in
   * `ex2021encfxtodo.TodoSignalingIntegrationTest`, using the exact overlay setup the todo app's
-  * `ConnectionManager` uses (FullMeshOverlay + BroadcastIO over a message queue).
+  * `ConnectionManager` uses (FullMeshOverlay + PlumtreeIO over a message queue).
   *
   * The plumtree edge and the overlay's active-connection table are decoupled: the `Graft` message
   * is a *broadcast* envelope that never touches the overlay, so a replica can hold an eager edge to
@@ -23,7 +23,7 @@ import rdts.base.{ReplicaId, Uid}
   * the write being lost, and then shows that the plumtree repair timer — which the todo app's
   * `ConnectionManager` now drives every 100 ms — recovers it via a graft request + history replay.
   */
-class BroadcastIOOverlayDropTest extends munit.FunSuite {
+class PlumtreeIOOverlayDropTest extends munit.FunSuite {
 
   given JsonValueCodec[Set[String]] = JsonCodecMaker.make
 
@@ -32,9 +32,9 @@ class BroadcastIOOverlayDropTest extends munit.FunSuite {
     var receivedA: List[Set[String]] = Nil
     var receivedB: List[Set[String]] = Nil
 
-    private def mkNode(cb: Set[String] => Unit): BroadcastIO[Set[String]] = {
+    private def mkNode(cb: Set[String] => Unit): PlumtreeIO[Set[String]] = {
       val uid = ReplicaId.gen()
-      BroadcastIO[Set[String]](
+      PlumtreeIO[Set[String]](
         replicaId = uid,
         receiveCallback = payload => cb(payload.data),
         // same overlay setup as used by ex2021encfxtodo.ConnectionManager
@@ -42,8 +42,8 @@ class BroadcastIOOverlayDropTest extends munit.FunSuite {
       )
     }
 
-    val a: BroadcastIO[Set[String]] = mkNode(s => receivedA = receivedA :+ s)
-    val b: BroadcastIO[Set[String]] = mkNode(s => receivedB = receivedB :+ s)
+    val a: PlumtreeIO[Set[String]] = mkNode(s => receivedA = receivedA :+ s)
+    val b: PlumtreeIO[Set[String]] = mkNode(s => receivedB = receivedB :+ s)
 
     val queue: LocalMessageQueue = LocalMessageQueue()
     private val link             = QueuedLocalConnection("a<->b", queue)
@@ -61,7 +61,7 @@ class BroadcastIOOverlayDropTest extends munit.FunSuite {
       assert(safety < 100, "message queue did not quiesce")
     }
 
-    def eagerPeerUids(io: BroadcastIO[Set[String]]): Set[Uid] = io.state.eagerPeers.map(_.uid)
+    def eagerPeerUids(io: PlumtreeIO[Set[String]]): Set[Uid] = io.state.eagerPeers.map(_.uid)
 
     /** Drive the exact interleaving that loses a write:
       * b receives a's graft (promoting a to eager) before b's overlay is told about a's connection.

@@ -1,17 +1,17 @@
 package webapps.ex2026minisocial
 
-import channels.BroadcastIO
+import channels.PlumtreeIO
 import rdts.base.Lattice
 import rdts.syntax.DeltaBuffer
 import reactives.default.*
 
-/** Wraps a [[channels.BroadcastIO]] such that a chosen CRDT (`MiniSocial`) can be hooked up to a reactive UI,
+/** Wraps a [[channels.PlumtreeIO]] such that a chosen CRDT (`MiniSocial`) can be hooked up to a reactive UI,
   * broadcasting local deltas and merging received ones.
   */
 object MiniSocialDataManager {
 
-  val (receivedCallback, dataManager: BroadcastIO[MiniSocial]) = Event.fromCallback {
-    BroadcastIO[MiniSocial](MiniSocialMain.replicaId, payload => Event.handle(payload.data))
+  val (receivedCallback, dataManager: PlumtreeIO[MiniSocial]) = Event.fromCallback {
+    PlumtreeIO[MiniSocial](MiniSocialMain.replicaId, payload => Event.handle(payload.data))
   }
 
   def hookup(init: MiniSocial)(create: (

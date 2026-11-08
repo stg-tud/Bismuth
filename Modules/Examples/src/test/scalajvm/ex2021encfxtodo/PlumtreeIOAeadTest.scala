@@ -3,7 +3,7 @@ package ex2021encfxtodo
 import channels.broadcast.PlumtreeMessage
 import channels.connection.{LocalMessageQueue, QueuedLocalConnection}
 import channels.experiments.Aead
-import channels.{BroadcastIO, experiments}
+import channels.{PlumtreeIO, experiments}
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import com.google.crypto.tink.aead.AeadConfig
@@ -13,7 +13,7 @@ import rdts.base.ReplicaId
 
 import scala.collection.mutable
 
-class BroadcastIOAeadTest extends FunSuite {
+class PlumtreeIOAeadTest extends FunSuite {
 
   given JsonValueCodec[Set[String]] = JsonCodecMaker.make
 
@@ -25,14 +25,14 @@ class BroadcastIOAeadTest extends FunSuite {
     TinkBasedAead(aead)
   }
 
-  test("BroadcastIO disseminates over a real AEAD") {
+  test("PlumtreeIO disseminates over a real AEAD") {
     val aead = newAead()
 
     val received1 = mutable.ListBuffer.empty[Set[String]]
     val received2 = mutable.ListBuffer.empty[Set[String]]
 
-    val dd1 = BroadcastIO[Set[String]](ReplicaId.gen(), p => received1 += p.data, aead = aead)
-    val dd2 = BroadcastIO[Set[String]](ReplicaId.gen(), p => received2 += p.data, aead = aead)
+    val dd1 = PlumtreeIO[Set[String]](ReplicaId.gen(), p => received1 += p.data, aead = aead)
+    val dd2 = PlumtreeIO[Set[String]](ReplicaId.gen(), p => received2 += p.data, aead = aead)
 
     val queue = LocalMessageQueue()
     val link  = QueuedLocalConnection("aead", queue)
@@ -49,12 +49,12 @@ class BroadcastIOAeadTest extends FunSuite {
 
   test("AEAD encrypted envelopes are not readable with the identity AEAD") {
     val aead    = newAead()
-    val encoded = BroadcastIO.encodeEnvelope[Set[String]](
-      BroadcastIO.Envelope.Broadcast(channels.connection.Peer.Claimed(ReplicaId.gen().uid), PlumtreeMessage.Graft(rdts.time.Dots.empty)),
+    val encoded = PlumtreeIO.encodeEnvelope[Set[String]](
+      PlumtreeIO.Envelope.Broadcast(channels.connection.Peer.Claimed(ReplicaId.gen().uid), PlumtreeMessage.Graft(rdts.time.Dots.empty)),
       aead
     )
 
-    assert(BroadcastIO.decodeEnvelope[Set[String]](encoded, experiments.Aead.identity).isFailure)
-    assert(BroadcastIO.decodeEnvelope[Set[String]](encoded, aead).isSuccess)
+    assert(PlumtreeIO.decodeEnvelope[Set[String]](encoded, experiments.Aead.identity).isFailure)
+    assert(PlumtreeIO.decodeEnvelope[Set[String]](encoded, aead).isSuccess)
   }
 }

@@ -67,7 +67,7 @@ object NioTCP {
 
   class EndOfChannelException(msg: String) extends Exception(msg)
 
-  extension (broadcast: ProtocolIO[?, ?, ?])
+  extension (broadcast: MessagingIO[?, ?, ?])
       def serveNioLoop(): Unit = {
         val niotcp = new NioTCP()
         broadcast.addServerConnection(niotcp.listen(niotcp.defaultServerSocketChannel(new InetSocketAddress(0))))
@@ -87,7 +87,7 @@ object ConcurrencyHelper {
 
         ExecutionContext.fromExecutorService(singleThreadExecutor)
     else
-        BroadcastIO.executeImmediately
+        PlumtreeIO.executeImmediately
 
   def makePooledExecutor(): ExecutionContextExecutorService =
     ExecutionContext.fromExecutorService(Executors.newCachedThreadPool())
@@ -102,7 +102,7 @@ object ConcurrencyHelper {
   * [[loopSelection]] and [[runSelection]] should not be called from multiple threads at the same time.
   * Only one thread should send on a single connection at the same time.
   */
-class NioTCP(accepCallbackExecutor: ExecutionContext = BroadcastIO.executeImmediately) {
+class NioTCP(accepCallbackExecutor: ExecutionContext = PlumtreeIO.executeImmediately) {
   inline val compression: false = false
 
   val selector: Selector = Selector.open()

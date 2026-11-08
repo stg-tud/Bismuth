@@ -17,7 +17,7 @@ import scala.util.{Failure, Success}
 
 object OverlayNetworkGraphNetworking {
 
-  type Envelope = BroadcastIO.Envelope[Status]
+  type Envelope = PlumtreeIO.Envelope[Status]
 
   def createRtcConnector(): WebRTCConnector =
     WebRTCConnector(new dom.RTCConfiguration {

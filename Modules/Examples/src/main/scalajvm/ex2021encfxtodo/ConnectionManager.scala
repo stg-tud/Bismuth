@@ -2,7 +2,7 @@ package ex2021encfxtodo
 
 import channels.connection.{Abort, ConnectionDescriptor, MessageBuffer, Peer, PeerConnectInfo}
 import channels.overlay.FullMeshOverlay
-import channels.{BroadcastIO, NioTCP, NioTcpConnectionDetailsResolver, TimerDelays, Timers, experiments}
+import channels.{PlumtreeIO, NioTCP, NioTcpConnectionDetailsResolver, TimerDelays, Timers, experiments}
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.google.crypto.tink.aead.AeadConfig
 import com.google.crypto.tink.{Aead, CleartextKeysetHandle, JsonKeysetReader, RegistryConfiguration}
@@ -43,11 +43,11 @@ class ConnectionManager[State: JsonValueCodec](
   // was still being established is dropped (the overlay lacks the peer, so the eager push has
   // nowhere to go), and the repair timer is what turns the resulting `IHave`/context knowledge into a
   // `Graft` request that backfills the missing history. Without timers the first write of a freshly
-  // connected replica is silently lost forever (see channels.BroadcastIOOverlayDropTest).
+  // connected replica is silently lost forever (see channels.PlumtreeIOOverlayDropTest).
   private val timer = java.util.Timer(s"broadcast-timers-${replicaId.uid}", true)
 
-  val dataManager: BroadcastIO[State] =
-    BroadcastIO[State](
+  val dataManager: PlumtreeIO[State] =
+    PlumtreeIO[State](
       replicaId = replicaId,
       receiveCallback = payload => receiveCallback(payload.data),
       overlay = Some(FullMeshOverlay(PeerConnectInfo(Peer.Claimed(replicaId.uid)))),

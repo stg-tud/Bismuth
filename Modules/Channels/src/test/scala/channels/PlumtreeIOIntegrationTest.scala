@@ -1,7 +1,7 @@
 package channels
 
 import channels.connection.Peer
-import channels.BroadcastIO
+import channels.PlumtreeIO
 import channels.connection.{ConnectionDescriptor, LocalConnectionRegistry, LocalMessageQueue, PeerConnectInfo, QueuedLocalConnection}
 import channels.overlay.HyParViewStateMachine
 import channels.overlay.HyParViewStateMachine.HyParViewConfig
@@ -11,11 +11,11 @@ import rdts.base.ReplicaId
 
 import scala.util.Random
 
-class BroadcastIOIntegrationTest extends munit.FunSuite {
+class PlumtreeIOIntegrationTest extends munit.FunSuite {
 
   given JsonValueCodec[Set[String]] = JsonCodecMaker.make
 
-  final case class Node(id: String, io: BroadcastIO[Set[String]], selfInfo: PeerConnectInfo)
+  final case class Node(id: String, io: PlumtreeIO[Set[String]], selfInfo: PeerConnectInfo)
 
   private def runLineNetwork(
       n: Int,
@@ -45,7 +45,7 @@ class BroadcastIOIntegrationTest extends munit.FunSuite {
       val selfInfo = PeerConnectInfo(Peer.Claimed(uid.uid), Set(ConnectionDescriptor.QueuedLocal(id)))
       val random   = Random(0xb15 + i)
       val overlay  = HyParViewStateMachine.empty(selfInfo, networkConfig, random.between, _ => true)
-      val io       = BroadcastIO[Set[String]](
+      val io       = PlumtreeIO[Set[String]](
         uid,
         _ => (),
         overlay = Some(overlay),
@@ -86,7 +86,7 @@ class BroadcastIOIntegrationTest extends munit.FunSuite {
     nodes
   }
 
-  test("BroadcastIO with HyParView grows a line into a well-connected overlay") {
+  test("PlumtreeIO with HyParView grows a line into a well-connected overlay") {
     val n     = 8
     val nodes = runLineNetwork(n = n)
 

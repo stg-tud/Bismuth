@@ -2,7 +2,7 @@ package channels.broadcast
 
 import channels.connection.Peer
 
-/** Typeclass for broadcast protocol state machines driven by a [[channels.ProtocolIO]].
+/** Typeclass for broadcast protocol state machines driven by a [[channels.MessagingIO]].
   *
   * `S` is the (immutable) protocol state. The protocol chooses its own types for
   *  - `Msg`: what is exchanged with peers (the driver only needs a codec),
@@ -11,7 +11,7 @@ import channels.connection.Peer
   *
   * Only reactions to the network are part of the typeclass. Local operations (what the application wants to
   * disseminate, and what it gets back, such as an assigned dot) are protocol specific, and are run as plain functions
-  * `S => (Step, R)` via [[channels.ProtocolIO.update]].
+  * `S => (Step, R)` via [[channels.MessagingIO.update]].
   */
 trait BroadcastProtocol[S, Msg, Out] {
   def addPeer(state: S, peer: Peer): Step[S, Msg, Out]

@@ -2,7 +2,7 @@ package ex2026keyValuePrdtBench
 
 import channels.broadcast.PlumtreeBroadcast
 import channels.broadcast.PlumtreeMessage.Payload
-import channels.{BroadcastIO, DeltaStorage}
+import channels.{PlumtreeIO, DeltaStorage}
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import ex2026keyValuePrdtBench.KnowledgeGroups.leader
@@ -177,13 +177,13 @@ class MultiPaxosReplica(
     }
   }
 
-  lazy val dataManagers: Map[Set[Uid], BroadcastIO[MultiPaxos[Request]]] = {
+  lazy val dataManagers: Map[Set[Uid], PlumtreeIO[MultiPaxos[Request]]] = {
     val uniqueEndpointSets = systemConfig.knowledgeGroups.map(_.ids).filter(_.contains(id))
 
     uniqueEndpointSets.map(endpoints =>
       (
         endpoints,
-        BroadcastIO[MultiPaxos[Request]](
+        PlumtreeIO[MultiPaxos[Request]](
           ReplicaId(id),
           payload => { publish(payload.data, Some(endpoints)); handleDelta(payload.data) },
           broadcast =

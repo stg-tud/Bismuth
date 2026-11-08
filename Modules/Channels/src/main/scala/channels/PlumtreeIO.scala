@@ -1,6 +1,6 @@
 package channels
 
-import channels.BroadcastIO.Envelope
+import channels.PlumtreeIO.Envelope
 import channels.JsoniterCodecs.given
 import channels.broadcast.PlumtreeMessage.*
 import channels.broadcast.{BroadcastProtocol, BroadcastTimer, Effect, PlumtreeBroadcast, PlumtreeMessage, Step}
@@ -19,13 +19,13 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.FiniteDuration
 import scala.util.{Failure, Success, Try}
 
-/** A [[ProtocolIO]] running [[PlumtreeBroadcast]]: disseminates deltas of type `State`, tagged with dots.
+/** A [[MessagingIO]] running [[PlumtreeBroadcast]]: disseminates deltas of type `State`, tagged with dots.
   * The application API (`broadcast`, `allPayloads`) is provided by [[PlumtreeBroadcast]].
   */
-type BroadcastIO[State] =
-  ProtocolIO[PlumtreeBroadcast[State], PlumtreeMessage[State], Payload[State]]
+type PlumtreeIO[State] =
+  MessagingIO[PlumtreeBroadcast[State], PlumtreeMessage[State], Payload[State]]
 
-object BroadcastIO {
+object PlumtreeIO {
   enum Envelope[+Msg] {
     case Membership(message: OverlayMessage)
 
@@ -43,14 +43,14 @@ object BroadcastIO {
       receiveCallback: Payload[State] => Unit,
       overlay: Option[OverlayController] = None,
       resolver: ChannelResolver = ChannelResolver.disconnected,
-      sendingActor: ExecutionContext = BroadcastIO.executeImmediately,
+      sendingActor: ExecutionContext = PlumtreeIO.executeImmediately,
       globalAbort: Abort = Abort(),
       broadcast: Option[PlumtreeBroadcast[State]] = None,
       aead: Aead = Aead.identity,
       timers: Timers = Timers.Manual(),
       timerDelays: TimerDelays = TimerDelays(),
-  )(using stateCodec: JsonValueCodec[State]): BroadcastIO[State] =
-    ProtocolIO[PlumtreeBroadcast[State], PlumtreeMessage[State], Payload[State]](
+  )(using stateCodec: JsonValueCodec[State]): PlumtreeIO[State] =
+    MessagingIO[PlumtreeBroadcast[State], PlumtreeMessage[State], Payload[State]](
       replicaId,
       broadcast.getOrElse(PlumtreeBroadcast(deltaStorage = DiscardingHistory[State](size = 1000))),
       receiveCallback,
@@ -73,12 +73,12 @@ object BroadcastIO {
 
   def decodeMessage[Msg: JsonValueCodec](messageBuffer: MessageBuffer, aead: Aead): Try[Envelope[Msg]] =
     aead.decrypt(messageBuffer.asByteBuffer, Aead.emptyAssociatedData).flatMap(bytes =>
-      Try(readFromByteBuffer[Envelope[Msg]](bytes)(using BroadcastIO.messageCodec))
+      Try(readFromByteBuffer[Envelope[Msg]](bytes)(using PlumtreeIO.messageCodec))
     )
 
   def encodeMessage[Msg: JsonValueCodec](envelope: Envelope[Msg], aead: Aead): ByteBufferMessageBuffer =
     ByteBufferMessageBuffer(aead.encrypt(
-      ByteBuffer.wrap(writeToArray(envelope)(using BroadcastIO.messageCodec)),
+      ByteBuffer.wrap(writeToArray(envelope)(using PlumtreeIO.messageCodec)),
       Aead.emptyAssociatedData
     ))
 
@@ -96,7 +96,7 @@ object BroadcastIO {
     encodeMessage(envelope, aead)(using PlumtreeBroadcast.messageCodec[State])
 }
 
-object ProtocolIO {
+object MessagingIO {
 
   /** `deliver` gets each output of the protocol. `replicaId` is the identity of the default overlay; a given
     * `overlay` must use the same id. `protocolDelays` maps the protocol's timer purposes to delays.
@@ -107,17 +107,17 @@ object ProtocolIO {
       deliver: Out => Unit,
       overlay: Option[OverlayController] = None,
       resolver: ChannelResolver = ChannelResolver.disconnected,
-      sendingActor: ExecutionContext = BroadcastIO.executeImmediately,
+      sendingActor: ExecutionContext = PlumtreeIO.executeImmediately,
       globalAbort: Abort = Abort(),
       aead: Aead = Aead.identity,
       timers: Timers = Timers.Manual(),
       overlayDelays: TimerDelays = TimerDelays(),
       protocolDelays: BroadcastTimer => FiniteDuration,
-  )(using BroadcastProtocol[S, Msg, Out], JsonValueCodec[Msg]): ProtocolIO[S, Msg, Out] = {
+  )(using BroadcastProtocol[S, Msg, Out], JsonValueCodec[Msg]): MessagingIO[S, Msg, Out] = {
     overlay.foreach(o =>
       require(o.selfPeer.uid == replicaId.uid, s"overlay identity ${o.selfPeer} does not match $replicaId")
     )
-    new ProtocolIO(
+    new MessagingIO(
       deliver = deliver,
       overlay = overlay.getOrElse(FullMeshOverlay(PeerConnectInfo(Peer.Claimed(replicaId.uid), Set.empty))),
       resolver = resolver,
@@ -148,7 +148,7 @@ object ProtocolIO {
   * performed on the calling thread after the lock is released. Exceptions therefore reach the caller. Outputs that
   * synchronously cause further inputs (e.g. synchronous local connections) simply recurse on already committed state.
   */
-class ProtocolIO[S, Msg, Out](
+class MessagingIO[S, Msg, Out](
     deliver: Out => Unit,
     @volatile private var overlay: OverlayController,
     resolver: ChannelResolver,
@@ -255,7 +255,7 @@ class ProtocolIO[S, Msg, Out](
   }
 
   private def handleIncoming(conn: Connection, message: MessageBuffer): List[Output] =
-    BroadcastIO.decodeMessage[Msg](message, aead) match
+    PlumtreeIO.decodeMessage[Msg](message, aead) match
         case Success(Envelope.Membership(overlayMessage)) =>
           overlayStep(OverlayEvent.Received(conn, overlayMessage))
         case Success(Envelope.Broadcast(sender, protocolMessage)) =>
@@ -290,7 +290,7 @@ class ProtocolIO[S, Msg, Out](
   private def send(connection: Connection, envelope: Envelope[Msg]): Unit =
     if !globalAbort.closeRequest then
         sendingActor.execute { () =>
-          connection.send(BroadcastIO.encodeMessage(envelope, aead)).run {
+          connection.send(PlumtreeIO.encodeMessage(envelope, aead)).run {
             case Success(_) => ()
             case Failure(_) =>
               connection.close()

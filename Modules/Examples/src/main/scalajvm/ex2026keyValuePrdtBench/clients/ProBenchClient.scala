@@ -1,7 +1,7 @@
 package ex2026keyValuePrdtBench.clients
 
 import channels.broadcast.PlumtreeBroadcast
-import channels.{BroadcastIO, KeepAllHistory}
+import channels.{PlumtreeIO, KeepAllHistory}
 import ex2026keyValuePrdtBench.data
 import ex2026keyValuePrdtBench.data.Codecs.given
 import ex2026keyValuePrdtBench.data.{ClientCommRead, ClientCommWrite, KVOperation}
@@ -18,14 +18,14 @@ class ProBenchClient(val name: Uid, logTimings: Boolean) extends Client(name, lo
 
   private val promises: mutable.HashMap[Uid, Promise[String]] = mutable.HashMap.empty[Uid, Promise[String]]
 
-  val writeDataManager: BroadcastIO[ClientCommWrite] =
-    BroadcastIO(
+  val writeDataManager: PlumtreeIO[ClientCommWrite] =
+    PlumtreeIO(
       localUid,
       payload => handleIncomingWrite(payload.data),
       broadcast = Some(PlumtreeBroadcast(deltaStorage = KeepAllHistory()))
     )
-  val readDataManager: BroadcastIO[ClientCommRead] =
-    BroadcastIO(
+  val readDataManager: PlumtreeIO[ClientCommRead] =
+    PlumtreeIO(
       localUid,
       payload => handleIncomingRead(payload.data),
       broadcast = Some(PlumtreeBroadcast(deltaStorage = KeepAllHistory()))

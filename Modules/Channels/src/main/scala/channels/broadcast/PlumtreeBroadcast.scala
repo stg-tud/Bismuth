@@ -5,7 +5,7 @@ import channels.broadcast.PlumtreeBroadcast.PeerRole
 import channels.connection.Peer
 import channels.broadcast.PlumtreeMessage.*
 import channels.JsoniterCodecs.given
-import channels.{DeltaStorage, NoHistory, ProtocolIO}
+import channels.{DeltaStorage, NoHistory, MessagingIO}
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import rdts.base.Uid
@@ -67,8 +67,8 @@ object PlumtreeBroadcast {
     (state.broadcast(Payload(Dots.single(dot), data)), dot)
   }
 
-  /** Application API of a [[ProtocolIO]] running plumtree. */
-  extension [State](io: ProtocolIO[PlumtreeBroadcast[State], PlumtreeMessage[State], Payload[State]]) {
+  /** Application API of a [[MessagingIO]] running plumtree. */
+  extension [State](io: MessagingIO[PlumtreeBroadcast[State], PlumtreeMessage[State], Payload[State]]) {
 
     /** Disseminate a local delta and return the dot assigned to it (`None` if `io` is closed).
       * Receivers get the same dot as part of the [[Payload]], which allows applications to track causality.

@@ -1,7 +1,7 @@
 package channels
 
 import channels.connection.Peer
-import channels.BroadcastIO
+import channels.PlumtreeIO
 import channels.connection.{ConnectionDescriptor, LocalConnectionRegistry, LocalMessageQueue, PeerConnectInfo, QueuedLocalConnection}
 import channels.experiments.Aead
 import channels.overlay.FullMeshOverlay
@@ -11,7 +11,7 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import munit.FunSuite
 import rdts.base.ReplicaId
 
-/** Verifies the full-mesh discovery chain through the BroadcastIO wiring:
+/** Verifies the full-mesh discovery chain through the PlumtreeIO wiring:
   *
   *   1. `discover` a peer → overlay emits a `Dial`
   *   2. the driver establishes the connection and reports `Established` (the other side sees `Incoming`)
@@ -34,7 +34,7 @@ class FullMeshDiscoveryChainTest extends FunSuite {
     final case class Node(id: String) {
       val uid: ReplicaId               = ReplicaId.gen()
       val selfInfo: PeerConnectInfo    = PeerConnectInfo(Peer.Claimed(uid.uid), Set(ConnectionDescriptor.QueuedLocal(id)))
-      val io: BroadcastIO[Set[String]] = BroadcastIO[Set[String]](
+      val io: PlumtreeIO[Set[String]] = PlumtreeIO[Set[String]](
         uid,
         _ => (),
         overlay = Some(FullMeshOverlay(selfInfo)),
@@ -58,8 +58,8 @@ class FullMeshDiscoveryChainTest extends FunSuite {
     // already carry the Neighbor handshakes from both sides.
     val queuedNeighbors = queue.elements.flatMap(mb =>
       mb.toOption
-        .flatMap(buf => BroadcastIO.decodeEnvelope[Set[String]](buf, Aead.identity).toOption)
-        .collect { case BroadcastIO.Envelope.Membership(OverlayMessage.Neighbor(from, _)) => from.id.uid }
+        .flatMap(buf => PlumtreeIO.decodeEnvelope[Set[String]](buf, Aead.identity).toOption)
+        .collect { case PlumtreeIO.Envelope.Membership(OverlayMessage.Neighbor(from, _)) => from.id.uid }
     )
     assertEquals(
       queuedNeighbors.toSet,
@@ -77,8 +77,8 @@ class FullMeshDiscoveryChainTest extends FunSuite {
     // All the Neighbor requests eventually reach the other side.
     val deliveredNeighbors = queue.delivered.flatMap(mb =>
       mb.toOption
-        .flatMap(buf => BroadcastIO.decodeEnvelope[Set[String]](buf, Aead.identity).toOption)
-        .collect { case BroadcastIO.Envelope.Membership(OverlayMessage.Neighbor(from, _)) => from.id.uid }
+        .flatMap(buf => PlumtreeIO.decodeEnvelope[Set[String]](buf, Aead.identity).toOption)
+        .collect { case PlumtreeIO.Envelope.Membership(OverlayMessage.Neighbor(from, _)) => from.id.uid }
     )
     assertEquals(
       deliveredNeighbors.toSet,

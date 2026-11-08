@@ -19,14 +19,14 @@ import rdts.base.{ReplicaId, Uid}
   * peer's stale `Graft(∅)` was still in flight was delivered twice: once by the eager push and once by the
   * graft replay. The duplicate was misread as a redundant mesh edge, so both sides pruned the only edge to
   * lazy; subsequent broadcasts were announced as `IHave` only and — since nothing drives
-  * the repair (then `BroadcastIO.tick`) in the todo app's `ConnectionManager` — never repaired.
+  * the repair (then `PlumtreeIO.tick`) in the todo app's `ConnectionManager` — never repaired.
   *
   * Peers are now added as ''lazy'' and promoted to eager when their graft is processed, which makes such an
   * overlap impossible: before promotion no payloads are pushed eagerly (only `IHave`s), and the graft
   * replay is the single source of payload data. These tests pin both race flavors deterministically using
   * a manually delivered message queue.
   */
-class BroadcastIOHandshakeRaceTest extends munit.FunSuite {
+class PlumtreeIOHandshakeRaceTest extends munit.FunSuite {
 
   given JsonValueCodec[Set[String]] = JsonCodecMaker.make
 
@@ -35,9 +35,9 @@ class BroadcastIOHandshakeRaceTest extends munit.FunSuite {
     var receivedA: List[Set[String]] = Nil
     var receivedB: List[Set[String]] = Nil
 
-    private def mkNode(cb: Set[String] => Unit): BroadcastIO[Set[String]] = {
+    private def mkNode(cb: Set[String] => Unit): PlumtreeIO[Set[String]] = {
       val uid = ReplicaId.gen()
-      BroadcastIO[Set[String]](
+      PlumtreeIO[Set[String]](
         replicaId = uid,
         receiveCallback = payload => cb(payload.data),
         // same overlay setup as used by ex2021encfxtodo.ConnectionManager
@@ -45,8 +45,8 @@ class BroadcastIOHandshakeRaceTest extends munit.FunSuite {
       )
     }
 
-    val a: BroadcastIO[Set[String]] = mkNode(s => receivedA = receivedA :+ s)
-    val b: BroadcastIO[Set[String]] = mkNode(s => receivedB = receivedB :+ s)
+    val a: PlumtreeIO[Set[String]] = mkNode(s => receivedA = receivedA :+ s)
+    val b: PlumtreeIO[Set[String]] = mkNode(s => receivedB = receivedB :+ s)
 
     val queue: LocalMessageQueue = LocalMessageQueue()
     private val link             = QueuedLocalConnection("a<->b", queue)
@@ -64,7 +64,7 @@ class BroadcastIOHandshakeRaceTest extends munit.FunSuite {
       assert(safety < 100, "message queue did not quiesce")
     }
 
-    def eagerPeerUids(io: BroadcastIO[Set[String]]): Set[Uid] = io.state.eagerPeers.map(_.uid)
+    def eagerPeerUids(io: PlumtreeIO[Set[String]]): Set[Uid] = io.state.eagerPeers.map(_.uid)
 
     /** Drives the exact message interleaving that lost the handshake race:
       * `a` broadcasts `Set("initial")` while the handshake grafts are still in flight.
