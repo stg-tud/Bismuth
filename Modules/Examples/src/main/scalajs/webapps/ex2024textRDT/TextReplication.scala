@@ -19,7 +19,7 @@ final class TextReplication[F <: FugueFactory](val replica: Replica[F]) {
   val causal: CausalBroadcast[replica.Ops] =
     CausalBroadcast(ReplicaId.predefined(replica.state.replicaId), replica.applyRemoteUnchecked, timers = timers)
 
-  def io = causal.io
+  def io = causal
 
   def publish(): Unit =
     val ops = replica.takeOutgoing()

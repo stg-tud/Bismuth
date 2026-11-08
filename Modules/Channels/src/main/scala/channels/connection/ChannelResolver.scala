@@ -1,8 +1,5 @@
 package channels.connection
 
-import channels.connection.{ConnectionDescriptor, Connector, Listener, QueuedLocalConnection}
-import rdts.base.Uid
-
 /** vibecoded as part of the hyparview experiments */
 
 trait ChannelResolver {

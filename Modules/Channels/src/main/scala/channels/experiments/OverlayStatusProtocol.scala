@@ -2,7 +2,6 @@ package channels.experiments
 
 import channels.BroadcastIO
 import channels.JsoniterCodecs.given
-import channels.broadcast.PlumtreeBroadcast
 import channels.broadcast.PlumtreeBroadcast.PeerRole
 import channels.connection.Peer
 import channels.overlay.{FullMeshOverlay, HyParViewStateMachine}
@@ -49,16 +48,14 @@ object OverlayStatusProtocol {
         case _                              => (Set.empty[Peer], Set.empty[Peer])
 
     val peerStates =
-        val plumtreeRoles: Map[Uid, PeerState] = io.plumtreeState match
-            case pt: PlumtreeBroadcast[?] =>
-              activePeers.iterator.map { peer =>
-                val state = pt.peerRoles.get(peer) match
-                    case Some(PeerRole.Lazy)  => PeerState.Lazy
-                    case Some(PeerRole.Eager) => PeerState.Eager
-                    case None                 => PeerState.Eager
-                peer.uid -> state
-              }.toMap
-            case _ => Map.empty
+        val plumtreeRoles: Map[Uid, PeerState] =
+          activePeers.iterator.map { peer =>
+            val state = io.state.peerRoles.get(peer) match
+                case Some(PeerRole.Lazy)  => PeerState.Lazy
+                case Some(PeerRole.Eager) => PeerState.Eager
+                case None                 => PeerState.Eager
+            peer.uid -> state
+          }.toMap
 
         (passivePeers.iterator.map(_.uid -> PeerState.Passive) ++
         plumtreeRoles.iterator).toList

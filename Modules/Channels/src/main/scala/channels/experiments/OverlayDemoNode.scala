@@ -103,11 +103,7 @@ class OverlayDemoNode(
       io.overlayController.asInstanceOf[HyParViewStateMachine].passiveView.map(_.uid)
   }.getOrElse(Set.empty)
 
-  def eagerView: Set[Uid] = broadcastIO.flatMap(io =>
-    io.plumtreeState match
-        case pt: PlumtreeBroadcast[?] => Some(pt.eagerPeers.map(_.uid))
-        case _                        => None
-  ).getOrElse(Set.empty)
+  def eagerView: Set[Uid] = broadcastIO.map(_.state.eagerPeers.map(_.uid)).getOrElse(Set.empty)
 
   def lastIncomingMessageTimes: Map[Uid, Long] = Map.empty
 

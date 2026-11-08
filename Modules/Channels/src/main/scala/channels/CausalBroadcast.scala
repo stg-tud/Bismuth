@@ -2,23 +2,89 @@ package channels
 
 import channels.BroadcastIO.executeImmediately
 import channels.broadcast.PlumtreeMessage.Payload
-import channels.broadcast.BroadcastProtocol
-import channels.connection.{Abort, ChannelResolver}
+import channels.broadcast.{BroadcastProtocol, BroadcastTimer, Effect, PlumtreeBroadcast, PlumtreeMessage, Step}
+import channels.connection.{Abort, ChannelResolver, Peer}
 import channels.experiments.Aead
 import channels.overlay.OverlayController
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReader, JsonValueCodec, JsonWriter}
-import rdts.base.ReplicaId
-import rdts.time.{Causal, CausalBuffer, Dot, Dots}
+import rdts.base.{ReplicaId, Uid}
+import rdts.time.{Causal, CausalBuffer, Dots}
 
 import scala.concurrent.ExecutionContext
 
+/** A [[ProtocolIO]] running [[CausalPlumtree]]: delivers plain values `A` in causal order. */
+type CausalBroadcast[A] = ProtocolIO[CausalPlumtree[A], PlumtreeMessage[Causal[A]], BroadcastTimer, A]
+
+/** Plumtree extended with causal delivery. Remote values are delivered in causal order and at most once.
+  * Local values are not delivered: the caller applies them before calling [[CausalPlumtree.broadcastLocal]].
+  * Missing predecessors are not requested separately; plumtree is responsible for (best effort) reliable delivery.
+  * A [[MergingHistory]] can be used if `A` is a lattice (see [[Causal.lattice]]).
+  */
+final case class CausalPlumtree[A](
+    plumtree: PlumtreeBroadcast[Causal[A]] =
+      PlumtreeBroadcast[Causal[A]](deltaStorage = DiscardingHistory[Causal[A]](size = 1000)),
+    buffer: CausalBuffer[A] = CausalBuffer[A](),
+) {
+  import CausalPlumtree.Result
+
+  /** Dots of all local and delivered remote values. */
+  def applied: Dots = buffer.applied
+
+  /** Dots that were received, but are still waiting for some of their predecessors. */
+  def waiting: Dots = buffer.waiting
+
+  /** Runs a plumtree transition, passing its delivered payloads through the causal buffer. */
+  def lift(step: PlumtreeBroadcast.Result[Causal[A]]): Result[A] =
+    step.events.foldLeft[Result[A]](Step(copy(plumtree = step.state), Vector.empty)) {
+      case (Step(state, acc), Effect.Deliver(payload)) =>
+        val delivered = state.deliver(payload)
+        Step(delivered.state, acc ++ delivered.events)
+      case (Step(state, acc), Effect.Send(peers, message)) => Step(state, acc :+ Effect.Send(peers, message))
+      case (Step(state, acc), Effect.StartTimer(timer))    => Step(state, acc :+ Effect.StartTimer(timer))
+    }
+
+  /** Feed a payload delivered by plumtree into the causal buffer. */
+  def deliver(payload: Payload[Causal[A]]): Result[A] = {
+    val (next, ready) = buffer.receive(payload.dots, payload.data)
+    Step(copy(buffer = next), ready.map(Effect.Deliver(_)))
+  }
+}
+
+object CausalPlumtree {
+
+  type Result[A] = Step[CausalPlumtree[A], PlumtreeMessage[Causal[A]], BroadcastTimer, A]
+
+  given protocol[A]: BroadcastProtocol[CausalPlumtree[A], PlumtreeMessage[Causal[A]], BroadcastTimer, A] with {
+    def addPeer(state: CausalPlumtree[A], peer: Peer): Result[A]    = state.lift(state.plumtree.addPeer(peer))
+    def removePeer(state: CausalPlumtree[A], peer: Peer): Result[A] = state.lift(state.plumtree.removePeer(peer))
+    def handleMessage(state: CausalPlumtree[A], from: Peer, message: PlumtreeMessage[Causal[A]]): Result[A] =
+      state.lift(state.plumtree.handleMessage(from, message))
+    def timerFired(state: CausalPlumtree[A], timer: BroadcastTimer): Result[A] =
+      state.lift(state.plumtree.timerFired(timer))
+  }
+
+  /** Local operation: wrap `value` with everything applied so far, disseminate it, and mark it as applied.
+    * Values released by marking it applied are delivered (they were only waiting on local values).
+    */
+  def broadcastLocal[A](self: Uid, value: A)(state: CausalPlumtree[A]): (Result[A]) = {
+    val (sent, dot)     = PlumtreeBroadcast.broadcastLocal(self, Causal(state.buffer.applied, value))(state.plumtree)
+    val lifted          = state.lift(sent)
+    val (buffer, ready) = lifted.state.buffer.markApplied(Dots.single(dot))
+    Step(lifted.state.copy(buffer = buffer), lifted.events ++ ready.map(Effect.Deliver(_)))
+  }
+
+  /** Application API of a [[CausalBroadcast]]. `deliver` may call [[broadcast]] again. */
+  extension [A](io: CausalBroadcast[A]) {
+
+    /** Disseminate a value that was already applied locally. Its predecessors are everything applied so far. */
+    def broadcast(value: A): Unit = io.update(broadcastLocal(io.selfPeer.uid, value)): Unit
+
+  }
+}
+
 object CausalBroadcast {
 
-  /** Causal broadcast on top of a [[BroadcastIO]]. Remote values are passed to `deliver` in causal order and at most
-    * once. Local values are not delivered: the caller applies them before calling [[CausalBroadcast.broadcast]].
-    * Missing predecessors are not requested separately; the broadcast layer is responsible for (best effort)
-    * reliable delivery. A [[MergingHistory]] can be used if `A` is a lattice (see [[Causal.lattice]]).
-    */
+  /** See [[CausalPlumtree]]. */
   def apply[A](
       replicaId: ReplicaId,
       deliver: A => Unit,
@@ -26,26 +92,24 @@ object CausalBroadcast {
       resolver: ChannelResolver = ChannelResolver.disconnected,
       sendingActor: ExecutionContext = executeImmediately,
       globalAbort: Abort = Abort(),
-      broadcast: Option[BroadcastProtocol[Causal[A]]] = None,
+      initial: CausalPlumtree[A] = CausalPlumtree[A](),
       aead: Aead = Aead.identity,
       timers: Timers = Timers.Manual(),
       timerDelays: TimerDelays = TimerDelays(),
   )(using JsonValueCodec[A]): CausalBroadcast[A] =
-    val delivery = CausalDelivery[A](deliver)
-    new CausalBroadcast[A](
-      delivery,
-      BroadcastIO[Causal[A]](
-        replicaId,
-        delivery.receive,
-        overlay = overlay,
-        resolver = resolver,
-        sendingActor = sendingActor,
-        globalAbort = globalAbort,
-        broadcast = broadcast,
-        aead = aead,
-        timers = timers,
-        timerDelays = timerDelays,
-      ))
+    ProtocolIO[CausalPlumtree[A], PlumtreeMessage[Causal[A]], BroadcastTimer, A](
+      replicaId,
+      initial,
+      deliver,
+      overlay = overlay,
+      resolver = resolver,
+      sendingActor = sendingActor,
+      globalAbort = globalAbort,
+      aead = aead,
+      timers = timers,
+      overlayDelays = timerDelays,
+      protocolDelays = timerDelays.apply,
+    )(using CausalPlumtree.protocol, PlumtreeBroadcast.messageCodec[Causal[A]])
 
   /** Encodes `Causal(predecessors, value)` as `[predecessors, value]`. */
   given causalCodec[A](using codec: JsonValueCodec[A]): JsonValueCodec[Causal[A]] = new JsonValueCodec[Causal[A]] {
@@ -69,52 +133,4 @@ object CausalBroadcast {
 
     override def nullValue: Causal[A] = null.asInstanceOf[Causal[A]]
   }
-}
-
-/** Receiver-side state of a [[CausalBroadcast]]: a [[CausalBuffer]] guarded by a lock.
-  *
-  * Concurrency: the buffer is updated under `lock`; `deliver` is called after the lock is released, in causal order.
-  */
-final class CausalDelivery[A](deliver: A => Unit) {
-
-  private val lock: AnyRef            = new {}
-  private var buffer: CausalBuffer[A] = CausalBuffer()
-
-  def applied: Dots = lock.synchronized(buffer.applied)
-  def waiting: Dots = lock.synchronized(buffer.waiting)
-
-  /** Feed a payload as delivered by the broadcast layer. */
-  def receive(payload: Payload[Causal[A]]): Unit =
-    lock.synchronized(update(_.receive(payload.dots, payload.data))).foreach(deliver)
-
-  /** Wraps a local value with its predecessors, sends it with `send`, and marks the assigned dot as applied. */
-  def broadcast(value: A, send: Causal[A] => Option[Dot]): Option[Dot] = {
-    val (assigned, ready) = lock.synchronized {
-      val assigned = send(Causal(buffer.applied, value))
-      (assigned, assigned.fold(Nil)(dot => update(_.markApplied(Dots.single(dot)))))
-    }
-    ready.foreach(deliver)
-    assigned
-  }
-
-  private def update(f: CausalBuffer[A] => (CausalBuffer[A], List[A])): List[A] = {
-    val (next, ready) = f(buffer)
-    buffer = next
-    ready
-  }
-}
-
-/** Optional causal delivery layer over a [[BroadcastIO]]; see [[CausalBroadcast.apply]]. `deliver` may call
-  * [[broadcast]] again.
-  */
-final class CausalBroadcast[A](val delivery: CausalDelivery[A], val io: BroadcastIO[Causal[A]]) {
-
-  /** Dots of all local and delivered remote values. */
-  def applied: Dots = delivery.applied
-
-  /** Dots that were received, but are still waiting for some of their predecessors. */
-  def waiting: Dots = delivery.waiting
-
-  /** Disseminate a value that was already applied locally. Its predecessors are everything applied so far. */
-  def broadcast(value: A): Option[Dot] = delivery.broadcast(value, io.broadcast)
 }

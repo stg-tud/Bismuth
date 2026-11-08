@@ -2,9 +2,8 @@ package channels
 
 import channels.BroadcastIO.Envelope
 import channels.JsoniterCodecs.given
-import channels.broadcast.PlumtreeBroadcast.Event
 import channels.broadcast.PlumtreeMessage.*
-import channels.broadcast.{BroadcastProtocol, PlumtreeBroadcast, PlumtreeMessage}
+import channels.broadcast.{BroadcastProtocol, BroadcastTimer, Effect, PlumtreeBroadcast, PlumtreeMessage, Step}
 import channels.connection.*
 import channels.experiments.Aead
 import channels.overlay.OverlayController.{OverlayAction, OverlayEvent, OverlayMessage}
@@ -12,21 +11,28 @@ import channels.overlay.{AttemptId, FullMeshOverlay, OverlayController}
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromByteBuffer, writeToArray}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import de.rmgk.delay.{Async, Callback}
-import rdts.base.{ReplicaId, Uid}
-import rdts.time.{Dot, Dots}
+import rdts.base.ReplicaId
 
 import java.net.SocketException
 import java.nio.ByteBuffer
 import scala.concurrent.ExecutionContext
+import scala.concurrent.duration.FiniteDuration
 import scala.util.{Failure, Success, Try}
 
+/** A [[ProtocolIO]] running [[PlumtreeBroadcast]]: disseminates deltas of type `State`, tagged with dots.
+  * The application API (`broadcast`, `allPayloads`) is provided by [[PlumtreeBroadcast]].
+  */
+type BroadcastIO[State] =
+  ProtocolIO[PlumtreeBroadcast[State], PlumtreeMessage[State], BroadcastTimer, Payload[State]]
+
 object BroadcastIO {
-  enum Envelope[+State] {
+  enum Envelope[+Msg] {
     case Membership(message: OverlayMessage)
+
     /** `sender` is part of the message, as a single (unauthenticated) connection may be shared by multiple peers.
       * Receivers only accept it if the connection may carry messages of `sender`, see [[Peer.mayUse]].
       */
-    case Broadcast(sender: Peer, message: PlumtreeMessage[State])
+    case Broadcast(sender: Peer, message: Msg)
   }
 
   /** `receiveCallback` gets each delivered delta together with the dots assigned to it by the sender.
@@ -39,76 +45,129 @@ object BroadcastIO {
       resolver: ChannelResolver = ChannelResolver.disconnected,
       sendingActor: ExecutionContext = BroadcastIO.executeImmediately,
       globalAbort: Abort = Abort(),
-      broadcast: Option[BroadcastProtocol[State]] = None,
+      broadcast: Option[PlumtreeBroadcast[State]] = None,
       aead: Aead = Aead.identity,
       timers: Timers = Timers.Manual(),
       timerDelays: TimerDelays = TimerDelays(),
-  )(using stateCodec: JsonValueCodec[State]): BroadcastIO[State] = {
-    overlay.foreach(o =>
-      require(o.selfPeer.uid == replicaId.uid, s"overlay identity ${o.selfPeer} does not match $replicaId")
-    )
-    new BroadcastIO[State](
-      receiveCallback = receiveCallback,
-      overlay = overlay.getOrElse(FullMeshOverlay(PeerConnectInfo(Peer.Claimed(replicaId.uid), Set.empty))),
+  )(using stateCodec: JsonValueCodec[State]): BroadcastIO[State] =
+    ProtocolIO[PlumtreeBroadcast[State], PlumtreeMessage[State], BroadcastTimer, Payload[State]](
+      replicaId,
+      broadcast.getOrElse(PlumtreeBroadcast(deltaStorage = DiscardingHistory[State](size = 1000))),
+      receiveCallback,
+      overlay = overlay,
       resolver = resolver,
       sendingActor = sendingActor,
       globalAbort = globalAbort,
-      broadcast =
-        broadcast.getOrElse(PlumtreeBroadcast(deltaStorage = DiscardingHistory[State](size = 1000))),
       aead = aead,
       timers = timers,
-      timerDelays = timerDelays,
-    )
-  }
+      overlayDelays = timerDelays,
+      protocolDelays = timerDelays.apply,
+    )(using PlumtreeBroadcast.protocol, PlumtreeBroadcast.messageCodec[State])
 
   val executeImmediately: ExecutionContext = new ExecutionContext {
     override def execute(runnable: Runnable): Unit     = runnable.run()
     override def reportFailure(cause: Throwable): Unit = throw cause
   }
 
-  def messageCodec[State: JsonValueCodec]: JsonValueCodec[Envelope[State]] = JsonCodecMaker.make
+  def messageCodec[Msg: JsonValueCodec]: JsonValueCodec[Envelope[Msg]] = JsonCodecMaker.make
 
-  def decodeEnvelope[State: JsonValueCodec](messageBuffer: MessageBuffer, aead: Aead): Try[Envelope[State]] =
+  def decodeMessage[Msg: JsonValueCodec](messageBuffer: MessageBuffer, aead: Aead): Try[Envelope[Msg]] =
     aead.decrypt(messageBuffer.asByteBuffer, Aead.emptyAssociatedData).flatMap(bytes =>
-      Try(readFromByteBuffer[Envelope[State]](bytes)(using BroadcastIO.messageCodec))
+      Try(readFromByteBuffer[Envelope[Msg]](bytes)(using BroadcastIO.messageCodec))
     )
 
-  def encodeEnvelope[State: JsonValueCodec](envelope: Envelope[State], aead: Aead): ByteBufferMessageBuffer =
+  def encodeMessage[Msg: JsonValueCodec](envelope: Envelope[Msg], aead: Aead): ByteBufferMessageBuffer =
     ByteBufferMessageBuffer(aead.encrypt(
       ByteBuffer.wrap(writeToArray(envelope)(using BroadcastIO.messageCodec)),
       Aead.emptyAssociatedData
     ))
+
+  /** Plumtree envelope with deltas of type `State`. */
+  def decodeEnvelope[State: JsonValueCodec](
+      messageBuffer: MessageBuffer,
+      aead: Aead
+  ): Try[Envelope[PlumtreeMessage[State]]] =
+    decodeMessage(messageBuffer, aead)(using PlumtreeBroadcast.messageCodec[State])
+
+  def encodeEnvelope[State: JsonValueCodec](
+      envelope: Envelope[PlumtreeMessage[State]],
+      aead: Aead
+  ): ByteBufferMessageBuffer =
+    encodeMessage(envelope, aead)(using PlumtreeBroadcast.messageCodec[State])
 }
 
-/** Driver connecting transports, an overlay state machine, and a broadcast state machine.
+object ProtocolIO {
+
+  /** `deliver` gets each output of the protocol. `replicaId` is the identity of the default overlay; a given
+    * `overlay` must use the same id. `protocolDelays` maps the protocol's timer purposes to delays.
+    */
+  def apply[S, Msg, Timer, Out](
+      replicaId: ReplicaId,
+      initial: S,
+      deliver: Out => Unit,
+      overlay: Option[OverlayController] = None,
+      resolver: ChannelResolver = ChannelResolver.disconnected,
+      sendingActor: ExecutionContext = BroadcastIO.executeImmediately,
+      globalAbort: Abort = Abort(),
+      aead: Aead = Aead.identity,
+      timers: Timers = Timers.Manual(),
+      overlayDelays: TimerDelays = TimerDelays(),
+      protocolDelays: Timer => FiniteDuration,
+  )(using BroadcastProtocol[S, Msg, Timer, Out], JsonValueCodec[Msg]): ProtocolIO[S, Msg, Timer, Out] = {
+    overlay.foreach(o =>
+      require(o.selfPeer.uid == replicaId.uid, s"overlay identity ${o.selfPeer} does not match $replicaId")
+    )
+    new ProtocolIO(
+      deliver = deliver,
+      overlay = overlay.getOrElse(FullMeshOverlay(PeerConnectInfo(Peer.Claimed(replicaId.uid), Set.empty))),
+      resolver = resolver,
+      sendingActor = sendingActor,
+      globalAbort = globalAbort,
+      protocolState = initial,
+      aead = aead,
+      timers = timers,
+      overlayDelays = overlayDelays,
+      protocolDelays = protocolDelays,
+    )
+  }
+}
+
+/** Driver connecting transports, an overlay state machine, and a broadcast protocol state machine.
   *
   * - the overlay ([[channels.overlay.OverlayController]]) decides which connections exist and which peers are neighbors
-  * - the broadcast protocol ([[channels.broadcast.BroadcastProtocol]]) decides what to send to which neighbor
+  * - the protocol (an instance of [[channels.broadcast.BroadcastProtocol]] for `S`) decides what to send to which
+  *   neighbor, and what to deliver to the application
   * - this class only translates: transport callbacks become overlay events, actions become transport operations,
   *   timer requests are scheduled on [[channels.Timers]], and the overlay's `NeighborUp`/`NeighborDown` are passed on to the
-  *   broadcast protocol. It makes no protocol decisions of its own, and keeps no state besides the two state machines.
+  *   protocol. It makes no protocol decisions of its own, and keeps no state besides the two state machines.
+  *
+  * The application interacts with the protocol through [[state]] and [[update]]; protocols typically provide a more
+  * convenient API as extension methods in the companion of `S` (see [[PlumtreeBroadcast]], [[CausalPlumtree]]).
   *
   * Concurrency: each input runs the state transitions under `lock` and gets back the resulting [[Output]]s, which are
   * performed on the calling thread after the lock is released. Exceptions therefore reach the caller. Outputs that
   * synchronously cause further inputs (e.g. synchronous local connections) simply recurse on already committed state.
   */
-class BroadcastIO[State](
-    receiveCallback: Payload[State] => Unit,
+class ProtocolIO[S, Msg, Timer, Out](
+    deliver: Out => Unit,
     @volatile private var overlay: OverlayController,
     resolver: ChannelResolver,
     sendingActor: ExecutionContext,
     val globalAbort: Abort,
-    @volatile private var broadcast: BroadcastProtocol[State],
+    @volatile private var protocolState: S,
     val aead: Aead,
     val timers: Timers,
-    timerDelays: TimerDelays,
-)(using val stateCodec: JsonValueCodec[State]) {
+    overlayDelays: TimerDelays,
+    protocolDelays: Timer => FiniteDuration,
+)(using val protocol: BroadcastProtocol[S, Msg, Timer, Out], val msgCodec: JsonValueCodec[Msg]) {
 
-  /** A broadcast message to send on `connection`, resolved from the overlay during the transition. */
-  final private case class Transmit(connection: Connection, envelope: Envelope[State])
+  /** A protocol message to send on `connection`, resolved from the overlay during the transition. */
+  final private case class Transmit(connection: Connection, envelope: Envelope[Msg])
+  final private case class Deliver(output: Out)
+  final private case class Schedule(timer: Timer)
 
-  /** What the transitions ask for. `NeighborUp`/`NeighborDown` and broadcast `Send`s are resolved inside the transition. */
-  private type Output = OverlayAction | Event[State] | Transmit
+  /** What the transitions ask for. `NeighborUp`/`NeighborDown` and protocol `Send`s are resolved inside the transition. */
+  private type Output = OverlayAction | Transmit | Deliver | Schedule
 
   private val lock: AnyRef = new {}
 
@@ -124,17 +183,16 @@ class BroadcastIO[State](
 
   def overlayController: OverlayController = overlay
 
-  /** The identity of this node, as defined by the overlay. Also used to assign dots to local payloads. */
+  /** The identity of this node, as defined by the overlay. */
   def selfPeer: Peer = overlay.selfPeer
 
-  def plumtreeState: BroadcastProtocol[State] = broadcast
+  /** Snapshot of the protocol state. */
+  def state: S = protocolState
 
   def selfConnectionDescriptors: Set[ConnectionDescriptor] = overlay.selfConnectionDescriptors
 
   /** The transport connection backing the active edge to `peer`, if any. */
   def connectionTo(peer: Peer): Option[Connection] = overlay.connectionFor(peer)
-
-  def allPayloads: List[Payload[State]] = broadcast.allPayloads
 
   // ------------------------------------------------------------------------------------------------
   // public API
@@ -157,18 +215,11 @@ class BroadcastIO[State](
   /** Initiate overlay-native bootstrap through a single descriptor. */
   def bootstrapVia(contact: ConnectionDescriptor): Unit = transition(overlayStep(OverlayEvent.Bootstrap(contact)))
 
-  /** Disseminate a local delta and return the dot assigned to it (`None` if this BroadcastIO is closed).
-    * Receivers get the same dot as part of the [[Payload]], which allows applications to track causality.
+  /** Run a local operation of the protocol. `f` runs under the lock, its effects are performed afterwards.
+    * Returns `None` (and does not run `f`) if this is closed.
     */
-  def broadcast(delta: State): Option[Dot] = {
-    var assigned: Option[Dot] = None
-    transition(broadcastStep { protocol =>
-      val dot = protocol.localContext.nextDot(selfPeer.uid)
-      assigned = Some(dot)
-      protocol.broadcast(Payload(Dots.single(dot), delta))
-    })
-    assigned
-  }
+  def update[R](f: S => Step[S, Msg, Timer, Out]): Unit =
+    transition(protocolStep(f))
 
   // ------------------------------------------------------------------------------------------------
   // transitions (run under `lock`, no I/O)
@@ -184,34 +235,35 @@ class BroadcastIO[State](
     val (next, actions) = overlay.step(event)
     overlay = next
     actions.flatMap {
-      case OverlayAction.NeighborUp(peer)   => broadcastStep(_.addPeer(peer))
-      case OverlayAction.NeighborDown(peer) => broadcastStep(_.removePeer(peer))
+      case OverlayAction.NeighborUp(peer)   => protocolStep(protocol.addPeer(_, peer))
+      case OverlayAction.NeighborDown(peer) => protocolStep(protocol.removePeer(_, peer))
       case other                            => List(other)
     }
   }
 
-  private def broadcastStep(f: BroadcastProtocol[State] => PlumtreeBroadcast.Result[State]): List[Output] = {
-    val result = f(broadcast)
-    broadcast = result.state
+  private def protocolStep(f: S => Step[S, Msg, Timer, Out]): List[Output] = {
+    val result = f(protocolState)
+    protocolState = result.state
     result.events.toList.flatMap {
-      case Event.Send(peers, message) =>
+      case Effect.Send(peers, message) =>
         peers.flatMap(peer =>
           overlay.connectionFor(peer).map(Transmit(_, Envelope.Broadcast(overlay.selfPeer, message)))
         )
-      case other => List(other)
+      case Effect.Deliver(output)   => List(Deliver(output))
+      case Effect.StartTimer(timer) => List(Schedule(timer))
     }
   }
 
   private def handleIncoming(conn: Connection, message: MessageBuffer): List[Output] =
-    BroadcastIO.decodeEnvelope(message, aead) match
+    BroadcastIO.decodeMessage[Msg](message, aead) match
         case Success(Envelope.Membership(overlayMessage)) =>
           overlayStep(OverlayEvent.Received(conn, overlayMessage))
-        case Success(Envelope.Broadcast(sender, broadcastMessage)) =>
+        case Success(Envelope.Broadcast(sender, protocolMessage)) =>
           // messages still arriving on a connection the overlay already closed (e.g. the losing one of two
           // connections to the same peer) would be handled as duplicates and prune the broadcast tree.
           // `mayUse` rejects senders the connection can not carry (impersonation of authenticated peers).
           if overlay.holds(conn) && Peer.mayUse(conn, sender)
-          then broadcastStep(_.handleMessage(sender, broadcastMessage))
+          then protocolStep(protocol.handleMessage(_, sender, protocolMessage))
           else Nil
         case Failure(error) =>
           println(s"$selfPeer: error during message decoding")
@@ -228,17 +280,17 @@ class BroadcastIO[State](
       case OverlayAction.Close(conn)         => conn.close()
       case OverlayAction.Dial(attempt, to)   => dial(attempt, to)
       case OverlayAction.StartTimer(timer)   =>
-        timers.schedule(timerDelays(timer))(() => transition(overlayStep(OverlayEvent.TimerFired(timer))))
-      case _: (OverlayAction.NeighborUp | OverlayAction.NeighborDown | Event.Send[?]) =>
+        timers.schedule(overlayDelays(timer))(() => transition(overlayStep(OverlayEvent.TimerFired(timer))))
+      case _: (OverlayAction.NeighborUp | OverlayAction.NeighborDown) =>
         throw IllegalStateException(s"resolved during the transition: $output")
-      case Event.Deliver(payload)  => receiveCallback(payload)
-      case Event.StartTimer(timer) =>
-        timers.schedule(timerDelays(timer))(() => transition(broadcastStep(_.timerFired(timer))))
+      case Deliver(output) => deliver(output)
+      case Schedule(timer) =>
+        timers.schedule(protocolDelays(timer))(() => transition(protocolStep(protocol.timerFired(_, timer))))
 
-  private def send(connection: Connection, envelope: Envelope[State]): Unit =
+  private def send(connection: Connection, envelope: Envelope[Msg]): Unit =
     if !globalAbort.closeRequest then
         sendingActor.execute { () =>
-          connection.send(BroadcastIO.encodeEnvelope(envelope, aead)).run {
+          connection.send(BroadcastIO.encodeMessage(envelope, aead)).run {
             case Success(_) => ()
             case Failure(_) =>
               connection.close()

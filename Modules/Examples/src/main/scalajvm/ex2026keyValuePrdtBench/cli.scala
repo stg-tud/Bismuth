@@ -1,7 +1,7 @@
 package ex2026keyValuePrdtBench
 
 import channels.connection.{Abort, Connector}
-import channels.{BroadcastIO, DeltaStorage, *}
+import channels.{DeltaStorage, *}
 import de.rmgk.options.*
 import de.rmgk.options.Result.{Err, Ok}
 import ex2026keyValuePrdtBench.KnowledgeGroups.*
@@ -22,7 +22,7 @@ object cli {
   private val ec: ExecutionContext      = ExecutionContext.fromExecutor(executor)
 
   def addRetryingConnection(
-      dataManager: BroadcastIO[?],
+      dataManager: ProtocolIO[?, ?, ?, ?],
       connection: Connector,
       delay: Long,
       tries: Int

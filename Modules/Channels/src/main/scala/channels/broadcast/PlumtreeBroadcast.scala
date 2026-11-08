@@ -4,9 +4,12 @@ import channels.broadcast.PlumtreeBroadcast.Event.Send
 import channels.broadcast.PlumtreeBroadcast.PeerRole
 import channels.connection.Peer
 import channels.broadcast.PlumtreeMessage.*
-import channels.{DeltaStorage, NoHistory}
+import channels.JsoniterCodecs.given
+import channels.{DeltaStorage, NoHistory, ProtocolIO}
+import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
+import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import rdts.base.Uid
-import rdts.time.Dots
+import rdts.time.{Dot, Dots}
 
 import scala.util.Random
 
@@ -40,15 +43,40 @@ object PlumtreeBroadcast {
   /** Paper: `Deliver` ↔ `Deliver(m)`, `Send` ↔ `Send(...)`.
     * Deliver is to the local system.
     */
-  enum Event[+State] {
-    case Deliver(payload: Payload[State])
-    case Send(peers: List[Peer], message: PlumtreeMessage[State])
+  type Event[+State] = Effect[PlumtreeMessage[State], BroadcastTimer, Payload[State]]
+  val Event: Effect.type = Effect
 
-    /** Request a [[BroadcastProtocol.timerFired]] callback later. */
-    case StartTimer(timer: BroadcastTimer)
+  type Result[State] = Step[PlumtreeBroadcast[State], PlumtreeMessage[State], BroadcastTimer, Payload[State]]
+  val Result: Step.type = Step
+
+  /** Wire format. Not a given, as the derivation would find itself. */
+  def messageCodec[State: JsonValueCodec]: JsonValueCodec[PlumtreeMessage[State]] = JsonCodecMaker.make
+
+  given protocol[State]
+      : BroadcastProtocol[PlumtreeBroadcast[State], PlumtreeMessage[State], BroadcastTimer, Payload[State]] with {
+    def addPeer(state: PlumtreeBroadcast[State], peer: Peer): Result[State]    = state.addPeer(peer)
+    def removePeer(state: PlumtreeBroadcast[State], peer: Peer): Result[State] = state.removePeer(peer)
+    def handleMessage(state: PlumtreeBroadcast[State], from: Peer, message: PlumtreeMessage[State]): Result[State] =
+      state.handleMessage(from, message)
+    def timerFired(state: PlumtreeBroadcast[State], timer: BroadcastTimer): Result[State] = state.timerFired(timer)
   }
 
-  final case class Result[State](state: PlumtreeBroadcast[State], events: Seq[Event[State]])
+  /** Local operation: assign the next dot of `self` to `data` and disseminate it. */
+  def broadcastLocal[State](self: Uid, data: State)(state: PlumtreeBroadcast[State]): (res: Result[State], dot: Dot) = {
+    val dot = state.localContext.nextDot(self)
+    (state.broadcast(Payload(Dots.single(dot), data)), dot)
+  }
+
+  /** Application API of a [[ProtocolIO]] running plumtree. */
+  extension [State](io: ProtocolIO[PlumtreeBroadcast[State], PlumtreeMessage[State], BroadcastTimer, Payload[State]]) {
+
+    /** Disseminate a local delta and return the dot assigned to it (`None` if `io` is closed).
+      * Receivers get the same dot as part of the [[Payload]], which allows applications to track causality.
+      */
+    def broadcast(delta: State): Unit = io.update(s => broadcastLocal(io.selfPeer.uid, delta)(s).res)
+
+    def allPayloads: List[Payload[State]] = io.state.allPayloads
+  }
 }
 
 /** Immutable Plumtree core.
@@ -68,7 +96,7 @@ final case class PlumtreeBroadcast[State](
     deltaStorage: DeltaStorage[State] = NoHistory(),
     peerRoles: Map[Peer, PeerRole] = Map.empty,
     repairScheduled: Boolean = false,
-) extends BroadcastProtocol[State] {
+) {
   import PlumtreeBroadcast.*
 
   def eagerPeers: Set[Peer] = peerRoles.collect { case (peer, PeerRole.Eager) => peer }.toSet

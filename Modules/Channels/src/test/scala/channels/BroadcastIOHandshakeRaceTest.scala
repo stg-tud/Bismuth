@@ -64,9 +64,7 @@ class BroadcastIOHandshakeRaceTest extends munit.FunSuite {
       assert(safety < 100, "message queue did not quiesce")
     }
 
-    def eagerPeerUids(io: BroadcastIO[Set[String]]): Set[Uid] = io.plumtreeState match
-        case pt: PlumtreeBroadcast[?] => pt.eagerPeers.map(_.uid)
-        case _                        => Set.empty
+    def eagerPeerUids(io: BroadcastIO[Set[String]]): Set[Uid] = io.state.eagerPeers.map(_.uid)
 
     /** Drives the exact message interleaving that lost the handshake race:
       * `a` broadcasts `Set("initial")` while the handshake grafts are still in flight.

@@ -1,36 +1,45 @@
 package channels.broadcast
 
-import channels.broadcast.PlumtreeBroadcast.Result
 import channels.connection.Peer
-import channels.broadcast.PlumtreeMessage.Payload
-import rdts.time.Dots
 
-/** Minimal interface for a broadcast protocol state machine.
+/** Typeclass for broadcast protocol state machines driven by a [[channels.ProtocolIO]].
   *
-  * Implementations manage the eager/lazy peer roles,
-  * dot-based causal context, and message dissemination.
+  * `S` is the (immutable) protocol state. The protocol chooses its own types for
+  *  - `Msg`: what is exchanged with peers (the driver only needs a codec),
+  *  - `Timer`: the purposes of timers it requests (the driver maps them to delays),
+  *  - `Out`: what is handed to the application.
   *
-  * Currently all implementations use [[PlumtreeMessage]] as
-  * the wire format (Graft, IHave, Payload, Prune).
+  * Only reactions to the network are part of the typeclass. Local operations (what the application wants to
+  * disseminate, and what it gets back, such as an assigned dot) are protocol specific, and are run as plain functions
+  * `S => (Step, R)` via [[channels.ProtocolIO.update]].
   */
-trait BroadcastProtocol[State] {
-
-  def allPayloads: List[Payload[State]]
-
-  /** Dots of all payloads known to this protocol, used to assign dots to new local payloads. */
-  def localContext: Dots
-
-  def addPeer(peer: Peer): Result[State]
-  def removePeer(peer: Peer): Result[State]
-
-  /** Disseminate a local payload. Its dots are assigned by the caller and must be new. */
-  def broadcast(payload: Payload[State]): Result[State]
-
-  /** A timer requested via [[PlumtreeBroadcast.Event.StartTimer]] expired. */
-  def timerFired(timer: BroadcastTimer): Result[State]
+trait BroadcastProtocol[S, Msg, Timer, Out] {
+  def addPeer(state: S, peer: Peer): Step[S, Msg, Timer, Out]
+  def removePeer(state: S, peer: Peer): Step[S, Msg, Timer, Out]
 
   /** `from` has been checked by the driver to be a sender the receiving connection may carry. */
-  def handleMessage(from: Peer, message: PlumtreeMessage[State]): Result[State]
+  def handleMessage(state: S, from: Peer, message: Msg): Step[S, Msg, Timer, Out]
+
+  /** A timer requested via [[Effect.StartTimer]] expired. */
+  def timerFired(state: S, timer: Timer): Step[S, Msg, Timer, Out]
+}
+
+/** Effects requested by a protocol transition. */
+enum Effect[+Msg, +Timer, +Out] {
+  case Send(peers: List[Peer], message: Msg)
+
+  /** Hand `output` to the application. */
+  case Deliver(output: Out)
+
+  /** Request a [[BroadcastProtocol.timerFired]] callback later. */
+  case StartTimer(timer: Timer)
+}
+
+/** Result of a protocol transition: the next state and the effects to perform. */
+final case class Step[S, +Msg, +Timer, +Out](state: S, events: Seq[Effect[Msg, Timer, Out]]) {
+
+  /** Wrap the state, e.g., when the protocol is part of a larger state. */
+  def mapState[S2](f: S => S2): Step[S2, Msg, Timer, Out] = Step(f(state), events)
 }
 
 /** Timers carry only their purpose; the driver decides what delay each purpose maps to. */

@@ -67,7 +67,7 @@ object NioTCP {
 
   class EndOfChannelException(msg: String) extends Exception(msg)
 
-  extension [T](broadcast: BroadcastIO[T])
+  extension (broadcast: ProtocolIO[?, ?, ?, ?])
       def serveNioLoop(): Unit = {
         val niotcp = new NioTCP()
         broadcast.addServerConnection(niotcp.listen(niotcp.defaultServerSocketChannel(new InetSocketAddress(0))))

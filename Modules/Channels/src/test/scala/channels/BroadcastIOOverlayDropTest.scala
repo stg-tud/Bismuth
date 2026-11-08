@@ -61,9 +61,7 @@ class BroadcastIOOverlayDropTest extends munit.FunSuite {
       assert(safety < 100, "message queue did not quiesce")
     }
 
-    def eagerPeerUids(io: BroadcastIO[Set[String]]): Set[Uid] = io.plumtreeState match
-        case pt: PlumtreeBroadcast[?] => pt.eagerPeers.map(_.uid)
-        case _                        => Set.empty
+    def eagerPeerUids(io: BroadcastIO[Set[String]]): Set[Uid] = io.state.eagerPeers.map(_.uid)
 
     /** Drive the exact interleaving that loses a write:
       * b receives a's graft (promoting a to eager) before b's overlay is told about a's connection.

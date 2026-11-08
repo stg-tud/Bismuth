@@ -1,6 +1,6 @@
 package webapps
 
-import channels.BroadcastIO
+import channels.ProtocolIO
 import channels.broadcastchannel.BroadcastChannelConnector
 import channels.connection.{Abort, ByteBufferMessageBuffer, MessageBuffer}
 import channels.webrtc.{ConnectorOverview, SessionDescription, WebRTCConnection, WebRTCConnector}
@@ -32,7 +32,7 @@ given converterWrite[T](using JsonValueCodec[T]): Conversion[T, MessageBuffer] =
 
 given JsonValueCodec[BroadcastCommunication] = JsonCodecMaker.make
 
-class WebRTCConnectionView[S](val dataManager: BroadcastIO[S]) {
+class WebRTCConnectionView(val dataManager: ProtocolIO[?, ?, ?, ?]) {
 
   // label seems mostly for auto negotiation
   val channelLabel = "webrtc-channel"

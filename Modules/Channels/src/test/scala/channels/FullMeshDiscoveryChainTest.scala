@@ -92,9 +92,9 @@ class FullMeshDiscoveryChainTest extends FunSuite {
     val discovererOverlay = discoverer.io.overlayController.asInstanceOf[FullMeshOverlay]
 
     // Both sides report NeighborUp → both have the peer in the broadcast-protocol active view.
-    val listenerPeers = listener.io.plumtreeState.asInstanceOf[channels.broadcast.PlumtreeBroadcast[?]].peerRoles.keySet
+    val listenerPeers = listener.io.state.peerRoles.keySet
     val discovererPeers =
-      discoverer.io.plumtreeState.asInstanceOf[channels.broadcast.PlumtreeBroadcast[?]].peerRoles.keySet
+      discoverer.io.state.peerRoles.keySet
     assertEquals(listenerPeers.map(_.uid), Set(discoverer.uid.uid))
     assertEquals(discovererPeers.map(_.uid), Set(listener.uid.uid))
 
