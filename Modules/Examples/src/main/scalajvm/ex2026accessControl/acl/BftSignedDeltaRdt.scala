@@ -1,10 +1,10 @@
-package replication.acl
+package ex2026accessControl.acl
 
 import channels.crypto.PrivateIdentity
 import channels.crypto.Ed25519Util
 import channels.crypto.{Hash, Signature}
-import replication.HashDag
-import replication.HashDag.{Delta, Encoder, Hashable}
+import ex2026accessControl.acl.HashDag
+import ex2026accessControl.acl.HashDag.{Delta, Encoder, Hashable}
 
 class BftSignedDeltaRdt[State](private val privateIdentity: PrivateIdentity)(using
     val encoder: Encoder[BftDelta[State]],

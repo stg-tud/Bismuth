@@ -5,8 +5,8 @@ import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray}
 import channels.crypto.{Ed25519Util, PublicIdentity}
 import ex2026accessControl.travelplanner.Invitation
 import ex2026accessControl.travelplanner.legacy.AclSyncInvitation.base64Encoder
-import replication.acl.AclRdt.given_JsonValueCodec_BftDelta
-import replication.acl.{Acl, BftDelta}
+import ex2026accessControl.acl.AclRdt.given_JsonValueCodec_BftDelta
+import ex2026accessControl.acl.{Acl, BftDelta}
 
 import java.security.KeyPair
 import java.util.Base64

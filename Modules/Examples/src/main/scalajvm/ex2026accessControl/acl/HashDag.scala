@@ -1,9 +1,9 @@
-package replication
+package ex2026accessControl.acl
 
 import com.github.plokhotnyuk.jsoniter_scala.core.*
 import channels.crypto.Hash
 import rdts.base.{Bottom, Lattice}
-import replication.HashDag.{Delta, Encoder, Hashable}
+import ex2026accessControl.acl.HashDag.{Delta, Encoder, Hashable}
 
 import scala.collection.mutable
 

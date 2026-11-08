@@ -3,7 +3,7 @@ package ex2026accessControl.sync
 import munit.FunSuite
 import rdts.base.Uid
 import rdts.time.Dot
-import replication.acl.sync.SynchronizedMutableArrayDeltaStore
+import ex2026accessControl.acl.sync.SynchronizedMutableArrayDeltaStore
 
 class SynchronizedMutableArrayDeltaStoreTest extends FunSuite {
 

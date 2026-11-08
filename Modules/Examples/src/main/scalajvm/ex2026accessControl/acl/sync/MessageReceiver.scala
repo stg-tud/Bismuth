@@ -1,4 +1,4 @@
-package replication.acl.sync
+package ex2026accessControl.acl.sync
 
 import channels.crypto.PublicIdentity
 

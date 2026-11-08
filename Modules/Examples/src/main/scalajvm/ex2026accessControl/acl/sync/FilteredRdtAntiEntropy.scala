@@ -1,4 +1,4 @@
-package replication.acl.sync
+package ex2026accessControl.acl.sync
 
 import channels.crypto.PrivateIdentity
 import channels.crypto.PublicIdentity
@@ -6,9 +6,9 @@ import channels.crypto.Hash
 import rdts.base.{Bottom, Decompose, Lattice, Uid}
 import rdts.filters.{Filter, PermissionTree}
 import rdts.time.{Dot, Dots}
-import replication.HashDag.Encoder
-import replication.acl.Acl
-import replication.acl.sync.SynchronizedMutableArrayDeltaStore
+import ex2026accessControl.acl.HashDag.Encoder
+import ex2026accessControl.acl.Acl
+import ex2026accessControl.acl.sync.SynchronizedMutableArrayDeltaStore
 
 import java.util.concurrent.atomic.{AtomicInteger, AtomicLong, AtomicReference}
 import scala.annotation.unused

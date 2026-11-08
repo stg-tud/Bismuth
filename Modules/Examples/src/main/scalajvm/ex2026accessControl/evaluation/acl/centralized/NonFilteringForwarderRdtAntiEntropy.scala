@@ -6,8 +6,8 @@ import channels.crypto.Hash
 import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.filters.Filter
 import rdts.time.Dots
-import replication.HashDag.Encoder
-import replication.acl.sync.{AclAntiEntropy, AntiEntropyCommunicator, SignedDelta}
+import ex2026accessControl.acl.HashDag.Encoder
+import ex2026accessControl.acl.sync.{AclAntiEntropy, AntiEntropyCommunicator, SignedDelta}
 
 import scala.annotation.unused
 

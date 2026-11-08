@@ -2,9 +2,9 @@ package ex2026accessControl.evaluation
 
 import channels.connection.MessageBuffer
 import channels.crypto.PublicIdentity
-import replication.acl.sync.ConnectionManager
+import ex2026accessControl.acl.sync.ConnectionManager
 
-/** A [[replication.acl.sync.ConnectionManager]] without an actual network layer, which does nothing but sum up the messages handed
+/** A [[ex2026accessControl.acl.sync.ConnectionManager]] without an actual network layer, which does nothing but sum up the messages handed
   * to it: their total number, as well as their total size in bytes. Used to benchmark the sending side of
   * anti-entropy (i.e. looking up, filtering and encoding what is to be sent) without paying for, or being
   * distorted by, any actual I/O.

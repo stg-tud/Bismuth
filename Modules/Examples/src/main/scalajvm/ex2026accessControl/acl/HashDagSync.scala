@@ -1,7 +1,7 @@
-package replication
+package ex2026accessControl.acl
 
 import channels.crypto.Hash
-import replication.HashDag.Delta
+import ex2026accessControl.acl.HashDag.Delta
 
 import scala.collection.mutable
 

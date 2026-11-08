@@ -8,9 +8,9 @@ import ex2026accessControl.travelplanner.{Invitation, Sync}
 import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.filters.{Filter, PermissionTree}
 import rdts.time.Dots
-import replication.acl.sync.AclEnforcingSync
-import replication.acl.{Acl, BftDelta}
-import replication.acl.sync.{ConnectionManager, MessageReceiver}
+import ex2026accessControl.acl.sync.AclEnforcingSync
+import ex2026accessControl.acl.{Acl, BftDelta}
+import ex2026accessControl.acl.sync.{ConnectionManager, MessageReceiver}
 
 class SyncOfSignedDeltaRdt[State](
     private val localIdentity: PrivateIdentity,

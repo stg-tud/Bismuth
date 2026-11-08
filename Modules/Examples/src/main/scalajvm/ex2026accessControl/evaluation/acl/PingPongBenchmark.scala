@@ -10,7 +10,7 @@ import ex2026accessControl.travelplanner.TravelPlan
 import rdts.base.Uid
 import rdts.filters.PermissionTree
 import rdts.time.{Dot, Dots}
-import replication.acl.{Acl, BftDelta}
+import ex2026accessControl.acl.{Acl, BftDelta}
 
 import java.net.InetAddress
 import java.nio.file.{Files, Path, Paths, StandardOpenOption}
@@ -224,6 +224,6 @@ object CreateAndSaveTrace {
 
   import channels.JsoniterCodecs.given
   import channels.JsoniterCodecsJvm.given
-  import replication.acl.sync.AclCodecs.given
+  import ex2026accessControl.acl.sync.AclCodecs.given
   given JsonValueCodec[SavedTrace] = JsonCodecMaker.make
 }

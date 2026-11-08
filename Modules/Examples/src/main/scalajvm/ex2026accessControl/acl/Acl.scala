@@ -1,4 +1,4 @@
-package replication.acl
+package ex2026accessControl.acl
 
 import channels.crypto.PublicIdentity
 import rdts.base.{Bottom, DecoratedLattice, Lattice}

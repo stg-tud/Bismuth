@@ -7,7 +7,7 @@ import ex2026accessControl.travelplanner.TravelPlan
 import rdts.base.{ReplicaId, Uid}
 import rdts.filters.PermissionTree
 import rdts.time.{ArrayRanges, Dots}
-import replication.acl.{Acl, AclRdt, BftDelta}
+import ex2026accessControl.acl.{Acl, AclRdt, BftDelta}
 
 import scala.annotation.tailrec
 import scala.collection.mutable

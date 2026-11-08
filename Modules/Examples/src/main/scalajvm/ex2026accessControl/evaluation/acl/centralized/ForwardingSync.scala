@@ -8,12 +8,12 @@ import ex2026accessControl.Debug
 import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.filters.Filter
 import rdts.time.Dots
-import replication.acl.sync.AclCodecs.syncMsgCodec
-import replication.acl.sync.AclEnforcingSync.SyncMsg.{MyAclVersionIs, MyRdtVersionIs}
-import replication.acl.sync.AclEnforcingSync.{SyncMsg, encoder}
-import replication.acl.sync.{AclAntiEntropy, AclEnforcingSync, FilteredRdtAntiEntropy}
-import replication.acl.{Acl, BftDelta}
-import replication.acl.sync.{ChannelConnectionManager, ConnectionManager, MessageReceiver}
+import ex2026accessControl.acl.sync.AclCodecs.syncMsgCodec
+import ex2026accessControl.acl.sync.AclEnforcingSync.SyncMsg.{MyAclVersionIs, MyRdtVersionIs}
+import ex2026accessControl.acl.sync.AclEnforcingSync.{SyncMsg, encoder}
+import ex2026accessControl.acl.sync.{AclAntiEntropy, AclEnforcingSync, FilteredRdtAntiEntropy}
+import ex2026accessControl.acl.{Acl, BftDelta}
+import ex2026accessControl.acl.sync.{ChannelConnectionManager, ConnectionManager, MessageReceiver}
 
 class ForwardingSync[State: {JsonValueCodec, Bottom, Decompose, Lattice, Filter}](
     localIdentity: PrivateIdentity,

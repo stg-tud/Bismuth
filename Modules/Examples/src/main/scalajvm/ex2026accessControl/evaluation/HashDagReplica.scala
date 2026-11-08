@@ -7,7 +7,7 @@ import channels.crypto.Hash
 import rdts.base.{Bottom, Decompose, Lattice}
 import channels.connection.ByteBufferMessageBuffer
 import channels.broadcast.authz.AuthzMessage
-import replication.acl.sync.ConnectionManager
+import ex2026accessControl.acl.sync.ConnectionManager
 
 class HashDagReplica[Entry <: HashDagEntry[RDT]: JsonValueCodec, RDT: {Lattice, Bottom, JsonValueCodec, Decompose}](
     genesis: Hash,

@@ -1,8 +1,8 @@
-package replication.acl
+package ex2026accessControl.acl
 
 import channels.crypto.PublicIdentity
 import channels.crypto.{Hash, Signature}
-import replication.HashDag.{Delta, Encoder, Hashable}
+import ex2026accessControl.acl.HashDag.{Delta, Encoder, Hashable}
 
 case class BftDelta[State](
     signature: Option[Signature],

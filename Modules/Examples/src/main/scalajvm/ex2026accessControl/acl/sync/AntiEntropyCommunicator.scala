@@ -1,9 +1,9 @@
-package replication.acl.sync
+package ex2026accessControl.acl.sync
 
 import channels.crypto.PublicIdentity
 import channels.crypto.Hash
 import rdts.time.Dots
-import replication.acl.{Acl, BftDelta}
+import ex2026accessControl.acl.{Acl, BftDelta}
 
 trait AntiEntropyCommunicator[State] {
   def sendDeltas(

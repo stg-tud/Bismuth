@@ -1,13 +1,13 @@
-package replication.acl.sync
+package ex2026accessControl.acl.sync
 
 import channels.connection.ByteBufferMessageBuffer
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
 import channels.crypto.PublicIdentity
 import channels.crypto.Hash
 import rdts.time.Dots
-import replication.acl.sync.AclEnforcingSync.SyncMsg
-import replication.acl.sync.AclEnforcingSync.SyncMsg.*
-import replication.acl.{Acl, BftDelta}
+import ex2026accessControl.acl.sync.AclEnforcingSync.SyncMsg
+import ex2026accessControl.acl.sync.AclEnforcingSync.SyncMsg.*
+import ex2026accessControl.acl.{Acl, BftDelta}
 
 class ConnectionManagerCommunicator[State](private val conn: ConnectionManager)(using JsonValueCodec[SyncMsg[State]])
     extends AntiEntropyCommunicator[State] {

@@ -1,13 +1,13 @@
-package replication.acl.sync
+package ex2026accessControl.acl.sync
 
 import channels.crypto.PrivateIdentity
 import channels.crypto.PublicIdentity
 import channels.crypto.Hash
 import rdts.base.Bottom
-import replication.HashDag.Hashable
-import replication.acl.AclRdt.given_Encoder_BftDelta
-import replication.acl.{Acl, AclRdt, BftDelta}
-import replication.{HashDag, HashDagSync}
+import ex2026accessControl.acl.HashDag.Hashable
+import ex2026accessControl.acl.AclRdt.given_Encoder_BftDelta
+import ex2026accessControl.acl.{Acl, AclRdt, BftDelta}
+import ex2026accessControl.acl.{HashDag, HashDagSync}
 
 import java.util.concurrent.atomic.AtomicReference
 

@@ -1,4 +1,4 @@
-package replication.acl
+package ex2026accessControl.acl
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
@@ -6,9 +6,9 @@ import channels.crypto.PrivateIdentity
 import channels.crypto.PublicIdentity
 import channels.crypto.{Hash, Signature}
 import rdts.filters.PermissionTree
-import replication.HashDag
-import replication.HashDag.Encoder
-import replication.acl.AclRdt.given
+import ex2026accessControl.acl.HashDag
+import ex2026accessControl.acl.HashDag.Encoder
+import ex2026accessControl.acl.AclRdt.given
 
 class AclRdt(privateIdentity: PrivateIdentity, cache: Set[Hash] => Option[Acl] = _ => None)
     extends BftSignedDeltaRdt[Acl](privateIdentity) {

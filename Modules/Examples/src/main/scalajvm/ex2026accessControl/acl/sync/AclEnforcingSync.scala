@@ -1,4 +1,4 @@
-package replication.acl.sync
+package ex2026accessControl.acl.sync
 
 import channels.connection.{ByteBufferMessageBuffer, MessageBuffer}
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
@@ -8,13 +8,13 @@ import channels.crypto.Hash
 import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.filters.{Filter, PermissionTree}
 import rdts.time.Dots
-import replication.HashDag.Encoder
-import replication.acl.sync.AclCodecs
+import ex2026accessControl.acl.HashDag.Encoder
+import ex2026accessControl.acl.sync.AclCodecs
 import channels.JsoniterCodecsJvm.given
-import replication.acl.sync.AclCodecs.given
-import replication.acl.sync.AclEnforcingSync.SyncMsg.{MyAclVersionIs, MyPeersAre, MyRdtVersionIs}
-import replication.acl.sync.AclEnforcingSync.{SyncMsg, encoder}
-import replication.acl.{Acl, BftDelta}
+import ex2026accessControl.acl.sync.AclCodecs.given
+import ex2026accessControl.acl.sync.AclEnforcingSync.SyncMsg.{MyAclVersionIs, MyPeersAre, MyRdtVersionIs}
+import ex2026accessControl.acl.sync.AclEnforcingSync.{SyncMsg, encoder}
+import ex2026accessControl.acl.{Acl, BftDelta}
 
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicReference

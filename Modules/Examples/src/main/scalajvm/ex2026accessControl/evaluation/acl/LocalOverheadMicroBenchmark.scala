@@ -9,11 +9,11 @@ import rdts.base.Lattice.syntax.merge
 import rdts.base.{ReplicaId, Uid}
 import rdts.filters.{Filter, PermissionTree}
 import rdts.time.Dot
-import replication.HashDag
-import replication.acl.AclRdt.given_Encoder_BftDelta
-import replication.acl.sync.AclEnforcingSync.encoder
-import replication.acl.sync.{AclEnforcingSync, SignedDelta}
-import replication.acl.{Acl, AclRdt, BftDelta}
+import ex2026accessControl.acl.HashDag
+import ex2026accessControl.acl.AclRdt.given_Encoder_BftDelta
+import ex2026accessControl.acl.sync.AclEnforcingSync.encoder
+import ex2026accessControl.acl.sync.{AclEnforcingSync, SignedDelta}
+import ex2026accessControl.acl.{Acl, AclRdt, BftDelta}
 
 import java.util.concurrent.TimeUnit
 import scala.util.Random

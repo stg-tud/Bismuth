@@ -6,11 +6,11 @@ import channels.crypto.{Hash, Signature}
 import ex2026accessControl.travelplanner.TravelPlan
 import rdts.base.Uid
 import rdts.time.{Dot, Dots}
-import replication.acl.AclRdt.given_JsonValueCodec_BftDelta
-import replication.acl.sync.AclEnforcingSync.SyncMsg
-import replication.acl.sync.AclEnforcingSync.SyncMsg.{AclDeltas, DataDeltas, MyAclVersionIs, MyPeersAre}
-import replication.acl.sync.SignedDelta
-import replication.acl.{Acl, BftDelta}
+import ex2026accessControl.acl.AclRdt.given_JsonValueCodec_BftDelta
+import ex2026accessControl.acl.sync.AclEnforcingSync.SyncMsg
+import ex2026accessControl.acl.sync.AclEnforcingSync.SyncMsg.{AclDeltas, DataDeltas, MyAclVersionIs, MyPeersAre}
+import ex2026accessControl.acl.sync.SignedDelta
+import ex2026accessControl.acl.{Acl, BftDelta}
 
 object Debug {
   inline val enabled = false

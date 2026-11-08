@@ -1,10 +1,10 @@
-package replication.acl
+package ex2026accessControl.acl
 
 import channels.crypto.PrivateIdentity
 import channels.crypto.PublicIdentity
 import channels.crypto.{Hash, Signature}
 import rdts.base.Bottom
-import replication.HashDag.{Delta, Encoder, Hashable}
+import ex2026accessControl.acl.HashDag.{Delta, Encoder, Hashable}
 
 case class BftFilterableSignedDelta[RDT: Bottom](
     author: PublicIdentity,

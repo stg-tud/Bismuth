@@ -6,8 +6,8 @@ import ex2026accessControl.Debug
 import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.filters.Filter
 import rdts.time.Dots
-import replication.HashDag.Encoder
-import replication.acl.sync.{AclAntiEntropy, AntiEntropyCommunicator, FilteredRdtAntiEntropy, SignedDelta}
+import ex2026accessControl.acl.HashDag.Encoder
+import ex2026accessControl.acl.sync.{AclAntiEntropy, AntiEntropyCommunicator, FilteredRdtAntiEntropy, SignedDelta}
 
 class FilteringForwarderRdtAntiEntropy[State: {Decompose, Lattice, Bottom, Filter}](
     localIdentity: PrivateIdentity,

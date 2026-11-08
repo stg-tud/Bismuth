@@ -2,8 +2,8 @@ package ex2026accessControl.evaluation.acl.centralized
 
 import channels.crypto.PublicIdentity
 import channels.crypto.PrivateIdentity
-import replication.acl.sync.{AclAntiEntropy, AntiEntropyCommunicator}
-import replication.acl.{Acl, BftDelta}
+import ex2026accessControl.acl.sync.{AclAntiEntropy, AntiEntropyCommunicator}
+import ex2026accessControl.acl.{Acl, BftDelta}
 
 class ForwardingAclAntiEntropy(
     id: PrivateIdentity,
