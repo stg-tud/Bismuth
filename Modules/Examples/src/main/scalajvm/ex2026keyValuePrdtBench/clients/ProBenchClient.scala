@@ -22,13 +22,13 @@ class ProBenchClient(val name: Uid, logTimings: Boolean) extends Client(name, lo
     BroadcastIO(
       localUid,
       payload => handleIncomingWrite(payload.data),
-      broadcast = Some(PlumtreeBroadcast(localUid.uid, deltaStorage = KeepAllHistory()))
+      broadcast = Some(PlumtreeBroadcast(deltaStorage = KeepAllHistory()))
     )
   val readDataManager: BroadcastIO[ClientCommRead] =
     BroadcastIO(
       localUid,
       payload => handleIncomingRead(payload.data),
-      broadcast = Some(PlumtreeBroadcast(localUid.uid, deltaStorage = KeepAllHistory()))
+      broadcast = Some(PlumtreeBroadcast(deltaStorage = KeepAllHistory()))
     )
 
   inline def log(inline msg: String): Unit =

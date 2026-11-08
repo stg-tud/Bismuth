@@ -13,7 +13,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromByteB
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import de.rmgk.delay.{Async, Callback}
 import rdts.base.{ReplicaId, Uid}
-import rdts.time.Dot
+import rdts.time.{Dot, Dots}
 
 import java.net.SocketException
 import java.nio.ByteBuffer
@@ -47,7 +47,7 @@ object BroadcastIO {
       sendingActor = sendingActor,
       globalAbort = globalAbort,
       broadcast =
-        broadcast.getOrElse(PlumtreeBroadcast(replicaId.uid, deltaStorage = DiscardingHistory[State](size = 1000))),
+        broadcast.getOrElse(PlumtreeBroadcast(deltaStorage = DiscardingHistory[State](size = 1000))),
       aead = aead,
       timers = timers,
       timerDelays = timerDelays,
@@ -153,9 +153,9 @@ class BroadcastIO[State](
   def broadcast(delta: State): Option[Dot] = {
     var assigned: Option[Dot] = None
     transition(broadcastStep { protocol =>
-      val result = protocol.broadcast(delta)
-      assigned = result.assigned
-      result
+      val dot = protocol.localContext.nextDot(replicaId.uid)
+      assigned = Some(dot)
+      protocol.broadcast(Payload(Dots.single(dot), delta))
     })
     assigned
   }

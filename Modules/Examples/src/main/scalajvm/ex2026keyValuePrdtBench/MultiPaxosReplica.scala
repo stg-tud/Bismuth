@@ -187,7 +187,7 @@ class MultiPaxosReplica(
           ReplicaId(id),
           payload => { publish(payload.data, Some(endpoints)); handleDelta(payload.data) },
           broadcast =
-            Some(PlumtreeBroadcast(id, deltaStorage = DeltaStorage.getStorage(DeltaStorage.Type.KeepAll, () => ???)))
+            Some(PlumtreeBroadcast(deltaStorage = DeltaStorage.getStorage(DeltaStorage.Type.KeepAll, () => ???)))
         )
       )
     ).toMap

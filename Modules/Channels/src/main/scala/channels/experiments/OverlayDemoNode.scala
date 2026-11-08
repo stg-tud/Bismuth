@@ -55,7 +55,6 @@ class OverlayDemoNode(
       globalAbort = abort,
       broadcast =
         Some(PlumtreeBroadcast(
-          localUid.uid,
           deltaStorage = MergingHistory[OverlayStatusProtocol.Status](blockSize = 1000)
         )),
       // overlay maintenance and broadcast repair run on their own timers

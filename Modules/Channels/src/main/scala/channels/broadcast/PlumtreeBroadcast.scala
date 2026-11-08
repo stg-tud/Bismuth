@@ -5,7 +5,7 @@ import channels.broadcast.PlumtreeBroadcast.{Peer, PeerRole}
 import channels.broadcast.PlumtreeMessage.*
 import channels.{DeltaStorage, NoHistory}
 import rdts.base.{Lattice, Uid}
-import rdts.time.{Dot, Dots}
+import rdts.time.Dots
 
 import scala.util.Random
 
@@ -53,12 +53,7 @@ object PlumtreeBroadcast {
     case StartTimer(timer: BroadcastTimer)
   }
 
-  final case class Result[State](
-      state: PlumtreeBroadcast[State],
-      events: Seq[Event[State]],
-      /** The dot assigned to the delta of a local [[BroadcastProtocol.broadcast]]. */
-      assigned: Option[Dot] = None,
-  )
+  final case class Result[State](state: PlumtreeBroadcast[State], events: Seq[Event[State]])
 }
 
 /** Immutable Plumtree core.
@@ -73,7 +68,6 @@ object PlumtreeBroadcast {
   * `IHave` and `Graft` summarize knowledge with `Dots`, and `Graft` replays all history newer than `knows`.
   */
 final case class PlumtreeBroadcast[State](
-    self: Uid,
     localContext: Dots = Dots.empty,
     remoteContext: Map[Peer, Dots] = Map.empty,
     deltaStorage: DeltaStorage[State] = NoHistory(),
@@ -115,15 +109,12 @@ final case class PlumtreeBroadcast[State](
   )
 
   /** Local broadcast, corresponding to Algorithm 1 `Broadcast`/`EagerPush`/`LazyPush`. */
-  def broadcast(delta: State): Result[State] = {
-    val nextDot = localContext.nextDot(self)
-    val payload = Payload(Dots.single(nextDot), delta)
-
+  def broadcast(payload: Payload[State]): Result[State] = {
     val next: PlumtreeBroadcast[State] = copy(
       localContext = localContext.merge(payload.dots),
       deltaStorage = deltaStorage.remember(payload),
     )
-    next.disseminate(payload, Set.empty).copy(assigned = Some(nextDot))
+    next.disseminate(payload, Set.empty)
   }
 
   /** Peers that announced knowledge we do not have yet. */
