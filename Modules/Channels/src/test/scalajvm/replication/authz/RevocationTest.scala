@@ -26,28 +26,17 @@ class RevocationTest extends FunSuite {
   import RevocationTest.*
 
   /** A root-owned replica created by `create` that has received the genesis event */
-  final private class Fixture[R <: ReplicaUnderTest](create: Factory[R]) {
+  final private class Fixture(create: ReplicaUnderTest.Factory) {
     private val rootIdentity: PrivateIdentity = newPrivateIdentity()
 
     val root: Principal                         = Principal(rootIdentity.getPublic, rootIdentity.identityKey.getPrivate)
     val genesis: ArdtEvent                      = Authorization.createGenesis(rootIdentity)
-    val notifications: mutable.Buffer[Set[Int]] = mutable.Buffer.empty
 
-    private var antiEntropy: MockAntiEntropy | Null   = null
     private val everyDelta: DeltaValueStore[Set[Int]] = DeltaValueStore[Set[Int]]()
 
-    val replica: R = create(
-      genesis.hash,
-      rootIdentity,
-      r => {
-        val mock = MockAntiEntropy(r)
-        antiEntropy = mock
-        mock
-      },
-      state => notifications += state: Unit
-    )
+    val replica: ReplicaUnderTest               = create(genesis.hash, rootIdentity)
+    val notifications: mutable.Buffer[Set[Int]] = replica.notifications
 
-    replica.start()
     receiveEvent(genesis)
 
     def principal(): Principal = {
@@ -118,7 +107,7 @@ class RevocationTest extends FunSuite {
       * oracle
       */
     def broadcastIndices(): Set[Int] = {
-      val broadcast = antiEntropy.nn.broadcastedDeltas
+      val broadcast = replica.broadcastedDeltas
       broadcast.foreach(d =>
         everyDelta.put(
           replica.graph.events(d.eventHash)._2,
@@ -144,14 +133,9 @@ class RevocationTest extends FunSuite {
       )
   }
 
-  private val variants: Seq[(String, Factory[ReplicaUnderTest])] = Seq(
-    ("Replica", new PlainReplica(_, _, _, _)),
-    ("SnapshotAwareReplica without snapshot", new SnapshotReplica(_, _, _, _)),
-  )
+  for (variant, create) <- ReplicaUnderTest.variants do revocationTests(variant, create)
 
-  for (variant, create) <- variants do revocationTests(variant, create)
-
-  private def revocationTests(variant: String, create: Factory[ReplicaUnderTest]): Unit = {
+  private def revocationTests(variant: String, create: ReplicaUnderTest.Factory): Unit = {
 
     // --- 1. revocation on the current heads ---
 
@@ -532,9 +516,13 @@ class RevocationTest extends FunSuite {
 
   // --- 9. SnapshotAwareReplica with snapshots ---
 
-  private def snapshotFixture(): Fixture[SnapshotReplica] = Fixture(new SnapshotReplica(_, _, _, _))
+  for (variant, create) <- ReplicaUnderTest.snapshotVariants do snapshotTests(variant, create)
 
-  test("SnapshotAwareReplica: a snapshot taken before every invalidated delta is kept and the state is correct") {
+  private def snapshotTests(variant: String, create: ReplicaUnderTest.Factory): Unit = {
+
+  def snapshotFixture(): Fixture = Fixture(create)
+
+  test(s"$variant: a snapshot taken before every invalidated delta is kept and the state is correct") {
     // capA <- dR | snapshot | dR <- dA0 <- {dA1, dR2, revocation}
     val fx    = snapshotFixture()
     val alice = fx.principal()
@@ -543,7 +531,7 @@ class RevocationTest extends FunSuite {
     fx.receive(capA, dR)
     fx.replica.createSnapshot()
     val snapshotVersion = fx.replica.graph.nextEventIndex - 1
-    assertEquals(fx.replica.currentSnapshotVersion, snapshotVersion)
+    assertEquals(fx.replica.snapshotVersion, snapshotVersion)
 
     val dA0        = fx.write(Set(2), alice, capA, dR)
     val dA1        = fx.write(Set(1), alice, capA, dA0)
@@ -552,11 +540,11 @@ class RevocationTest extends FunSuite {
     fx.receive(dA0, dA1, dR2, revocation)
 
     fx.assertInvalidated(revocation, dA1)
-    assertEquals(fx.replica.currentSnapshotVersion, snapshotVersion, "the snapshot should have been kept")
+    assertEquals(fx.replica.snapshotVersion, snapshotVersion, "the snapshot should have been kept")
     fx.assertState(Set(2, 8, 9))
   }
 
-  test("SnapshotAwareReplica: a snapshot containing an invalidated delta is discarded and the state is correct") {
+  test(s"$variant: a snapshot containing an invalidated delta is discarded and the state is correct") {
     // capA <- dA, capA <- dR | snapshot | dR <- dR2 <- revocation
     val fx    = snapshotFixture()
     val alice = fx.principal()
@@ -572,11 +560,11 @@ class RevocationTest extends FunSuite {
     fx.receive(dR2, revocation)
 
     fx.assertInvalidated(revocation, dA)
-    assertEquals(fx.replica.currentSnapshotVersion, -1, "the snapshot should have been discarded")
+    assertEquals(fx.replica.snapshotVersion, -1, "the snapshot should have been discarded")
     fx.assertState(Set(8, 9))
   }
 
-  test("SnapshotAwareReplica: a valid delta value received after the snapshot for an event it covers is kept") {
+  test(s"$variant: a valid delta value received after the snapshot for an event it covers is kept") {
     // Suspected problem: capA <- dR (value arrives after the snapshot) <- revocation, capA <- dA
     val fx    = snapshotFixture()
     val alice = fx.principal()
@@ -594,12 +582,12 @@ class RevocationTest extends FunSuite {
     fx.receive(dA, revocation)
 
     fx.assertInvalidated(revocation, dA)
-    assertEquals(fx.replica.currentSnapshotVersion, snapshotVersion, "the snapshot should have been kept")
+    assertEquals(fx.replica.snapshotVersion, snapshotVersion, "the snapshot should have been kept")
     fx.assertState(Set(9))
   }
 
   test(
-    "SnapshotAwareReplica: an invalidated delta value received after the snapshot for an event it covers is removed"
+    s"$variant: an invalidated delta value received after the snapshot for an event it covers is removed"
   ) {
     // capA <- dA (value arrives after the snapshot), capA <- dR <- revocation
     val fx    = snapshotFixture()
@@ -619,6 +607,7 @@ class RevocationTest extends FunSuite {
     fx.assertInvalidated(revocation, dA)
     fx.assertState(Set(9))
   }
+  }
 }
 
 object RevocationTest {
@@ -634,74 +623,5 @@ object RevocationTest {
   def hashOf(node: Node): Hash = node match {
     case event: ArdtEvent => event.hash
     case write: Write     => write.hash
-  }
-
-  /** Access to the internals of a replica */
-  trait Inspection {
-    def graph: ArdtEventGraph[Set[Int]]
-
-    /** The event indices of the deltas the replica invalidated when receiving `revocation`. Since receiving it removes their
-      * values, and `deltasInvalidatedBy` only returns deltas whose value is still stored, its result is recorded at
-      * that point. For a revocation the replica did not process, e.g. one built on all current heads, this asks
-      * `deltasInvalidatedBy` now instead.
-      */
-    def invalidatedBy(revocation: Hash): Set[Int]
-  }
-
-  type ReplicaUnderTest = Replica[Set[Int]] & Inspection
-
-  type Factory[R <: ReplicaUnderTest] = (Hash, PrivateIdentity, Replica[?] => AntiEntropy, Set[Int] => Unit) => R
-
-  final class PlainReplica(
-      genesisHash: Hash,
-      identity: PrivateIdentity,
-      provider: Replica[?] => AntiEntropy,
-      onChange: Set[Int] => Unit
-  ) extends Replica[Set[Int]](genesisHash, identity, provider, onChange) with Inspection {
-    def graph: ArdtEventGraph[Set[Int]] = eventGraph
-    private val recordedInvalidations   = mutable.Map.empty[Hash, Set[Int]]
-
-    override protected def deltasInvalidatedBy(revocation: Hash)
-        : Iterable[Int] = {
-      val invalidated = super.deltasInvalidatedBy(revocation)
-      recordedInvalidations.getOrElseUpdate(revocation, invalidated.toSet)
-      invalidated
-    }
-
-    def invalidatedBy(revocation: Hash): Set[Int] =
-      recordedInvalidations.getOrElse(
-        revocation,
-        super.deltasInvalidatedBy(revocation).toSet
-      )
-  }
-
-  final class SnapshotReplica(
-      genesisHash: Hash,
-      identity: PrivateIdentity,
-      provider: Replica[?] => AntiEntropy,
-      onChange: Set[Int] => Unit
-  ) extends SnapshotAwareReplica[Set[Int]](genesisHash, identity, provider, onChange) with Inspection {
-    def graph: ArdtEventGraph[Set[Int]] = eventGraph
-    private val recordedInvalidations   = mutable.Map.empty[Hash, Set[Int]]
-
-    override protected def deltasInvalidatedBy(revocation: Hash)
-        : Iterable[Int] = {
-      val invalidated = super.deltasInvalidatedBy(revocation)
-      recordedInvalidations.getOrElseUpdate(revocation, invalidated.toSet)
-      invalidated
-    }
-
-    def invalidatedBy(revocation: Hash): Set[Int] =
-      recordedInvalidations.getOrElse(
-        revocation,
-        super.deltasInvalidatedBy(revocation).toSet
-      )
-
-    /** The private `snapshotVersion` of [[SnapshotAwareReplica]], read by reflection; -1 means no snapshot */
-    def currentSnapshotVersion: Int = {
-      val field = classOf[SnapshotAwareReplica[?]].getDeclaredField("snapshotVersion")
-      field.setAccessible(true)
-      field.getInt(this)
-    }
   }
 }

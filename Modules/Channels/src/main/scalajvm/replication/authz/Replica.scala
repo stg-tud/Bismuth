@@ -11,7 +11,6 @@ import replication.JsoniterCodecsJvm.ardtEventCodec
 import replication.authz.ArdtEvent.Payload.{Capability, DeltaCommitment, Revocation}
 
 import scala.annotation.tailrec
-import scala.collection.mutable
 
 class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
     genesis: Hash,
@@ -80,36 +79,7 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
 
   /** The indices of the delta events that `revocationEventHash` newly invalidates */
   protected def deltasInvalidatedBy(revocationEventHash: Hash): Iterable[Int] = synchronized {
-    val evGraph             = eventGraph
-    val revokedCapabilities =
-      evGraph.revocationCache.filter((_, revocations) => revocations.contains(revocationEventHash)).keySet
-    if revokedCapabilities.isEmpty then return Iterable.empty
-
-    // Every use of a capability, like every capability delegated from it, is received after that capability, and thus
-    // has a higher index. Every event up to the latest cut in the revocation's causal past is causally before it. A
-    // single search of the revocation's causal past, cut off at the later of the two, therefore suffices to tell the
-    // valid uses apart from the invalidated ones.
-    val revocationParents = evGraph.events(revocationEventHash)._1.parents
-    val cutoff            = math.max(
-      revokedCapabilities.iterator.map(evGraph.events(_)._2).min,
-      evGraph.latestCutBefore(revocationParents)
-    )
-
-    val causalPast = mutable.BitSet()
-    val toVisit    = mutable.Stack.from(revocationParents)
-    while toVisit.nonEmpty do {
-      val (event, index) = evGraph.events(toVisit.pop())
-      if index > cutoff && !causalPast.contains(index) then
-          causalPast += index
-          toVisit.pushAll(event.parents)
-    }
-
-    evGraph.events.collect {
-      case (eventHash, (ArdtEvent(_: DeltaCommitment, _, _, _, authorization), index))
-          if index > cutoff && revokedCapabilities.contains(authorization) && !causalPast.contains(index)
-          && deltaValueStore.get(index).nonEmpty =>
-        index
-    }
+    eventGraph.deltasInvalidatedBy(revocationEventHash).filter(index => deltaValueStore.get(index).nonEmpty)
   }
 
   /** Removes the delta values of `deltaEvents`, returning whether any of them was stored */
@@ -211,9 +181,10 @@ class Replica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
       if authEvent == Hash.allZeroHash then None
       else
           eventGraph.events(authEvent) match {
-            case (ArdtEvent(_, author, _, _, parentAuthorization), _) =>
-              if author == localReplicaId then Some(authEvent)
-              else findAuthorizationForRevocation(parentAuthorization)
+            // the authorization has to be a capability held by the revoking replica
+            case (ArdtEvent(Capability(`localReplicaId`, _, _), _, _, _, _), _) => Some(authEvent)
+            case (ArdtEvent(_, _, _, _, parentAuthorization), _)                =>
+              findAuthorizationForRevocation(parentAuthorization)
           }
 
     findAuthorizationForRevocation(revokedCapability) match {

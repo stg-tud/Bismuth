@@ -14,33 +14,25 @@ import scala.collection.mutable
 
 class ReplicaTest extends FunSuite {
 
-  private def newReplicaWithGenesis(
+  for (variant, create) <- ReplicaUnderTest.variants do replicaTests(variant, create)
+
+  private def replicaTests(variant: String, create: ReplicaUnderTest.Factory): Unit = {
+
+  def test(name: String)(body: => Any)(using munit.Location): Unit = ReplicaTest.this.test(s"$variant: $name")(body)
+
+  def newReplicaWithGenesis(
       identity: PrivateIdentity,
       genesisEvent: ArdtEvent,
-      onStateChange: Set[Int] => Unit = _ => ()
-  ): (Replica[Set[Int]], MockAntiEntropy) = {
-    var mockRef: MockAntiEntropy | Null = null
-    val replica                         = new Replica[Set[Int]](
-      genesisEvent.hash,
-      identity,
-      r => {
-        val m = new MockAntiEntropy(r)
-        mockRef = m
-        m
-      },
-      onStateChange
-    )
-    replica.start()
+  ): (ReplicaUnderTest, ReplicaUnderTest) = {
+    val replica = create(genesisEvent.hash, identity)
     assert(replica.receiveEvent(writeToArray(genesisEvent)).isRight)
-    (replica, mockRef.nn)
+    (replica, replica)
   }
 
-  private def newReplica(
-      onStateChange: Set[Int] => Unit = _ => ()
-  ): (Replica[Set[Int]], MockAntiEntropy, PrivateIdentity, ArdtEvent) = {
+  def newReplica(): (ReplicaUnderTest, ReplicaUnderTest, PrivateIdentity, ArdtEvent) = {
     val rootIdentity    = newPrivateIdentity()
     val genesisEvent    = Authorization.createGenesis(rootIdentity)
-    val (replica, mock) = newReplicaWithGenesis(rootIdentity, genesisEvent, onStateChange)
+    val (replica, mock) = newReplicaWithGenesis(rootIdentity, genesisEvent)
     (replica, mock, rootIdentity, genesisEvent)
   }
 
@@ -111,8 +103,8 @@ class ReplicaTest extends FunSuite {
   // --- receiveDelta ---
 
   test("receiveDelta stores a readable delta and notifies onStateChange with the merged state") {
-    val notifications                            = mutable.Buffer.empty[Set[Int]]
-    val (replica, _, rootIdentity, genesisEvent) = newReplica(onStateChange = s => notifications += s)
+    val (replica, _, rootIdentity, genesisEvent) = newReplica()
+    val notifications                            = replica.notifications
     val (deltaEvent, revealed)                   =
       buildDeltaEvent(
         Set(1, 2),
@@ -372,29 +364,12 @@ class ReplicaTest extends FunSuite {
     assert(replica.receiveEvent(writeToArray(unreadableDelta)).isRight)
     replica.receiveDelta(unreadableDelta.hash, unreadableRevealed)
 
-    val result = replica.filterDeltas(
+    val result = replica.readableBy(
       restrictedIdentity.getPublic,
-      List(
-        (eventHash = readableDelta.hash, delta = readableRevealed),
-        (eventHash = unreadableDelta.hash, delta = unreadableRevealed)
-      )
+      List(readableDelta.hash -> readableRevealed, unreadableDelta.hash -> unreadableRevealed)
     )
 
-    assertEquals(result.map(_.eventHash).toSet, Set(readableDelta.hash))
+    assertEquals(result, Set(readableDelta.hash))
   }
-}
-
-class MockAntiEntropy(replica: Replica[?]) extends AntiEntropy(replica, _ => ???, _ => ???) {
-  val broadcastedEvents: mutable.Buffer[Array[Byte]]                             = mutable.Buffer.empty
-  val broadcastedDeltas: mutable.Buffer[(eventHash: Hash, delta: RevealedValue)] = mutable.Buffer.empty
-
-  override def start(): Unit = ()
-
-  override def listenAddress: Option[(String, Int)] = None
-
-  override def broadcastEvents(events: Iterable[Array[Byte]]): Unit =
-    broadcastedEvents ++= events: Unit
-
-  override def broadcastDeltasFiltered(deltas: Iterable[(eventHash: Hash, delta: RevealedValue)]): Unit =
-    broadcastedDeltas ++= deltas: Unit
+  }
 }
