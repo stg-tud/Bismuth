@@ -9,7 +9,6 @@ import rdts.base.Uid
 import rdts.filters.PermissionTree
 import replication.JsoniterCodecsJvm.ardtEventCodec
 import replication.authz.AuthzTestSupport.{*, given}
-import replication.crypto.Commitment.RevealedValue
 
 import scala.collection.mutable
 
@@ -108,10 +107,7 @@ class AuthzProtocolTest extends FunSuite {
     val w2   = w1.write(a.identity, Set(11)).state
     val e1   = w2.eventGraph.events(w1.heads.head)._1
     val e2   = w2.eventGraph.events(w2.heads.head)._1
-    val deltas = List(e1, e2).map { e =>
-      val stored = w2.deltas(w2.eventGraph.events(e.hash)._2)
-      AuthzMessage.DeltaValue(e.hash, RevealedValue(writeToArray(stored.delta), stored.witness))
-    }
+    val deltas = List(e1, e2).map(e => AuthzMessage.DeltaValue(e.hash, w2.deltaValue(e.hash).get))
 
     // deltas first, then the second event, then the first
     net.run(b)(_.handleMessage(a.peer, AuthzMessage.Deltas(deltas)))

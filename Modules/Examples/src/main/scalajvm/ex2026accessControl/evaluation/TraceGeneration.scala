@@ -73,7 +73,7 @@ object TraceGeneration {
 
     val genesisEvent    = Authorization.createGenesis(rootIdentity)
     var eventGraph      = ArdtEventGraph[BenchmarkRdt](genesisEvent)
-    val deltaValueStore = DeltaValueStore[BenchmarkRdt]()
+    var deltaValueStore = DeltaValueStore[BenchmarkRdt]()
 
     // The permissions of one capability each, shared by all replicas alike
     val permissionSplit = splitPermissions(BenchmarkRdt.leafPaths, numCapabilitiesPerReplica)
@@ -131,7 +131,7 @@ object TraceGeneration {
           val (event, revealed) =
             EventGraphBuilder.buildDeltaEvent(decomposedDelta, identity, partParents, authorization)
           eventGraph = EventGraphBuilder.receiveOrThrow(eventGraph, event)
-          deltaValueStore.put(eventGraph.nextEventIndex - 1, decomposedDelta, revealed.witness)
+          deltaValueStore = deltaValueStore.put(eventGraph.nextEventIndex - 1, decomposedDelta, revealed.witness)
           partParents = Set(event.hash)
         }
 
@@ -178,7 +178,7 @@ object TraceGeneration {
 
     val genesisEvent    = Authorization.createGenesis(rootIdentity)
     var eventGraph      = ArdtEventGraph[BenchmarkRdt](genesisEvent)
-    val deltaValueStore = DeltaValueStore[BenchmarkRdt]()
+    var deltaValueStore = DeltaValueStore[BenchmarkRdt]()
     var sharedState     = BenchmarkRdt.empty
 
     // The capability event authorizing each mutation a replica may perform, i.e. each leaf it may write
@@ -235,7 +235,7 @@ object TraceGeneration {
             val (event, revealed) =
               EventGraphBuilder.buildDeltaEvent(decomposedDelta, identity, partParents, authorization)
             eventGraph = EventGraphBuilder.receiveOrThrow(eventGraph, event)
-            deltaValueStore.put(eventGraph.nextEventIndex - 1, decomposedDelta, revealed.witness)
+            deltaValueStore = deltaValueStore.put(eventGraph.nextEventIndex - 1, decomposedDelta, revealed.witness)
             partParents = Set(event.hash)
             previousEvent(author) = event.hash
           }

@@ -1,10 +1,12 @@
 package ex2026accessControl.evaluation
 
+import channels.broadcast.BroadcastProtocol.{Effect, Step}
+import channels.connection.Peer
 import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray
 import channels.crypto.PrivateIdentity
 import channels.crypto.PublicIdentity
-import replication.crypto.{Commitment, Hash}
-import ex2026accessControl.evaluation.EvaluationBenchmarks.{encodeTrace, noopOnStateChange, receiveTrace, replayTrace}
+import replication.crypto.Hash
+import ex2026accessControl.evaluation.EvaluationBenchmarks.{encodeTrace, receiveTrace, replayTrace}
 import org.openjdk.jmh.annotations.*
 import rdts.base.{ReplicaId, Uid}
 import replication.JsoniterCodecsJvm.ardtEventCodec
@@ -22,10 +24,14 @@ import scala.util.Random
 @State(Scope.Thread)
 class EvaluationBenchmarks {
 
+  /** The replica is immutable, so every invocation writes on top of the same state. */
   @Benchmark
-  def createUpdate(state: CreateUpdateBenchmarkState): Unit =
-    state.replica.mutateState(
-      BenchmarkRdt.applyBenchmarkRdtMutator(state.selectedMutatorChoice, _)(using state.selectedLocalUid),
+  def createUpdate(state: CreateUpdateBenchmarkState): Step[AuthzReplica[BenchmarkRdt], AuthzMessage, BenchmarkRdt] =
+    state.replica.write(
+      state.selectedIdentity,
+      BenchmarkRdt.applyBenchmarkRdtMutator(state.selectedMutatorChoice, state.replica.state)(using
+        state.selectedLocalUid
+      ),
       state.authorizationHash
     )
 
@@ -46,15 +52,15 @@ class EvaluationBenchmarks {
 
   /** Receiving only a revocation, into a replica that has already received every other event of the trace */
   @Benchmark
-  def receiveRevocation(state: RevocationBenchmarkState): Either[Set[Hash], Option[Hash]] =
-    state.replica.receiveEvent(state.encodedRevocation)
+  def receiveRevocation(state: RevocationBenchmarkState): AuthzReplica[BenchmarkRdt] =
+    state.replica.receiveEvent(state.encodedRevocation)._1
 
-  /** [[receiveRevocation]], into a [[replication.authz.SnapshotAwareReplica]] that took a snapshot right before the
-    * first delta invalidated by the revocation, and thus only merges the deltas received after it when rematerializing.
+  /** [[receiveRevocation]], into a replica that took a snapshot right before the first delta invalidated by the
+    * revocation, and thus only merges the deltas received after it when rematerializing.
     */
   @Benchmark
-  def receiveRevocationSnapshotAware(state: SnapshotAwareRevocationBenchmarkState): Either[Set[Hash], Option[Hash]] =
-    state.replica.receiveEvent(state.encodedRevocation)
+  def receiveRevocationSnapshotAware(state: SnapshotAwareRevocationBenchmarkState): AuthzReplica[BenchmarkRdt] =
+    state.replica.receiveEvent(state.encodedRevocation)._1
 
   /** Merging every delta left in the delta value store of a replica that has received the whole trace, i.e., the
     * re-materialization performed by [[receiveRevocation]] when the revocation invalidates deltas.
@@ -93,14 +99,14 @@ class EvaluationBenchmarks {
 
   /** Sending side of anti-entropy, including access control enforcement: every requested event is looked up
     * and encoded, and every delta value belonging to one of them is filtered against the destination's read
-    * permissions before being encoded and handed to the [[SummingConnectionManager]].
+    * permissions before being encoded, answering a request for all events.
     */
   @Benchmark
-  def sendEventsWithDelta(state: SendEventsWithDeltaBenchmarkState): Long = {
-    state.connectionManager.reset()
-    state.antiEntropy.sendEventsWithDelta(state.destination, state.eventHashes)
-    state.connectionManager.sentBytes
-  }
+  def sendEventsWithDelta(state: SendEventsWithDeltaBenchmarkState): Long =
+    state.replica.handleMessage(state.destination, AuthzMessage.Request(state.eventHashes)).events.iterator.map {
+      case Effect.Send(_, message) => writeToArray(message)(using AuthzMessage.codec).length.toLong
+      case _                       => 0L
+    }.sum
 
   /** [[sendEventsWithDelta]] without any access control: every requested entry, payload included, is looked up,
     * encoded and handed to the [[SummingConnectionManager]] unfiltered.
@@ -203,40 +209,12 @@ class ArdtEventGraphBenchmarkState {
 
 @State(Scope.Benchmark)
 class CreateUpdateBenchmarkState extends ArdtEventGraphBenchmarkState {
-  var replica: BenchmarkReplica[BenchmarkRdt] = scala.compiletime.uninitialized
+  var replica: AuthzReplica[BenchmarkRdt] = scala.compiletime.uninitialized
 
   @Setup(Level.Trial)
   override def setup(): Unit = {
     super.setup()
-    val tmpReplica = new BenchmarkReplica[BenchmarkRdt](
-      genesisHash,
-      selectedIdentity,
-      r => NoOpAntiEntropy(r),
-      noopOnStateChange
-    )
-    replayTrace(tmpReplica, trace, deltaValueStore)
-    val preUpdateBackup = tmpReplica.backup()
-
-    // Has hook to reset state after update
-    replica = new BenchmarkReplica[BenchmarkRdt](
-      genesisHash,
-      selectedIdentity,
-      r => NoOpAntiEntropy(r),
-      noopOnStateChange
-    ) {
-      override protected def disseminate(eventsWithDeltas: Iterable[(
-          Hash,
-          ArdtEvent,
-          Array[Byte],
-          BenchmarkRdt,
-          Commitment.RevealedValue
-      )]): Unit = {
-        eventsWithDeltas.foreach(evTpl => this.deltaValueStore.remove(this.eventGraph.events(evTpl._1)._2))
-        this.eventGraph = preUpdateBackup.eventGraph
-        this.materializedState = preUpdateBackup.materializedState
-      }
-    }
-    replica.restore(preUpdateBackup)
+    replica = replayTrace(AuthzReplica.initial(selectedIdentity.getPublic, genesisHash), trace, deltaValueStore)
   }
 }
 
@@ -268,16 +246,13 @@ class RevokedEventGraphBenchmarkState extends ArdtEventGraphBenchmarkState {
 }
 
 /** [[RevokedEventGraphBenchmarkState]] with a replica of the root identity that has received every event of the
-  * trace but the revocation.
+  * trace but the revocation. The replica is immutable, so receiving the revocation does not change it.
   */
 @State(Scope.Benchmark)
 class RevocationBenchmarkState extends RevokedEventGraphBenchmarkState {
 
-  var replica: BenchmarkReplica[BenchmarkRdt] = scala.compiletime.uninitialized
-  var encodedRevocation: Array[Byte]          = scala.compiletime.uninitialized
-
-  // The parts of the replica's state that receiving the revocation changes, as they were before
-  private var replicaBackup: BenchmarkReplica.Backup[BenchmarkRdt] = scala.compiletime.uninitialized
+  var replica: AuthzReplica[BenchmarkRdt] = scala.compiletime.uninitialized
+  var encodedRevocation: Array[Byte]      = scala.compiletime.uninitialized
 
   @Setup(Level.Trial)
   override def setup(): Unit = {
@@ -285,34 +260,19 @@ class RevocationBenchmarkState extends RevokedEventGraphBenchmarkState {
 
     // The revocation is the last event of the trace
     encodedRevocation = trace.last.encodedEvent
-    replica = new BenchmarkReplica[BenchmarkRdt](genesisHash, rootIdentity, r => NoOpAntiEntropy(r), noopOnStateChange)
-    replayTrace(replica, trace.init, deltaValueStore)
-    replicaBackup = replica.backup()
-  }
-
-  /** Removes the revocation from the replica again. The event graph is immutable, so putting back the one from
-    * before the revocation also restores its heads. Only a revocation concurrent to uses of the revoked capability
-    * invalidates deltas, making the replica re-materialize its state. Receiving a revocation never touches the delta value store.
-    */
-  @Setup(Level.Invocation)
-  def resetReplica(): Unit = {
-    replica.currentEventGraph = replicaBackup.eventGraph
-    if invalidatesDeltas then replica.restore(replicaBackup)
+    replica = replayTrace(AuthzReplica.initial(rootIdentity.getPublic, genesisHash), trace.init, deltaValueStore)
   }
 }
 
-/** [[RevocationBenchmarkState]] with a [[replication.authz.SnapshotAwareReplica]] instead. Right before receiving the
-  * first delta event that the revocation invalidates, it takes a snapshot, which receiving the revocation thus keeps.
-  * If the revocation invalidates nothing, the snapshot is taken after every event but the revocation.
+/** [[RevocationBenchmarkState]] with a snapshot. Right before receiving the first delta event that the revocation
+  * invalidates, the replica takes a snapshot, which receiving the revocation thus keeps. If the revocation invalidates
+  * nothing, the snapshot is taken after every event but the revocation.
   */
 @State(Scope.Benchmark)
 class SnapshotAwareRevocationBenchmarkState extends RevokedEventGraphBenchmarkState {
 
-  var replica: BenchmarkSnapshotAwareReplica[BenchmarkRdt] = scala.compiletime.uninitialized
-  var encodedRevocation: Array[Byte]                       = scala.compiletime.uninitialized
-
-  // The parts of the replica's state that receiving the revocation changes, as they were before
-  private var replicaBackup: BenchmarkReplica.Backup[BenchmarkRdt] = scala.compiletime.uninitialized
+  var replica: AuthzReplica[BenchmarkRdt] = scala.compiletime.uninitialized
+  var encodedRevocation: Array[Byte]      = scala.compiletime.uninitialized
 
   @Setup(Level.Trial)
   override def setup(): Unit = {
@@ -330,31 +290,17 @@ class SnapshotAwareRevocationBenchmarkState extends RevokedEventGraphBenchmarkSt
     }
     val snapshotPosition = if firstInvalidated == -1 then traceBeforeRevocation.length else firstInvalidated
 
-    replica = new BenchmarkSnapshotAwareReplica[BenchmarkRdt](
-      genesisHash,
-      rootIdentity,
-      r => NoOpAntiEntropy(r),
-      noopOnStateChange
+    val beforeSnapshot = replayTrace(
+      AuthzReplica.initial(rootIdentity.getPublic, genesisHash),
+      traceBeforeRevocation.take(snapshotPosition),
+      deltaValueStore
     )
-    replayTrace(replica, traceBeforeRevocation.take(snapshotPosition), deltaValueStore)
-    replica.createSnapshot()
-    replayTrace(replica, traceBeforeRevocation.drop(snapshotPosition), deltaValueStore)
-    replicaBackup = replica.backup()
-  }
-
-  /** Removes the revocation from the replica again, like [[RevocationBenchmarkState.resetReplica]]. Since the
-    * revocation invalidates no delta the snapshot contains, receiving it keeps the snapshot.
-    */
-  @Setup(Level.Invocation)
-  def resetReplica(): Unit = {
-    replica.currentEventGraph = replicaBackup.eventGraph
-    if invalidatesDeltas then replica.restore(replicaBackup)
+    replica = replayTrace(beforeSnapshot.createSnapshot, traceBeforeRevocation.drop(snapshotPosition), deltaValueStore)
   }
 }
 
 /** [[RevokedEventGraphBenchmarkState]] holding the delta value store of a replica of the root identity that has
-  * received every event of the trace, the revocation included. Merging its deltas leaves it unchanged, so it is
-  * set up only once per trial.
+  * received every event of the trace, the revocation included.
   */
 @State(Scope.Benchmark)
 class MergeDeltasAfterRevocationBenchmarkState extends RevokedEventGraphBenchmarkState {
@@ -364,10 +310,8 @@ class MergeDeltasAfterRevocationBenchmarkState extends RevokedEventGraphBenchmar
   @Setup(Level.Trial)
   override def setup(): Unit = {
     super.setup()
-    val replica =
-      new BenchmarkReplica[BenchmarkRdt](genesisHash, rootIdentity, r => NoOpAntiEntropy(r), noopOnStateChange)
-    replayTrace(replica, trace, deltaValueStore)
-    deltaValueStoreAfterRevocation = replica.currentDeltaValueStore
+    deltaValueStoreAfterRevocation =
+      replayTrace(AuthzReplica.initial(rootIdentity.getPublic, genesisHash), trace, deltaValueStore).deltas
   }
 }
 
@@ -409,28 +353,16 @@ class UnsignedHashDagBenchmarkState extends ArdtEventGraphBenchmarkState {
 @State(Scope.Benchmark)
 class SendEventsWithDeltaBenchmarkState extends ArdtEventGraphBenchmarkState {
 
-  var connectionManager: SummingConnectionManager = scala.compiletime.uninitialized
-  var antiEntropy: AntiEntropy                    = scala.compiletime.uninitialized
-  var destination: PublicIdentity                 = scala.compiletime.uninitialized
-  var eventHashes: Array[Hash]                    = scala.compiletime.uninitialized
+  var replica: AuthzReplica[BenchmarkRdt] = scala.compiletime.uninitialized
+  var destination: Peer                   = scala.compiletime.uninitialized
+  var eventHashes: Set[Hash]              = scala.compiletime.uninitialized
 
   @Setup(Level.Trial)
   override def setup(): Unit = {
     super.setup()
-
-    val replica = new Replica[BenchmarkRdt](
-      genesisHash,
-      rootIdentity,
-      r => NoOpAntiEntropy(r),
-      noopOnStateChange
-    )
-    replayTrace(replica, trace, deltaValueStore)
-
-    destination = generated.replicaIds(1).getPublic
-    connectionManager = SummingConnectionManager(Set(destination))
-    // The control plane is never consulted by sendEventsWithDelta, and is thus left unimplemented.
-    antiEntropy = AntiEntropy(replica, _ => connectionManager, _ => ???)
-    eventHashes = trace.map(_.hash)
+    replica = replayTrace(AuthzReplica.initial(rootIdentity.getPublic, genesisHash), trace, deltaValueStore)
+    destination = Peer.Authenticated(Uid(generated.replicaIds(1).getPublic.id))
+    eventHashes = trace.map(_.hash).toSet
   }
 }
 
@@ -511,31 +443,20 @@ class UnsignedHashDagBenchmarkStateWithReplica extends UnsignedHashDagBenchmarkS
 }
 
 object EvaluationBenchmarks {
-  def noopOnStateChange[T](x: => T): Unit = ()
-
   /** Has a fresh replica of the root identity receive every event of `state`'s trace, along with its delta */
-  def receiveTrace(state: ArdtEventGraphBenchmarkState): Set[Hash] = {
-    val replica = new Replica[BenchmarkRdt](
-      state.genesisHash,
-      state.rootIdentity,
-      r => NoOpAntiEntropy(r),
-      noopOnStateChange
-    )
-    replayTrace(replica, state.trace, state.deltaValueStore)
-    replica.heads
-  }
+  def receiveTrace(state: ArdtEventGraphBenchmarkState): Set[Hash] =
+    replayTrace(AuthzReplica.initial(state.rootIdentity.getPublic, state.genesisHash), state.trace, state.deltaValueStore)
+      .heads
 
   /** Has `replica` receive every event of `trace` in order, each directly followed by its delta (if any) */
   def replayTrace(
-      replica: Replica[BenchmarkRdt],
+      replica: AuthzReplica[BenchmarkRdt],
       trace: Array[(hash: Hash, encodedEvent: Array[Byte], deltaIndex: Option[Int])],
       deltaValueStore: DeltaValueStore[BenchmarkRdt]
-  ): Unit =
-    trace.foreach { (hash, encodedEvent, deltaIndex) =>
-      replica.receiveEvent(encodedEvent)
-      deltaIndex.foreach { index =>
-        deltaValueStore.getRevealedValue(index).foreach(revealed => replica.receiveDelta(hash, revealed))
-      }
+  ): AuthzReplica[BenchmarkRdt] =
+    trace.foldLeft(replica) { case (current, (hash, encodedEvent, deltaIndex)) =>
+      val (withEvent, _) = current.receiveEvent(encodedEvent)
+      deltaIndex.flatMap(deltaValueStore.getRevealedValue).fold(withEvent)(withEvent.receiveDelta(hash, _))
     }
 
   /** Encodes every event of `eventGraph` in causal order, along with its event index if it is a delta (if any) */

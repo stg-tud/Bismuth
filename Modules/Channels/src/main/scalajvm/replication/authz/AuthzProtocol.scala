@@ -18,7 +18,6 @@ import replication.crypto.Commitment.RevealedValue
 import replication.crypto.{Commitment, Hash, Signature}
 
 import scala.annotation.tailrec
-import scala.collection.immutable.IntMap
 import scala.util.Try
 
 /** Messages of the [[AuthzProtocol]]. */
@@ -49,11 +48,8 @@ object AuthzMessage {
   given codec: JsonValueCodec[AuthzMessage] = JsonCodecMaker.make
 }
 
-/** A delta value that this replica accepted, together with the witness of its commitment. */
-final case class StoredDelta[RDT](delta: RDT, witness: Array[Byte])
-
 /** Immutable state of an authorization-aware replica: the [[ArdtEventGraph]], the delta values this replica may read,
-  * and the anti-entropy bookkeeping. Pure counterpart to [[Replica]] + [[AntiEntropy]].
+  * and the anti-entropy bookkeeping. Driven by a [[channels.MessagingIO]] through [[AuthzProtocol]].
   *
   * Only authenticated peers ([[Peer.Authenticated]]) take part: their uid is their [[PublicIdentity]], which is what
   * capabilities are granted to, and what deltas are filtered for.
@@ -61,7 +57,8 @@ final case class StoredDelta[RDT](delta: RDT, witness: Array[Byte])
 final case class AuthzReplica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
     self: PublicIdentity,
     eventGraph: ArdtEventGraph[RDT],
-    deltas: IntMap[StoredDelta[RDT]],
+    /** The delta values this replica accepted. */
+    deltas: DeltaValueStore[RDT],
     state: RDT,
     /** Events that are waiting for missing predecessors, by their hash. */
     waitingEvents: Map[Hash, Array[Byte]],
@@ -369,13 +366,13 @@ final case class AuthzReplica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Dec
     if invalidated.isEmpty then (this, false)
     else
         val keptSnapshot = snapshot.filterNot(s => invalidated.exists(_ <= s.version))
-        val next         = copy(deltas = deltas -- invalidated, snapshot = keptSnapshot)
+        val next         = copy(deltas = deltas.removedAll(invalidated), snapshot = keptSnapshot)
         (next.copy(state = next.rematerialized), true)
   }
 
   /** The state from the snapshot (if any) and the deltas of events after it. */
   private def rematerialized: RDT = snapshot match
-      case None           => deltas.values.foldLeft(Bottom[RDT].empty)((acc, stored) => acc.merge(stored.delta))
+      case None           => deltas.merged
       case Some(snapshot) =>
         // walk back from the heads, through the events after the snapshot
         val toVisit = scala.collection.mutable.Queue.from(eventGraph.heads)
@@ -414,7 +411,7 @@ final case class AuthzReplica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Dec
   private def storeDelta(eventHash: Hash, delta: RDT, witness: Array[Byte]): AuthzReplica[RDT] = {
     val index = eventGraph.events(eventHash)._2
     copy(
-      deltas = deltas.updated(index, StoredDelta(delta, witness)),
+      deltas = deltas.put(index, delta, witness),
       state = state.merge(delta),
       snapshot = snapshot.map(s => if index <= s.version then s.copy(state = s.state.merge(delta)) else s),
     )
@@ -437,7 +434,7 @@ object AuthzReplica {
     AuthzReplica[RDT](
       self,
       ArdtEventGraph[RDT](genesis),
-      deltas = IntMap.empty,
+      deltas = DeltaValueStore(),
       state = Bottom[RDT].empty,
       waitingEvents = Map.empty,
       waitingDeltas = Map.empty,
@@ -509,7 +506,7 @@ object AuthzProtocol {
     )
   }
 
-  /** Application API, mirroring [[Replica]]. Local operations throw if not permitted. */
+  /** Application API. Local operations throw if not permitted. */
   extension [RDT](io: MessagingIO[AuthzProtocol[RDT]]) {
     private def identity: PrivateIdentity = io.protocol.identity
 
