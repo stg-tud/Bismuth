@@ -40,10 +40,14 @@ class NioTlsTest extends munit.FunSuite {
     val abort    = Abort()
     val serverId = IdentityFactory.createNewIdentity
     val clientId = IdentityFactory.createNewIdentity
-    val nio      = new NioTCP()
-    val thread   = Thread(() => nio.loopSelection(abort))
-    thread.setDaemon(true)
-    thread.start()
+    // separate selectors: the server echo blocks its selector thread until the client reads
+    val nio       = new NioTCP()
+    val clientNio = new NioTCP()
+    List(nio, clientNio).foreach { n =>
+      val thread = Thread(() => n.loopSelection(abort))
+      thread.setDaemon(true)
+      thread.start()
+    }
 
     try {
       val serverSide = Promise[Connection]()
@@ -57,7 +61,7 @@ class NioTlsTest extends munit.FunSuite {
 
       val received = LinkedBlockingQueue[Array[Byte]]()
       val client   = Promise[Connection]()
-      NioTcpConnectionDetailsResolver(nio, Some(NioTls(clientId))).connect(descriptor.get).get.connect { _ =>
+      NioTcpConnectionDetailsResolver(clientNio, Some(NioTls(clientId))).connect(descriptor.get).get.connect { _ =>
         (result => result.foreach(mb => received.put(mb.convertToArray()))): Callback[MessageBuffer]
       }.runIn(abort)(result => client.complete(result))
 
@@ -78,7 +82,8 @@ class NioTlsTest extends munit.FunSuite {
       clientConn.close()
     } finally {
       abort.abort()
-      nio.selector.wakeup(): Unit
+      nio.selector.wakeup()
+      clientNio.selector.wakeup(): Unit
     }
   }
 
