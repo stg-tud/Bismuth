@@ -49,7 +49,7 @@ class DeltaBufferNonRedundant[A: Redundancy](buffer: Set[MetaDelta[A]], redundan
 
     DeltaBufferNonRedundant(
       buffer.filterNot(metaDelta => newRedundantDots.contains(metaDelta.id)) + newMetaDelta,
-      redundantDots
+      newRedundantDots
     )
   }
 
