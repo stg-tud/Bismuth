@@ -1,10 +1,8 @@
 package ex2026keyValuePrdtBench
 
-import channels.broadcast.PlumtreeMessage
-
-import channels.broadcast.PlumtreeBroadcast
-import channels.broadcast.PlumtreeMessage.Payload
-import channels.{MessagingIO, DeltaStorage}
+import channels.MessagingIO
+import channels.broadcast.KnowledgeGroupBroadcast
+import channels.broadcast.KnowledgeGroupBroadcast.publish
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import ex2026keyValuePrdtBench.KnowledgeGroups.leader
@@ -12,7 +10,7 @@ import rdts.base.{Lattice, ReplicaId, Uid}
 import rdts.datatypes.ReplicatedSet
 import rdts.protocols.knowledgeGroups.MultiPaxos
 import rdts.protocols.{Participants, Paxos, PaxosRound, Voting}
-import replication.{KnowledgeGroup, PrdtSystem}
+import channels.broadcast.{KnowledgeGroup, PrdtSystem}
 
 import scala.collection.mutable
 import scala.concurrent.{Future, Promise}
@@ -21,9 +19,6 @@ case class Request(id: Uid, payload: String)
 
 given JsonValueCodec[MultiPaxos[Request]] =
   JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))
-
-given Lattice[Payload[MultiPaxos[Request]]] =
-  Lattice.derived
 
 object KnowledgeGroups {
   val client: Uid    = Uid.predefined("client")
@@ -179,20 +174,18 @@ class MultiPaxosReplica(
     }
   }
 
-  lazy val dataManagers: Map[Set[Uid], MessagingIO.Plumtree[MultiPaxos[Request]]] = {
-    val uniqueEndpointSets = systemConfig.knowledgeGroups.map(_.ids).filter(_.contains(id))
-
-    uniqueEndpointSets.map(endpoints =>
-      (
-        endpoints,
-        MessagingIO.usingPlumtree[MultiPaxos[Request]](
-          ReplicaId(id),
-          payload => { publish(payload.data, Some(endpoints)); handleDelta(payload.data) },
-          history = DeltaStorage.getStorage(DeltaStorage.Type.KeepAll, () => ???)
-        )
-      )
-    ).toMap
-  }
+  /** Single connection manager for all knowledge groups. Assumes a full mesh between replicas sharing a group.
+    * Deltas are only sent to peers sharing a matching group, and unseen deltas are forwarded by the protocol.
+    */
+  val io: MessagingIO[KnowledgeGroupBroadcast.Protocol[MultiPaxos[Request]]] =
+    new MessagingIO[KnowledgeGroupBroadcast.Protocol[MultiPaxos[Request]]](
+      using KnowledgeGroupBroadcast.Protocol(systemConfig),
+      KnowledgeGroupBroadcast.messageCodec[MultiPaxos[Request]]
+    )(
+      summon[ReplicaId],
+      KnowledgeGroupBroadcast.State(),
+      delivery => handleDelta(delivery.data),
+    )
 
   def request(payload: String): Unit = {
     val delta = state.request(Request(Uid.gen(), payload))
@@ -229,22 +222,11 @@ class MultiPaxosReplica(
     publish(delta)
   }
 
-  def publish(delta: MultiPaxos[Request], source: Option[Set[Uid]] = None): Unit = {
+  def publish(delta: MultiPaxos[Request]): Unit = {
     currentStateLock.synchronized {
       state = state.merge(delta)
     }
-    // log(s"trying to publish $delta")
-
-    dataManagers.foreach {
-      case (uids, dataManager) =>
-        if !source.contains(uids) && // don't forward deltas to the knowledge groups they are coming from
-            systemConfig.matches(delta, uids)
-        then
-            log(s"sending delta $delta to $uids")
-            dataManager.broadcast(delta): Unit
-//        else
-//          log(s"no match for $uids with: $delta")
-    }
+    io.publish(delta)
   }
 
 }

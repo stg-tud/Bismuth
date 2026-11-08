@@ -194,32 +194,21 @@ object cli {
                 if uid == Uid.predefined("leader") then {
                   println("setting up connections for leader")
                   // client leader
-                  node.dataManagers(Set(
-                    client,
-                    leader
-                  )).addServerConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(
+                  node.io.addServerConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(
                     "0",
                     peerPortVal
                   ))))
                   // leader followers
-                  node.dataManagers(Set(
-                    leader,
-                    follower1,
-                    follower2,
-                    follower3,
-                    follower4
-                  )).addServerConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(
+                  node.io.addServerConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(
                     "0",
                     peerPortVal + 1
                   ))))
                 }
 
-                println(s"data managers: ${node.dataManagers}")
-
                 cluster.value.foreach { (host, port) =>
                   println(s"Connecting to $host:$port")
                   addRetryingConnection(
-                    node.dataManagers(Set(leader, follower1, follower2, follower3, follower4)),
+                    node.io,
                     nioTCP.connect(nioTCP.defaultSocketChannel(socketPath(host, port))),
                     1000,
                     10
@@ -229,33 +218,17 @@ object cli {
                 if uid == Uid.predefined("leader") then {
                   println("setting up connections for leader")
                   // client leader
-                  node.dataManagers(Set(
-                    client,
-                    leader
-                  )).addServerConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(
+                  node.io.addServerConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(
                     "0",
                     peerPortVal
                   ))))
                   // leader followers
-                  node.dataManagers(Set(
-                    leader,
-                    follower1,
-                    follower2,
-                    follower3,
-                    follower4
-                  )).addServerConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(
+                  node.io.addServerConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(
                     "0",
                     peerPortVal + 1
                   ))))
                   // client leader followers
-                  node.dataManagers(Set(
-                    client,
-                    leader,
-                    follower1,
-                    follower2,
-                    follower3,
-                    follower4
-                  )).addServerConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(
+                  node.io.addServerConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(
                     "0",
                     peerPortVal + 2
                   ))))
@@ -266,32 +239,23 @@ object cli {
                 then {
                   println(s"setting up connections for $uid")
                   // followers client
-                  node.dataManagers(Set(
-                    client,
-                    leader,
-                    follower1,
-                    follower2,
-                    follower3,
-                    follower4
-                  )).addServerConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(
+                  node.io.addServerConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(
                     "0",
                     peerPortVal
                   ))))
                 }
 
-                println(s"data managers: ${node.dataManagers}")
-
                 cluster.value.foreach { (host, port) =>
                   println(s"Connecting to $host:$port")
                   addRetryingConnection(
-                    node.dataManagers(Set(leader, follower1, follower2, follower3, follower4)),
+                    node.io,
                     nioTCP.connect(nioTCP.defaultSocketChannel(socketPath(host, port))),
                     1000,
                     10
                   )
                   println(s"Connecting to $host:${port + 1}")
                   addRetryingConnection(
-                    node.dataManagers(Set(client, leader, follower1, follower2, follower3, follower4)),
+                    node.io,
                     nioTCP.connect(nioTCP.defaultSocketChannel(socketPath(host, port + 1))),
                     1000,
                     10
@@ -302,26 +266,17 @@ object cli {
                 if uid == Uid.predefined("leader") then {
                   println("setting up connections for leader")
                   // client leader
-                  node.dataManagers(Set(
-                    client,
-                    leader
-                  )).addServerConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(
+                  node.io.addServerConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(
                     "0",
                     peerPortVal
                   ))))
                   // leader proxy1
-                  node.dataManagers(Set(
-                    leader,
-                    proxy1
-                  )).addServerConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(
+                  node.io.addServerConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(
                     "0",
                     peerPortVal + 1
                   ))))
                   // leader proxy2
-                  node.dataManagers(Set(
-                    leader,
-                    proxy2
-                  )).addServerConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(
+                  node.io.addServerConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(
                     "0",
                     peerPortVal + 2
                   ))))
@@ -329,20 +284,12 @@ object cli {
                 if uid == Uid.predefined("proxy1") then {
                   println("setting up connections for proxy1")
                   // proxy1 client
-                  node.dataManagers(Set(
-                    proxy1,
-                    proxy2,
-                    client
-                  )).addServerConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(
+                  node.io.addServerConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(
                     "0",
                     peerPortVal
                   ))))
                   // proxy1 follower1 follower3
-                  node.dataManagers(Set(
-                    proxy1,
-                    follower1,
-                    follower3
-                  )).addServerConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(
+                  node.io.addServerConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(
                     "0",
                     peerPortVal + 1
                   ))))
@@ -350,32 +297,23 @@ object cli {
                 if uid == Uid.predefined("proxy2") then {
                   println("setting up connections for proxy2")
                   // proxy2 client
-                  node.dataManagers(Set(
-                    proxy1,
-                    proxy2,
-                    client
-                  )).addServerConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(
+                  node.io.addServerConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(
                     "0",
                     peerPortVal
                   ))))
                   // proxy2 follower2 follower4
-                  node.dataManagers(Set(
-                    proxy2,
-                    follower2,
-                    follower4
-                  )).addServerConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(
+                  node.io.addServerConnection(nioTCP.listen(nioTCP.defaultServerSocketChannel(socketPath(
                     "0",
                     peerPortVal + 1
                   ))))
                 }
 
-                println(s"data managers: ${node.dataManagers}")
                 // connect as client to existing server connections
                 if uid == Uid.predefined("proxy1") then {
                   cluster.value.foreach { (host, port) =>
                     println(s"Connecting to $host:$port")
                     addRetryingConnection(
-                      node.dataManagers(Set(leader, proxy1)),
+                      node.io,
                       nioTCP.connect(nioTCP.defaultSocketChannel(socketPath(host, port))),
                       1000,
                       10
@@ -386,7 +324,7 @@ object cli {
                   cluster.value.foreach { (host, port) =>
                     println(s"Connecting to $host:$port")
                     addRetryingConnection(
-                      node.dataManagers(Set(leader, proxy2)),
+                      node.io,
                       nioTCP.connect(nioTCP.defaultSocketChannel(socketPath(host, port + 1))),
                       1000,
                       10
@@ -397,7 +335,7 @@ object cli {
                   cluster.value.foreach { (host, port) =>
                     println(s"Connecting to $host:$port")
                     addRetryingConnection(
-                      node.dataManagers(Set(proxy1, follower1, follower3)),
+                      node.io,
                       nioTCP.connect(nioTCP.defaultSocketChannel(socketPath(host, port))),
                       1000,
                       10
@@ -408,7 +346,7 @@ object cli {
                   cluster.value.foreach { (host, port) =>
                     println(s"Connecting to $host:$port")
                     addRetryingConnection(
-                      node.dataManagers(Set(proxy2, follower2, follower4)),
+                      node.io,
                       nioTCP.connect(nioTCP.defaultSocketChannel(socketPath(host, port))),
                       1000,
                       10

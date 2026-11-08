@@ -22,59 +22,11 @@ class PaperGroups extends munit.FunSuite {
     assert(KnowledgeGroups.clientServer.matches(delta, leader))
   }
 
-  test("test local connections with client-server knowledge groups".ignore) {
-    val ids = List(leader, client, follower1, follower2, follower3, follower4)
-
-    val systemConfig = KnowledgeGroups.clientServer
-
-    val replicas: Map[Uid, MultiPaxosReplica] = ids.map(f =
-      i =>
-        (
-          i,
-          MultiPaxosReplica(
-            id = i,
-            participants = Set(leader, follower1, follower2),
-            systemConfig = systemConfig,
-            state = MultiPaxos()
-          )
-        )
-    ).toMap
-
-    val queue           = channels.connection.LocalMessageQueue()
-    def deliver(): Unit = while queue.nonEmpty do queue.deliverAll(): Unit
-
-    // setup connections
-    // we need one data manager per set of ids. They can theoretically be reused between knowledge groups if they have the same set of ids
-    // leader and followers share slots
-    def setupConnections(allIds: Set[Uid]): Unit =
-        def _setupConnections(remaining: Set[Uid]): Unit =
-          remaining.toList match {
-            case primary :: Nil         => ()
-            case primary :: secondaries =>
-              println(s"Setting up connection for $allIds with $primary as server and $secondaries as clients")
-              val connection = channels.connection.QueuedLocalConnection(primary.toString, queue)
-              replicas(primary).dataManagers(allIds).addServerConnection(connection.server)
-              secondaries.foreach(id =>
-                replicas(id).dataManagers(allIds).addClientConnection(connection.client(id.toString))
-              )
-              _setupConnections(secondaries.toSet)
-            case Nil => ()
-          }
-        _setupConnections(allIds)
-
-    systemConfig.knowledgeGroups.map(_.ids).foreach(setupConnections)
-    def settle(): Unit =
-      // run broadcast repair (the data managers use the default manual timers)
-      for _ <- 1 to 5 do
-          deliver()
-          replicas.values.foreach(
-            _.dataManagers.values.foreach(_.timers.asInstanceOf[channels.Timers.Manual].fireAll())
-          )
-          deliver()
-
-    settle()
-    assertEquals(replicas(leader).dataManagers.size, 2)
-    assertEquals(replicas(follower1).dataManagers.size, 1)
+  test("test local connections with client-server knowledge groups") {
+    val cluster  = KnowledgeGroupFixtures.Cluster(KnowledgeGroups.clientServer, List(leader, client, follower1, follower2, follower3, follower4), Set(leader, follower1, follower2))
+    val replicas = cluster.replicas
+    def deliver(): Unit = cluster.deliver()
+    def settle(): Unit  = cluster.settle()
 
     replicas(leader).startLeaderElection()
     deliver()
@@ -103,57 +55,11 @@ class PaperGroups extends munit.FunSuite {
   }
 
   test("test local connections with compartmentalization") {
-    val ids =
-      List(leader, proxy1, proxy2, client, follower1, follower2, follower3, follower4)
+    val cluster  = KnowledgeGroupFixtures.Cluster(KnowledgeGroups.compartmentalized, List(leader, proxy1, proxy2, client, follower1, follower2, follower3, follower4), Set(leader, follower1, follower2, follower3, follower4))
+    val replicas = cluster.replicas
+    def deliver(): Unit = cluster.deliver()
+    def settle(): Unit  = cluster.settle()
 
-    val systemConfig = KnowledgeGroups.compartmentalized
-
-    val replicas: Map[Uid, MultiPaxosReplica] = ids.map(f =
-      i =>
-        (
-          i,
-          MultiPaxosReplica(
-            id = i,
-            participants = Set(leader, follower1, follower2, follower3, follower4),
-            systemConfig = systemConfig,
-            state = MultiPaxos()
-          )
-        )
-    ).toMap
-
-    val queue           = channels.connection.LocalMessageQueue()
-    def deliver(): Unit = while queue.nonEmpty do queue.deliverAll(): Unit
-
-    // setup connections
-    // we need one data manager per set of ids. They can theoretically be reused between knowledge groups if they have the same set of ids
-    // leader and followers share slots
-    def setupConnections(allIds: Set[Uid]): Unit =
-        def _setupConnections(remaining: Set[Uid]): Unit =
-          remaining.toList match {
-            case primary :: Nil         => ()
-            case primary :: secondaries =>
-              println(s"Setting up connection for $allIds with $primary as server and $secondaries as clients")
-              val connection = channels.connection.QueuedLocalConnection(primary.toString, queue)
-              replicas(primary).dataManagers(allIds).addServerConnection(connection.server)
-              secondaries.foreach(id =>
-                replicas(id).dataManagers(allIds).addClientConnection(connection.client(id.toString))
-              )
-              _setupConnections(secondaries.toSet)
-            case Nil => ()
-          }
-        _setupConnections(allIds)
-
-    systemConfig.knowledgeGroups.map(_.ids).foreach(setupConnections)
-    def settle(): Unit =
-      // run broadcast repair (the data managers use the default manual timers)
-      for _ <- 1 to 5 do
-          deliver()
-          replicas.values.foreach(
-            _.dataManagers.values.foreach(_.timers.asInstanceOf[channels.Timers.Manual].fireAll())
-          )
-          deliver()
-
-    settle()
     replicas(leader).startLeaderElection()
     settle()
     replicas(client).request("0")

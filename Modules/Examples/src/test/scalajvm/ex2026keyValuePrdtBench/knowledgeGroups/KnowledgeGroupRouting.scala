@@ -6,10 +6,10 @@ import rdts.base.Lattice.syntax.merge
 import rdts.base.{ReplicaId, Uid}
 import rdts.protocols.Participants
 import rdts.protocols.knowledgeGroups.MultiPaxos
-import replication.PrdtSystem
+import channels.broadcast.PrdtSystem
 
-/** Characterization tests of the current knowledge group routing ([[PrdtSystem.matches]]) and of the
-  * plumtree-per-group [[MultiPaxosReplica]]. They pin the existing behaviour, so a reimplementation can be checked
+/** Characterization tests of the current knowledge group routing ([[PrdtSystem.matches]]) and of
+  * [[MultiPaxosReplica]]. They pin the existing behaviour, so a reimplementation can be checked
   * against it.
   */
 object KnowledgeGroupFixtures {
@@ -46,6 +46,39 @@ object KnowledgeGroupFixtures {
     val s = state.merge(proposalDelta(state, index, value))
     acceptors.foldLeft(s)((s, id) => s.merge(as(id)(s.upkeep)))
   }
+
+  /** Replicas connected via local queued connections, full mesh between replicas sharing a group. */
+  class Cluster(system: PrdtSystem[MP], ids: List[Uid], participants: Set[Uid]) {
+    val replicas: Map[Uid, MultiPaxosReplica] = ids.map(i =>
+      i -> MultiPaxosReplica(id = i, participants = participants, systemConfig = system, state = MultiPaxos())
+    ).toMap
+
+    val queue                        = channels.connection.LocalMessageQueue()
+    def deliver(): Unit              = while queue.nonEmpty do queue.deliverAll(): Unit
+    def apply(id: Uid): MultiPaxosReplica = replicas(id)
+
+    /** Full mesh between all replicas that share at least one group. */
+    val sharing: Set[(Uid, Uid)] =
+      for
+          g <- system.knowledgeGroups
+          a <- g.ids
+          b <- g.ids
+          if a.toString < b.toString && replicas.contains(a) && replicas.contains(b)
+      yield (a, b)
+
+    sharing.foreach { (a, b) =>
+      val connection = channels.connection.QueuedLocalConnection(s"$a-$b", queue)
+      replicas(a).io.addServerConnection(connection.server)
+      replicas(b).io.addClientConnection(connection.client(b.toString))
+    }
+
+    def settle(): Unit = deliver()
+
+    settle()
+
+    def reads(id: Uid): Seq[String] = replicas(id).state.read.map(_.payload)
+  }
+
 }
 
 class KnowledgeGroupRouting extends munit.FunSuite {
@@ -180,59 +213,18 @@ class KnowledgeGroupRouting extends munit.FunSuite {
   }
 }
 
-/** End-to-end runs of the plumtree-per-group [[MultiPaxosReplica]] over local queued connections. */
+/** End-to-end runs of [[MultiPaxosReplica]] over local queued connections. */
 class KnowledgeGroupReplicas extends munit.FunSuite {
   import KnowledgeGroupFixtures.{*, given}
 
-  class Cluster(system: PrdtSystem[MP], ids: List[Uid], participants: Set[Uid]) {
-    val replicas: Map[Uid, MultiPaxosReplica] = ids.map(i =>
-      i -> MultiPaxosReplica(id = i, participants = participants, systemConfig = system, state = MultiPaxos())
-    ).toMap
-
-    val queue                        = channels.connection.LocalMessageQueue()
-    def deliver(): Unit              = while queue.nonEmpty do queue.deliverAll(): Unit
-    def apply(id: Uid): MultiPaxosReplica = replicas(id)
-
-    /** Full mesh within `group`, using the data manager for exactly that id set. */
-    private def connect(group: Set[Uid]): Unit =
-        def loop(remaining: List[Uid]): Unit = remaining match
-            case primary :: secondaries if secondaries.nonEmpty =>
-              val connection = channels.connection.QueuedLocalConnection(s"$primary-${group.hashCode}", queue)
-              replicas(primary).dataManagers(group).addServerConnection(connection.server)
-              secondaries.foreach(id =>
-                replicas(id).dataManagers(group).addClientConnection(connection.client(id.toString))
-              )
-              loop(secondaries)
-            case _ => ()
-        loop(group.toList.sortBy(_.toString))
-
-    system.knowledgeGroups.map(_.ids).foreach(connect)
-
-    def settle(): Unit =
-      for _ <- 1 to 5 do
-          deliver()
-          replicas.values.foreach(_.dataManagers.values.foreach(_.timers.asInstanceOf[channels.Timers.Manual].fireAll()))
-          deliver()
-
-    settle()
-
-    def reads(id: Uid): Seq[String] = replicas(id).state.read.map(_.payload)
-  }
-
   val compartmentIds = List(leader, proxy1, proxy2, client, follower1, follower2, follower3, follower4)
 
-  test("data managers exist exactly for the groups a replica is part of") {
+  test("every replica is connected to all replicas it shares a group with") {
     val c = Cluster(compartmentalized, compartmentIds, acceptors)
-    assertEquals(c(leader).dataManagers.keySet, Set(Set(leader, proxy1), Set(leader, proxy2), Set(client, leader)))
-    assertEquals(c(follower1).dataManagers.keySet, Set(Set(proxy1, follower1, follower3)))
-    assertEquals(c(client).dataManagers.keySet, Set(Set(client, proxy1, proxy2), Set(client, leader)))
-  }
-
-  test("clientServer: identical id sets share one data manager") {
-    val c = Cluster(clientServer, List(leader, client) ++ followers.toList, acceptors)
-    assertEquals(c(leader).dataManagers.size, 2)
-    assertEquals(c(client).dataManagers.size, 1)
-    assertEquals(c(follower1).dataManagers.size, 1)
+    def neighbors(id: Uid) = c(id).io.state.peers.map(_.uid)
+    assertEquals(neighbors(leader), Set(client, proxy1, proxy2))
+    assertEquals(neighbors(follower1), Set(proxy1, follower3))
+    assertEquals(neighbors(client), Set(leader, proxy1, proxy2))
   }
 
   test("compartmentalized: request without leader election is not decided") {
@@ -276,9 +268,9 @@ class KnowledgeGroupReplicas extends munit.FunSuite {
     assertEquals(f.value.flatMap(_.toOption), Some("0"))
   }
 
-  test("replicas outside of every group have no data managers and ignore local requests") {
+  test("replicas outside of every group have no neighbors and ignore local requests") {
     val c = Cluster(clientServer, List(leader, client, proxy1) ++ followers.toList, acceptors)
-    assert(c(proxy1).dataManagers.isEmpty)
+    assert(c(proxy1).io.state.peers.isEmpty)
     c(proxy1).request("x")
     c.settle()
     assert(c(leader).state.requests.elements.isEmpty)

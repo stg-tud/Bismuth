@@ -50,7 +50,7 @@ object MultiPaxosAdapterConnectionPool {
         println(s"adding connection to $ip:$port")
         // todo add other collections for other knowledge groups
         addRetryingConnection(
-          multiPaxosReplica.dataManagers(members),
+          multiPaxosReplica.io,
           nioTCP.connect(nioTCP.defaultSocketChannel(InetSocketAddress(ip, port))),
           1000,
           10
