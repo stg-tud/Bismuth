@@ -1,0 +1,29 @@
+package ex2026accessControl.acl.sync
+
+import scala.language.unsafeNulls
+
+import channels.connection.MessageBuffer
+import channels.crypto.PublicIdentity
+import ex2026accessControl.acl.Debug
+import ex2026accessControl.acl.sync.MessageReceiver
+
+import java.util.concurrent.LinkedBlockingQueue
+
+class QueueAppendingMessageReceiver(_id: PublicIdentity = null) extends MessageReceiver[MessageBuffer] {
+  private val localId = Option(_id)
+
+  val messageQueue: LinkedBlockingQueue[(MessageBuffer, PublicIdentity)] =
+    LinkedBlockingQueue[(MessageBuffer, PublicIdentity)]()
+
+  val connectionQueue: LinkedBlockingQueue[PublicIdentity] = LinkedBlockingQueue()
+
+  override def receivedMessage(msg: MessageBuffer, fromUser: PublicIdentity): Unit =
+    messageQueue.put((msg, fromUser))
+
+  override def connectionEstablished(publicIdentity: PublicIdentity): Unit =
+      Debug.log(s"${localId.map(_.id).getOrElse("Replica")} is now connected to ${publicIdentity.id}")
+      connectionQueue.put(publicIdentity)
+
+  override def connectionShutdown(publicIdentity: PublicIdentity): Unit =
+    Debug.log(s"${localId.map(_.id).getOrElse("Replica")} connectionShutdown to $publicIdentity")
+}

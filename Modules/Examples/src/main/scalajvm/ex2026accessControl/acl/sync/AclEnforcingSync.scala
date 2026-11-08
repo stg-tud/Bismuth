@@ -1,5 +1,6 @@
 package ex2026accessControl.acl.sync
 
+import ex2026accessControl.authz.evaluation.ConnectionManager
 import channels.connection.{ByteBufferMessageBuffer, MessageBuffer}
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
 import channels.crypto.PrivateIdentity
