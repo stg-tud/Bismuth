@@ -8,7 +8,7 @@ import ex2026accessControl.Debug
 import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.filters.Filter
 import rdts.time.Dots
-import replication.JsoniterCodecsJvm.syncMsgCodec
+import replication.acl.sync.AclCodecs.syncMsgCodec
 import replication.acl.sync.AclEnforcingSync.SyncMsg.{MyAclVersionIs, MyRdtVersionIs}
 import replication.acl.sync.AclEnforcingSync.{SyncMsg, encoder}
 import replication.acl.sync.{AclAntiEntropy, AclEnforcingSync, FilteredRdtAntiEntropy}

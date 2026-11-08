@@ -3,10 +3,10 @@ package ex2026accessControl.evaluation
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
 import channels.crypto.PrivateIdentity
 import channels.crypto.PublicIdentity
-import replication.crypto.Hash
+import channels.crypto.Hash
 import rdts.base.{Bottom, Decompose, Lattice}
 import channels.connection.ByteBufferMessageBuffer
-import replication.authz.AuthzMessage
+import channels.broadcast.authz.AuthzMessage
 import replication.acl.sync.ConnectionManager
 
 class HashDagReplica[Entry <: HashDagEntry[RDT]: JsonValueCodec, RDT: {Lattice, Bottom, JsonValueCodec, Decompose}](
@@ -31,7 +31,7 @@ class HashDagReplica[Entry <: HashDagEntry[RDT]: JsonValueCodec, RDT: {Lattice, 
     }
   }
 
-  /** Like [[replication.authz.AuthzReplica.write]], but without any access control: every decomposed delta
+  /** Like [[channels.broadcast.authz.AuthzReplica.write]], but without any access control: every decomposed delta
     * becomes its own entry, each one on top of the previous.
     */
   def mutateState(mutator: RDT => RDT): Unit = synchronized {
@@ -67,7 +67,7 @@ class HashDagReplica[Entry <: HashDagEntry[RDT]: JsonValueCodec, RDT: {Lattice, 
 
 object HashDagReplica {
 
-  /** Entries in the same wire format as the events of [[replication.authz.AuthzProtocol]]. */
+  /** Entries in the same wire format as the events of [[channels.broadcast.authz.AuthzProtocol]]. */
   def encodeEntries(entries: Iterable[Array[Byte]]): ByteBufferMessageBuffer =
     ByteBufferMessageBuffer(writeToArray[AuthzMessage](AuthzMessage.Events(entries.toList))(using AuthzMessage.codec))
 }

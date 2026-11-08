@@ -2,7 +2,7 @@ package replication.acl
 
 import channels.crypto.PrivateIdentity
 import channels.crypto.PublicIdentity
-import replication.crypto.{Hash, Signature}
+import channels.crypto.{Hash, Signature}
 import rdts.base.Bottom
 import replication.HashDag.{Delta, Encoder, Hashable}
 

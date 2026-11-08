@@ -2,7 +2,7 @@ package ex2026accessControl.evaluation.acl.insecure
 
 import channels.crypto.PrivateIdentity
 import channels.crypto.PublicIdentity
-import replication.crypto.Hash
+import channels.crypto.Hash
 import replication.acl.sync.{AclAntiEntropy, AntiEntropyCommunicator}
 import replication.acl.{Acl, BftDelta}
 

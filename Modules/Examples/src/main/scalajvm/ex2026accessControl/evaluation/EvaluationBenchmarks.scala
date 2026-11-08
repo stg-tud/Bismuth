@@ -5,13 +5,13 @@ import channels.connection.Peer
 import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray
 import channels.crypto.PrivateIdentity
 import channels.crypto.PublicIdentity
-import replication.crypto.Hash
+import channels.crypto.Hash
 import ex2026accessControl.evaluation.EvaluationBenchmarks.{encodeTrace, receiveTrace, replayTrace}
 import org.openjdk.jmh.annotations.*
 import rdts.base.{ReplicaId, Uid}
-import replication.JsoniterCodecsJvm.ardtEventCodec
-import replication.authz.*
-import replication.authz.ArdtEvent.Payload.DeltaCommitment
+import channels.JsoniterCodecsJvm.ardtEventCodec
+import channels.broadcast.authz.*
+import channels.broadcast.authz.ArdtEvent.Payload.DeltaCommitment
 
 import java.util.concurrent.TimeUnit
 import scala.util.Random
@@ -142,7 +142,7 @@ class EvaluationBenchmarks {
     HashDag.materialize(state.hashDag)
 }
 
-/** Holds an [[replication.authz.ArdtEventGraph]] built by [[TraceGeneration.generateDelegationHierarchyEventGraph]]: a fixed set of
+/** Holds an [[channels.broadcast.authz.ArdtEventGraph]] built by [[TraceGeneration.generateDelegationHierarchyEventGraph]]: a fixed set of
   * 13 replicas in a two-level delegation hierarchy, writing in two phases.
   */
 @State(Scope.Benchmark)

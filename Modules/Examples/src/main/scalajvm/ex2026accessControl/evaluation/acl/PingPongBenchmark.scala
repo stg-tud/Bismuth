@@ -223,6 +223,7 @@ object CreateAndSaveTrace {
   }
 
   import channels.JsoniterCodecs.given
-  import replication.JsoniterCodecsJvm.given
+  import channels.JsoniterCodecsJvm.given
+  import replication.acl.sync.AclCodecs.given
   given JsonValueCodec[SavedTrace] = JsonCodecMaker.make
 }

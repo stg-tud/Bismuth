@@ -1,13 +1,13 @@
-package replication.authz
+package channels.broadcast.authz
 
 import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray
-import replication.crypto.Hash
+import channels.crypto.Hash
 import munit.FunSuite
 import rdts.filters.PermissionTree
-import replication.JsoniterCodecsJvm.ardtEventCodec
-import replication.authz.ArdtEvent.Payload.{Capability, DeltaCommitment, Revocation}
-import replication.authz.AuthzTestSupport.*
-import replication.authz.CausalOrder.*
+import channels.broadcast.authz.ArdtEvent.Payload.{Capability, DeltaCommitment, Revocation}
+import channels.broadcast.authz.AuthzTestSupport.*
+import channels.broadcast.authz.CausalOrder.*
+import channels.JsoniterCodecsJvm.ardtEventCodec
 
 class ArdtEventGraphTest extends FunSuite {
 

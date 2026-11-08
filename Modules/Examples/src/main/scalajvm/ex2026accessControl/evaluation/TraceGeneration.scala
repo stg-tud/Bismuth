@@ -3,11 +3,11 @@ package ex2026accessControl.evaluation
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
 import channels.crypto.{IdentityFactory, PrivateIdentity}
 import channels.crypto.PublicIdentity
-import replication.crypto.Hash
+import channels.crypto.Hash
 import rdts.base.{ReplicaId, Uid}
 import rdts.filters.PermissionTree
-import replication.authz.ArdtEvent.Payload.{Capability, DeltaCommitment}
-import replication.authz.{ArdtEvent, ArdtEventGraph, Authorization, DeltaValueStore}
+import channels.broadcast.authz.ArdtEvent.Payload.{Capability, DeltaCommitment}
+import channels.broadcast.authz.{ArdtEvent, ArdtEventGraph, Authorization, DeltaValueStore}
 
 import scala.annotation.tailrec
 import scala.collection.mutable
@@ -50,7 +50,7 @@ object TraceGeneration {
         if parents.isEmpty then start
         else walkBackAFewSteps(eventGraph, parents.iterator.drop(random.nextInt(parents.size)).next(), steps - 1)
 
-  /** Builds a random [[replication.authz.ArdtEventGraph]].
+  /** Builds a random [[channels.broadcast.authz.ArdtEventGraph]].
     * Every non-root replica holds `numCapabilitiesPerReplica` capabilities.
     *
     * @param numReplicas number of participating replicas, the root replica included
@@ -144,7 +144,7 @@ object TraceGeneration {
     )
   }
 
-  /** Builds an [[replication.authz.ArdtEventGraph]] with a two-level delegation hierarchy, in four phases:
+  /** Builds an [[channels.broadcast.authz.ArdtEventGraph]] with a two-level delegation hierarchy, in four phases:
     *
     *   1. The root replica delegates write access to one top-level subtree (`a.*`, `b.*`, `c.*`) each to three
     *      new replicas.
@@ -356,10 +356,10 @@ object TraceGeneration {
     EventGraphBuilder.receiveOrThrow(generated.eventGraph, revocation)
   }
 
-  /** Translates an already-built [[GeneratedBenchmarkRdtEventGraph]] (an [[replication.authz.ArdtEventGraph]] of [[BenchmarkRdt]]
+  /** Translates an already-built [[GeneratedBenchmarkRdtEventGraph]] (an [[channels.broadcast.authz.ArdtEventGraph]] of [[BenchmarkRdt]]
     * edits, together with its delta value store) into a [[HashDag]] of the very same edits, in the same causal
     * order and authored by the same replicas, instead of generating an independent random graph — so that the
-    * [[HashDag]]-based benchmarks exercise the exact same trace of edits as the [[replication.authz.ArdtEventGraph]]-based ones.
+    * [[HashDag]]-based benchmarks exercise the exact same trace of edits as the [[channels.broadcast.authz.ArdtEventGraph]]-based ones.
     * Since [[HashDag]] has no notion of access control, every capability/delegation event of the source graph is
     * dropped, and each delta event's parents are reconnected to its nearest ancestor delta event (or the dag's
     * genesis) instead.

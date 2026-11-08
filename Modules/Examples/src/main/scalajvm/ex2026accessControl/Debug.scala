@@ -2,7 +2,7 @@ package ex2026accessControl
 
 import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray
 import channels.crypto.PublicIdentity
-import replication.crypto.{Hash, Signature}
+import channels.crypto.{Hash, Signature}
 import ex2026accessControl.travelplanner.TravelPlan
 import rdts.base.Uid
 import rdts.time.{Dot, Dots}

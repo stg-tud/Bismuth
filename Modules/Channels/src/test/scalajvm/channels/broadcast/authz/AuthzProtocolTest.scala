@@ -1,4 +1,4 @@
-package replication.authz
+package channels.broadcast.authz
 
 import channels.broadcast.BroadcastProtocol.{Effect, Step}
 import channels.connection.Peer
@@ -7,8 +7,8 @@ import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray
 import munit.FunSuite
 import rdts.base.Uid
 import rdts.filters.PermissionTree
-import replication.JsoniterCodecsJvm.ardtEventCodec
-import replication.authz.AuthzTestSupport.{*, given}
+import channels.broadcast.authz.AuthzTestSupport.{*, given}
+import channels.JsoniterCodecsJvm.ardtEventCodec
 
 import scala.collection.mutable
 

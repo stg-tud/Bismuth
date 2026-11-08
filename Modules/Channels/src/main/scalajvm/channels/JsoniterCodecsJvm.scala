@@ -1,14 +1,12 @@
-package replication
+package channels
 
 import channels.JsoniterCodecs.given
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonKeyCodec, JsonReader, JsonValueCodec, JsonWriter}
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import channels.crypto.PublicIdentity
-import replication.crypto.{Hash, Signature}
+import channels.crypto.{Hash, Signature}
 import rdts.filters.PermissionTree
-import replication.acl.sync.AclEnforcingSync.SyncMsg
-import replication.acl.sync.SignedDelta
-import replication.authz.ArdtEvent
+import channels.broadcast.authz.ArdtEvent
 
 object JsoniterCodecsJvm {
   given pubIdentityKeyCodec: JsonKeyCodec[PublicIdentity] = new JsonKeyCodec[PublicIdentity]:
@@ -28,12 +26,6 @@ object JsoniterCodecsJvm {
       .withMapAsArray(true)
       .withAllowRecursiveTypes(true)
   )
-
-  given filterableSignedDeltaCodec[State: JsonValueCodec]: JsonValueCodec[SignedDelta[State]] =
-    JsonCodecMaker.make
-
-  given syncMsgCodec[State: JsonValueCodec]: JsonValueCodec[SyncMsg[State]] =
-    JsonCodecMaker.make
 
   given ardtEventCodec: JsonValueCodec[ArdtEvent] = JsonCodecMaker.make
 }

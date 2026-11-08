@@ -4,7 +4,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core.*
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import channels.crypto.PrivateIdentity
 import channels.crypto.PublicIdentity
-import replication.crypto.{Hash, Signature}
+import channels.crypto.{Hash, Signature}
 import rdts.base.{Bottom, Lattice}
 
 case class HashDag[P: JsonValueCodec, T <: HashDagEntry[P]: JsonValueCodec](
@@ -46,7 +46,7 @@ object HashDag {
     }
 
   /** Full state materialization from every entry's payload, without any access control enforcement (unlike
-    * [[replication.authz.Authorization.materialize]]).
+    * [[channels.broadcast.authz.Authorization.materialize]]).
     */
   def materialize[R: {Lattice, Bottom}](hashDag: HashDag[R, ?]): R =
     hashDag.events.values.iterator.foldLeft(Bottom[R].empty) { (acc, entry) =>
@@ -80,7 +80,7 @@ case class UnsignedHashDagEntry[P](
     override def isValid(using JsonValueCodec[P]): Boolean = true
 
 object HashDagEntry:
-    import replication.JsoniterCodecsJvm.given
+    import channels.JsoniterCodecsJvm.given
 
     given signedHashDagEntryCodec[P: JsonValueCodec]: JsonValueCodec[SignedHashDagEntry[P]]     = JsonCodecMaker.make
     given unsignedHashDagEntryCodec[P: JsonValueCodec]: JsonValueCodec[UnsignedHashDagEntry[P]] = JsonCodecMaker.make

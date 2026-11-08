@@ -1,4 +1,4 @@
-package replication.authz
+package channels.broadcast.authz
 
 import channels.connection.{Abort, ConnectionDescriptor}
 import channels.crypto.PrivateIdentity
@@ -6,8 +6,8 @@ import channels.{MessagingIO, Timers}
 import channels.connection.{NioTCP, NioTls}
 import munit.FunSuite
 import rdts.filters.PermissionTree
-import replication.authz.AuthzProtocol.*
-import replication.authz.AuthzTestSupport.{*, given}
+import channels.broadcast.authz.AuthzProtocol.*
+import channels.broadcast.authz.AuthzTestSupport.{*, given}
 
 import java.net.{InetAddress, InetSocketAddress}
 import scala.concurrent.duration.DurationInt

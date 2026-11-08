@@ -1,4 +1,4 @@
-package replication.authz
+package channels.broadcast.authz
 
 import channels.broadcast.BroadcastProtocol.{Effect, Step}
 import channels.connection.Peer
@@ -7,10 +7,10 @@ import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray}
 import munit.FunSuite
 import rdts.base.Uid
 import rdts.filters.PermissionTree
-import replication.JsoniterCodecsJvm.ardtEventCodec
-import replication.authz.ArdtEvent.Payload.{Capability, Revocation}
-import replication.authz.AuthzTestSupport.{*, given}
-import replication.crypto.Hash
+import channels.broadcast.authz.ArdtEvent.Payload.{Capability, Revocation}
+import channels.broadcast.authz.AuthzTestSupport.{*, given}
+import channels.crypto.Hash
+import channels.JsoniterCodecsJvm.ardtEventCodec
 
 /** The local operations and direct inputs of [[AuthzReplica]]. See [[AuthzProtocolTest]] for the network side. */
 class AuthzReplicaTest extends FunSuite {

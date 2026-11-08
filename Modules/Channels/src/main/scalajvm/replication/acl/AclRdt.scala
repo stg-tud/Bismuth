@@ -4,7 +4,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import channels.crypto.PrivateIdentity
 import channels.crypto.PublicIdentity
-import replication.crypto.{Hash, Signature}
+import channels.crypto.{Hash, Signature}
 import rdts.filters.PermissionTree
 import replication.HashDag
 import replication.HashDag.Encoder
@@ -64,7 +64,7 @@ object AclRdt {
   }
 
   given JsonValueCodec[BftDelta[Acl]] = {
-    import replication.JsoniterCodecsJvm.given
+    import channels.JsoniterCodecsJvm.given
     JsonCodecMaker.make(
       CodecMakerConfig.withAllowRecursiveTypes(true) // Required for PermissionTree
     )

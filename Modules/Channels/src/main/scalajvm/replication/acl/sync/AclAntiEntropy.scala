@@ -2,7 +2,7 @@ package replication.acl.sync
 
 import channels.crypto.PrivateIdentity
 import channels.crypto.PublicIdentity
-import replication.crypto.Hash
+import channels.crypto.Hash
 import rdts.base.Bottom
 import replication.HashDag.Hashable
 import replication.acl.AclRdt.given_Encoder_BftDelta

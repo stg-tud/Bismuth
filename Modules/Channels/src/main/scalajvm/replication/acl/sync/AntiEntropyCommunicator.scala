@@ -1,7 +1,7 @@
 package replication.acl.sync
 
 import channels.crypto.PublicIdentity
-import replication.crypto.Hash
+import channels.crypto.Hash
 import rdts.time.Dots
 import replication.acl.{Acl, BftDelta}
 

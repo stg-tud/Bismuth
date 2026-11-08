@@ -1,4 +1,4 @@
-package replication.authz
+package channels.broadcast.authz
 
 import channels.MessagingIO
 import channels.broadcast.BroadcastProtocol
@@ -9,13 +9,13 @@ import channels.overlay.FullMeshOverlay
 import com.github.plokhotnyuk.jsoniter_scala.core.{
   JsonReader, JsonValueCodec, JsonWriter, readFromArray, writeToArray
 }
+import channels.JsoniterCodecsJvm.{ardtEventCodec, hashValueCodec}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import rdts.base.{Bottom, Decompose, Lattice, ReplicaId, Uid}
 import rdts.filters.{Filter, PermissionTree}
-import replication.JsoniterCodecsJvm.{ardtEventCodec, hashValueCodec}
-import replication.authz.ArdtEvent.Payload.{Capability, DeltaCommitment, Revocation}
-import replication.crypto.Commitment.RevealedValue
-import replication.crypto.{Commitment, Hash, Signature}
+import channels.broadcast.authz.ArdtEvent.Payload.{Capability, DeltaCommitment, Revocation}
+import channels.crypto.Commitment.RevealedValue
+import channels.crypto.{Commitment, Hash, Signature}
 
 import scala.annotation.tailrec
 import scala.util.Try

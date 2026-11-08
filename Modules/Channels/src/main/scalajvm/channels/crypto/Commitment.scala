@@ -1,4 +1,4 @@
-package replication.crypto
+package channels.crypto
 
 import java.nio.charset.StandardCharsets
 import java.security.{MessageDigest, SecureRandom}

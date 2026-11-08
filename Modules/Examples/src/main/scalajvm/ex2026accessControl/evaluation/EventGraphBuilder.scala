@@ -1,17 +1,17 @@
 package ex2026accessControl.evaluation
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
-import replication.crypto.Commitment.RevealedValue
+import channels.crypto.Commitment.RevealedValue
 import channels.crypto.PrivateIdentity
-import replication.crypto.{Commitment, Hash, Signature}
+import channels.crypto.{Commitment, Hash, Signature}
 import rdts.filters.PermissionTree
-import replication.JsoniterCodecsJvm.ardtEventCodec
-import replication.authz.ArdtEvent.Payload.{Capability, DeltaCommitment, Revocation}
-import replication.authz.{ArdtEvent, ArdtEventGraph}
+import channels.JsoniterCodecsJvm.ardtEventCodec
+import channels.broadcast.authz.ArdtEvent.Payload.{Capability, DeltaCommitment, Revocation}
+import channels.broadcast.authz.{ArdtEvent, ArdtEventGraph}
 
-/** Helpers for directly constructing and inserting signed [[replication.authz.ArdtEvent]]s, without going through
-  * [[replication.authz.AuthzReplica]].
-  * Used to assemble [[replication.authz.ArdtEventGraph]]s for evaluation purposes.
+/** Helpers for directly constructing and inserting signed [[channels.broadcast.authz.ArdtEvent]]s, without going through
+  * [[channels.broadcast.authz.AuthzReplica]].
+  * Used to assemble [[channels.broadcast.authz.ArdtEventGraph]]s for evaluation purposes.
   */
 object EventGraphBuilder {
 

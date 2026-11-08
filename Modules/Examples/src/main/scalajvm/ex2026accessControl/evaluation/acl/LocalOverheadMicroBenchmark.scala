@@ -2,7 +2,7 @@ package ex2026accessControl.evaluation.acl
 
 import channels.crypto.{IdentityFactory, PrivateIdentity}
 import channels.crypto.PublicIdentity
-import replication.crypto.Hash
+import channels.crypto.Hash
 import ex2026accessControl.travelplanner.TravelPlan
 import org.openjdk.jmh.annotations.*
 import rdts.base.Lattice.syntax.merge

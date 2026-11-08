@@ -1,13 +1,13 @@
-package replication.authz
+package channels.broadcast.authz
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray}
 import channels.crypto.PublicIdentity
-import replication.crypto.{Hash, Signature}
+import channels.crypto.{Hash, Signature}
 import rdts.base.Lattice
 import rdts.filters.PermissionTree
-import replication.JsoniterCodecsJvm.ardtEventCodec
-import replication.authz.ArdtEvent.Payload.{Capability, DeltaCommitment, Revocation}
-import replication.authz.CausalOrder.*
+import channels.broadcast.authz.ArdtEvent.Payload.{Capability, DeltaCommitment, Revocation}
+import channels.broadcast.authz.CausalOrder.*
+import channels.JsoniterCodecsJvm.ardtEventCodec
 
 import scala.collection.mutable
 

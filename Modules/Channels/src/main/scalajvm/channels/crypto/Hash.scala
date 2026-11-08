@@ -1,4 +1,4 @@
-package replication.crypto
+package channels.crypto
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonKeyCodec, JsonReader, JsonValueCodec, JsonWriter}
 

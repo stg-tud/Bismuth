@@ -1,14 +1,14 @@
-package replication.authz
+package channels.broadcast.authz
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
-import replication.crypto.Commitment.RevealedValue
+import channels.crypto.Commitment.RevealedValue
 import channels.crypto.PrivateIdentity
 import channels.crypto.PublicIdentity
-import replication.crypto.{Hash, Signature}
+import channels.crypto.{Hash, Signature}
 import rdts.base.{Bottom, Lattice}
 import rdts.filters.{Filter, PermissionTree}
-import replication.JsoniterCodecsJvm.ardtEventCodec
-import replication.authz.ArdtEvent.Payload.{Capability, DeltaCommitment}
+import channels.broadcast.authz.ArdtEvent.Payload.{Capability, DeltaCommitment}
+import channels.JsoniterCodecsJvm.ardtEventCodec
 
 object Authorization {
   def materialize[T: {Lattice, Bottom, Filter}](

@@ -4,13 +4,14 @@ import channels.connection.{ByteBufferMessageBuffer, MessageBuffer}
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
 import channels.crypto.PrivateIdentity
 import channels.crypto.PublicIdentity
-import replication.crypto.Hash
+import channels.crypto.Hash
 import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.filters.{Filter, PermissionTree}
 import rdts.time.Dots
 import replication.HashDag.Encoder
-import replication.JsoniterCodecsJvm
-import replication.JsoniterCodecsJvm.given
+import replication.acl.sync.AclCodecs
+import channels.JsoniterCodecsJvm.given
+import replication.acl.sync.AclCodecs.given
 import replication.acl.sync.AclEnforcingSync.SyncMsg.{MyAclVersionIs, MyPeersAre, MyRdtVersionIs}
 import replication.acl.sync.AclEnforcingSync.{SyncMsg, encoder}
 import replication.acl.{Acl, BftDelta}
@@ -167,7 +168,7 @@ object AclEnforcingSync {
       case SendMe(dataDeltas: Dots, aclDeltas: Set[Hash])
 
   given encoder[State: JsonValueCodec]: Encoder[SignedDelta[State]] =
-    Encoder.fromJsoniter(using JsoniterCodecsJvm.filterableSignedDeltaCodec)
+    Encoder.fromJsoniter(using AclCodecs.filterableSignedDeltaCodec)
 
   given Lattice[Map[PublicIdentity, Set[(String, Int)]]] = Lattice.mapLattice(using Lattice.setLattice)
 }

@@ -1,15 +1,15 @@
-package replication.authz
+package channels.broadcast.authz
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray}
-import replication.crypto.Commitment.RevealedValue
+import channels.crypto.Commitment.RevealedValue
 import channels.crypto.PrivateIdentity
 import channels.crypto.PublicIdentity
-import replication.crypto.Hash
+import channels.crypto.Hash
 import munit.{FunSuite, Location}
 import rdts.filters.PermissionTree
-import replication.JsoniterCodecsJvm.ardtEventCodec
-import replication.authz.ArdtEvent.Payload.{Capability, Revocation}
-import replication.authz.AuthzTestSupport.{*, given}
+import channels.broadcast.authz.ArdtEvent.Payload.{Capability, Revocation}
+import channels.broadcast.authz.AuthzTestSupport.{*, given}
+import channels.JsoniterCodecsJvm.ardtEventCodec
 
 import java.security.PrivateKey
 import scala.collection.mutable

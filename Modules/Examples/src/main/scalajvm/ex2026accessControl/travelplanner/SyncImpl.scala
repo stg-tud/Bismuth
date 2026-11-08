@@ -7,10 +7,10 @@ import channels.connection.{NioTCP, NioTcpConnectionDetailsResolver, NioTls}
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.filters.{Filter, PermissionTree}
-import replication.authz.ArdtEvent.Payload.Capability
-import replication.authz.AuthzProtocol.*
-import replication.authz.{ArdtEvent, AuthzProtocol}
-import replication.crypto.Hash
+import channels.broadcast.authz.ArdtEvent.Payload.Capability
+import channels.broadcast.authz.AuthzProtocol.*
+import channels.broadcast.authz.{ArdtEvent, AuthzProtocol}
+import channels.crypto.Hash
 
 import java.net.{InetAddress, InetSocketAddress}
 

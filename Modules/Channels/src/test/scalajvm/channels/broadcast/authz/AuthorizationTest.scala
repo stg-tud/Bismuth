@@ -1,12 +1,12 @@
-package replication.authz
+package channels.broadcast.authz
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray}
-import replication.crypto.{Commitment, Hash, Signature}
+import channels.crypto.{Commitment, Hash, Signature}
 import munit.FunSuite
 import rdts.filters.PermissionTree
-import replication.JsoniterCodecsJvm.ardtEventCodec
-import replication.authz.ArdtEvent.Payload.{Capability, Revocation}
-import replication.authz.AuthzTestSupport.{*, given}
+import channels.broadcast.authz.ArdtEvent.Payload.{Capability, Revocation}
+import channels.broadcast.authz.AuthzTestSupport.{*, given}
+import channels.JsoniterCodecsJvm.ardtEventCodec
 
 class AuthorizationTest extends FunSuite {
   // --- createGenesis ---
