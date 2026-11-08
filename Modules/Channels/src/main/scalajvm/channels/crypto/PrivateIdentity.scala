@@ -1,7 +1,6 @@
-package crypto.channels
+package channels.crypto
 
-import crypto.channels.X509Util.toPem
-import crypto.{CertificatePem, Ed25519Util, PrivateKeyPem, PublicIdentity}
+import channels.crypto.X509Util.toPem
 import org.bouncycastle.cert.X509CertificateHolder
 
 import java.security.{KeyPair, PublicKey}

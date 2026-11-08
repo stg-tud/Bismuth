@@ -1,6 +1,6 @@
 package ex2026accessControl.travelplanner
 
-import crypto.PublicIdentity
+import channels.crypto.PublicIdentity
 import rdts.filters.PermissionTree
 
 // TODO: Probably should be refactored away

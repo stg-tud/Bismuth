@@ -1,6 +1,6 @@
 package ex2026keyHierarchies
 
-import crypto.Ed25519Util
+import channels.crypto.Ed25519Util
 import ex2026keyHierarchies.KeyDerivationKey.*
 import org.bouncycastle.crypto.generators.HKDFBytesGenerator
 import org.bouncycastle.crypto.params.HKDFParameters

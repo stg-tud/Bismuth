@@ -1,7 +1,7 @@
 package ex2026accessControl.travelplanner.model
 
-import crypto.PublicIdentity
-import crypto.channels.PrivateIdentity
+import channels.crypto.PublicIdentity
+import channels.crypto.PrivateIdentity
 import ex2026accessControl.travelplanner.TravelPlan.given
 import ex2026accessControl.travelplanner.{Invitation, Sync, TravelPlan}
 import rdts.base.{ReplicaId, Uid}

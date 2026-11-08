@@ -2,8 +2,9 @@ package ex2026accessControl.travelplanner
 
 import channels.connection.MessageBuffer
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
-import crypto.channels.PrivateIdentity
-import crypto.{Hash, PublicIdentity}
+import channels.crypto.PrivateIdentity
+import channels.crypto.PublicIdentity
+import replication.crypto.Hash
 import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.filters.{Filter, PermissionTree}
 import replication.JsoniterCodecsJvm.ardtEventCodec
@@ -30,14 +31,14 @@ class SyncImpl[State: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
     replica
   }
 
-  def availablePermissions: Map[crypto.PublicIdentity, (read: PermissionTree, write: PermissionTree)] =
+  def availablePermissions: Map[channels.crypto.PublicIdentity, (read: PermissionTree, write: PermissionTree)] =
     replica.activeCapabilities.map((k, v) =>
       k -> v.foldLeft((PermissionTree.empty, PermissionTree.empty)) {
         case ((readAcc, writeAcc), (_, Capability(_, read, write))) => (readAcc.merge(read), writeAcc.merge(write))
       }
     )
 
-  def connect(remoteUser: crypto.PublicIdentity, connectionString: String): Unit = {
+  def connect(remoteUser: channels.crypto.PublicIdentity, connectionString: String): Unit = {
     val addrParts = connectionString.split(":")
     require(addrParts.length == 2)
     replica.connect(addrParts(0) -> addrParts(1).toInt)

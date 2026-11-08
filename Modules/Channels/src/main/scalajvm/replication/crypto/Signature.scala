@@ -1,7 +1,7 @@
-package crypto
+package replication.crypto
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonKeyCodec, JsonReader, JsonValueCodec, JsonWriter}
-import crypto.Ed25519Util
+import channels.crypto.Ed25519Util
 
 import java.security.{PrivateKey, PublicKey}
 import java.util

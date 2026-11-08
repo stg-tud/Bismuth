@@ -1,7 +1,7 @@
 package replication
 
 import com.github.plokhotnyuk.jsoniter_scala.core.*
-import crypto.Hash
+import replication.crypto.Hash
 import rdts.base.{Bottom, Lattice}
 import replication.HashDag.{Delta, Encoder, Hashable}
 

@@ -1,6 +1,4 @@
-package crypto
-
-import crypto.Hash
+package replication.crypto
 
 import java.nio.charset.StandardCharsets
 import java.security.{MessageDigest, SecureRandom}

@@ -1,6 +1,6 @@
 package replication
 
-import crypto.Hash
+import replication.crypto.Hash
 import replication.HashDag.Delta
 
 import scala.collection.mutable

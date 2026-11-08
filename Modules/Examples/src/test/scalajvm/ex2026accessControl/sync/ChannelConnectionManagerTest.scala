@@ -3,8 +3,8 @@ package ex2026accessControl.sync
 import scala.language.unsafeNulls
 
 import channels.connection.{ByteBufferMessageBuffer, MessageBuffer}
-import crypto.PublicIdentity
-import crypto.channels.IdentityFactory
+import channels.crypto.PublicIdentity
+import channels.crypto.IdentityFactory
 import ex2026accessControl.sync.ChannelConnectionManagerTest.*
 import munit.FunSuite
 import replication.sync.ChannelConnectionManager

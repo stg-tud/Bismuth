@@ -1,7 +1,8 @@
 package replication.acl.sync
 
-import crypto.channels.PrivateIdentity
-import crypto.{Hash, PublicIdentity}
+import channels.crypto.PrivateIdentity
+import channels.crypto.PublicIdentity
+import replication.crypto.Hash
 import rdts.base.{Bottom, Decompose, Lattice, Uid}
 import rdts.filters.{Filter, PermissionTree}
 import rdts.time.{Dot, Dots}

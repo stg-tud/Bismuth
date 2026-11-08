@@ -1,4 +1,4 @@
-package crypto
+package channels.crypto
 
 import java.security.PublicKey
 import java.util.Base64

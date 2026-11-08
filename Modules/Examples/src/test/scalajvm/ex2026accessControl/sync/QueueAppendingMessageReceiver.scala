@@ -3,7 +3,7 @@ package ex2026accessControl.sync
 import scala.language.unsafeNulls
 
 import channels.connection.MessageBuffer
-import crypto.PublicIdentity
+import channels.crypto.PublicIdentity
 import ex2026accessControl.Debug
 import replication.sync.MessageReceiver
 

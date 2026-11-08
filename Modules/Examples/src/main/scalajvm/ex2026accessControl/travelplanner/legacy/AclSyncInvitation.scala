@@ -2,7 +2,7 @@ package ex2026accessControl.travelplanner.legacy
 
 import com.github.plokhotnyuk.jsoniter_scala.core
 import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray}
-import crypto.{Ed25519Util, PublicIdentity}
+import channels.crypto.{Ed25519Util, PublicIdentity}
 import ex2026accessControl.travelplanner.Invitation
 import ex2026accessControl.travelplanner.legacy.AclSyncInvitation.base64Encoder
 import replication.acl.AclRdt.given_JsonValueCodec_BftDelta

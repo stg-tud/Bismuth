@@ -2,7 +2,8 @@ package ex2026accessControl.travelplanner
 
 import com.github.plokhotnyuk.jsoniter_scala.core
 import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray}
-import crypto.{Ed25519Util, Hash, PublicIdentity}
+import channels.crypto.{Ed25519Util, PublicIdentity}
+import replication.crypto.Hash
 import ex2026accessControl.travelplanner.Invitation
 import ex2026accessControl.travelplanner.SyncInvitation.base64Encoder
 

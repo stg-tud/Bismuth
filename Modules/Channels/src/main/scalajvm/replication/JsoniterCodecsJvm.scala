@@ -3,7 +3,8 @@ package replication
 import channels.JsoniterCodecs.given
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonKeyCodec, JsonReader, JsonValueCodec, JsonWriter}
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
-import crypto.{Hash, PublicIdentity, Signature}
+import channels.crypto.PublicIdentity
+import replication.crypto.{Hash, Signature}
 import rdts.filters.PermissionTree
 import replication.acl.sync.AclEnforcingSync.SyncMsg
 import replication.acl.sync.SignedDelta

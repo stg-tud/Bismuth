@@ -3,7 +3,7 @@ package replication.sync
 import channels.connection.ByteBufferMessageBuffer
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromByteBuffer, writeToArray}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
-import crypto.PublicIdentity
+import channels.crypto.PublicIdentity
 import rdts.base.Lattice
 import replication.authz.AntiEntropy
 import replication.sync.FullMeshControlPlane.{Peers, mapOfPeerAddressesLattice}

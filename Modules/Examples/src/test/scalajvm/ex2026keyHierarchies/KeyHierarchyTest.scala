@@ -2,7 +2,7 @@ package ex2026keyHierarchies
 
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
-import crypto.{Ed25519Util, PublicIdentity}
+import channels.crypto.{Ed25519Util, PublicIdentity}
 import ex2026keyHierarchies.{DeltaSurgeon, FullKeyHierarchy, KeyDerivationKey, KeyHierarchy}
 import munit.FunSuite
 import rdts.base.{Bottom, Uid}

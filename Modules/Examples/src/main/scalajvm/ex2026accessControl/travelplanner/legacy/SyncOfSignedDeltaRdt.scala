@@ -2,8 +2,8 @@ package ex2026accessControl.travelplanner.legacy
 
 import channels.connection.MessageBuffer
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
-import crypto.PublicIdentity
-import crypto.channels.PrivateIdentity
+import channels.crypto.PublicIdentity
+import channels.crypto.PrivateIdentity
 import ex2026accessControl.travelplanner.{Invitation, Sync}
 import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.filters.{Filter, PermissionTree}

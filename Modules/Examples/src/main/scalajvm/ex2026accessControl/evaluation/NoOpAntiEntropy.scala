@@ -1,8 +1,9 @@
 package ex2026accessControl.evaluation
 
 import channels.connection.MessageBuffer
-import crypto.Commitment.RevealedValue
-import crypto.{Hash, PublicIdentity}
+import replication.crypto.Commitment.RevealedValue
+import channels.crypto.PublicIdentity
+import replication.crypto.Hash
 import replication.authz.{AntiEntropy, Replica}
 
 /** An [[replication.authz.AntiEntropy]] subclass that does nothing when any of its methods are invoked. Used to construct a

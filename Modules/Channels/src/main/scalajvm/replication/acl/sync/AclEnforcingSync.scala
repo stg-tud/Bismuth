@@ -2,8 +2,9 @@ package replication.acl.sync
 
 import channels.connection.{ByteBufferMessageBuffer, MessageBuffer}
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
-import crypto.channels.PrivateIdentity
-import crypto.{Hash, PublicIdentity}
+import channels.crypto.PrivateIdentity
+import channels.crypto.PublicIdentity
+import replication.crypto.Hash
 import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.filters.{Filter, PermissionTree}
 import rdts.time.Dots

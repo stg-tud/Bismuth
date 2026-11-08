@@ -1,6 +1,6 @@
 package ex2026accessControl.evaluation.acl
 
-import crypto.channels.IdentityFactory
+import channels.crypto.IdentityFactory
 import ex2026accessControl.travelplanner.TravelPlan
 import rdts.filters.PermissionTree
 

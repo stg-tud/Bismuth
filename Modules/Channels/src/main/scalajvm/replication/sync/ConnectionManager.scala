@@ -1,7 +1,7 @@
 package replication.sync
 
 import channels.connection.MessageBuffer
-import crypto.PublicIdentity
+import channels.crypto.PublicIdentity
 
 trait ConnectionManager {
 

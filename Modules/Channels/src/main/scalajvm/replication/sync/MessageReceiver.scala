@@ -1,6 +1,6 @@
 package replication.sync
 
-import crypto.PublicIdentity
+import channels.crypto.PublicIdentity
 
 trait MessageReceiver[MSG]:
     def receivedMessage(msg: MSG, fromUser: PublicIdentity): Unit

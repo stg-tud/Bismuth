@@ -1,4 +1,4 @@
-package crypto
+package channels.crypto
 
 import org.bouncycastle.asn1.edec.EdECObjectIdentifiers
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo

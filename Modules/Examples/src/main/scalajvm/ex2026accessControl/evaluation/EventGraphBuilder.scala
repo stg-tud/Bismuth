@@ -1,9 +1,9 @@
 package ex2026accessControl.evaluation
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
-import crypto.Commitment.RevealedValue
-import crypto.channels.PrivateIdentity
-import crypto.{Commitment, Hash, Signature}
+import replication.crypto.Commitment.RevealedValue
+import channels.crypto.PrivateIdentity
+import replication.crypto.{Commitment, Hash, Signature}
 import rdts.filters.PermissionTree
 import replication.JsoniterCodecsJvm.ardtEventCodec
 import replication.authz.ArdtEvent.Payload.{Capability, DeltaCommitment, Revocation}
@@ -27,7 +27,7 @@ object EventGraphBuilder {
   }
 
   def buildCapabilityEvent(
-      holder: crypto.PublicIdentity,
+      holder: channels.crypto.PublicIdentity,
       read: PermissionTree,
       write: PermissionTree,
       author: PrivateIdentity,

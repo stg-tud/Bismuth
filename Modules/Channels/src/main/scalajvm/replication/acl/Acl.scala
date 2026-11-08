@@ -1,6 +1,6 @@
 package replication.acl
 
-import crypto.PublicIdentity
+import channels.crypto.PublicIdentity
 import rdts.base.{Bottom, DecoratedLattice, Lattice}
 import rdts.filters.PermissionTree
 

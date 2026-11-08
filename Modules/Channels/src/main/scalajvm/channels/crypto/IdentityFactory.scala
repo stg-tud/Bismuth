@@ -1,6 +1,5 @@
-package crypto.channels
+package channels.crypto
 
-import crypto.Ed25519Util
 import org.bouncycastle.cert.X509CertificateHolder
 
 import java.security.KeyPair

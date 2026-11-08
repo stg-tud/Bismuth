@@ -3,7 +3,7 @@ package benchmarks.b2025bft
 import bloomfilter.mutable.BloomFilter
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonKeyCodec, JsonReader, JsonValueCodec, JsonWriter, readFromArray, writeToArray}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
-import crypto.Ed25519Util
+import channels.crypto.Ed25519Util
 import ex2025ribltbft.dag.Event
 import ex2025ribltbft.datatypes.{Counter, ORSet, Op, Replica}
 import ex2025ribltbft.riblt.RIBLT

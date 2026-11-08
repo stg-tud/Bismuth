@@ -1,6 +1,6 @@
 package ex2025ribltbft.datatypes
 
-import crypto.Ed25519Util
+import channels.crypto.Ed25519Util
 import ex2025ribltbft.dag.{Event, HashDAG}
 
 import scala.util.hashing.MurmurHash3

@@ -2,8 +2,9 @@ package ex2026accessControl.evaluation
 
 import com.github.plokhotnyuk.jsoniter_scala.core.*
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
-import crypto.channels.PrivateIdentity
-import crypto.{Hash, PublicIdentity, Signature}
+import channels.crypto.PrivateIdentity
+import channels.crypto.PublicIdentity
+import replication.crypto.{Hash, Signature}
 import rdts.base.{Bottom, Lattice}
 
 case class HashDag[P: JsonValueCodec, T <: HashDagEntry[P]: JsonValueCodec](

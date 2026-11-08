@@ -2,8 +2,8 @@ package ex2026accessControl.evaluation.acl.centralized
 
 import channels.connection.{ByteBufferMessageBuffer, MessageBuffer}
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
-import crypto.PublicIdentity
-import crypto.channels.PrivateIdentity
+import channels.crypto.PublicIdentity
+import channels.crypto.PrivateIdentity
 import ex2026accessControl.Debug
 import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.filters.Filter

@@ -1,6 +1,5 @@
-package crypto.channels
+package channels.crypto
 
-import crypto.{CertificatePem, Ed25519Util, PublicIdentity}
 import org.bouncycastle.asn1.DERUTF8String
 import org.bouncycastle.asn1.edec.EdECObjectIdentifiers
 import org.bouncycastle.asn1.x500.X500NameBuilder

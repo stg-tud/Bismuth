@@ -1,7 +1,7 @@
 package ex2026accessControl.evaluation
 
 import channels.connection.MessageBuffer
-import crypto.PublicIdentity
+import channels.crypto.PublicIdentity
 import replication.sync.ConnectionManager
 
 /** A [[replication.sync.ConnectionManager]] without an actual network layer, which does nothing but sum up the messages handed

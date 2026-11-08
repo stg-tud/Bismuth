@@ -1,8 +1,9 @@
 package ex2026accessControl.evaluation
 
 import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray
-import crypto.channels.PrivateIdentity
-import crypto.{Commitment, Hash, PublicIdentity}
+import channels.crypto.PrivateIdentity
+import channels.crypto.PublicIdentity
+import replication.crypto.{Commitment, Hash}
 import ex2026accessControl.evaluation.EvaluationBenchmarks.{encodeTrace, noopOnStateChange, receiveTrace, replayTrace}
 import org.openjdk.jmh.annotations.*
 import rdts.base.{ReplicaId, Uid}

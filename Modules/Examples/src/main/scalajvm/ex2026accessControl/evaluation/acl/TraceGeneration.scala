@@ -1,7 +1,7 @@
 package ex2026accessControl.evaluation.acl
 
-import crypto.PublicIdentity
-import crypto.channels.{IdentityFactory, PrivateIdentity}
+import channels.crypto.PublicIdentity
+import channels.crypto.{IdentityFactory, PrivateIdentity}
 import ex2026accessControl.evaluation.acl.TravelPlanMutatorChoice.*
 import ex2026accessControl.travelplanner.TravelPlan
 import rdts.base.{ReplicaId, Uid}

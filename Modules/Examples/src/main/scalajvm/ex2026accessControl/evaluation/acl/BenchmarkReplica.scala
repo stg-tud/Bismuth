@@ -1,6 +1,6 @@
 package ex2026accessControl.evaluation.acl
 
-import crypto.channels.PrivateIdentity
+import channels.crypto.PrivateIdentity
 import ex2026accessControl.evaluation.acl.insecure.NonEnforcingSync
 import ex2026accessControl.travelplanner.TravelPlan
 import rdts.time.Dots

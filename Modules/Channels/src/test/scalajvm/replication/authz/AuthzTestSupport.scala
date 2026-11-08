@@ -2,9 +2,9 @@ package replication.authz
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
-import crypto.*
-import crypto.Commitment.RevealedValue
-import crypto.channels.{IdentityFactory, PrivateIdentity}
+import replication.crypto.*
+import replication.crypto.Commitment.RevealedValue
+import channels.crypto.{Ed25519Util, IdentityFactory, PrivateIdentity, PublicIdentity}
 import rdts.filters.{Filter, PermissionTree}
 import replication.JsoniterCodecsJvm.ardtEventCodec
 import replication.authz.ArdtEvent.Payload.{Capability, DeltaCommitment}

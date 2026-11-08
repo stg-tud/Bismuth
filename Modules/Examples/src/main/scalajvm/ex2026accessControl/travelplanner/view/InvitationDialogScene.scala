@@ -2,7 +2,7 @@ package ex2026accessControl.travelplanner.view
 
 import scala.language.unsafeNulls
 
-import crypto.PublicIdentity
+import channels.crypto.PublicIdentity
 import ex2026accessControl.travelplanner.model.TravelPlanModel
 import ex2026accessControl.travelplanner.{Invitation, TravelPlan}
 import rdts.filters.PermissionTree

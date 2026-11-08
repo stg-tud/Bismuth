@@ -1,7 +1,8 @@
 package replication.acl.sync
 
-import crypto.channels.PrivateIdentity
-import crypto.{PublicIdentity, Signature}
+import channels.crypto.PrivateIdentity
+import channels.crypto.PublicIdentity
+import replication.crypto.Signature
 import rdts.time.Dot
 import replication.HashDag.Encoder
 

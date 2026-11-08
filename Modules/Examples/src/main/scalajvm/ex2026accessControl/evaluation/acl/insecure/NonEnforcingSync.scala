@@ -2,7 +2,7 @@ package ex2026accessControl.evaluation.acl.insecure
 
 import channels.connection.MessageBuffer
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
-import crypto.channels.PrivateIdentity
+import channels.crypto.PrivateIdentity
 import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.filters.Filter
 import rdts.time.Dots

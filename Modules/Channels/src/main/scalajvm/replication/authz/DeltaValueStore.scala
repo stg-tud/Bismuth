@@ -1,7 +1,7 @@
 package replication.authz
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
-import crypto.Commitment.RevealedValue
+import replication.crypto.Commitment.RevealedValue
 import rdts.base.{Bottom, Lattice}
 
 import scala.collection.immutable.IntMap

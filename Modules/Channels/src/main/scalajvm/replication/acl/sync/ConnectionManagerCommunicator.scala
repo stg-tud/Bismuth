@@ -2,7 +2,8 @@ package replication.acl.sync
 
 import channels.connection.ByteBufferMessageBuffer
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
-import crypto.{Hash, PublicIdentity}
+import channels.crypto.PublicIdentity
+import replication.crypto.Hash
 import rdts.time.Dots
 import replication.acl.sync.AclEnforcingSync.SyncMsg
 import replication.acl.sync.AclEnforcingSync.SyncMsg.*

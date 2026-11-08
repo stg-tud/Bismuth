@@ -1,8 +1,9 @@
 package ex2026accessControl.evaluation
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
-import crypto.channels.PrivateIdentity
-import crypto.{Hash, PublicIdentity}
+import channels.crypto.PrivateIdentity
+import channels.crypto.PublicIdentity
+import replication.crypto.Hash
 import rdts.base.{Bottom, Decompose, Lattice}
 import replication.authz.AntiEntropy
 import replication.sync.ConnectionManager

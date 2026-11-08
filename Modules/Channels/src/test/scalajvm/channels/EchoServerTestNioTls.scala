@@ -1,7 +1,6 @@
-package crypto.channels
+package channels
 
-import channels.{ConcurrencyHelper, EchoCommunicationTest, NioTCP, NioTcpConnectionDetailsResolver, NioTls}
-import crypto.channels.{IdentityFactory, PrivateIdentity}
+import channels.crypto.{IdentityFactory, PrivateIdentity}
 
 import java.net.{InetAddress, InetSocketAddress}
 

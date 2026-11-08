@@ -2,8 +2,8 @@ package replication.sync
 
 import channels.{NioTCP, NioTls}
 import channels.connection.{Abort, Connection, ConnectionDescriptor, MessageBuffer, Receive}
-import crypto.PublicIdentity
-import crypto.channels.PrivateIdentity
+import channels.crypto.PublicIdentity
+import channels.crypto.PrivateIdentity
 import de.rmgk.delay.Callback
 
 import java.net.{InetAddress, InetSocketAddress}

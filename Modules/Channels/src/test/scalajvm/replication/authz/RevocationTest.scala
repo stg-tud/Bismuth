@@ -1,9 +1,10 @@
 package replication.authz
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray}
-import crypto.Commitment.RevealedValue
-import crypto.channels.PrivateIdentity
-import crypto.{Hash, PublicIdentity}
+import replication.crypto.Commitment.RevealedValue
+import channels.crypto.PrivateIdentity
+import channels.crypto.PublicIdentity
+import replication.crypto.Hash
 import munit.{FunSuite, Location}
 import rdts.filters.PermissionTree
 import replication.JsoniterCodecsJvm.ardtEventCodec

@@ -1,7 +1,8 @@
 package replication.acl
 
-import crypto.channels.PrivateIdentity
-import crypto.{Ed25519Util, Hash, Signature}
+import channels.crypto.PrivateIdentity
+import channels.crypto.Ed25519Util
+import replication.crypto.{Hash, Signature}
 import replication.HashDag
 import replication.HashDag.{Delta, Encoder, Hashable}
 

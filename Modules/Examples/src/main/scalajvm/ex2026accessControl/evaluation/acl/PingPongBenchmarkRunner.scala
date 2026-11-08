@@ -3,7 +3,7 @@ package ex2026accessControl.evaluation.acl
 import cats.data.{Validated, ValidatedNel}
 import cats.implicits.*
 import com.monovore.decline.*
-import crypto.channels.IdentityFactory
+import channels.crypto.IdentityFactory
 import ex2026accessControl.evaluation.acl.PingPongBenchmarkRunnerArguments.Mode.*
 import ex2026accessControl.evaluation.acl.PingPongBenchmarkRunnerArguments.{Config, Peer}
 

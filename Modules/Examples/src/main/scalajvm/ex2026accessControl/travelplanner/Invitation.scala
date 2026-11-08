@@ -1,6 +1,6 @@
 package ex2026accessControl.travelplanner
 
-import crypto.PublicIdentity
+import channels.crypto.PublicIdentity
 
 import java.security.KeyPair
 

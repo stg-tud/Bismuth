@@ -2,8 +2,9 @@ package replication.authz
 
 import channels.connection.{ByteBufferMessageBuffer, MessageBuffer}
 import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray
-import crypto.Commitment.RevealedValue
-import crypto.{Hash, PublicIdentity}
+import replication.crypto.Commitment.RevealedValue
+import channels.crypto.PublicIdentity
+import replication.crypto.Hash
 import replication.JsoniterCodecsJvm.ardtEventCodec
 import replication.authz.AntiEntropy.*
 import replication.authz.ArdtEvent.Payload.DeltaCommitment

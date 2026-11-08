@@ -4,8 +4,8 @@ import scala.language.unsafeNulls
 
 import com.github.plokhotnyuk.jsoniter_scala.core.*
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
-import crypto.Ed25519Util
-import crypto.channels.{IdentityFactory, PrivateIdentity}
+import channels.crypto.Ed25519Util
+import channels.crypto.{IdentityFactory, PrivateIdentity}
 import ex2026accessControl.travelplanner.TravelPlan
 import rdts.base.Uid
 import rdts.filters.PermissionTree

@@ -2,8 +2,9 @@ package replication.acl
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
-import crypto.channels.PrivateIdentity
-import crypto.{Hash, PublicIdentity, Signature}
+import channels.crypto.PrivateIdentity
+import channels.crypto.PublicIdentity
+import replication.crypto.{Hash, Signature}
 import rdts.filters.PermissionTree
 import replication.HashDag
 import replication.HashDag.Encoder

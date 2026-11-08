@@ -1,7 +1,7 @@
 package replication.authz
 
 import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray
-import crypto.Hash
+import replication.crypto.Hash
 import munit.FunSuite
 import rdts.filters.PermissionTree
 import replication.JsoniterCodecsJvm.ardtEventCodec

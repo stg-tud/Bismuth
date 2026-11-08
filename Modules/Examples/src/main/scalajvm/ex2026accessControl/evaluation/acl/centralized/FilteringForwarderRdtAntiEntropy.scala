@@ -1,7 +1,7 @@
 package ex2026accessControl.evaluation.acl.centralized
 
-import crypto.PublicIdentity
-import crypto.channels.PrivateIdentity
+import channels.crypto.PublicIdentity
+import channels.crypto.PrivateIdentity
 import ex2026accessControl.Debug
 import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.filters.Filter

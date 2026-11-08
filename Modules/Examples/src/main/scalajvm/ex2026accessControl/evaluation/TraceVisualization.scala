@@ -1,6 +1,6 @@
 package ex2026accessControl.evaluation
 
-import crypto.Hash
+import replication.crypto.Hash
 import rdts.filters.{Filter, PermissionTree}
 import replication.authz.ArdtEvent.Payload.{Capability, DeltaCommitment, Revocation}
 
