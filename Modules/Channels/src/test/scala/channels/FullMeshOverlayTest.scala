@@ -31,6 +31,21 @@ class FullMeshOverlayTest extends FunSuite {
     assertEquals(active.connectionFor(peer.uid), Some(c1))
   }
 
+  test("messages claiming another sender than the authenticated peer are discarded") {
+    val authenticatedAsPeer = StubConnection("authenticated", authenticatedPeer = Some(peer.uid))
+    val (pending, _)        = FullMeshOverlay(self).on(OverlayEvent.Incoming(authenticatedAsPeer))
+
+    val (ignored, ignoredActions) =
+      pending.on(OverlayEvent.Received(authenticatedAsPeer, OverlayMessage.Neighbor(other, highPriority = true)))
+    assertEquals(ignoredActions, Nil)
+    assertEquals(ignored.neighbors, Set.empty)
+
+    val (accepted, acceptedActions) =
+      pending.on(OverlayEvent.Received(authenticatedAsPeer, OverlayMessage.Neighbor(peer, highPriority = true)))
+    assertEquals(acceptedActions, List(OverlayAction.NeighborUp(peer.uid)))
+    assertEquals(accepted.connectionFor(peer.uid), Some(authenticatedAsPeer))
+  }
+
   test("of two connections to the same peer, both sides keep the one dialed by the smaller id") {
     // peer < self: the peer's dial (incoming c2) wins over our own dial (c1), regardless of announcement order
     def withBoth(firstAnnounced: channels.connection.Connection, secondAnnounced: channels.connection.Connection) =

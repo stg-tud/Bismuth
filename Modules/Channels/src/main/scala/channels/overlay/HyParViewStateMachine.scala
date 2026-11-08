@@ -233,7 +233,7 @@ final case class HyParViewStateMachine(
         copy(shuffleScheduled = false, refused = Set.empty).shuffle()
 
       case OverlayEvent.Received(conn, message) =>
-        if links.contains(conn) then receive(conn, message) else done
+        if links.contains(conn) && OverlayController.isAuthentic(conn, message) then receive(conn, message) else done
 
   private def startHandshakeTimer(conn: Connection) = OverlayAction.StartTimer(OverlayTimer.Handshake(conn))
 
@@ -285,9 +285,10 @@ final case class HyParViewStateMachine(
               List(OverlayAction.Send(conn, NeighborReply(self.uid, accepted = false)))
             )
 
-      case NeighborReply(_, accepted) =>
+      case NeighborReply(from, accepted) =>
         links.get(conn) match
-            case Some(Link.Pending(Some(peer), true)) =>
+            // only the peer we asked can answer (otherwise the handshake timer eventually closes the connection)
+            case Some(Link.Pending(Some(peer), true)) if peer.uid == from =>
               if accepted then addActive(peer, conn)
               else
                   Result(

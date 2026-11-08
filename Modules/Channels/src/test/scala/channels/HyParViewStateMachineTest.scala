@@ -236,6 +236,38 @@ class HyParViewStateMachineTest extends FunSuite {
     assertEquals(stale, Nil)
   }
 
+  test("messages claiming another sender than the authenticated peer are discarded") {
+    val a                  = peer("a")
+    val authenticatedAsA   = StubConnection("authenticated", authenticatedPeer = Some(a.uid))
+    val (pending, _)       = state().on(OverlayEvent.Incoming(authenticatedAsA))
+
+    val (ignored, ignoredActions) = pending.on(received(authenticatedAsA, Neighbor(peer("b"), highPriority = true)))
+    assertEquals(ignoredActions, Nil)
+    assertEquals(ignored.activeView, Set.empty)
+
+    val (accepted, acceptedActions) = pending.on(received(authenticatedAsA, Neighbor(a, highPriority = true)))
+    assertEquals(accepted.activeView, Set(a.uid))
+    assertEquals(
+      acceptedActions,
+      List(OverlayAction.NeighborUp(a.uid), OverlayAction.Send(authenticatedAsA, NeighborReply(self.uid, accepted = true)))
+    )
+  }
+
+  test("a NeighborReply from another peer than the one we asked is discarded") {
+    val a        = peer("a")
+    val expected = peer("expected")
+
+    val (dialing, _) = state().withActive(a -> c1).withPassive(expected).on(OverlayEvent.Discovered(Set.empty))
+    val (pending, _) = dialing.on(OverlayEvent.Established(AttemptId(0), c2))
+
+    val (ignored, actions) = pending.on(received(c2, NeighborReply(peer("imposter").uid, accepted = true)))
+    assertEquals(actions, Nil)
+    assert(!ignored.activeView.contains(expected.uid))
+
+    val (_, acceptedActions) = pending.on(received(c2, NeighborReply(expected.uid, accepted = true)))
+    assertEquals(acceptedActions, List(OverlayAction.NeighborUp(expected.uid)))
+  }
+
   test("messages on unknown connections are ignored") {
     val (_, actions) = state().on(received(c1, Neighbor(peer("a"), highPriority = true)))
     assertEquals(actions, Nil)

@@ -85,7 +85,7 @@ case class FullMeshOverlay(
         (this, Nil)
 
       case OverlayEvent.Received(conn, message) =>
-        if !holds(conn) then (this, Nil)
+        if !holds(conn) || !OverlayController.isAuthentic(conn, message) then (this, Nil)
         else
             message match
                 case OverlayMessage.Join(_) =>

@@ -30,8 +30,13 @@ extension (io: BroadcastIO[?]) {
       case other                 => throw IllegalStateException(s"timers are not manual: $other")
 }
 
-/** A connection that is only used as an identity in overlay state machine tests. */
-final class StubConnection(name: String) extends channels.connection.Connection {
+/** A connection that is only used as an identity in overlay state machine tests.
+  * `authenticatedPeer` simulates a transport that authenticated the remote side.
+  */
+final class StubConnection(name: String, authenticatedPeer: Option[rdts.base.Uid] = None)
+    extends channels.connection.Connection {
+  override val info: channels.connection.ConnectionInfo =
+    channels.connection.ConnectionInfo(authenticatedPeer = authenticatedPeer)
   override def send(message: channels.connection.MessageBuffer): de.rmgk.delay.Async[Any, Unit] =
     de.rmgk.delay.Async(())
   override def close(): Unit    = ()

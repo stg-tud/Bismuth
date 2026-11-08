@@ -73,7 +73,24 @@ object OverlayController {
     case Handshake(conn: Connection)
   }
 
+  /** Whether `message` may have been sent by the peer at the other end of `conn`: if the transport authenticated that
+    * peer, the sender the message claims must be that peer. Messages on unauthenticated connections are always accepted.
+    * Overlays discard messages that fail this check.
+    */
+  def isAuthentic(conn: Connection, message: OverlayMessage): Boolean =
+    conn.info.authenticatedPeer.forall(_ == message.claimedSender)
+
   enum OverlayMessage {
+
+    /** The peer that sent this message (on the connection it arrived on), as claimed by the message. */
+    def claimedSender: Uid = this match
+        case Join(newNode)                  => newNode.uid
+        case ForwardJoin(_, _, sender)      => sender
+        case Neighbor(from, _)              => from.uid
+        case NeighborReply(from, _)         => from
+        case Shuffle(_, _, _, sender)       => sender
+        case ShuffleReply(from, _, _)       => from
+
     case Join(newNode: PeerConnectInfo)
     case ForwardJoin(newNode: PeerConnectInfo, ttl: Int, sender: Uid)
     case Neighbor(from: PeerConnectInfo, highPriority: Boolean)
