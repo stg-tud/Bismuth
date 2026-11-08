@@ -3,7 +3,7 @@ package ex2021encfxtodo
 import channels.broadcast.PlumtreeMessage
 import channels.connection.{LocalMessageQueue, QueuedLocalConnection}
 import channels.experiments.Aead
-import channels.{PlumtreeIO, experiments}
+import channels.{MessagingIO, experiments}
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import com.google.crypto.tink.aead.AeadConfig
@@ -31,8 +31,8 @@ class PlumtreeIOAeadTest extends FunSuite {
     val received1 = mutable.ListBuffer.empty[Set[String]]
     val received2 = mutable.ListBuffer.empty[Set[String]]
 
-    val dd1 = PlumtreeIO[Set[String]](ReplicaId.gen(), p => received1 += p.data, aead = aead)
-    val dd2 = PlumtreeIO[Set[String]](ReplicaId.gen(), p => received2 += p.data, aead = aead)
+    val dd1 = MessagingIO[Set[String]](ReplicaId.gen(), p => received1 += p.data, aead = aead)
+    val dd2 = MessagingIO[Set[String]](ReplicaId.gen(), p => received2 += p.data, aead = aead)
 
     val queue = LocalMessageQueue()
     val link  = QueuedLocalConnection("aead", queue)
@@ -49,12 +49,12 @@ class PlumtreeIOAeadTest extends FunSuite {
 
   test("AEAD encrypted envelopes are not readable with the identity AEAD") {
     val aead    = newAead()
-    val encoded = PlumtreeIO.encodeEnvelope[Set[String]](
-      PlumtreeIO.Envelope.Broadcast(channels.connection.Peer.Claimed(ReplicaId.gen().uid), PlumtreeMessage.Graft(rdts.time.Dots.empty)),
+    val encoded = MessagingIO.encodeEnvelope[Set[String]](
+      MessagingIO.Envelope.Broadcast(channels.connection.Peer.Claimed(ReplicaId.gen().uid), PlumtreeMessage.Graft(rdts.time.Dots.empty)),
       aead
     )
 
-    assert(PlumtreeIO.decodeEnvelope[Set[String]](encoded, experiments.Aead.identity).isFailure)
-    assert(PlumtreeIO.decodeEnvelope[Set[String]](encoded, aead).isSuccess)
+    assert(MessagingIO.decodeEnvelope[Set[String]](encoded, experiments.Aead.identity).isFailure)
+    assert(MessagingIO.decodeEnvelope[Set[String]](encoded, aead).isSuccess)
   }
 }

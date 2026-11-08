@@ -1,10 +1,10 @@
 package ex2021encfxtodo
 
-import channels.broadcast.{PlumtreeBroadcast}
+import channels.broadcast.PlumtreeBroadcast
 
 import channels.connection.{Abort, ConnectionDescriptor, MessageBuffer, Peer, PeerConnectInfo}
 import channels.overlay.FullMeshOverlay
-import channels.{PlumtreeIO, NioTCP, NioTcpConnectionDetailsResolver, TimerDelays, Timers, experiments}
+import channels.{MessagingIO, NioTCP, NioTcpConnectionDetailsResolver, TimerDelays, Timers, experiments}
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.google.crypto.tink.aead.AeadConfig
 import com.google.crypto.tink.{Aead, CleartextKeysetHandle, JsonKeysetReader, RegistryConfiguration}
@@ -48,8 +48,8 @@ class ConnectionManager[State: JsonValueCodec](
   // connected replica is silently lost forever (see channels.PlumtreeIOOverlayDropTest).
   private val timer = java.util.Timer(s"broadcast-timers-${replicaId.uid}", true)
 
-  val dataManager: PlumtreeIO.of[State] =
-    PlumtreeIO[State](
+  val dataManager: MessagingIO.Plumtree[State] =
+    MessagingIO[State](
       replicaId = replicaId,
       receiveCallback = payload => receiveCallback(payload.data),
       overlay = Some(FullMeshOverlay(PeerConnectInfo(Peer.Claimed(replicaId.uid)))),

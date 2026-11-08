@@ -1,6 +1,6 @@
 package channels
 
-import channels.PlumtreeIO.Envelope
+import channels.MessagingIO.Envelope
 import channels.JsoniterCodecs.given
 import channels.broadcast.PlumtreeMessage.*
 import channels.broadcast.{BroadcastProtocol, BroadcastTimer, Effect, PlumtreeBroadcast, PlumtreeMessage, Step}
@@ -19,10 +19,10 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.FiniteDuration
 import scala.util.{Failure, Success, Try}
 
-object PlumtreeIO {
+object MessagingIO {
 
   /** A [[MessagingIO]] running [[PlumtreeBroadcast]]. */
-  type of[State] = MessagingIO.of[PlumtreeBroadcast.Protocol[State]]
+  type Plumtree[State] = MessagingIO[PlumtreeBroadcast.Protocol[State]]
 
   enum Envelope[+Msg] {
     case Membership(message: OverlayMessage)
@@ -41,14 +41,14 @@ object PlumtreeIO {
       receiveCallback: Payload[State] => Unit,
       overlay: Option[OverlayController] = None,
       resolver: ChannelResolver = ChannelResolver.disconnected,
-      sendingActor: ExecutionContext = PlumtreeIO.executeImmediately,
+      sendingActor: ExecutionContext = MessagingIO.executeImmediately,
       globalAbort: Abort = Abort(),
       broadcast: Option[PlumtreeBroadcast[State]] = None,
       aead: Aead = Aead.identity,
       timers: Timers = Timers.Manual(),
       timerDelays: TimerDelays = TimerDelays(),
-  )(using stateCodec: JsonValueCodec[State]): PlumtreeIO.of[State] =
-    MessagingIO[PlumtreeBroadcast.Protocol[State]](using PlumtreeBroadcast.protocol[State])(
+  )(using stateCodec: JsonValueCodec[State]): MessagingIO.Plumtree[State] =
+    MessagingIO.applyGen[PlumtreeBroadcast.Protocol[State]](using PlumtreeBroadcast.protocol[State])(
       replicaId,
       broadcast.getOrElse(PlumtreeBroadcast(deltaStorage = DiscardingHistory[State](size = 1000))),
       receiveCallback,
@@ -71,12 +71,12 @@ object PlumtreeIO {
 
   def decodeMessage[Msg: JsonValueCodec](messageBuffer: MessageBuffer, aead: Aead): Try[Envelope[Msg]] =
     aead.decrypt(messageBuffer.asByteBuffer, Aead.emptyAssociatedData).flatMap(bytes =>
-      Try(readFromByteBuffer[Envelope[Msg]](bytes)(using PlumtreeIO.messageCodec))
+      Try(readFromByteBuffer[Envelope[Msg]](bytes)(using MessagingIO.messageCodec))
     )
 
   def encodeMessage[Msg: JsonValueCodec](envelope: Envelope[Msg], aead: Aead): ByteBufferMessageBuffer =
     ByteBufferMessageBuffer(aead.encrypt(
-      ByteBuffer.wrap(writeToArray(envelope)(using PlumtreeIO.messageCodec)),
+      ByteBuffer.wrap(writeToArray(envelope)(using MessagingIO.messageCodec)),
       Aead.emptyAssociatedData
     ))
 
@@ -92,22 +92,19 @@ object PlumtreeIO {
       aead: Aead
   ): ByteBufferMessageBuffer =
     encodeMessage(envelope, aead)(using PlumtreeBroadcast.messageCodec[State])
-}
-
-object MessagingIO {
-
-  type of[P <: BroadcastProtocol] = MessagingIO[P]
 
   /** `deliver` gets each output of the protocol. `replicaId` is the identity of the default overlay; a given
     * `overlay` must use the same id. `protocolDelays` maps the protocol's timer purposes to delays.
     */
-  def apply[P <: BroadcastProtocol](using protocol: P)(
+  def applyGen[P <: BroadcastProtocol](using
+      protocol: P
+  )(
       replicaId: ReplicaId,
       initial: protocol.State,
       deliver: protocol.Out => Unit,
       overlay: Option[OverlayController] = None,
       resolver: ChannelResolver = ChannelResolver.disconnected,
-      sendingActor: ExecutionContext = PlumtreeIO.executeImmediately,
+      sendingActor: ExecutionContext = MessagingIO.executeImmediately,
       globalAbort: Abort = Abort(),
       aead: Aead = Aead.identity,
       timers: Timers = Timers.Manual(),
@@ -255,7 +252,7 @@ class MessagingIO[P <: BroadcastProtocol](using val protocol: P)(
   }
 
   private def handleIncoming(conn: Connection, message: MessageBuffer): List[Output] =
-    PlumtreeIO.decodeMessage[protocol.Msg](message, aead) match
+    MessagingIO.decodeMessage[protocol.Msg](message, aead) match
         case Success(Envelope.Membership(overlayMessage)) =>
           overlayStep(OverlayEvent.Received(conn, overlayMessage))
         case Success(Envelope.Broadcast(sender, protocolMessage)) =>
@@ -290,7 +287,7 @@ class MessagingIO[P <: BroadcastProtocol](using val protocol: P)(
   private def send(connection: Connection, envelope: Envelope[protocol.Msg]): Unit =
     if !globalAbort.closeRequest then
         sendingActor.execute { () =>
-          connection.send(PlumtreeIO.encodeMessage(envelope, aead)).run {
+          connection.send(MessagingIO.encodeMessage(envelope, aead)).run {
             case Success(_) => ()
             case Failure(_) =>
               connection.close()

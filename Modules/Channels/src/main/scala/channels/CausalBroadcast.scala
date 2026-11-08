@@ -1,6 +1,6 @@
 package channels
 
-import channels.PlumtreeIO.executeImmediately
+import channels.MessagingIO.executeImmediately
 import channels.broadcast.PlumtreeMessage.Payload
 import channels.broadcast.{BroadcastProtocol, BroadcastTimer, Effect, PlumtreeBroadcast, PlumtreeMessage, Step}
 import channels.connection.{Abort, ChannelResolver, Peer}
@@ -13,7 +13,7 @@ import rdts.time.{Causal, CausalBuffer, Dots}
 import scala.concurrent.ExecutionContext
 
 /** A [[MessagingIO]] running [[CausalPlumtree]]: delivers plain values `A` in causal order. */
-type CausalBroadcast[A] = MessagingIO.of[CausalPlumtree.Protocol[A]]
+type CausalBroadcast[A] = MessagingIO[CausalPlumtree.Protocol[A]]
 
 /** Plumtree extended with causal delivery. Remote values are delivered in causal order and at most once.
   * Local values are not delivered: the caller applies them before calling [[CausalPlumtree.broadcastLocal]].
@@ -103,7 +103,7 @@ object CausalBroadcast {
       timers: Timers = Timers.Manual(),
       timerDelays: TimerDelays = TimerDelays(),
   )(using JsonValueCodec[A]): CausalBroadcast[A] =
-    MessagingIO[CausalPlumtree.Protocol[A]](using CausalPlumtree.protocol[A])(
+    MessagingIO.applyGen[CausalPlumtree.Protocol[A]](using CausalPlumtree.protocol[A])(
       replicaId,
       initial,
       deliver,

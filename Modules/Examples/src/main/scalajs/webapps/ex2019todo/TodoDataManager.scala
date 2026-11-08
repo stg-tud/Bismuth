@@ -1,8 +1,8 @@
 package webapps.ex2019todo
 
-import channels.broadcast.{PlumtreeBroadcast}
+import channels.broadcast.PlumtreeBroadcast
 
-import channels.PlumtreeIO
+import channels.MessagingIO
 import channels.JsoniterCodecs.given
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
@@ -20,8 +20,8 @@ object TodoDataManager {
   given Lattice[TodoRepState]        = Lattice.derived
   given Bottom[TodoRepState]         = Bottom.derived
 
-  val (receivedCallback, dataManager: PlumtreeIO.of[TodoRepState]) = Event.fromCallback {
-    PlumtreeIO[TodoRepState](Todolist.replicaId, payload => Event.handle(payload.data))
+  val (receivedCallback, dataManager: MessagingIO.Plumtree[TodoRepState]) = Event.fromCallback {
+    MessagingIO[TodoRepState](Todolist.replicaId, payload => Event.handle(payload.data))
   }
 
   def hookup[A: Lattice](

@@ -5,7 +5,7 @@ import channels.broadcast.PlumtreeMessage
 import channels.DeltaStorage.Type.*
 import channels.broadcast.PlumtreeBroadcast
 import channels.broadcast.PlumtreeMessage.Payload
-import channels.{PlumtreeIO, ConcurrencyHelper, DeltaStorage}
+import channels.{MessagingIO, ConcurrencyHelper, DeltaStorage}
 import ex2026keyValuePrdtBench.data.*
 import ex2026keyValuePrdtBench.data.ClientComm.*
 import ex2026keyValuePrdtBench.data.Codecs.given
@@ -70,7 +70,7 @@ class KeyValueReplica(
     given Lattice[Payload[ClusterState]] =
       Lattice.derived
 
-    lazy val dataManager: PlumtreeIO.of[ClusterState] = PlumtreeIO[ClusterState](
+    lazy val dataManager: MessagingIO.Plumtree[ClusterState] = MessagingIO[ClusterState](
       localUid,
       payload => replicaActor.execute(() => handleIncoming(payload.data)),
       sendingActor = sendingActor,
@@ -227,14 +227,14 @@ class KeyValueReplica(
 //    val nextProposal: AtomicReference[Option[ClientCommWrite.WriteReq]]     = AtomicReference(None)
 //    val currentReads: AtomicReference[Set[ClientCommRead.ReadReq]]        = AtomicReference(Set.empty)
 
-    lazy val dataManagerWrite: PlumtreeIO.of[ClientCommWrite] = PlumtreeIO(
+    lazy val dataManagerWrite: MessagingIO.Plumtree[ClientCommWrite] = MessagingIO(
       localUid,
       payload => replicaActor.execute(() => handleIncomingWrite(payload.data)),
       sendingActor = sendingActor,
       broadcast =
         Some(PlumtreeBroadcast(deltaStorage = DeltaStorage.getStorage(deltaStorageType, () => ???)))
     )
-    lazy val dataManagerRead: PlumtreeIO.of[ClientCommRead] = PlumtreeIO(
+    lazy val dataManagerRead: MessagingIO.Plumtree[ClientCommRead] = MessagingIO(
       localUid,
       payload => replicaActor.execute(() => handleIncomingRead(payload.data)),
       sendingActor = sendingActor,
@@ -289,7 +289,7 @@ class KeyValueReplica(
 
     var alivePeers: Set[Uid] = Set.empty
 
-    val dataManager: PlumtreeIO.of[ConnInformation] = PlumtreeIO(
+    val dataManager: MessagingIO.Plumtree[ConnInformation] = MessagingIO(
       localUid,
       payload => replicaActor.execute(() => handleIncoming(payload.data)),
       sendingActor = sendingActor,

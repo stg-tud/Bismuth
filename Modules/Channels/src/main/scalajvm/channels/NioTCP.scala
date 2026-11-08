@@ -87,7 +87,7 @@ object ConcurrencyHelper {
 
         ExecutionContext.fromExecutorService(singleThreadExecutor)
     else
-        PlumtreeIO.executeImmediately
+        MessagingIO.executeImmediately
 
   def makePooledExecutor(): ExecutionContextExecutorService =
     ExecutionContext.fromExecutorService(Executors.newCachedThreadPool())
@@ -102,7 +102,7 @@ object ConcurrencyHelper {
   * [[loopSelection]] and [[runSelection]] should not be called from multiple threads at the same time.
   * Only one thread should send on a single connection at the same time.
   */
-class NioTCP(accepCallbackExecutor: ExecutionContext = PlumtreeIO.executeImmediately) {
+class NioTCP(accepCallbackExecutor: ExecutionContext = MessagingIO.executeImmediately) {
   inline val compression: false = false
 
   val selector: Selector = Selector.open()

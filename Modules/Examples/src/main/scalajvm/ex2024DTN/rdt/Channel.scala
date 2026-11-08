@@ -1,6 +1,6 @@
 package ex2024DTN.rdt
 
-import channels.PlumtreeIO
+import channels.MessagingIO
 import channels.broadcast.PlumtreeMessage
 import channels.broadcast.PlumtreeMessage.{Graft, IHave, Payload, Prune}
 import channels.connection.{Abort, Connection, Connector, MessageBuffer, Peer, Receive}
@@ -25,23 +25,23 @@ class ClientContext[T: JsonValueCodec](
     operationMode: ClientOperationMode
 ) extends Connection {
   override def send(message: MessageBuffer): Async[Any, Unit] =
-    PlumtreeIO.decodeEnvelope[T](message, Aead.identity) match
+    MessagingIO.decodeEnvelope[T](message, Aead.identity) match
         case Failure(exception)                          => Async.fromCallback(Async.handler.fail(exception))
-        case Success(PlumtreeIO.Envelope.Membership(_)) => Async {}
-        case Success(PlumtreeIO.Envelope.Broadcast(_, Graft(dots))) =>
+        case Success(MessagingIO.Envelope.Membership(_)) => Async {}
+        case Success(MessagingIO.Envelope.Broadcast(_, Graft(dots))) =>
           // we could send requests into the network. the routing handles them correctly. but they are unnecessary with the cb.succeed() down below.
           // todo: actually there should be no requests being sent anymore then. is that the case?
           operationMode match
               case ClientOperationMode.PushAll      => Sync { () }
               case ClientOperationMode.RequestLater =>
                 connection.send(RdtMessageType.Request, Array(), dots).toAsync(using executionContext)
-        case Success(PlumtreeIO.Envelope.Broadcast(_, Payload(dots, data))) =>
+        case Success(MessagingIO.Envelope.Broadcast(_, Payload(dots, data))) =>
           connection.send(
             RdtMessageType.Payload,
             writeToArray[T](data),
             dots
           ).toAsync(using executionContext)
-        case Success(PlumtreeIO.Envelope.Broadcast(_, IHave(_) | Prune)) => Async {}
+        case Success(MessagingIO.Envelope.Broadcast(_, IHave(_) | Prune)) => Async {}
 
   override def close(): Unit = connection.close().onComplete {
     case Failure(f)     => f.printStackTrace()
@@ -72,13 +72,13 @@ class Channel[T: JsonValueCodec](
       client.registerOnReceive { (message_type: RdtMessageType, payload: Array[Byte], dots: Dots) =>
         message_type match
             case RdtMessageType.Request =>
-              cb.succeed(PlumtreeIO.encodeEnvelope(
-                PlumtreeIO.Envelope.Broadcast(dtnPeer, PlumtreeMessage.Graft(dots)),
+              cb.succeed(MessagingIO.encodeEnvelope(
+                MessagingIO.Envelope.Broadcast(dtnPeer, PlumtreeMessage.Graft(dots)),
                 Aead.identity
               ))
             case RdtMessageType.Payload =>
-              cb.succeed(PlumtreeIO.encodeEnvelope(
-                PlumtreeIO.Envelope.Broadcast(
+              cb.succeed(MessagingIO.encodeEnvelope(
+                MessagingIO.Envelope.Broadcast(
                   dtnPeer,
                   PlumtreeMessage.Payload(
                     dots,
@@ -93,8 +93,8 @@ class Channel[T: JsonValueCodec](
       // It makes any requests unnecessary.
       operationMode match
           case ClientOperationMode.PushAll =>
-            cb.succeed(PlumtreeIO.encodeEnvelope(
-              PlumtreeIO.Envelope.Broadcast(dtnPeer, PlumtreeMessage.Graft(Dots.empty)),
+            cb.succeed(MessagingIO.encodeEnvelope(
+              MessagingIO.Envelope.Broadcast(dtnPeer, PlumtreeMessage.Graft(Dots.empty)),
               Aead.identity
             ))
           case ClientOperationMode.RequestLater =>

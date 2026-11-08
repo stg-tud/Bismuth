@@ -10,7 +10,7 @@ import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.{Failure, Success, Try}
 
 /** Echo tests for a transport: `serverConn` listens, and clients connect to the descriptor it reports through the
-  * resolver returned by `clientResolver` (the same way [[channels.PlumtreeIO]] dials).
+  * resolver returned by `clientResolver` (the same way [[channels.MessagingIO]] dials).
   */
 trait EchoCommunicationTest(
     serverConn: (ExecutionContext, Abort) => Listener,

@@ -1,8 +1,8 @@
 package ex2024DTN
 
-import channels.broadcast.{PlumtreeBroadcast}
+import channels.broadcast.PlumtreeBroadcast
 
-import channels.PlumtreeIO
+import channels.MessagingIO
 import channels.JsoniterCodecs.given
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
@@ -30,7 +30,7 @@ class AddWinsSetRDT(number_of_additions: Int, sleep_time_milliseconds: Long) ext
 
   given JsonValueCodec[RdtType] = JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))
 
-  val dataManager: PlumtreeIO.of[RdtType] = PlumtreeIO[RdtType](
+  val dataManager: MessagingIO.Plumtree[RdtType] = MessagingIO[RdtType](
     ReplicaId.gen(),
     _ => println("replica received new state information"),
   )
@@ -81,7 +81,7 @@ class ObserveRemoveSetRDT(number_of_changes: Int, sleep_time_milliseconds: Long)
 
   given replicaId: ReplicaId = ReplicaId.gen()
 
-  val dataManager: PlumtreeIO.of[RdtType] = PlumtreeIO[RdtType](
+  val dataManager: MessagingIO.Plumtree[RdtType] = MessagingIO[RdtType](
     replicaId,
     _ =>
       println("replica received new state information"),
@@ -159,7 +159,7 @@ class LastWriterWinsRDT(number_of_changes: Int, sleep_time_milliseconds: Long) e
 
   given replicaId: ReplicaId = ReplicaId.gen()
 
-  val dataManager: PlumtreeIO.of[RdtType] = PlumtreeIO[RdtType](
+  val dataManager: MessagingIO.Plumtree[RdtType] = MessagingIO[RdtType](
     replicaId,
     (_ => println("replica received new state information")): @unused,
   )

@@ -1,7 +1,7 @@
 package channels
 
 import channels.connection.Peer
-import channels.PlumtreeIO
+import channels.MessagingIO
 import channels.connection.{ConnectionDescriptor, LocalConnectionRegistry, LocalMessageQueue, PeerConnectInfo, QueuedLocalConnection}
 import channels.experiments.Aead
 import channels.overlay.FullMeshOverlay
@@ -34,7 +34,7 @@ class FullMeshDiscoveryChainTest extends FunSuite {
     final case class Node(id: String) {
       val uid: ReplicaId               = ReplicaId.gen()
       val selfInfo: PeerConnectInfo    = PeerConnectInfo(Peer.Claimed(uid.uid), Set(ConnectionDescriptor.QueuedLocal(id)))
-      val io: PlumtreeIO.of[Set[String]] = PlumtreeIO[Set[String]](
+      val io: MessagingIO.Plumtree[Set[String]] = MessagingIO[Set[String]](
         uid,
         _ => (),
         overlay = Some(FullMeshOverlay(selfInfo)),
@@ -58,8 +58,8 @@ class FullMeshDiscoveryChainTest extends FunSuite {
     // already carry the Neighbor handshakes from both sides.
     val queuedNeighbors = queue.elements.flatMap(mb =>
       mb.toOption
-        .flatMap(buf => PlumtreeIO.decodeEnvelope[Set[String]](buf, Aead.identity).toOption)
-        .collect { case PlumtreeIO.Envelope.Membership(OverlayMessage.Neighbor(from, _)) => from.id.uid }
+        .flatMap(buf => MessagingIO.decodeEnvelope[Set[String]](buf, Aead.identity).toOption)
+        .collect { case MessagingIO.Envelope.Membership(OverlayMessage.Neighbor(from, _)) => from.id.uid }
     )
     assertEquals(
       queuedNeighbors.toSet,
@@ -77,8 +77,8 @@ class FullMeshDiscoveryChainTest extends FunSuite {
     // All the Neighbor requests eventually reach the other side.
     val deliveredNeighbors = queue.delivered.flatMap(mb =>
       mb.toOption
-        .flatMap(buf => PlumtreeIO.decodeEnvelope[Set[String]](buf, Aead.identity).toOption)
-        .collect { case PlumtreeIO.Envelope.Membership(OverlayMessage.Neighbor(from, _)) => from.id.uid }
+        .flatMap(buf => MessagingIO.decodeEnvelope[Set[String]](buf, Aead.identity).toOption)
+        .collect { case MessagingIO.Envelope.Membership(OverlayMessage.Neighbor(from, _)) => from.id.uid }
     )
     assertEquals(
       deliveredNeighbors.toSet,

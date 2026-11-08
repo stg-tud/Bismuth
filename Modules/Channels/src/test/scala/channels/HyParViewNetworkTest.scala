@@ -30,7 +30,7 @@ class HyParViewNetworkTest extends munit.FunSuite {
     shufflePassiveSample = 3,
   )
 
-  final class Node(val id: String, val io: PlumtreeIO.of[Set[String]], val info: PeerConnectInfo) {
+  final class Node(val id: String, val io: MessagingIO.Plumtree[Set[String]], val info: PeerConnectInfo) {
     def hv: HyParViewStateMachine = io.overlayController.asInstanceOf[HyParViewStateMachine]
     def peer: Peer                 = info.id
     override def toString: String = id
@@ -54,7 +54,7 @@ class HyParViewNetworkTest extends munit.FunSuite {
             case ConnectionDescriptor.QueuedLocal(target) if unreachable.contains((id, target)) => None
             case _ => registry.connect(details)
       }
-      val io = PlumtreeIO[Set[String]](
+      val io = MessagingIO[Set[String]](
         replica,
         _ => (),
         overlay = Some(HyParViewStateMachine.empty(info, config, (lo, _) => lo, _ => true)),
