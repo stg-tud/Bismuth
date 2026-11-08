@@ -30,7 +30,7 @@ class HyParViewNetworkTest extends munit.FunSuite {
     shufflePassiveSample = 3,
   )
 
-  final class Node(val id: String, val io: PlumtreeIO[Set[String]], val info: PeerConnectInfo) {
+  final class Node(val id: String, val io: PlumtreeIO.of[Set[String]], val info: PeerConnectInfo) {
     def hv: HyParViewStateMachine = io.overlayController.asInstanceOf[HyParViewStateMachine]
     def peer: Peer                 = info.id
     override def toString: String = id

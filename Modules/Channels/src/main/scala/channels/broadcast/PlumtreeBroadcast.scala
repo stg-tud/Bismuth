@@ -52,14 +52,19 @@ object PlumtreeBroadcast {
   /** Wire format. Not a given, as the derivation would find itself. */
   def messageCodec[State: JsonValueCodec]: JsonValueCodec[PlumtreeMessage[State]] = JsonCodecMaker.make
 
-  given protocol[State]
-      : BroadcastProtocol[PlumtreeBroadcast[State], PlumtreeMessage[State], Payload[State]] with {
-    def addPeer(state: PlumtreeBroadcast[State], peer: Peer): Result[State]    = state.addPeer(peer)
-    def removePeer(state: PlumtreeBroadcast[State], peer: Peer): Result[State] = state.removePeer(peer)
-    def handleMessage(state: PlumtreeBroadcast[State], from: Peer, message: PlumtreeMessage[State]): Result[State] =
+  final class Protocol[S] extends BroadcastProtocol {
+    type State = PlumtreeBroadcast[S]
+    type Msg   = PlumtreeMessage[S]
+    type Out   = Payload[S]
+
+    def addPeer(state: State, peer: Peer): Result[S]    = state.addPeer(peer)
+    def removePeer(state: State, peer: Peer): Result[S] = state.removePeer(peer)
+    def handleMessage(state: State, from: Peer, message: Msg): Result[S] =
       state.handleMessage(from, message)
-    def timerFired(state: PlumtreeBroadcast[State], timer: BroadcastTimer): Result[State] = state.timerFired(timer)
+    def timerFired(state: State, timer: BroadcastTimer): Result[S] = state.timerFired(timer)
   }
+
+  given protocol[State]: Protocol[State] = Protocol[State]()
 
   /** Local operation: assign the next dot of `self` to `data` and disseminate it. */
   def broadcastLocal[State](self: Uid, data: State)(state: PlumtreeBroadcast[State]): (res: Result[State], dot: Dot) = {
@@ -68,7 +73,7 @@ object PlumtreeBroadcast {
   }
 
   /** Application API of a [[MessagingIO]] running plumtree. */
-  extension [State](io: MessagingIO[PlumtreeBroadcast[State], PlumtreeMessage[State], Payload[State]]) {
+  extension [State](io: MessagingIO[Protocol[State]]) {
 
     /** Disseminate a local delta and return the dot assigned to it (`None` if `io` is closed).
       * Receivers get the same dot as part of the [[Payload]], which allows applications to track causality.

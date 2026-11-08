@@ -1,7 +1,7 @@
 package channels.experiments
 
 import channels.JsoniterCodecs.given
-import channels.broadcast.PlumtreeBroadcast
+import channels.broadcast.{PlumtreeBroadcast}
 import channels.broadcast.PlumtreeMessage.Payload
 import channels.connection.{Abort, ChannelResolver, ConnectionDescriptor, Connector, Listener, Peer, PeerConnectInfo}
 import channels.overlay.HyParViewStateMachine
@@ -30,7 +30,7 @@ class OverlayDemoNode(
   private val selfRef = PeerConnectInfo(Peer.Claimed(localUid.uid), selfDetails)
   private val abort   = Abort()
   private val timer   = Timer(true)
-  private var broadcastIO: Option[PlumtreeIO[OverlayStatusProtocol.Status]] = None
+  private var broadcastIO: Option[PlumtreeIO.of[OverlayStatusProtocol.Status]] = None
 
   private def nowMillis(): Long = System.currentTimeMillis()
 

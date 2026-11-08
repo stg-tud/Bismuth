@@ -15,7 +15,7 @@ class PlumtreeIOIntegrationTest extends munit.FunSuite {
 
   given JsonValueCodec[Set[String]] = JsonCodecMaker.make
 
-  final case class Node(id: String, io: PlumtreeIO[Set[String]], selfInfo: PeerConnectInfo)
+  final case class Node(id: String, io: PlumtreeIO.of[Set[String]], selfInfo: PeerConnectInfo)
 
   private def runLineNetwork(
       n: Int,

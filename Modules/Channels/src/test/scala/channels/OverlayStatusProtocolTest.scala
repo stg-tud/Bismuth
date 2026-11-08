@@ -1,5 +1,6 @@
 package channels
 
+import channels.broadcast.{PlumtreeBroadcast}
 import channels.connection.Peer
 import channels.PlumtreeIO
 import channels.connection.{ConnectionDescriptor, LocalConnectionRegistry, LocalMessageQueue, PeerConnectInfo, QueuedLocalConnection}
@@ -19,7 +20,7 @@ class OverlayStatusProtocolTest extends FunSuite {
     val uid: ReplicaId            = ReplicaId.gen()
     val selfInfo: PeerConnectInfo = PeerConnectInfo(Peer.Claimed(uid.uid), Set(ConnectionDescriptor.QueuedLocal(id)))
     var status: Status            = OverlayStatusProtocol.empty
-    val io: PlumtreeIO[Status]   = PlumtreeIO[Status](
+    val io: PlumtreeIO.of[Status]   = PlumtreeIO[Status](
       uid,
       payload => status = status.merge(payload.data),
       overlay = Some(FullMeshOverlay(selfInfo)),
@@ -101,7 +102,7 @@ class OverlayStatusProtocolTest extends FunSuite {
       val uid: ReplicaId            = ReplicaId.gen()
       val selfInfo: PeerConnectInfo = PeerConnectInfo(Peer.Claimed(uid.uid), Set(ConnectionDescriptor.QueuedLocal(id)))
       var status: Status            = OverlayStatusProtocol.empty
-      val io: PlumtreeIO[Status]   = PlumtreeIO[Status](
+      val io: PlumtreeIO.of[Status]   = PlumtreeIO[Status](
         uid,
         payload => status = status.merge(payload.data),
         overlay = Some(HyParViewStateMachine.empty(selfInfo, config, random.between, _ => true)),

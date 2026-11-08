@@ -1,5 +1,7 @@
 package ex2021encfxtodo
 
+import channels.broadcast.{PlumtreeBroadcast}
+
 import channels.connection.{Abort, ConnectionDescriptor, MessageBuffer, Peer, PeerConnectInfo}
 import channels.overlay.FullMeshOverlay
 import channels.{PlumtreeIO, NioTCP, NioTcpConnectionDetailsResolver, TimerDelays, Timers, experiments}
@@ -46,7 +48,7 @@ class ConnectionManager[State: JsonValueCodec](
   // connected replica is silently lost forever (see channels.PlumtreeIOOverlayDropTest).
   private val timer = java.util.Timer(s"broadcast-timers-${replicaId.uid}", true)
 
-  val dataManager: PlumtreeIO[State] =
+  val dataManager: PlumtreeIO.of[State] =
     PlumtreeIO[State](
       replicaId = replicaId,
       receiveCallback = payload => receiveCallback(payload.data),

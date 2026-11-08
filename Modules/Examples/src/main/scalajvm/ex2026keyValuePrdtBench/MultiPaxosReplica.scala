@@ -1,5 +1,7 @@
 package ex2026keyValuePrdtBench
 
+import channels.broadcast.PlumtreeMessage
+
 import channels.broadcast.PlumtreeBroadcast
 import channels.broadcast.PlumtreeMessage.Payload
 import channels.{PlumtreeIO, DeltaStorage}
@@ -177,7 +179,7 @@ class MultiPaxosReplica(
     }
   }
 
-  lazy val dataManagers: Map[Set[Uid], PlumtreeIO[MultiPaxos[Request]]] = {
+  lazy val dataManagers: Map[Set[Uid], PlumtreeIO.of[MultiPaxos[Request]]] = {
     val uniqueEndpointSets = systemConfig.knowledgeGroups.map(_.ids).filter(_.contains(id))
 
     uniqueEndpointSets.map(endpoints =>

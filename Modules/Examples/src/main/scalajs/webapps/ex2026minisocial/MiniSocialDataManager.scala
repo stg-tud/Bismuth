@@ -1,5 +1,7 @@
 package webapps.ex2026minisocial
 
+import channels.broadcast.{PlumtreeBroadcast}
+
 import channels.PlumtreeIO
 import rdts.base.Lattice
 import rdts.syntax.DeltaBuffer
@@ -10,7 +12,7 @@ import reactives.default.*
   */
 object MiniSocialDataManager {
 
-  val (receivedCallback, dataManager: PlumtreeIO[MiniSocial]) = Event.fromCallback {
+  val (receivedCallback, dataManager: PlumtreeIO.of[MiniSocial]) = Event.fromCallback {
     PlumtreeIO[MiniSocial](MiniSocialMain.replicaId, payload => Event.handle(payload.data))
   }
 

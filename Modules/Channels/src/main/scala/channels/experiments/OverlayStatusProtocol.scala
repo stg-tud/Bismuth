@@ -1,6 +1,6 @@
 package channels.experiments
 
-import channels.PlumtreeIO
+import channels.{PlumtreeIO}
 import channels.JsoniterCodecs.given
 import channels.broadcast.PlumtreeBroadcast.PeerRole
 import channels.connection.Peer
@@ -41,7 +41,7 @@ object OverlayStatusProtocol {
 
   given JsonValueCodec[Status] = summon[JsonValueCodec[ObserveRemoveMap[Uid, LocalView]]]
 
-  def localViewOf[State](io: PlumtreeIO[State], timestamp: Long)(using ReplicaId): LocalView = {
+  def localViewOf[State](io: PlumtreeIO.of[State], timestamp: Long)(using ReplicaId): LocalView = {
     val (activePeers, passivePeers) = io.overlayController match
         case overlay: HyParViewStateMachine => (overlay.activeView, overlay.passiveView)
         case overlay: FullMeshOverlay       => (overlay.active.keySet, Set.empty[Peer])
@@ -68,7 +68,7 @@ object OverlayStatusProtocol {
     LocalView(timestamp, peers)
   }
 
-  def statusDelta[State](current: Status, io: PlumtreeIO[State], timestamp: Long)(using ReplicaId): Status =
+  def statusDelta[State](current: Status, io: PlumtreeIO.of[State], timestamp: Long)(using ReplicaId): Status =
     current.update(io.selfPeer.uid, localViewOf(io, timestamp))
 
   def snapshot(status: Status): Map[Uid, Map[Uid, PeerState]] =

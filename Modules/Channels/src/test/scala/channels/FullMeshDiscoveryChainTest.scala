@@ -34,7 +34,7 @@ class FullMeshDiscoveryChainTest extends FunSuite {
     final case class Node(id: String) {
       val uid: ReplicaId               = ReplicaId.gen()
       val selfInfo: PeerConnectInfo    = PeerConnectInfo(Peer.Claimed(uid.uid), Set(ConnectionDescriptor.QueuedLocal(id)))
-      val io: PlumtreeIO[Set[String]] = PlumtreeIO[Set[String]](
+      val io: PlumtreeIO.of[Set[String]] = PlumtreeIO[Set[String]](
         uid,
         _ => (),
         overlay = Some(FullMeshOverlay(selfInfo)),

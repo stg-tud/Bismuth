@@ -1,7 +1,7 @@
 package channels
 
 import channels.connection.Peer
-import channels.broadcast.PlumtreeBroadcast
+import channels.broadcast.{PlumtreeBroadcast}
 import channels.connection.{LocalMessageQueue, PeerConnectInfo, QueuedLocalConnection}
 import channels.overlay.FullMeshOverlay
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
@@ -35,7 +35,7 @@ class PlumtreeIOHandshakeRaceTest extends munit.FunSuite {
     var receivedA: List[Set[String]] = Nil
     var receivedB: List[Set[String]] = Nil
 
-    private def mkNode(cb: Set[String] => Unit): PlumtreeIO[Set[String]] = {
+    private def mkNode(cb: Set[String] => Unit): PlumtreeIO.of[Set[String]] = {
       val uid = ReplicaId.gen()
       PlumtreeIO[Set[String]](
         replicaId = uid,
@@ -45,8 +45,8 @@ class PlumtreeIOHandshakeRaceTest extends munit.FunSuite {
       )
     }
 
-    val a: PlumtreeIO[Set[String]] = mkNode(s => receivedA = receivedA :+ s)
-    val b: PlumtreeIO[Set[String]] = mkNode(s => receivedB = receivedB :+ s)
+    val a: PlumtreeIO.of[Set[String]] = mkNode(s => receivedA = receivedA :+ s)
+    val b: PlumtreeIO.of[Set[String]] = mkNode(s => receivedB = receivedB :+ s)
 
     val queue: LocalMessageQueue = LocalMessageQueue()
     private val link             = QueuedLocalConnection("a<->b", queue)
@@ -64,7 +64,7 @@ class PlumtreeIOHandshakeRaceTest extends munit.FunSuite {
       assert(safety < 100, "message queue did not quiesce")
     }
 
-    def eagerPeerUids(io: PlumtreeIO[Set[String]]): Set[Uid] = io.state.eagerPeers.map(_.uid)
+    def eagerPeerUids(io: PlumtreeIO.of[Set[String]]): Set[Uid] = io.state.eagerPeers.map(_.uid)
 
     /** Drives the exact message interleaving that lost the handshake race:
       * `a` broadcasts `Set("initial")` while the handshake grafts are still in flight.

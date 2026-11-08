@@ -1,5 +1,7 @@
 package ex2026keyValuePrdtBench
 
+import channels.broadcast.PlumtreeMessage
+
 import channels.DeltaStorage.Type.*
 import channels.broadcast.PlumtreeBroadcast
 import channels.broadcast.PlumtreeMessage.Payload
@@ -68,7 +70,7 @@ class KeyValueReplica(
     given Lattice[Payload[ClusterState]] =
       Lattice.derived
 
-    lazy val dataManager: PlumtreeIO[ClusterState] = PlumtreeIO[ClusterState](
+    lazy val dataManager: PlumtreeIO.of[ClusterState] = PlumtreeIO[ClusterState](
       localUid,
       payload => replicaActor.execute(() => handleIncoming(payload.data)),
       sendingActor = sendingActor,
@@ -225,14 +227,14 @@ class KeyValueReplica(
 //    val nextProposal: AtomicReference[Option[ClientCommWrite.WriteReq]]     = AtomicReference(None)
 //    val currentReads: AtomicReference[Set[ClientCommRead.ReadReq]]        = AtomicReference(Set.empty)
 
-    lazy val dataManagerWrite: PlumtreeIO[ClientCommWrite] = PlumtreeIO(
+    lazy val dataManagerWrite: PlumtreeIO.of[ClientCommWrite] = PlumtreeIO(
       localUid,
       payload => replicaActor.execute(() => handleIncomingWrite(payload.data)),
       sendingActor = sendingActor,
       broadcast =
         Some(PlumtreeBroadcast(deltaStorage = DeltaStorage.getStorage(deltaStorageType, () => ???)))
     )
-    lazy val dataManagerRead: PlumtreeIO[ClientCommRead] = PlumtreeIO(
+    lazy val dataManagerRead: PlumtreeIO.of[ClientCommRead] = PlumtreeIO(
       localUid,
       payload => replicaActor.execute(() => handleIncomingRead(payload.data)),
       sendingActor = sendingActor,
@@ -287,7 +289,7 @@ class KeyValueReplica(
 
     var alivePeers: Set[Uid] = Set.empty
 
-    val dataManager: PlumtreeIO[ConnInformation] = PlumtreeIO(
+    val dataManager: PlumtreeIO.of[ConnInformation] = PlumtreeIO(
       localUid,
       payload => replicaActor.execute(() => handleIncoming(payload.data)),
       sendingActor = sendingActor,

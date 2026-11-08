@@ -1,5 +1,6 @@
 package channels
 
+import channels.broadcast.{PlumtreeBroadcast}
 import channels.connection.Peer
 import channels.PlumtreeIO
 import channels.JsoniterCodecs.given
@@ -148,7 +149,7 @@ class PlumtreeIOTest extends munit.FunSuite {
     final case class Node(id: String) {
       val uid: ReplicaId               = ReplicaId.gen()
       val selfInfo: PeerConnectInfo    = PeerConnectInfo(Peer.Claimed(uid.uid), Set(ConnectionDescriptor.QueuedLocal(id)))
-      val io: PlumtreeIO[Set[String]] = PlumtreeIO[Set[String]](
+      val io: PlumtreeIO.of[Set[String]] = PlumtreeIO[Set[String]](
         uid,
         _ => (),
         overlay = Some(FullMeshOverlay(selfInfo)),
@@ -204,7 +205,7 @@ class PlumtreeIOTest extends munit.FunSuite {
     final case class Node(id: String) {
       val uid: ReplicaId               = ReplicaId.gen()
       val selfInfo: PeerConnectInfo    = PeerConnectInfo(Peer.Claimed(uid.uid), Set(ConnectionDescriptor.QueuedLocal(id)))
-      val io: PlumtreeIO[Set[String]] = PlumtreeIO[Set[String]](
+      val io: PlumtreeIO.of[Set[String]] = PlumtreeIO[Set[String]](
         uid,
         _ => (),
         overlay = Some(FullMeshOverlay(selfInfo)),
@@ -283,7 +284,7 @@ class PlumtreeIOTest extends munit.FunSuite {
 
     class Node(val uid: ReplicaId) {
       var state: ReplicatedSet[String]                      = ReplicatedSet.empty[String]
-      val dissemination: PlumtreeIO[ReplicatedSet[String]] =
+      val dissemination: PlumtreeIO.of[ReplicatedSet[String]] =
         PlumtreeIO[ReplicatedSet[String]](
           uid,
           payload => state = state.merge(payload.data)
