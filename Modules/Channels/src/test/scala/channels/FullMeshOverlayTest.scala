@@ -28,17 +28,17 @@ class FullMeshOverlayTest extends FunSuite {
     assertEquals(pending.neighbors, Set.empty)
 
     val (active, up) = pending.on(OverlayEvent.Received(c1, OverlayMessage.Neighbor(peer, highPriority = true)))
-    assertEquals(up, List(OverlayAction.NeighborUp(peer.uid)))
-    assertEquals(active.connectionFor(peer.uid), Some(c1))
+    assertEquals(up, List(OverlayAction.NeighborUp(peer.id)))
+    assertEquals(active.connectionFor(peer.id), Some(c1))
   }
 
   test("messages claiming another sender than the authenticated peer are discarded") {
-    val authPeer            = peer.copy(uid = Peer.Authenticated(peer.uid.uid))
-    val authenticatedAsPeer = StubConnection("authenticated", authenticatedPeer = Some(peer.uid.uid))
+    val authPeer            = peer.copy(id = Peer.Authenticated(peer.id.uid))
+    val authenticatedAsPeer = StubConnection("authenticated", authenticatedPeer = Some(peer.id.uid))
     val (pending, _)        = FullMeshOverlay(self).on(OverlayEvent.Incoming(authenticatedAsPeer))
 
     // neither another authenticated identity, nor a merely claimed one (even with the same uid) is accepted
-    val impostors = List(other.copy(uid = Peer.Authenticated(other.uid.uid)), other, peer)
+    val impostors = List(other.copy(id = Peer.Authenticated(other.id.uid)), other, peer)
     impostors.foreach { impostor =>
       val (ignored, ignoredActions) =
         pending.on(OverlayEvent.Received(authenticatedAsPeer, OverlayMessage.Neighbor(impostor, highPriority = true)))
@@ -48,13 +48,13 @@ class FullMeshOverlayTest extends FunSuite {
 
     val (accepted, acceptedActions) =
       pending.on(OverlayEvent.Received(authenticatedAsPeer, OverlayMessage.Neighbor(authPeer, highPriority = true)))
-    assertEquals(acceptedActions, List(OverlayAction.NeighborUp(authPeer.uid)))
-    assertEquals(accepted.connectionFor(authPeer.uid), Some(authenticatedAsPeer))
-    assertEquals(accepted.connectionFor(peer.uid), None)
+    assertEquals(acceptedActions, List(OverlayAction.NeighborUp(authPeer.id)))
+    assertEquals(accepted.connectionFor(authPeer.id), Some(authenticatedAsPeer))
+    assertEquals(accepted.connectionFor(peer.id), None)
   }
 
   test("unauthenticated connections can not claim authenticated peers") {
-    val authPeer     = peer.copy(uid = Peer.Authenticated(peer.uid.uid))
+    val authPeer     = peer.copy(id = Peer.Authenticated(peer.id.uid))
     val (pending, _) = FullMeshOverlay(self).on(OverlayEvent.Incoming(c1))
 
     val (ignored, ignoredActions) =
@@ -74,32 +74,32 @@ class FullMeshOverlayTest extends FunSuite {
         .on(OverlayEvent.Received(secondAnnounced, OverlayMessage.Neighbor(peer, highPriority = true)))
 
     val (kept, keptActions) = withBoth(c2, c1)
-    assertEquals(kept.connectionFor(peer.uid), Some(c2))
+    assertEquals(kept.connectionFor(peer.id), Some(c2))
     assertEquals(keptActions, List(OverlayAction.Close(c1)))
 
     // the edge moves to the peer's dial: the broadcast layer restarts its handshake on the new connection
     val (switched, switchedActions) = withBoth(c1, c2)
-    assertEquals(switched.connectionFor(peer.uid), Some(c2))
+    assertEquals(switched.connectionFor(peer.id), Some(c2))
     assertEquals(
       switchedActions,
-      List(OverlayAction.Close(c1), OverlayAction.NeighborDown(peer.uid), OverlayAction.NeighborUp(peer.uid))
+      List(OverlayAction.Close(c1), OverlayAction.NeighborDown(peer.id), OverlayAction.NeighborUp(peer.id))
     )
   }
 
   test("Join is answered with the known peers; the answer makes the joiner connect to them") {
     val contact = PeerConnectInfo(Peer.Claimed(Uid.predefined("contact")), Set(ConnectionDescriptor.QueuedLocal("contact")))
 
-    val (_, joinActions) = FullMeshOverlay(self, known = Map(other.uid -> other))
+    val (_, joinActions) = FullMeshOverlay(self, known = Map(other.id -> other))
       .on(OverlayEvent.Incoming(c1))._1
       .on(OverlayEvent.Received(c1, OverlayMessage.Join(contact)))
     assertEquals(
       joinActions,
-      List(OverlayAction.Send(c1, OverlayMessage.ShuffleReply(self.uid, Set(self, other), Set.empty)))
+      List(OverlayAction.Send(c1, OverlayMessage.ShuffleReply(self.id, Set(self, other), Set.empty)))
     )
 
     val (_, infoActions) = FullMeshOverlay(self)
       .on(OverlayEvent.Incoming(c1))._1
-      .on(OverlayEvent.Received(c1, OverlayMessage.ShuffleReply(contact.uid, Set(self, other), Set.empty)))
+      .on(OverlayEvent.Received(c1, OverlayMessage.ShuffleReply(contact.id, Set(self, other), Set.empty)))
     assertEquals(infoActions, List(OverlayAction.Dial(AttemptId(0), other.channelConnectors)))
   }
 
@@ -107,11 +107,11 @@ class FullMeshOverlayTest extends FunSuite {
     val active = FullMeshOverlay(self)
       .on(OverlayEvent.Incoming(c1))._1
       .on(OverlayEvent.Received(c1, OverlayMessage.Neighbor(peer, highPriority = true)))._1
-    assertEquals(active.known.get(peer.uid), Some(peer))
+    assertEquals(active.known.get(peer.id), Some(peer))
 
     val (closed, actions) = active.on(OverlayEvent.Closed(c1))
-    assertEquals(actions, List(OverlayAction.NeighborDown(peer.uid)))
-    assertEquals(closed.known.get(peer.uid), None)
+    assertEquals(actions, List(OverlayAction.NeighborDown(peer.id)))
+    assertEquals(closed.known.get(peer.id), None)
   }
 
   test("discovering a peer dials it once; bootstrap dials the contact and sends Join once connected") {

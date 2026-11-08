@@ -41,11 +41,11 @@ class HyParViewStateMachineTest extends FunSuite {
   extension (m: HyParViewStateMachine) {
     def withActive(peers: (PeerConnectInfo, channels.connection.Connection)*): HyParViewStateMachine =
       m.copy(
-        known = m.known ++ peers.map((p, _) => p.uid -> p),
+        known = m.known ++ peers.map((p, _) => p.id -> p),
         links = m.links ++ peers.map((p, c) => c -> Link.Active(p)),
       )
     def withPassive(peers: PeerConnectInfo*): HyParViewStateMachine =
-      m.copy(known = m.known ++ peers.map(p => p.uid -> p))
+      m.copy(known = m.known ++ peers.map(p => p.id -> p))
     def on(event: OverlayEvent): (HyParViewStateMachine, List[OverlayAction]) =
         val (next, actions) = m.step(event)
         (next.asInstanceOf[HyParViewStateMachine], actions)
@@ -75,10 +75,10 @@ class HyParViewStateMachineTest extends FunSuite {
     )
 
     val (joined, joinedActions) = connected.on(received(c1, Neighbor(contact, highPriority = true)))
-    assertEquals(joined.activeView, Set(contact.uid))
+    assertEquals(joined.activeView, Set(contact.id))
     assertEquals(
       joinedActions,
-      List(OverlayAction.NeighborUp(contact.uid), OverlayAction.Send(c1, NeighborReply(self.uid, accepted = true)))
+      List(OverlayAction.NeighborUp(contact.id), OverlayAction.Send(c1, NeighborReply(self.id, accepted = true)))
     )
   }
 
@@ -93,21 +93,21 @@ class HyParViewStateMachineTest extends FunSuite {
       actions,
       List(
         OverlayAction.Send(c2, Neighbor(self, highPriority = true)),
-        OverlayAction.Send(c1, ForwardJoin(newcomer, config.activeRandomWalkLength, self.uid))
+        OverlayAction.Send(c1, ForwardJoin(newcomer, config.activeRandomWalkLength, self.id))
       )
     )
     assertEquals(pending.links(c2), Link.Pending(Some(newcomer), requestedByUs = true))
 
-    val (joined, joinedActions) = pending.on(received(c2, NeighborReply(newcomer.uid, accepted = true)))
-    assertEquals(joined.activeView, Set(a.uid, newcomer.uid))
-    assertEquals(joinedActions, List(OverlayAction.NeighborUp(newcomer.uid)))
+    val (joined, joinedActions) = pending.on(received(c2, NeighborReply(newcomer.id, accepted = true)))
+    assertEquals(joined.activeView, Set(a.id, newcomer.id))
+    assertEquals(joinedActions, List(OverlayAction.NeighborUp(newcomer.id)))
   }
 
   test("ForwardJoin at ttl zero dials the newcomer and sends a high-priority Neighbor once connected") {
     val a       = peer("a")
     val newNode = peer("new")
 
-    val (dialing, actions) = state().withActive(a -> c1).on(received(c1, ForwardJoin(newNode, 0, a.uid)))
+    val (dialing, actions) = state().withActive(a -> c1).on(received(c1, ForwardJoin(newNode, 0, a.id)))
     assertEquals(actions, List(OverlayAction.Dial(AttemptId(0), newNode.channelConnectors)))
 
     val (_, connected) = dialing.on(OverlayEvent.Established(AttemptId(0), c2))
@@ -124,7 +124,7 @@ class HyParViewStateMachineTest extends FunSuite {
     val a       = peer("a")
     val newNode = peer("new")
 
-    val (_, actions) = state().withActive(a -> c1, newNode -> c2).on(received(c1, ForwardJoin(newNode, 0, a.uid)))
+    val (_, actions) = state().withActive(a -> c1, newNode -> c2).on(received(c1, ForwardJoin(newNode, 0, a.id)))
     assertEquals(actions, Nil)
   }
 
@@ -134,12 +134,12 @@ class HyParViewStateMachineTest extends FunSuite {
     val newNode = peer("new")
 
     val (next, actions) = state().withActive(a -> c1, b -> c2)
-      .on(received(c1, ForwardJoin(newNode, config.passiveRandomWalkLength, sender = a.uid)))
+      .on(received(c1, ForwardJoin(newNode, config.passiveRandomWalkLength, sender = a.id)))
 
-    assert(next.passiveView.contains(newNode.uid))
+    assert(next.passiveView.contains(newNode.id))
     assertEquals(
       actions,
-      List(OverlayAction.Send(c2, ForwardJoin(newNode, config.passiveRandomWalkLength - 1, self.uid)))
+      List(OverlayAction.Send(c2, ForwardJoin(newNode, config.passiveRandomWalkLength - 1, self.id)))
     )
   }
 
@@ -150,15 +150,15 @@ class HyParViewStateMachineTest extends FunSuite {
 
     val (refused, refuseActions) = state().withActive(a -> c1, b -> c2).on(OverlayEvent.Incoming(c3)) match
         case (s, _) => s.on(received(c3, Neighbor(c, highPriority = false)))
-    assertEquals(refused.activeView, Set(a.uid, b.uid))
-    assertEquals(refuseActions, List(OverlayAction.Send(c3, NeighborReply(self.uid, accepted = false))))
+    assertEquals(refused.activeView, Set(a.id, b.id))
+    assertEquals(refuseActions, List(OverlayAction.Send(c3, NeighborReply(self.id, accepted = false))))
 
     val (accepted, acceptActions) = state().withActive(a -> c1).on(OverlayEvent.Incoming(c3)) match
         case (s, _) => s.on(received(c3, Neighbor(c, highPriority = false)))
-    assertEquals(accepted.activeView, Set(a.uid, c.uid))
+    assertEquals(accepted.activeView, Set(a.id, c.id))
     assertEquals(
       acceptActions,
-      List(OverlayAction.NeighborUp(c.uid), OverlayAction.Send(c3, NeighborReply(self.uid, accepted = true)))
+      List(OverlayAction.NeighborUp(c.id), OverlayAction.Send(c3, NeighborReply(self.id, accepted = true)))
     )
   }
 
@@ -170,15 +170,15 @@ class HyParViewStateMachineTest extends FunSuite {
     val (next, actions) = state().withActive(a -> c1, b -> c2).on(OverlayEvent.Incoming(c3)) match
         case (s, _) => s.on(received(c3, Neighbor(c, highPriority = true)))
 
-    assertEquals(next.activeView, Set(b.uid, c.uid))
-    assert(next.passiveView.contains(a.uid))
+    assertEquals(next.activeView, Set(b.id, c.id))
+    assert(next.passiveView.contains(a.id))
     assertEquals(
       actions,
       List(
         OverlayAction.Close(c1),
-        OverlayAction.NeighborDown(a.uid),
-        OverlayAction.NeighborUp(c.uid),
-        OverlayAction.Send(c3, NeighborReply(self.uid, accepted = true))
+        OverlayAction.NeighborDown(a.id),
+        OverlayAction.NeighborUp(c.id),
+        OverlayAction.Send(c3, NeighborReply(self.id, accepted = true))
       )
     )
   }
@@ -190,10 +190,10 @@ class HyParViewStateMachineTest extends FunSuite {
 
     val (next, actions) = state().withActive(a -> c1, b -> c2).withPassive(backup).on(OverlayEvent.Closed(c1))
 
-    assertEquals(next.activeView, Set(b.uid))
-    assert(next.passiveView.contains(a.uid))
+    assertEquals(next.activeView, Set(b.id))
+    assert(next.passiveView.contains(a.id))
     // a is still a passive candidate; the deterministic random picks the first one
-    assertEquals(actions.head, OverlayAction.NeighborDown(a.uid))
+    assertEquals(actions.head, OverlayAction.NeighborDown(a.id))
     assertEquals(actions.collect { case d: OverlayAction.Dial => d }.size, 1)
   }
 
@@ -206,7 +206,7 @@ class HyParViewStateMachineTest extends FunSuite {
     assertEquals(dialing.dialing.values.toList, List(HyParViewStateMachine.Purpose.Neighbor(dead, false)))
 
     val (next, actions) = dialing.withPassive(backup).on(OverlayEvent.DialFailed(AttemptId(0)))
-    assert(!next.passiveView.contains(dead.uid))
+    assert(!next.passiveView.contains(dead.id))
     assertEquals(actions, List(OverlayAction.Dial(AttemptId(1), backup.channelConnectors)))
   }
 
@@ -217,9 +217,9 @@ class HyParViewStateMachineTest extends FunSuite {
     val (dialing, _) = state().withActive(a -> c1).withPassive(refuser).on(OverlayEvent.Discovered(Set.empty))
     val (pending, _) = dialing.on(OverlayEvent.Established(AttemptId(0), c2))
 
-    val (refused, actions) = pending.on(received(c2, NeighborReply(refuser.uid, accepted = false)))
+    val (refused, actions) = pending.on(received(c2, NeighborReply(refuser.id, accepted = false)))
     assertEquals(actions, List(OverlayAction.Close(c2)))
-    assert(refused.passiveView.contains(refuser.uid))
+    assert(refused.passiveView.contains(refuser.id))
     assertEquals(refused.links.get(c2), None)
 
     val (_, afterShuffle) = refused.on(OverlayEvent.TimerFired(OverlayTimer.Shuffle))
@@ -239,8 +239,8 @@ class HyParViewStateMachineTest extends FunSuite {
 
   test("messages claiming another sender than the authenticated peer are discarded") {
     val claimedA         = peer("a")
-    val a                = claimedA.copy(uid = Peer.Authenticated(claimedA.uid.uid))
-    val authenticatedAsA = StubConnection("authenticated", authenticatedPeer = Some(a.uid.uid))
+    val a                = claimedA.copy(id = Peer.Authenticated(claimedA.id.uid))
+    val authenticatedAsA = StubConnection("authenticated", authenticatedPeer = Some(a.id.uid))
     val (pending, _)     = state().on(OverlayEvent.Incoming(authenticatedAsA))
 
     // neither another peer, nor a merely claimed one with the same uid is accepted
@@ -251,15 +251,15 @@ class HyParViewStateMachineTest extends FunSuite {
     }
 
     val (accepted, acceptedActions) = pending.on(received(authenticatedAsA, Neighbor(a, highPriority = true)))
-    assertEquals(accepted.activeView, Set(a.uid))
+    assertEquals(accepted.activeView, Set(a.id))
     assertEquals(
       acceptedActions,
-      List(OverlayAction.NeighborUp(a.uid), OverlayAction.Send(authenticatedAsA, NeighborReply(self.uid, accepted = true)))
+      List(OverlayAction.NeighborUp(a.id), OverlayAction.Send(authenticatedAsA, NeighborReply(self.id, accepted = true)))
     )
   }
 
   test("unauthenticated connections can not claim authenticated peers") {
-    val a            = peer("a").copy(uid = Peer.Authenticated(Uid.predefined("a")))
+    val a            = peer("a").copy(id = Peer.Authenticated(Uid.predefined("a")))
     val (pending, _) = state().on(OverlayEvent.Incoming(c1))
 
     val (ignored, ignoredActions) = pending.on(received(c1, Neighbor(a, highPriority = true)))
@@ -274,12 +274,12 @@ class HyParViewStateMachineTest extends FunSuite {
     val (dialing, _) = state().withActive(a -> c1).withPassive(expected).on(OverlayEvent.Discovered(Set.empty))
     val (pending, _) = dialing.on(OverlayEvent.Established(AttemptId(0), c2))
 
-    val (ignored, actions) = pending.on(received(c2, NeighborReply(peer("imposter").uid, accepted = true)))
+    val (ignored, actions) = pending.on(received(c2, NeighborReply(peer("imposter").id, accepted = true)))
     assertEquals(actions, Nil)
-    assert(!ignored.activeView.contains(expected.uid))
+    assert(!ignored.activeView.contains(expected.id))
 
-    val (_, acceptedActions) = pending.on(received(c2, NeighborReply(expected.uid, accepted = true)))
-    assertEquals(acceptedActions, List(OverlayAction.NeighborUp(expected.uid)))
+    val (_, acceptedActions) = pending.on(received(c2, NeighborReply(expected.id, accepted = true)))
+    assertEquals(acceptedActions, List(OverlayAction.NeighborUp(expected.id)))
   }
 
   test("messages on unknown connections are ignored") {
@@ -298,7 +298,7 @@ class HyParViewStateMachineTest extends FunSuite {
     assertEquals(
       fired,
       List(
-        OverlayAction.Send(c1, Shuffle(self, Set(self, a), config.shuffleRandomWalkLength, self.uid)),
+        OverlayAction.Send(c1, Shuffle(self, Set(self, a), config.shuffleRandomWalkLength, self.id)),
         OverlayAction.StartTimer(OverlayTimer.Shuffle)
       )
     )
@@ -313,16 +313,16 @@ class HyParViewStateMachineTest extends FunSuite {
     val rejected = peer("rejected", connectable = false)
 
     val (next, actions) = state().withActive(origin -> c1, activeP -> c2).withPassive(passiveP)
-      .on(received(c1, Shuffle(origin, Set(sampleA, sampleB, rejected), 0, origin.uid)))
+      .on(received(c1, Shuffle(origin, Set(sampleA, sampleB, rejected), 0, origin.id)))
 
-    assert(next.passiveView.contains(sampleA.uid))
-    assert(next.passiveView.contains(sampleB.uid))
-    assert(!next.passiveView.contains(rejected.uid), "undialable peers should be filtered out")
+    assert(next.passiveView.contains(sampleA.id))
+    assert(next.passiveView.contains(sampleB.id))
+    assert(!next.passiveView.contains(rejected.id), "undialable peers should be filtered out")
     assertEquals(
       actions,
       List(OverlayAction.Send(
         c1,
-        ShuffleReply(self.uid, Set(passiveP, sampleA, sampleB), Set(sampleA, sampleB, rejected))
+        ShuffleReply(self.id, Set(passiveP, sampleA, sampleB), Set(sampleA, sampleB, rejected))
       ))
     )
   }
@@ -334,16 +334,16 @@ class HyParViewStateMachineTest extends FunSuite {
 
     // the active view is full, so learning about origin does not trigger a refill dial
     val (dialing, actions) = state().withActive(hop -> c1, other -> c3)
-      .on(received(c1, Shuffle(origin, Set(origin), 0, hop.uid)))
+      .on(received(c1, Shuffle(origin, Set(origin), 0, hop.id)))
     assertEquals(actions, List(OverlayAction.Dial(AttemptId(0), origin.channelConnectors)))
 
     val (done, sendClose) = dialing.on(OverlayEvent.Established(AttemptId(0), c2))
     sendClose match
         case List(OverlayAction.Send(`c2`, ShuffleReply(from, _, answered)), OverlayAction.Close(`c2`)) =>
-          assertEquals(from, self.uid)
+          assertEquals(from, self.id)
           assertEquals(answered, Set(origin))
         case other => fail(s"expected Send(ShuffleReply) and Close, got $other")
-    assertEquals(done.activeView, Set(hop.uid, other.uid))
+    assertEquals(done.activeView, Set(hop.id, other.id))
   }
 
   test("simultaneous Neighbor requests keep the connection dialed by the smaller id") {
@@ -356,11 +356,11 @@ class HyParViewStateMachineTest extends FunSuite {
 
     // a < b: a keeps its own connection and refuses b's
     val (_, aActions) = machine(aSelf, bSelf).on(received(c2, Neighbor(bSelf, highPriority = true)))
-    assertEquals(aActions, List(OverlayAction.Send(c2, NeighborReply(aSelf.uid, accepted = false))))
+    assertEquals(aActions, List(OverlayAction.Send(c2, NeighborReply(aSelf.id, accepted = false))))
 
     // b > a: b accepts a's connection
     val (bNext, bActions) = machine(bSelf, aSelf).on(received(c2, Neighbor(aSelf, highPriority = true)))
-    assertEquals(bNext.connectionFor(aSelf.uid), Some(c2))
-    assert(bActions.contains(OverlayAction.Send(c2, NeighborReply(bSelf.uid, accepted = true))), bActions)
+    assertEquals(bNext.connectionFor(aSelf.id), Some(c2))
+    assert(bActions.contains(OverlayAction.Send(c2, NeighborReply(bSelf.id, accepted = true))), bActions)
   }
 }

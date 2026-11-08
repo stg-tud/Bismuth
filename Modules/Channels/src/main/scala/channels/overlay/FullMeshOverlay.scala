@@ -39,7 +39,7 @@ case class FullMeshOverlay(
 
   override def connectionFor(peer: Peer): Option[Connection] = active.get(peer)
 
-  override def selfPeer: Peer = self.uid
+  override def selfPeer: Peer = self.id
 
   override def holds(conn: Connection): Boolean = pending.contains(conn) || active.valuesIterator.contains(conn)
 
@@ -93,7 +93,7 @@ case class FullMeshOverlay(
                   val bootstrapPeers = known.valuesIterator.toSet + self
                   (
                     this,
-                    List(OverlayAction.Send(conn, OverlayMessage.ShuffleReply(self.uid, bootstrapPeers, Set.empty)))
+                    List(OverlayAction.Send(conn, OverlayMessage.ShuffleReply(self.id, bootstrapPeers, Set.empty)))
                   )
 
                 case OverlayMessage.Neighbor(peer, _) =>
@@ -117,25 +117,25 @@ case class FullMeshOverlay(
 
   private def connectTo(peers: Set[PeerConnectInfo]): (FullMeshOverlay, List[OverlayAction]) =
     peers.foldLeft((this, List.empty[OverlayAction])) { case ((state, actions), peer) =>
-      val skip = peer.uid == self.uid || state.active.contains(peer.uid) ||
-        state.dialing.valuesIterator.contains(Purpose.Connect(peer.uid))
+      val skip = peer.id == self.id || state.active.contains(peer.id) ||
+        state.dialing.valuesIterator.contains(Purpose.Connect(peer.id))
       if skip then (state, actions)
       else {
         // the peer is only remembered once it announces itself on the connection
-        val (next, more) = state.dial(Purpose.Connect(peer.uid), peer.channelConnectors)
+        val (next, more) = state.dial(Purpose.Connect(peer.id), peer.channelConnectors)
         (next, actions ++ more)
       }
     }
 
   private def activate(peer: PeerConnectInfo, conn: Connection): (FullMeshOverlay, List[OverlayAction]) = {
     val remembered         = rememberPeer(peer).copy(pending = pending - conn)
-    def use(c: Connection) = remembered.copy(active = remembered.active.updated(peer.uid, c))
-    active.get(peer.uid) match
-        case None                               => (use(conn), List(OverlayAction.NeighborUp(peer.uid)))
+    def use(c: Connection) = remembered.copy(active = remembered.active.updated(peer.id, c))
+    active.get(peer.id) match
+        case None                               => (use(conn), List(OverlayAction.NeighborUp(peer.id)))
         case Some(existing) if existing == conn => (remembered, Nil)
         case Some(existing)                     =>
           // keep the connection dialed by the smaller id; both sides come to the same conclusion
-          val preferOutgoing = Ordering[Peer].lt(self.uid, peer.uid)
+          val preferOutgoing = Ordering[Peer].lt(self.id, peer.id)
           val keepNew        =
             outgoing.contains(conn) == preferOutgoing || outgoing.contains(existing) == outgoing.contains(conn)
           // the edge moves to another connection: messages in flight on the old one are lost, so the
@@ -145,19 +145,19 @@ case class FullMeshOverlay(
                 use(conn).copy(outgoing = outgoing - existing),
                 List(
                   OverlayAction.Close(existing),
-                  OverlayAction.NeighborDown(peer.uid),
-                  OverlayAction.NeighborUp(peer.uid)
+                  OverlayAction.NeighborDown(peer.id),
+                  OverlayAction.NeighborUp(peer.id)
                 )
               )
           else (remembered.copy(outgoing = outgoing - conn), List(OverlayAction.Close(conn)))
   }
 
   private def rememberPeer(peer: PeerConnectInfo): FullMeshOverlay =
-    if peer.uid == self.uid then this
+    if peer.id == self.id then this
     else {
-      val merged = known.get(peer.uid) match
+      val merged = known.get(peer.id) match
           case Some(existing) => existing.copy(channelConnectors = existing.channelConnectors ++ peer.channelConnectors)
           case None           => peer
-      copy(known = known.updated(peer.uid, merged))
+      copy(known = known.updated(peer.id, merged))
     }
 }

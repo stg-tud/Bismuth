@@ -59,7 +59,7 @@ class FullMeshDiscoveryChainTest extends FunSuite {
     val queuedNeighbors = queue.elements.flatMap(mb =>
       mb.toOption
         .flatMap(buf => BroadcastIO.decodeEnvelope[Set[String]](buf, Aead.identity).toOption)
-        .collect { case BroadcastIO.Envelope.Membership(OverlayMessage.Neighbor(from, _)) => from.uid.uid }
+        .collect { case BroadcastIO.Envelope.Membership(OverlayMessage.Neighbor(from, _)) => from.id.uid }
     )
     assertEquals(
       queuedNeighbors.toSet,
@@ -78,7 +78,7 @@ class FullMeshDiscoveryChainTest extends FunSuite {
     val deliveredNeighbors = queue.delivered.flatMap(mb =>
       mb.toOption
         .flatMap(buf => BroadcastIO.decodeEnvelope[Set[String]](buf, Aead.identity).toOption)
-        .collect { case BroadcastIO.Envelope.Membership(OverlayMessage.Neighbor(from, _)) => from.uid.uid }
+        .collect { case BroadcastIO.Envelope.Membership(OverlayMessage.Neighbor(from, _)) => from.id.uid }
     )
     assertEquals(
       deliveredNeighbors.toSet,

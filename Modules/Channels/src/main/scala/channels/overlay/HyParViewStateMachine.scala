@@ -133,19 +133,19 @@ final case class HyParViewStateMachine(
   def activeEntries: Vector[(Connection, PeerConnectInfo)] =
     links.toVector.collect { case (conn, Link.Active(peer)) => conn -> peer }
 
-  def activeView: Set[Peer]               = activeEntries.iterator.map(_._2.uid).toSet
+  def activeView: Set[Peer]               = activeEntries.iterator.map(_._2.id).toSet
   def activePeers: Set[PeerConnectInfo]  = activeEntries.iterator.map(_._2).toSet
   def passivePeers: Set[PeerConnectInfo] =
       val act = activeView
-      known.valuesIterator.filter(peer => !act.contains(peer.uid) && canConnectTo(peer)).toSet
-  def passiveView: Set[Peer] = passivePeers.iterator.map(_.uid).toSet
+      known.valuesIterator.filter(peer => !act.contains(peer.id) && canConnectTo(peer)).toSet
+  def passiveView: Set[Peer] = passivePeers.iterator.map(_.id).toSet
 
   override def neighbors: Set[Peer] = activeView
 
   override def connectionFor(peer: Peer): Option[Connection] =
-    activeEntries.collectFirst { case (conn, p) if p.uid == peer => conn }
+    activeEntries.collectFirst { case (conn, p) if p.id == peer => conn }
 
-  override def selfPeer: Peer = self.uid
+  override def selfPeer: Peer = self.id
 
   override def holds(conn: Connection): Boolean = links.contains(conn)
 
@@ -153,13 +153,13 @@ final case class HyParViewStateMachine(
 
   /** Peers we asked to become neighbors and are waiting for (dialing, or Neighbor sent). */
   private def requested: Set[Peer] =
-    links.valuesIterator.collect { case Link.Pending(Some(peer), true) => peer.uid }.toSet ++
-    dialing.valuesIterator.collect { case Purpose.Neighbor(peer, _) => peer.uid }
+    links.valuesIterator.collect { case Link.Pending(Some(peer), true) => peer.id }.toSet ++
+    dialing.valuesIterator.collect { case Purpose.Neighbor(peer, _) => peer.id }
 
   /** Active, or a handshake in either direction is in flight. */
   private def busyWith(peer: Peer): Boolean =
     activeView.contains(peer) || requested.contains(peer) ||
-    links.valuesIterator.exists { case Link.Pending(Some(p), _) => p.uid == peer; case _ => false }
+    links.valuesIterator.exists { case Link.Pending(Some(p), _) => p.id == peer; case _ => false }
 
   // ------------------------------------------------------------------------------------------------
   // event handling
@@ -198,7 +198,7 @@ final case class HyParViewStateMachine(
                 List(OverlayAction.Send(conn, Join(self)), startHandshakeTimer(conn))
               )
             case Some(Purpose.Neighbor(peer, highPriority)) =>
-              if activeView.contains(peer.uid) then Result(base, List(OverlayAction.Close(conn)))
+              if activeView.contains(peer.id) then Result(base, List(OverlayAction.Close(conn)))
               else
                   Result(
                     base.copy(links = links.updated(conn, Link.Pending(Some(peer), requestedByUs = true))),
@@ -211,21 +211,21 @@ final case class HyParViewStateMachine(
         val base = copy(dialing = dialing.removed(attempt))
         dialing.get(attempt) match
             // paper: a peer that can not be contacted is removed from the passive view
-            case Some(Purpose.Neighbor(peer, _)) => Result(base.forgetPeer(peer.uid), Nil)
+            case Some(Purpose.Neighbor(peer, _)) => Result(base.forgetPeer(peer.id), Nil)
             case _                               => Result(base, Nil)
 
       case OverlayEvent.Closed(conn) =>
         val base = copy(links = links.removed(conn))
         links.get(conn) match
-            case Some(Link.Active(peer))           => Result(base, List(OverlayAction.NeighborDown(peer.uid)))
-            case Some(Link.Pending(Some(peer), _)) => Result(base.copy(refused = refused + peer.uid), Nil)
+            case Some(Link.Active(peer))           => Result(base, List(OverlayAction.NeighborDown(peer.id)))
+            case Some(Link.Pending(Some(peer), _)) => Result(base.copy(refused = refused + peer.id), Nil)
             case _                                 => Result(base, Nil)
 
       case OverlayEvent.TimerFired(OverlayTimer.Handshake(conn)) =>
         links.get(conn) match
             case Some(Link.Pending(peer, _)) =>
               Result(
-                copy(links = links.removed(conn), refused = refused ++ peer.map(_.uid)),
+                copy(links = links.removed(conn), refused = refused ++ peer.map(_.id)),
                 List(OverlayAction.Close(conn))
               )
             case _ => done
@@ -242,11 +242,11 @@ final case class HyParViewStateMachine(
       case Join(newNode) =>
         // Paper join contact handling: the contact adds the newcomer (forced, high priority) and forwards
         // `ForwardJoin` along its current active view to seed additional peers.
-        if newNode.uid == self.uid then done
+        if newNode.id == self.id then done
         else {
           val forwards = activeEntries.collect {
-            case (target, peer) if peer.uid != newNode.uid =>
-              OverlayAction.Send(target, ForwardJoin(newNode, config.activeRandomWalkLength, self.uid))
+            case (target, peer) if peer.id != newNode.id =>
+              OverlayAction.Send(target, ForwardJoin(newNode, config.activeRandomWalkLength, self.id))
           }
           Result(
             rememberPeer(newNode).copy(links = links.updated(conn, Link.Pending(Some(newNode), requestedByUs = true))),
@@ -258,42 +258,42 @@ final case class HyParViewStateMachine(
         // Paper forwarded-join random walk: intermediate hops forward to another active peer (remembering the
         // newcomer at PRWL); the last hop adds the newcomer, unless it already is (or is becoming) a neighbor.
         def terminate(state: HyParViewStateMachine): Result =
-          if state.busyWith(newNode.uid) || !canConnectTo(newNode) then Result(state, Nil)
+          if state.busyWith(newNode.id) || !canConnectTo(newNode) then Result(state, Nil)
           else state.dial(Purpose.Neighbor(newNode, highPriority = true), newNode.channelConnectors)
 
-        if newNode.uid == self.uid then done
+        if newNode.id == self.id then done
         else if ttl == 0 || activeEntries.size <= 1 then terminate(rememberPeer(newNode))
         else {
           val withPassive = if ttl == config.passiveRandomWalkLength then rememberPeer(newNode) else this
           // never walk back to the sender or to the newcomer itself (it would just drop the walk)
-          choose(activeEntries.filterNot((_, p) => p.uid == sender || p.uid == newNode.uid)) match
+          choose(activeEntries.filterNot((_, p) => p.id == sender || p.id == newNode.id)) match
               case Some((target, _)) =>
-                Result(withPassive, List(OverlayAction.Send(target, ForwardJoin(newNode, ttl - 1, self.uid))))
+                Result(withPassive, List(OverlayAction.Send(target, ForwardJoin(newNode, ttl - 1, self.id))))
               case None => terminate(withPassive)
         }
 
       case Neighbor(from, highPriority) =>
         val remembered = rememberPeer(from)
-        if from.uid == self.uid then Result(remembered, List(OverlayAction.Close(conn)))
-        else if remembered.ownHandshakeWins(from.uid, conn) then
+        if from.id == self.id then Result(remembered, List(OverlayAction.Close(conn)))
+        else if remembered.ownHandshakeWins(from.id, conn) then
             // both sides dialed each other; the connection dialed by the smaller id is kept
-            Result(remembered, List(OverlayAction.Send(conn, NeighborReply(self.uid, accepted = false))))
-        else if highPriority || activeView.contains(from.uid) || activeEntries.size < config.activeViewSize then
-            remembered.addActive(from, conn).emit(OverlayAction.Send(conn, NeighborReply(self.uid, accepted = true)))
+            Result(remembered, List(OverlayAction.Send(conn, NeighborReply(self.id, accepted = false))))
+        else if highPriority || activeView.contains(from.id) || activeEntries.size < config.activeViewSize then
+            remembered.addActive(from, conn).emit(OverlayAction.Send(conn, NeighborReply(self.id, accepted = true)))
         else
             Result(
               remembered.copy(links = links.updated(conn, Link.Pending(Some(from), requestedByUs = false))),
-              List(OverlayAction.Send(conn, NeighborReply(self.uid, accepted = false)))
+              List(OverlayAction.Send(conn, NeighborReply(self.id, accepted = false)))
             )
 
       case NeighborReply(from, accepted) =>
         links.get(conn) match
             // only the peer we asked can answer (otherwise the handshake timer eventually closes the connection)
-            case Some(Link.Pending(Some(peer), true)) if peer.uid == from =>
+            case Some(Link.Pending(Some(peer), true)) if peer.id == from =>
               if accepted then addActive(peer, conn)
               else
                   Result(
-                    copy(links = links.removed(conn), refused = refused + peer.uid),
+                    copy(links = links.removed(conn), refused = refused + peer.id),
                     List(OverlayAction.Close(conn))
                   )
             case _ => done
@@ -302,9 +302,9 @@ final case class HyParViewStateMachine(
         // Paper shuffle walk: intermediate hops only forward; the endpoint replies and merges the received sample.
         val remembered = sample.foldLeft(rememberPeer(origin))(_.rememberPeer(_))
         if ttl > 0 && activeEntries.size > 1 then
-            choose(activeEntries.filterNot((_, p) => p.uid == sender)) match
+            choose(activeEntries.filterNot((_, p) => p.id == sender)) match
                 case Some((target, _)) =>
-                  Result(remembered, List(OverlayAction.Send(target, Shuffle(origin, sample, ttl - 1, self.uid))))
+                  Result(remembered, List(OverlayAction.Send(target, Shuffle(origin, sample, ttl - 1, self.id))))
                 case None => remembered.acceptShuffle(origin, sample)
         else remembered.acceptShuffle(origin, sample)
 
@@ -321,10 +321,10 @@ final case class HyParViewStateMachine(
   /** True if we have our own handshake with `peer` in flight on another connection, and ours wins the tie-break. */
   private def ownHandshakeWins(peer: Peer, incoming: Connection): Boolean =
       val ownInFlight = links.exists {
-        case (c, Link.Pending(Some(p), true)) => c != incoming && p.uid == peer
+        case (c, Link.Pending(Some(p), true)) => c != incoming && p.id == peer
         case _                                => false
-      } || dialing.valuesIterator.exists { case Purpose.Neighbor(p, _) => p.uid == peer; case _ => false }
-      ownInFlight && Ordering[Peer].lt(self.uid, peer)
+      } || dialing.valuesIterator.exists { case Purpose.Neighbor(p, _) => p.id == peer; case _ => false }
+      ownInFlight && Ordering[Peer].lt(self.id, peer)
 
   private def dial(purpose: Purpose, to: Set[ConnectionDescriptor]): Result = {
     val attempt = AttemptId(nextAttempt)
@@ -336,7 +336,7 @@ final case class HyParViewStateMachine(
 
   /** Make `conn` the active edge to `peer`, evicting a random neighbor if the active view is full. */
   private def addActive(peer: PeerConnectInfo, conn: Connection): Result =
-    connectionFor(peer.uid) match
+    connectionFor(peer.id) match
         case Some(existing) if existing == conn => done
         case Some(existing)                     =>
           // a second edge to the same neighbor (e.g. a re-join); keep the new one. Messages in flight on the old
@@ -345,8 +345,8 @@ final case class HyParViewStateMachine(
             copy(links = links.removed(existing).updated(conn, Link.Active(peer))),
             List(
               OverlayAction.Close(existing),
-              OverlayAction.NeighborDown(peer.uid),
-              OverlayAction.NeighborUp(peer.uid)
+              OverlayAction.NeighborDown(peer.id),
+              OverlayAction.NeighborUp(peer.id)
             )
           )
         case None =>
@@ -358,22 +358,22 @@ final case class HyParViewStateMachine(
                     case Some((evConn, evPeer)) =>
                       Result(
                         copy(links = links.removed(evConn)),
-                        List(OverlayAction.Close(evConn), OverlayAction.NeighborDown(evPeer.uid))
+                        List(OverlayAction.Close(evConn), OverlayAction.NeighborDown(evPeer.id))
                       )
           evicted.andThen { s =>
             Result(
               s.rememberPeer(peer).copy(
                 links = s.links.updated(conn, Link.Active(peer)),
-                refused = s.refused - peer.uid
+                refused = s.refused - peer.id
               ),
-              List(OverlayAction.NeighborUp(peer.uid))
+              List(OverlayAction.NeighborUp(peer.id))
             )
           }
 
   /** Fill free active slots from the passive view, one low-priority request per free slot. */
   private def refill(): Result = {
     val free       = config.activeViewSize - activeEntries.size - requested.size
-    val candidates = passivePeers.filterNot(p => busyWith(p.uid) || refused.contains(p.uid)).toVector
+    val candidates = passivePeers.filterNot(p => busyWith(p.id) || refused.contains(p.id)).toVector
     if free <= 0 then done
     else
         choose(candidates) match
@@ -397,17 +397,17 @@ final case class HyParViewStateMachine(
             randomSubset(passivePeers, config.shufflePassiveSample)
           Result(
             this,
-            List(OverlayAction.Send(target, Shuffle(self, sample, config.shuffleRandomWalkLength, self.uid)))
+            List(OverlayAction.Send(target, Shuffle(self, sample, config.shuffleRandomWalkLength, self.id)))
           )
 
   private def acceptShuffle(origin: PeerConnectInfo, incomingSample: Set[PeerConnectInfo]): Result = {
     val replySample = randomSubset(passivePeers, incomingSample.size)
     val next        = mergeShuffleSample(incomingSample, replySample)
-    val reply       = ShuffleReply(self.uid, replySample, incomingSample)
+    val reply       = ShuffleReply(self.id, replySample, incomingSample)
     // Paper: the reply is sent back using a temporary connection if the origin is not an active neighbor.
-    next.connectionFor(origin.uid) match
+    next.connectionFor(origin.id) match
         case Some(conn) => Result(next, List(OverlayAction.Send(conn, reply)))
-        case None if origin.uid != self.uid && next.canConnectTo(origin) =>
+        case None if origin.id != self.id && next.canConnectTo(origin) =>
           next.dial(Purpose.OneShot(origin, reply), origin.channelConnectors)
         case None => Result(next, Nil)
   }
@@ -416,17 +416,17 @@ final case class HyParViewStateMachine(
       incomingSample: Set[PeerConnectInfo],
       sentToPeer: Set[PeerConnectInfo]
   ): HyParViewStateMachine = {
-    val preferredVictims = sentToPeer.map(_.uid)
+    val preferredVictims = sentToPeer.map(_.id)
     incomingSample.foldLeft(this) { (state, peer) =>
-      if peer.uid == self.uid || !state.canConnectTo(peer) || state.activeView.contains(peer.uid) ||
-          state.passiveView.contains(peer.uid)
+      if peer.id == self.id || !state.canConnectTo(peer) || state.activeView.contains(peer.id) ||
+          state.passiveView.contains(peer.id)
       then state
       else state.rememberPeer(peer).trimKnownPassiveIfNeeded(preferredVictims)
     }
   }
 
   private def rememberPeer(peer: PeerConnectInfo): HyParViewStateMachine =
-    if peer.uid == self.uid then this else copy(known = known.updated(peer.uid, peer))
+    if peer.id == self.id then this else copy(known = known.updated(peer.id, peer))
 
   private def forgetPeer(peer: Peer): HyParViewStateMachine =
     copy(known = known.removed(peer), refused = refused - peer)
@@ -435,8 +435,8 @@ final case class HyParViewStateMachine(
     val passive = passivePeers.toIndexedSeq
     if passive.size <= config.passiveViewSize then this
     else
-        passive.find(p => preferredVictims.contains(p.uid)).orElse(choose(passive)) match
-            case Some(victim) => forgetPeer(victim.uid)
+        passive.find(p => preferredVictims.contains(p.id)).orElse(choose(passive)) match
+            case Some(victim) => forgetPeer(victim.id)
             case None         => this
   }
 

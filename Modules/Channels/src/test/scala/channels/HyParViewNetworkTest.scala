@@ -32,7 +32,7 @@ class HyParViewNetworkTest extends munit.FunSuite {
 
   final class Node(val id: String, val io: BroadcastIO[Set[String]], val info: PeerConnectInfo) {
     def hv: HyParViewStateMachine = io.overlayController.asInstanceOf[HyParViewStateMachine]
-    def peer: Peer                 = info.uid
+    def peer: Peer                 = info.id
     override def toString: String = id
   }
 
@@ -197,7 +197,7 @@ class HyParViewNetworkTest extends munit.FunSuite {
 
     origin.io.fireTimers() // shuffle: origin -> middle (ttl 1) -> end (ttl 0), end replies over a temporary connection
     net.drain()
-    assert(origin.hv.known.contains(secret.uid), net.describe)
+    assert(origin.hv.known.contains(secret.id), net.describe)
     net.assertInvariants()
   }
 }
