@@ -1,5 +1,6 @@
 package channels
 
+import channels.connection.Peer
 import channels.connection.{ConnectionDescriptor, PeerConnectInfo}
 import channels.overlay.HyParViewStateMachine.{HyParViewConfig, Link}
 import channels.overlay.OverlayController.OverlayMessage.*
@@ -24,7 +25,7 @@ class HyParViewStateMachineTest extends FunSuite {
 
   private def peer(name: String, connectable: Boolean = true): PeerConnectInfo =
     PeerConnectInfo(
-      Uid.predefined(name),
+      Peer.Claimed(Uid.predefined(name)),
       if connectable then Set(ConnectionDescriptor.QueuedLocal(name)) else Set(ConnectionDescriptor.Tcp(name, 42))
     )
 
@@ -237,13 +238,17 @@ class HyParViewStateMachineTest extends FunSuite {
   }
 
   test("messages claiming another sender than the authenticated peer are discarded") {
-    val a                  = peer("a")
-    val authenticatedAsA   = StubConnection("authenticated", authenticatedPeer = Some(a.uid))
-    val (pending, _)       = state().on(OverlayEvent.Incoming(authenticatedAsA))
+    val claimedA         = peer("a")
+    val a                = claimedA.copy(uid = Peer.Authenticated(claimedA.uid.uid))
+    val authenticatedAsA = StubConnection("authenticated", authenticatedPeer = Some(a.uid.uid))
+    val (pending, _)     = state().on(OverlayEvent.Incoming(authenticatedAsA))
 
-    val (ignored, ignoredActions) = pending.on(received(authenticatedAsA, Neighbor(peer("b"), highPriority = true)))
-    assertEquals(ignoredActions, Nil)
-    assertEquals(ignored.activeView, Set.empty)
+    // neither another peer, nor a merely claimed one with the same uid is accepted
+    List(peer("b"), claimedA).foreach { impostor =>
+      val (ignored, ignoredActions) = pending.on(received(authenticatedAsA, Neighbor(impostor, highPriority = true)))
+      assertEquals(ignoredActions, Nil)
+      assertEquals(ignored.activeView, Set.empty)
+    }
 
     val (accepted, acceptedActions) = pending.on(received(authenticatedAsA, Neighbor(a, highPriority = true)))
     assertEquals(accepted.activeView, Set(a.uid))
@@ -251,6 +256,15 @@ class HyParViewStateMachineTest extends FunSuite {
       acceptedActions,
       List(OverlayAction.NeighborUp(a.uid), OverlayAction.Send(authenticatedAsA, NeighborReply(self.uid, accepted = true)))
     )
+  }
+
+  test("unauthenticated connections can not claim authenticated peers") {
+    val a            = peer("a").copy(uid = Peer.Authenticated(Uid.predefined("a")))
+    val (pending, _) = state().on(OverlayEvent.Incoming(c1))
+
+    val (ignored, ignoredActions) = pending.on(received(c1, Neighbor(a, highPriority = true)))
+    assertEquals(ignoredActions, Nil)
+    assertEquals(ignored.activeView, Set.empty)
   }
 
   test("a NeighborReply from another peer than the one we asked is discarded") {

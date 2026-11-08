@@ -1,8 +1,7 @@
 package channels.overlay
 
-import channels.connection.{Connection, ConnectionDescriptor, PeerConnectInfo}
+import channels.connection.{Connection, ConnectionDescriptor, Peer, PeerConnectInfo}
 import channels.overlay.OverlayController.{OverlayAction, OverlayEvent}
-import rdts.base.Uid
 
 /** Identifies one outgoing connection attempt. Chosen by the overlay when it emits [[OverlayController.OverlayAction.Dial]]. */
 final case class AttemptId(value: Long)
@@ -20,10 +19,13 @@ trait OverlayController {
   def step(event: OverlayEvent): (OverlayController, List[OverlayAction])
 
   /** Peers with an established active edge (what the broadcast layer sees as neighbors). */
-  def neighbors: Set[Uid]
+  def neighbors: Set[Peer]
 
   /** The connection backing the active edge to `peer`, if any. */
-  def connectionFor(peer: Uid): Option[Connection]
+  def connectionFor(peer: Peer): Option[Connection]
+
+  /** The identity of the local node, used as the sender of its messages. */
+  def selfPeer: Peer
 
   /** Whether `conn` is still owned by the overlay (pending or active), i.e. it was reported and not yet closed. */
   def holds(conn: Connection): Boolean
@@ -73,17 +75,16 @@ object OverlayController {
     case Handshake(conn: Connection)
   }
 
-  /** Whether `message` may have been sent by the peer at the other end of `conn`: if the transport authenticated that
-    * peer, the sender the message claims must be that peer. Messages on unauthenticated connections are always accepted.
+  /** Whether `message` may have been sent by the peer at the other end of `conn`, see [[Peer.mayUse]].
     * Overlays discard messages that fail this check.
     */
   def isAuthentic(conn: Connection, message: OverlayMessage): Boolean =
-    conn.info.authenticatedPeer.forall(_ == message.claimedSender)
+    Peer.mayUse(conn, message.claimedSender)
 
   enum OverlayMessage {
 
     /** The peer that sent this message (on the connection it arrived on), as claimed by the message. */
-    def claimedSender: Uid = this match
+    def claimedSender: Peer = this match
         case Join(newNode)                  => newNode.uid
         case ForwardJoin(_, _, sender)      => sender
         case Neighbor(from, _)              => from.uid
@@ -92,15 +93,15 @@ object OverlayController {
         case ShuffleReply(from, _, _)       => from
 
     case Join(newNode: PeerConnectInfo)
-    case ForwardJoin(newNode: PeerConnectInfo, ttl: Int, sender: Uid)
+    case ForwardJoin(newNode: PeerConnectInfo, ttl: Int, sender: Peer)
     case Neighbor(from: PeerConnectInfo, highPriority: Boolean)
-    case NeighborReply(from: Uid, accepted: Boolean)
-    case Shuffle(origin: PeerConnectInfo, sample: Set[PeerConnectInfo], ttl: Int, sender: Uid)
+    case NeighborReply(from: Peer, accepted: Boolean)
+    case Shuffle(origin: PeerConnectInfo, sample: Set[PeerConnectInfo], ttl: Int, sender: Peer)
 
     /** `answeredSample` echoes the sample of the answered [[Shuffle]] (empty if the reply answers no shuffle),
       * so the receiver can prefer evicting the peers it sent without keeping per-shuffle state.
       */
-    case ShuffleReply(from: Uid, sample: Set[PeerConnectInfo], answeredSample: Set[PeerConnectInfo])
+    case ShuffleReply(from: Peer, sample: Set[PeerConnectInfo], answeredSample: Set[PeerConnectInfo])
   }
 
   enum OverlayAction {
@@ -116,9 +117,9 @@ object OverlayController {
     case StartTimer(timer: OverlayTimer)
 
     /** `peer` became a neighbor (an active edge was established). */
-    case NeighborUp(peer: Uid)
+    case NeighborUp(peer: Peer)
 
     /** `peer` is no longer a neighbor. */
-    case NeighborDown(peer: Uid)
+    case NeighborDown(peer: Peer)
   }
 }

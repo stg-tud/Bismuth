@@ -1,5 +1,6 @@
 package channels
 
+import channels.connection.Peer
 import channels.BroadcastIO
 import channels.JsoniterCodecs.given
 import channels.connection.{ConnectionDescriptor, LocalConnectionRegistry, LocalMessageQueue, PeerConnectInfo, QueuedLocalConnection}
@@ -171,7 +172,7 @@ class BroadcastIOTest extends munit.FunSuite {
 
     final case class Node(id: String) {
       val uid: ReplicaId               = ReplicaId.gen()
-      val selfInfo: PeerConnectInfo    = PeerConnectInfo(uid.uid, Set(ConnectionDescriptor.QueuedLocal(id)))
+      val selfInfo: PeerConnectInfo    = PeerConnectInfo(Peer.Claimed(uid.uid), Set(ConnectionDescriptor.QueuedLocal(id)))
       val io: BroadcastIO[Set[String]] = BroadcastIO[Set[String]](
         uid,
         _ => (),
@@ -227,7 +228,7 @@ class BroadcastIOTest extends munit.FunSuite {
 
     final case class Node(id: String) {
       val uid: ReplicaId               = ReplicaId.gen()
-      val selfInfo: PeerConnectInfo    = PeerConnectInfo(uid.uid, Set(ConnectionDescriptor.QueuedLocal(id)))
+      val selfInfo: PeerConnectInfo    = PeerConnectInfo(Peer.Claimed(uid.uid), Set(ConnectionDescriptor.QueuedLocal(id)))
       val io: BroadcastIO[Set[String]] = BroadcastIO[Set[String]](
         uid,
         _ => (),
@@ -242,7 +243,7 @@ class BroadcastIOTest extends munit.FunSuite {
         io.discover(peers.iterator.map(_.selfInfo).toSet)
 
       def closeConnectionTo(other: Node): Unit =
-        io.connectionTo(other.uid.uid).foreach(_.close())
+        io.connectionTo(Peer.Claimed(other.uid.uid)).foreach(_.close())
     }
 
     def drain(maxRounds: Int = 200): Unit = {

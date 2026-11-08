@@ -3,7 +3,7 @@ package channels.experiments
 import channels.JsoniterCodecs.given
 import channels.broadcast.PlumtreeBroadcast
 import channels.broadcast.PlumtreeMessage.Payload
-import channels.connection.{Abort, ChannelResolver, ConnectionDescriptor, Connector, Listener, PeerConnectInfo}
+import channels.connection.{Abort, ChannelResolver, ConnectionDescriptor, Connector, Listener, Peer, PeerConnectInfo}
 import channels.overlay.HyParViewStateMachine
 import channels.overlay.HyParViewStateMachine.HyParViewConfig
 import channels.{BroadcastIO, MergingHistory, Timers}
@@ -27,7 +27,7 @@ class OverlayDemoNode(
 
   @volatile var state: OverlayStatusProtocol.Status = OverlayStatusProtocol.empty
 
-  private val selfRef = PeerConnectInfo(localUid.uid, selfDetails)
+  private val selfRef = PeerConnectInfo(Peer.Claimed(localUid.uid), selfDetails)
   private val abort   = Abort()
   private val timer   = Timer(true)
   private var broadcastIO: Option[BroadcastIO[OverlayStatusProtocol.Status]] = None
@@ -95,17 +95,17 @@ class OverlayDemoNode(
 
   def activeView: Set[Uid] = broadcastIO.collect {
     case io if io.overlayController.isInstanceOf[HyParViewStateMachine] =>
-      io.overlayController.asInstanceOf[HyParViewStateMachine].activeView
+      io.overlayController.asInstanceOf[HyParViewStateMachine].activeView.map(_.uid)
   }.getOrElse(Set.empty)
 
   def passiveView: Set[Uid] = broadcastIO.collect {
     case io if io.overlayController.isInstanceOf[HyParViewStateMachine] =>
-      io.overlayController.asInstanceOf[HyParViewStateMachine].passiveView
+      io.overlayController.asInstanceOf[HyParViewStateMachine].passiveView.map(_.uid)
   }.getOrElse(Set.empty)
 
   def eagerView: Set[Uid] = broadcastIO.flatMap(io =>
     io.plumtreeState match
-        case pt: PlumtreeBroadcast[?] => Some(pt.eagerPeers)
+        case pt: PlumtreeBroadcast[?] => Some(pt.eagerPeers.map(_.uid))
         case _                        => None
   ).getOrElse(Set.empty)
 

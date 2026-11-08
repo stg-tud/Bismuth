@@ -1,7 +1,8 @@
 package channels.broadcast
 
 import channels.broadcast.PlumtreeBroadcast.Event.Send
-import channels.broadcast.PlumtreeBroadcast.{Peer, PeerRole}
+import channels.broadcast.PlumtreeBroadcast.PeerRole
+import channels.connection.Peer
 import channels.broadcast.PlumtreeMessage.*
 import channels.{DeltaStorage, NoHistory}
 import rdts.base.Uid
@@ -32,9 +33,6 @@ object PlumtreeMessage {
 }
 
 object PlumtreeBroadcast {
-
-  /** Overlay neighbor used by the pure Plumtree state machine. */
-  final case class Peer(uid: Uid)
 
   /** Paper: `Eager` ↔ `eagerPushPeers`, `Lazy` ↔ `lazyPushPeers`. */
   enum PeerRole { case Eager, Lazy }
@@ -73,7 +71,7 @@ final case class PlumtreeBroadcast[State](
 ) extends BroadcastProtocol[State] {
   import PlumtreeBroadcast.*
 
-  def eagerPeers: Set[Uid] = peerRoles.collect { case (Peer(uid), PeerRole.Eager) => uid }.toSet
+  def eagerPeers: Set[Peer] = peerRoles.collect { case (peer, PeerRole.Eager) => peer }.toSet
 
   /** Algorithm 3 `NeighborUp(node)`. Requests missing history with an initial graft.
     *

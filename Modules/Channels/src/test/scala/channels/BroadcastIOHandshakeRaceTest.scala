@@ -1,5 +1,6 @@
 package channels
 
+import channels.connection.Peer
 import channels.broadcast.PlumtreeBroadcast
 import channels.connection.{LocalMessageQueue, PeerConnectInfo, QueuedLocalConnection}
 import channels.overlay.FullMeshOverlay
@@ -40,7 +41,7 @@ class BroadcastIOHandshakeRaceTest extends munit.FunSuite {
         replicaId = uid,
         receiveCallback = payload => cb(payload.data),
         // same overlay setup as used by ex2021encfxtodo.ConnectionManager
-        overlay = Some(FullMeshOverlay(PeerConnectInfo(uid.uid))),
+        overlay = Some(FullMeshOverlay(PeerConnectInfo(Peer.Claimed(uid.uid)))),
       )
     }
 
@@ -64,7 +65,7 @@ class BroadcastIOHandshakeRaceTest extends munit.FunSuite {
     }
 
     def eagerPeerUids(io: BroadcastIO[Set[String]]): Set[Uid] = io.plumtreeState match
-        case pt: PlumtreeBroadcast[?] => pt.eagerPeers
+        case pt: PlumtreeBroadcast[?] => pt.eagerPeers.map(_.uid)
         case _                        => Set.empty
 
     /** Drives the exact message interleaving that lost the handshake race:

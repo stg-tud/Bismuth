@@ -1,6 +1,6 @@
 package ex2021encfxtodo
 
-import channels.connection.{Abort, ConnectionDescriptor, MessageBuffer, PeerConnectInfo}
+import channels.connection.{Abort, ConnectionDescriptor, MessageBuffer, Peer, PeerConnectInfo}
 import channels.overlay.FullMeshOverlay
 import channels.{BroadcastIO, NioTCP, NioTcpConnectionDetailsResolver, TimerDelays, Timers, experiments}
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
@@ -50,7 +50,7 @@ class ConnectionManager[State: JsonValueCodec](
     BroadcastIO[State](
       replicaId = replicaId,
       receiveCallback = payload => receiveCallback(payload.data),
-      overlay = Some(FullMeshOverlay(PeerConnectInfo(replicaId.uid))),
+      overlay = Some(FullMeshOverlay(PeerConnectInfo(Peer.Claimed(replicaId.uid)))),
       resolver = nioResolver,
       globalAbort = globalAbort,
       aead = TinkBasedAead(aead),
@@ -83,7 +83,7 @@ class ConnectionManager[State: JsonValueCodec](
   }
 
   def remoteAddresses: Set[String] =
-    dataManager.overlayController.neighbors.map(_.delegate)
+    dataManager.overlayController.neighbors.map(_.uid.delegate)
 }
 
 object ConnectionManager {

@@ -1,5 +1,6 @@
 package channels
 
+import channels.connection.Peer
 import channels.BroadcastIO
 import channels.connection.{ConnectionDescriptor, LocalConnectionRegistry, LocalMessageQueue, PeerConnectInfo, QueuedLocalConnection}
 import channels.overlay.HyParViewStateMachine
@@ -41,7 +42,7 @@ class BroadcastIOIntegrationTest extends munit.FunSuite {
     val nodes = (0 until n).toVector.map { i =>
       val uid      = ReplicaId.gen()
       val id       = s"n$i"
-      val selfInfo = PeerConnectInfo(uid.uid, Set(ConnectionDescriptor.QueuedLocal(id)))
+      val selfInfo = PeerConnectInfo(Peer.Claimed(uid.uid), Set(ConnectionDescriptor.QueuedLocal(id)))
       val random   = Random(0xb15 + i)
       val overlay  = HyParViewStateMachine.empty(selfInfo, networkConfig, random.between, _ => true)
       val io       = BroadcastIO[Set[String]](

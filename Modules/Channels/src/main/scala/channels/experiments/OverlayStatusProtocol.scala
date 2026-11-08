@@ -3,7 +3,8 @@ package channels.experiments
 import channels.BroadcastIO
 import channels.JsoniterCodecs.given
 import channels.broadcast.PlumtreeBroadcast
-import channels.broadcast.PlumtreeBroadcast.{Peer, PeerRole}
+import channels.broadcast.PlumtreeBroadcast.PeerRole
+import channels.connection.Peer
 import channels.overlay.{FullMeshOverlay, HyParViewStateMachine}
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
@@ -44,22 +45,22 @@ object OverlayStatusProtocol {
   def localViewOf[State](io: BroadcastIO[State], timestamp: Long)(using ReplicaId): LocalView = {
     val (activePeers, passivePeers) = io.overlayController match
         case overlay: HyParViewStateMachine => (overlay.activeView, overlay.passiveView)
-        case overlay: FullMeshOverlay       => (overlay.active.keySet, Set.empty[Uid])
-        case _                              => (Set.empty[Uid], Set.empty[Uid])
+        case overlay: FullMeshOverlay       => (overlay.active.keySet, Set.empty[Peer])
+        case _                              => (Set.empty[Peer], Set.empty[Peer])
 
     val peerStates =
         val plumtreeRoles: Map[Uid, PeerState] = io.plumtreeState match
             case pt: PlumtreeBroadcast[?] =>
-              activePeers.iterator.map { uid =>
-                val state = pt.peerRoles.get(Peer(uid)) match
+              activePeers.iterator.map { peer =>
+                val state = pt.peerRoles.get(peer) match
                     case Some(PeerRole.Lazy)  => PeerState.Lazy
                     case Some(PeerRole.Eager) => PeerState.Eager
                     case None                 => PeerState.Eager
-                uid -> state
+                peer.uid -> state
               }.toMap
             case _ => Map.empty
 
-        (passivePeers.iterator.map(_ -> PeerState.Passive) ++
+        (passivePeers.iterator.map(_.uid -> PeerState.Passive) ++
         plumtreeRoles.iterator).toList
 
     val peers = peerStates.foldLeft(ObserveRemoveMap.empty[Uid, LastWriterWins[PeerState]]) {

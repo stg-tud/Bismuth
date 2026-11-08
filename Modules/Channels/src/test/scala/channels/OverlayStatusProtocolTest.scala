@@ -1,5 +1,6 @@
 package channels
 
+import channels.connection.Peer
 import channels.BroadcastIO
 import channels.connection.{ConnectionDescriptor, LocalConnectionRegistry, LocalMessageQueue, PeerConnectInfo, QueuedLocalConnection}
 import channels.experiments.OverlayStatusProtocol
@@ -16,7 +17,7 @@ class OverlayStatusProtocolTest extends FunSuite {
 
   final case class Node(id: String) {
     val uid: ReplicaId            = ReplicaId.gen()
-    val selfInfo: PeerConnectInfo = PeerConnectInfo(uid.uid, Set(ConnectionDescriptor.QueuedLocal(id)))
+    val selfInfo: PeerConnectInfo = PeerConnectInfo(Peer.Claimed(uid.uid), Set(ConnectionDescriptor.QueuedLocal(id)))
     var status: Status            = OverlayStatusProtocol.empty
     val io: BroadcastIO[Status]   = BroadcastIO[Status](
       uid,
@@ -98,7 +99,7 @@ class OverlayStatusProtocolTest extends FunSuite {
 
     final case class HyparNode(id: String, random: Random) {
       val uid: ReplicaId            = ReplicaId.gen()
-      val selfInfo: PeerConnectInfo = PeerConnectInfo(uid.uid, Set(ConnectionDescriptor.QueuedLocal(id)))
+      val selfInfo: PeerConnectInfo = PeerConnectInfo(Peer.Claimed(uid.uid), Set(ConnectionDescriptor.QueuedLocal(id)))
       var status: Status            = OverlayStatusProtocol.empty
       val io: BroadcastIO[Status]   = BroadcastIO[Status](
         uid,
@@ -121,10 +122,10 @@ class OverlayStatusProtocolTest extends FunSuite {
       }
 
       def activeView: Set[rdts.base.Uid] =
-        io.overlayController.asInstanceOf[HyParViewStateMachine].activeView
+        io.overlayController.asInstanceOf[HyParViewStateMachine].activeView.map(_.uid)
 
       def passiveView: Set[rdts.base.Uid] =
-        io.overlayController.asInstanceOf[HyParViewStateMachine].passiveView
+        io.overlayController.asInstanceOf[HyParViewStateMachine].passiveView.map(_.uid)
     }
 
     val nodes = Vector.tabulate(nodeCount)(i => HyparNode(s"h$i", Random(0xb15 + i)))

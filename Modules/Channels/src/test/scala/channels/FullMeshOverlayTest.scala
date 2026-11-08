@@ -1,5 +1,6 @@
 package channels
 
+import channels.connection.Peer
 import channels.connection.{ConnectionDescriptor, PeerConnectInfo}
 import channels.overlay.OverlayController.{OverlayAction, OverlayEvent, OverlayMessage}
 import channels.overlay.{AttemptId, FullMeshOverlay}
@@ -8,9 +9,9 @@ import rdts.base.Uid
 
 class FullMeshOverlayTest extends FunSuite {
 
-  private val self  = PeerConnectInfo(Uid.predefined("self"), Set(ConnectionDescriptor.QueuedLocal("self")))
-  private val peer  = PeerConnectInfo(Uid.predefined("peer"), Set(ConnectionDescriptor.QueuedLocal("peer")))
-  private val other = PeerConnectInfo(Uid.predefined("other"), Set(ConnectionDescriptor.QueuedLocal("other")))
+  private val self  = PeerConnectInfo(Peer.Claimed(Uid.predefined("self")), Set(ConnectionDescriptor.QueuedLocal("self")))
+  private val peer  = PeerConnectInfo(Peer.Claimed(Uid.predefined("peer")), Set(ConnectionDescriptor.QueuedLocal("peer")))
+  private val other = PeerConnectInfo(Peer.Claimed(Uid.predefined("other")), Set(ConnectionDescriptor.QueuedLocal("other")))
 
   private val c1 = StubConnection("c1")
   private val c2 = StubConnection("c2")
@@ -32,18 +33,34 @@ class FullMeshOverlayTest extends FunSuite {
   }
 
   test("messages claiming another sender than the authenticated peer are discarded") {
-    val authenticatedAsPeer = StubConnection("authenticated", authenticatedPeer = Some(peer.uid))
+    val authPeer            = peer.copy(uid = Peer.Authenticated(peer.uid.uid))
+    val authenticatedAsPeer = StubConnection("authenticated", authenticatedPeer = Some(peer.uid.uid))
     val (pending, _)        = FullMeshOverlay(self).on(OverlayEvent.Incoming(authenticatedAsPeer))
 
-    val (ignored, ignoredActions) =
-      pending.on(OverlayEvent.Received(authenticatedAsPeer, OverlayMessage.Neighbor(other, highPriority = true)))
-    assertEquals(ignoredActions, Nil)
-    assertEquals(ignored.neighbors, Set.empty)
+    // neither another authenticated identity, nor a merely claimed one (even with the same uid) is accepted
+    val impostors = List(other.copy(uid = Peer.Authenticated(other.uid.uid)), other, peer)
+    impostors.foreach { impostor =>
+      val (ignored, ignoredActions) =
+        pending.on(OverlayEvent.Received(authenticatedAsPeer, OverlayMessage.Neighbor(impostor, highPriority = true)))
+      assertEquals(ignoredActions, Nil)
+      assertEquals(ignored.neighbors, Set.empty)
+    }
 
     val (accepted, acceptedActions) =
-      pending.on(OverlayEvent.Received(authenticatedAsPeer, OverlayMessage.Neighbor(peer, highPriority = true)))
-    assertEquals(acceptedActions, List(OverlayAction.NeighborUp(peer.uid)))
-    assertEquals(accepted.connectionFor(peer.uid), Some(authenticatedAsPeer))
+      pending.on(OverlayEvent.Received(authenticatedAsPeer, OverlayMessage.Neighbor(authPeer, highPriority = true)))
+    assertEquals(acceptedActions, List(OverlayAction.NeighborUp(authPeer.uid)))
+    assertEquals(accepted.connectionFor(authPeer.uid), Some(authenticatedAsPeer))
+    assertEquals(accepted.connectionFor(peer.uid), None)
+  }
+
+  test("unauthenticated connections can not claim authenticated peers") {
+    val authPeer     = peer.copy(uid = Peer.Authenticated(peer.uid.uid))
+    val (pending, _) = FullMeshOverlay(self).on(OverlayEvent.Incoming(c1))
+
+    val (ignored, ignoredActions) =
+      pending.on(OverlayEvent.Received(c1, OverlayMessage.Neighbor(authPeer, highPriority = true)))
+    assertEquals(ignoredActions, Nil)
+    assertEquals(ignored.neighbors, Set.empty)
   }
 
   test("of two connections to the same peer, both sides keep the one dialed by the smaller id") {
@@ -70,7 +87,7 @@ class FullMeshOverlayTest extends FunSuite {
   }
 
   test("Join is answered with the known peers; the answer makes the joiner connect to them") {
-    val contact = PeerConnectInfo(Uid.predefined("contact"), Set(ConnectionDescriptor.QueuedLocal("contact")))
+    val contact = PeerConnectInfo(Peer.Claimed(Uid.predefined("contact")), Set(ConnectionDescriptor.QueuedLocal("contact")))
 
     val (_, joinActions) = FullMeshOverlay(self, known = Map(other.uid -> other))
       .on(OverlayEvent.Incoming(c1))._1

@@ -1,9 +1,8 @@
 package channels.overlay
 
-import channels.connection.{Connection, ConnectionDescriptor, PeerConnectInfo}
+import channels.connection.{Connection, ConnectionDescriptor, Peer, PeerConnectInfo}
 import channels.overlay.FullMeshOverlay.Purpose
 import channels.overlay.OverlayController.{OverlayAction, OverlayEvent, OverlayMessage}
-import rdts.base.Uid
 
 object FullMeshOverlay {
 
@@ -14,7 +13,7 @@ object FullMeshOverlay {
     case Join
 
     /** Connect to a known peer. */
-    case Connect(peer: Uid)
+    case Connect(peer: Peer)
   }
 }
 
@@ -26,8 +25,8 @@ object FullMeshOverlay {
   */
 case class FullMeshOverlay(
     self: PeerConnectInfo,
-    active: Map[Uid, Connection] = Map.empty,
-    known: Map[Uid, PeerConnectInfo] = Map.empty,
+    active: Map[Peer, Connection] = Map.empty,
+    known: Map[Peer, PeerConnectInfo] = Map.empty,
     /** Connections that have not yet announced their peer. */
     pending: Set[Connection] = Set.empty,
     /** Connections we dialed (as opposed to incoming ones). */
@@ -36,9 +35,11 @@ case class FullMeshOverlay(
     nextAttempt: Long = 0L,
 ) extends OverlayController {
 
-  override def neighbors: Set[Uid] = active.keySet
+  override def neighbors: Set[Peer] = active.keySet
 
-  override def connectionFor(peer: Uid): Option[Connection] = active.get(peer)
+  override def connectionFor(peer: Peer): Option[Connection] = active.get(peer)
+
+  override def selfPeer: Peer = self.uid
 
   override def holds(conn: Connection): Boolean = pending.contains(conn) || active.valuesIterator.contains(conn)
 
@@ -134,7 +135,7 @@ case class FullMeshOverlay(
         case Some(existing) if existing == conn => (remembered, Nil)
         case Some(existing)                     =>
           // keep the connection dialed by the smaller id; both sides come to the same conclusion
-          val preferOutgoing = Uid.unwrap(self.uid) < Uid.unwrap(peer.uid)
+          val preferOutgoing = Ordering[Peer].lt(self.uid, peer.uid)
           val keepNew        =
             outgoing.contains(conn) == preferOutgoing || outgoing.contains(existing) == outgoing.contains(conn)
           // the edge moves to another connection: messages in flight on the old one are lost, so the

@@ -3,7 +3,7 @@ package ex2024DTN.rdt
 import channels.BroadcastIO
 import channels.broadcast.PlumtreeMessage
 import channels.broadcast.PlumtreeMessage.{Graft, IHave, Payload, Prune}
-import channels.connection.{Abort, Connection, Connector, MessageBuffer, Receive}
+import channels.connection.{Abort, Connection, Connector, MessageBuffer, Peer, Receive}
 import channels.experiments.Aead
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
 import de.rmgk.delay.{Async, Callback, Sync, toAsync}
@@ -60,7 +60,8 @@ class Channel[T: JsonValueCodec](
 
   // We use a local dtnid instead of a remote replica ID to signify that the local DTNd is the one providing information.
   // If the local dtnd could be stopped and restarted without loosing data, this id should remain the same for performance reasons, but it will be correct even if it changes.
-  val dtnid: Uid = Uid.gen()
+  val dtnid: Uid      = Uid.gen()
+  private val dtnPeer = Peer.Claimed(dtnid)
 
   override def connect(receiver: Receive): Async[Abort, Connection] =
     Async {
@@ -72,13 +73,13 @@ class Channel[T: JsonValueCodec](
         message_type match
             case RdtMessageType.Request =>
               cb.succeed(BroadcastIO.encodeEnvelope(
-                BroadcastIO.Envelope.Broadcast(dtnid, PlumtreeMessage.Graft(dots)),
+                BroadcastIO.Envelope.Broadcast(dtnPeer, PlumtreeMessage.Graft(dots)),
                 Aead.identity
               ))
             case RdtMessageType.Payload =>
               cb.succeed(BroadcastIO.encodeEnvelope(
                 BroadcastIO.Envelope.Broadcast(
-                  dtnid,
+                  dtnPeer,
                   PlumtreeMessage.Payload(
                     dots,
                     readFromArray[T](payload)
@@ -93,10 +94,7 @@ class Channel[T: JsonValueCodec](
       operationMode match
           case ClientOperationMode.PushAll =>
             cb.succeed(BroadcastIO.encodeEnvelope(
-              BroadcastIO.Envelope.Broadcast(
-                dtnid,
-                PlumtreeMessage.Graft(Dots.empty)
-              ),
+              BroadcastIO.Envelope.Broadcast(dtnPeer, PlumtreeMessage.Graft(Dots.empty)),
               Aead.identity
             ))
           case ClientOperationMode.RequestLater =>

@@ -1,10 +1,9 @@
 package channels.overlay
 
-import channels.connection.{Connection, ConnectionDescriptor, PeerConnectInfo}
+import channels.connection.{Connection, ConnectionDescriptor, Peer, PeerConnectInfo}
 import channels.overlay.HyParViewStateMachine.{HyParViewConfig, Link, Purpose, Result}
 import channels.overlay.OverlayController.OverlayMessage.*
 import channels.overlay.OverlayController.{OverlayAction, OverlayEvent, OverlayMessage, OverlayTimer}
-import rdts.base.Uid
 
 import scala.collection.immutable.VectorMap
 
@@ -114,12 +113,12 @@ final case class HyParViewStateMachine(
     self: PeerConnectInfo,
     config: HyParViewConfig,
     /** All peers we know about other than ourselves; the passive view is `known` minus the active view. */
-    known: Map[Uid, PeerConnectInfo],
+    known: Map[Peer, PeerConnectInfo],
     /** Insertion ordered, so that random choices over the active view are deterministic for a given `randomIndex`. */
     links: VectorMap[Connection, Link],
     dialing: Map[AttemptId, Purpose],
     /** Candidates that refused or failed a handshake; not retried before the next shuffle round. */
-    refused: Set[Uid],
+    refused: Set[Peer],
     nextAttempt: Long,
     shuffleScheduled: Boolean,
     randomIndex: (Int, Int) => Int,
@@ -134,29 +133,31 @@ final case class HyParViewStateMachine(
   def activeEntries: Vector[(Connection, PeerConnectInfo)] =
     links.toVector.collect { case (conn, Link.Active(peer)) => conn -> peer }
 
-  def activeView: Set[Uid]               = activeEntries.iterator.map(_._2.uid).toSet
+  def activeView: Set[Peer]               = activeEntries.iterator.map(_._2.uid).toSet
   def activePeers: Set[PeerConnectInfo]  = activeEntries.iterator.map(_._2).toSet
   def passivePeers: Set[PeerConnectInfo] =
       val act = activeView
       known.valuesIterator.filter(peer => !act.contains(peer.uid) && canConnectTo(peer)).toSet
-  def passiveView: Set[Uid] = passivePeers.iterator.map(_.uid).toSet
+  def passiveView: Set[Peer] = passivePeers.iterator.map(_.uid).toSet
 
-  override def neighbors: Set[Uid] = activeView
+  override def neighbors: Set[Peer] = activeView
 
-  override def connectionFor(peer: Uid): Option[Connection] =
+  override def connectionFor(peer: Peer): Option[Connection] =
     activeEntries.collectFirst { case (conn, p) if p.uid == peer => conn }
+
+  override def selfPeer: Peer = self.uid
 
   override def holds(conn: Connection): Boolean = links.contains(conn)
 
   override def selfConnectionDescriptors: Set[ConnectionDescriptor] = self.channelConnectors
 
   /** Peers we asked to become neighbors and are waiting for (dialing, or Neighbor sent). */
-  private def requested: Set[Uid] =
+  private def requested: Set[Peer] =
     links.valuesIterator.collect { case Link.Pending(Some(peer), true) => peer.uid }.toSet ++
     dialing.valuesIterator.collect { case Purpose.Neighbor(peer, _) => peer.uid }
 
   /** Active, or a handshake in either direction is in flight. */
-  private def busyWith(peer: Uid): Boolean =
+  private def busyWith(peer: Peer): Boolean =
     activeView.contains(peer) || requested.contains(peer) ||
     links.valuesIterator.exists { case Link.Pending(Some(p), _) => p.uid == peer; case _ => false }
 
@@ -318,12 +319,12 @@ final case class HyParViewStateMachine(
   // ------------------------------------------------------------------------------------------------
 
   /** True if we have our own handshake with `peer` in flight on another connection, and ours wins the tie-break. */
-  private def ownHandshakeWins(peer: Uid, incoming: Connection): Boolean =
+  private def ownHandshakeWins(peer: Peer, incoming: Connection): Boolean =
       val ownInFlight = links.exists {
         case (c, Link.Pending(Some(p), true)) => c != incoming && p.uid == peer
         case _                                => false
       } || dialing.valuesIterator.exists { case Purpose.Neighbor(p, _) => p.uid == peer; case _ => false }
-      ownInFlight && Uid.unwrap(self.uid) < Uid.unwrap(peer)
+      ownInFlight && Ordering[Peer].lt(self.uid, peer)
 
   private def dial(purpose: Purpose, to: Set[ConnectionDescriptor]): Result = {
     val attempt = AttemptId(nextAttempt)
@@ -427,10 +428,10 @@ final case class HyParViewStateMachine(
   private def rememberPeer(peer: PeerConnectInfo): HyParViewStateMachine =
     if peer.uid == self.uid then this else copy(known = known.updated(peer.uid, peer))
 
-  private def forgetPeer(peer: Uid): HyParViewStateMachine =
+  private def forgetPeer(peer: Peer): HyParViewStateMachine =
     copy(known = known.removed(peer), refused = refused - peer)
 
-  private def trimKnownPassiveIfNeeded(preferredVictims: Set[Uid]): HyParViewStateMachine = {
+  private def trimKnownPassiveIfNeeded(preferredVictims: Set[Peer]): HyParViewStateMachine = {
     val passive = passivePeers.toIndexedSeq
     if passive.size <= config.passiveViewSize then this
     else

@@ -2,7 +2,7 @@ package channels
 
 import channels.BroadcastIO.Envelope
 import channels.JsoniterCodecs.given
-import channels.broadcast.PlumtreeBroadcast.{Event, Peer}
+import channels.broadcast.PlumtreeBroadcast.Event
 import channels.broadcast.PlumtreeMessage.*
 import channels.broadcast.{BroadcastProtocol, PlumtreeBroadcast, PlumtreeMessage}
 import channels.connection.*
@@ -23,7 +23,10 @@ import scala.util.{Failure, Success, Try}
 object BroadcastIO {
   enum Envelope[+State] {
     case Membership(message: OverlayMessage)
-    case Broadcast(sender: Uid, message: PlumtreeMessage[State])
+    /** `sender` is part of the message, as a single (unauthenticated) connection may be shared by multiple peers.
+      * Receivers only accept it if the connection may carry messages of `sender`, see [[Peer.mayUse]].
+      */
+    case Broadcast(sender: Peer, message: PlumtreeMessage[State])
   }
 
   /** `receiveCallback` gets each delivered delta together with the dots assigned to it by the sender. */
@@ -42,7 +45,7 @@ object BroadcastIO {
     new BroadcastIO[State](
       replicaId = replicaId,
       receiveCallback = receiveCallback,
-      overlay = overlay.getOrElse(FullMeshOverlay(PeerConnectInfo(replicaId.uid, Set.empty))),
+      overlay = overlay.getOrElse(FullMeshOverlay(PeerConnectInfo(Peer.Claimed(replicaId.uid), Set.empty))),
       resolver = resolver,
       sendingActor = sendingActor,
       globalAbort = globalAbort,
@@ -122,7 +125,7 @@ class BroadcastIO[State](
   def selfConnectionDescriptors: Set[ConnectionDescriptor] = overlay.selfConnectionDescriptors
 
   /** The transport connection backing the active edge to `peer`, if any. */
-  def connectionTo(peer: Uid): Option[Connection] = overlay.connectionFor(peer)
+  def connectionTo(peer: Peer): Option[Connection] = overlay.connectionFor(peer)
 
   def allPayloads: List[Payload[State]] = broadcast.allPayloads
 
@@ -174,8 +177,8 @@ class BroadcastIO[State](
     val (next, actions) = overlay.step(event)
     overlay = next
     actions.flatMap {
-      case OverlayAction.NeighborUp(peer)   => broadcastStep(_.addPeer(Peer(peer)))
-      case OverlayAction.NeighborDown(peer) => broadcastStep(_.removePeer(Peer(peer)))
+      case OverlayAction.NeighborUp(peer)   => broadcastStep(_.addPeer(peer))
+      case OverlayAction.NeighborDown(peer) => broadcastStep(_.removePeer(peer))
       case other                            => List(other)
     }
   }
@@ -186,7 +189,7 @@ class BroadcastIO[State](
     result.events.toList.flatMap {
       case Event.Send(peers, message) =>
         peers.flatMap(peer =>
-          overlay.connectionFor(peer.uid).map(Transmit(_, Envelope.Broadcast(replicaId.uid, message)))
+          overlay.connectionFor(peer).map(Transmit(_, Envelope.Broadcast(overlay.selfPeer, message)))
         )
       case other => List(other)
     }
@@ -198,9 +201,10 @@ class BroadcastIO[State](
           overlayStep(OverlayEvent.Received(conn, overlayMessage))
         case Success(Envelope.Broadcast(sender, broadcastMessage)) =>
           // messages still arriving on a connection the overlay already closed (e.g. the losing one of two
-          // connections to the same peer) would be handled as duplicates and prune the broadcast tree
-          if overlay.holds(conn)
-          then broadcastStep(_.handleMessage(Peer(sender), broadcastMessage))
+          // connections to the same peer) would be handled as duplicates and prune the broadcast tree.
+          // `mayUse` rejects senders the connection can not carry (impersonation of authenticated peers).
+          if overlay.holds(conn) && Peer.mayUse(conn, sender)
+          then broadcastStep(_.handleMessage(sender, broadcastMessage))
           else Nil
         case Failure(error) =>
           println(s"$replicaId: error during message decoding")

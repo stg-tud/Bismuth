@@ -1,7 +1,8 @@
 package channels
 
+import channels.connection.Peer
 import channels.broadcast.PlumtreeBroadcast.Event.Send
-import channels.broadcast.PlumtreeBroadcast.{Event, Peer, PeerRole}
+import channels.broadcast.PlumtreeBroadcast.{Event, PeerRole}
 import channels.broadcast.PlumtreeMessage.*
 import channels.broadcast.{BroadcastTimer, PlumtreeBroadcast}
 import channels.{KeepAllHistory, NoHistory}
@@ -12,11 +13,11 @@ import rdts.time.Dots
 class PlumtreeBroadcastTest extends FunSuite {
 
   private val self    = Uid.predefined("self")
-  private val eagerA  = Peer(Uid.predefined("eager-a"))
-  private val eagerB  = Peer(Uid.predefined("eager-b"))
-  private val lazyA   = Peer(Uid.predefined("lazy-a"))
-  private val sender  = Peer(Uid.predefined("sender"))
-  private val missing = Peer(Uid.predefined("missing"))
+  private val eagerA  = Peer.Claimed(Uid.predefined("eager-a"))
+  private val eagerB  = Peer.Claimed(Uid.predefined("eager-b"))
+  private val lazyA   = Peer.Claimed(Uid.predefined("lazy-a"))
+  private val sender  = Peer.Claimed(Uid.predefined("sender"))
+  private val missing = Peer.Claimed(Uid.predefined("missing"))
 
   private def payload(from: Uid, time: Long, value: String): Payload[String] =
     Payload(Dots.single(from, time), value)

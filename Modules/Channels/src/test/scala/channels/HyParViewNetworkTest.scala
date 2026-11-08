@@ -1,5 +1,6 @@
 package channels
 
+import channels.connection.Peer
 import channels.connection.{ChannelResolver, ConnectionDescriptor, Connector, LocalConnectionRegistry, LocalMessageQueue, PeerConnectInfo, QueuedLocalConnection}
 import channels.overlay.HyParViewStateMachine
 import channels.overlay.HyParViewStateMachine.{HyParViewConfig, Link}
@@ -31,7 +32,7 @@ class HyParViewNetworkTest extends munit.FunSuite {
 
   final class Node(val id: String, val io: BroadcastIO[Set[String]], val info: PeerConnectInfo) {
     def hv: HyParViewStateMachine = io.overlayController.asInstanceOf[HyParViewStateMachine]
-    def uid: Uid                  = info.uid
+    def peer: Peer                 = info.uid
     override def toString: String = id
   }
 
@@ -42,12 +43,12 @@ class HyParViewNetworkTest extends munit.FunSuite {
     private val unreachable                        = mutable.Set.empty[(String, String)]
     val nodes: mutable.LinkedHashMap[String, Node] = mutable.LinkedHashMap.empty
 
-    def name(uid: Uid): String = nodes.valuesIterator.find(_.uid == uid).map(_.id).getOrElse(uid.show)
+    def name(peer: Peer): String = nodes.valuesIterator.find(_.peer == peer).map(_.id).getOrElse(peer.toString)
 
     def node(id: String): Node = {
       links(id) = QueuedLocalConnection(id, queue)
       val replica  = ReplicaId.predefined(id)
-      val info     = PeerConnectInfo(replica.uid, Set(ConnectionDescriptor.QueuedLocal(id)))
+      val info     = PeerConnectInfo(Peer.Claimed(replica.uid), Set(ConnectionDescriptor.QueuedLocal(id)))
       val resolver = new ChannelResolver {
         override def connect(details: ConnectionDescriptor): Option[Connector] = details match
             case ConnectionDescriptor.QueuedLocal(target) if unreachable.contains((id, target)) => None
@@ -166,7 +167,7 @@ class HyParViewNetworkTest extends munit.FunSuite {
 
     // crash one neighbor of n0: its connections close, it stops reacting
     val crashed = net.nodes(net.active(nodes.head).head)
-    nodes.foreach(n => n.io.connectionTo(crashed.uid).foreach(_.close()))
+    nodes.foreach(n => n.io.connectionTo(crashed.peer).foreach(_.close()))
     crashed.io.globalAbort.abort()
     net.nodes.remove(crashed.id)
     net.drain()
@@ -190,7 +191,7 @@ class HyParViewNetworkTest extends munit.FunSuite {
     assertEquals(net.active(end), Set("middle", "q"), net.describe)
 
     // a peer only end knows about
-    val secret = PeerConnectInfo(Uid.predefined("secret"), Set(ConnectionDescriptor.QueuedLocal("secret")))
+    val secret = PeerConnectInfo(Peer.Claimed(Uid.predefined("secret")), Set(ConnectionDescriptor.QueuedLocal("secret")))
     end.io.discover(Set(secret))
     net.drain()
 

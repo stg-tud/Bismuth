@@ -1,7 +1,7 @@
 package channels
 
 import channels.broadcast.PlumtreeBroadcast
-import channels.connection.{LocalMessageQueue, PeerConnectInfo, QueuedLocalConnection}
+import channels.connection.{LocalMessageQueue, Peer, PeerConnectInfo, QueuedLocalConnection}
 import channels.overlay.FullMeshOverlay
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
@@ -38,7 +38,7 @@ class BroadcastIOOverlayDropTest extends munit.FunSuite {
         replicaId = uid,
         receiveCallback = payload => cb(payload.data),
         // same overlay setup as used by ex2021encfxtodo.ConnectionManager
-        overlay = Some(FullMeshOverlay(PeerConnectInfo(uid.uid))),
+        overlay = Some(FullMeshOverlay(PeerConnectInfo(Peer.Claimed(uid.uid)))),
       )
     }
 
@@ -62,7 +62,7 @@ class BroadcastIOOverlayDropTest extends munit.FunSuite {
     }
 
     def eagerPeerUids(io: BroadcastIO[Set[String]]): Set[Uid] = io.plumtreeState match
-        case pt: PlumtreeBroadcast[?] => pt.eagerPeers
+        case pt: PlumtreeBroadcast[?] => pt.eagerPeers.map(_.uid)
         case _                        => Set.empty
 
     /** Drive the exact interleaving that loses a write:
@@ -87,7 +87,7 @@ class BroadcastIOOverlayDropTest extends munit.FunSuite {
     // b has promoted a to eager (from the graft) while b's overlay has no active
     // connection for a yet (Neighbor(a) is still queued) — the eager push below is dropped.
     assertEquals(eagerPeerUids(b), Set(a.replicaId.uid))
-    assert(b.connectionTo(a.replicaId.uid).isEmpty, "overlay should not know a yet")
+    assert(b.connectionTo(Peer.Claimed(a.replicaId.uid)).isEmpty, "overlay should not know a yet")
 
     b.broadcast(Set("v1")) // dropped: no route to a
 

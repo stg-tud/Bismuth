@@ -50,7 +50,7 @@ class BroadcastIOAeadTest extends FunSuite {
   test("AEAD encrypted envelopes are not readable with the identity AEAD") {
     val aead    = newAead()
     val encoded = BroadcastIO.encodeEnvelope[Set[String]](
-      BroadcastIO.Envelope.Broadcast(ReplicaId.gen().uid, PlumtreeMessage.Graft(rdts.time.Dots.empty)),
+      BroadcastIO.Envelope.Broadcast(channels.connection.Peer.Claimed(ReplicaId.gen().uid), PlumtreeMessage.Graft(rdts.time.Dots.empty)),
       aead
     )
 

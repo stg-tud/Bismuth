@@ -1,5 +1,6 @@
 package channels
 
+import channels.connection.Peer
 import channels.BroadcastIO
 import channels.connection.{ConnectionDescriptor, LocalConnectionRegistry, LocalMessageQueue, PeerConnectInfo, QueuedLocalConnection}
 import channels.experiments.Aead
@@ -32,7 +33,7 @@ class FullMeshDiscoveryChainTest extends FunSuite {
 
     final case class Node(id: String) {
       val uid: ReplicaId               = ReplicaId.gen()
-      val selfInfo: PeerConnectInfo    = PeerConnectInfo(uid.uid, Set(ConnectionDescriptor.QueuedLocal(id)))
+      val selfInfo: PeerConnectInfo    = PeerConnectInfo(Peer.Claimed(uid.uid), Set(ConnectionDescriptor.QueuedLocal(id)))
       val io: BroadcastIO[Set[String]] = BroadcastIO[Set[String]](
         uid,
         _ => (),
@@ -58,7 +59,7 @@ class FullMeshDiscoveryChainTest extends FunSuite {
     val queuedNeighbors = queue.elements.flatMap(mb =>
       mb.toOption
         .flatMap(buf => BroadcastIO.decodeEnvelope[Set[String]](buf, Aead.identity).toOption)
-        .collect { case BroadcastIO.Envelope.Membership(OverlayMessage.Neighbor(from, _)) => from.uid }
+        .collect { case BroadcastIO.Envelope.Membership(OverlayMessage.Neighbor(from, _)) => from.uid.uid }
     )
     assertEquals(
       queuedNeighbors.toSet,
@@ -77,7 +78,7 @@ class FullMeshDiscoveryChainTest extends FunSuite {
     val deliveredNeighbors = queue.delivered.flatMap(mb =>
       mb.toOption
         .flatMap(buf => BroadcastIO.decodeEnvelope[Set[String]](buf, Aead.identity).toOption)
-        .collect { case BroadcastIO.Envelope.Membership(OverlayMessage.Neighbor(from, _)) => from.uid }
+        .collect { case BroadcastIO.Envelope.Membership(OverlayMessage.Neighbor(from, _)) => from.uid.uid }
     )
     assertEquals(
       deliveredNeighbors.toSet,
@@ -98,7 +99,7 @@ class FullMeshDiscoveryChainTest extends FunSuite {
     assertEquals(discovererPeers.map(_.uid), Set(listener.uid.uid))
 
     // And each side has a live attached connection for the remote peer.
-    assert(listenerOverlay.connectionFor(discoverer.uid.uid).isDefined)
-    assert(discovererOverlay.connectionFor(listener.uid.uid).isDefined)
+    assert(listenerOverlay.connectionFor(Peer.Claimed(discoverer.uid.uid)).isDefined)
+    assert(discovererOverlay.connectionFor(Peer.Claimed(listener.uid.uid)).isDefined)
   }
 }

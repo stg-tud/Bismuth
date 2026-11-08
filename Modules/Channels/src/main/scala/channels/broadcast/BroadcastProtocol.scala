@@ -1,6 +1,7 @@
 package channels.broadcast
 
-import channels.broadcast.PlumtreeBroadcast.{Peer, Result}
+import channels.broadcast.PlumtreeBroadcast.Result
+import channels.connection.Peer
 import channels.broadcast.PlumtreeMessage.Payload
 import rdts.time.Dots
 
@@ -28,6 +29,7 @@ trait BroadcastProtocol[State] {
   /** A timer requested via [[PlumtreeBroadcast.Event.StartTimer]] expired. */
   def timerFired(timer: BroadcastTimer): Result[State]
 
+  /** `from` has been checked by the driver to be a sender the receiving connection may carry. */
   def handleMessage(from: Peer, message: PlumtreeMessage[State]): Result[State]
 }
 
