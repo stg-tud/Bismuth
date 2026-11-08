@@ -1,8 +1,9 @@
 package channels
 
 import channels.MessagingIO.executeImmediately
+import channels.broadcast.BroadcastProtocol.{Effect, Step}
 import channels.broadcast.PlumtreeMessage.Payload
-import channels.broadcast.{BroadcastProtocol, BroadcastTimer, Effect, PlumtreeBroadcast, PlumtreeMessage, Step}
+import channels.broadcast.{BroadcastProtocol, PlumtreeBroadcast, PlumtreeMessage}
 import channels.connection.{Abort, ChannelResolver, Peer}
 import channels.experiments.Aead
 import channels.overlay.OverlayController
@@ -63,7 +64,7 @@ object CausalPlumtree {
     def removePeer(state: State, peer: Peer): Result[A] = state.lift(state.plumtree.removePeer(peer))
     def handleMessage(state: State, from: Peer, message: Msg): Result[A] =
       state.lift(state.plumtree.handleMessage(from, message))
-    def timerFired(state: State, timer: BroadcastTimer): Result[A] =
+    def timerFired(state: State, timer: BroadcastProtocol.Timer): Result[A] =
       state.lift(state.plumtree.timerFired(timer))
   }
 

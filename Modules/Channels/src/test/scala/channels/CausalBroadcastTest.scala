@@ -1,6 +1,6 @@
 package channels
 
-import channels.broadcast.Effect
+import channels.broadcast.BroadcastProtocol.Effect
 import channels.broadcast.PlumtreeMessage.Payload
 import channels.connection.{LocalMessageQueue, QueuedLocalConnection}
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec

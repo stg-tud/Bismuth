@@ -1,6 +1,6 @@
 package channels
 
-import channels.broadcast.BroadcastTimer
+import channels.broadcast.{BroadcastProtocol}
 import channels.overlay.OverlayController.OverlayTimer
 
 import java.util.TimerTask
@@ -61,6 +61,6 @@ final case class TimerDelays(
       case OverlayTimer.Shuffle      => shuffle
       case OverlayTimer.Handshake(_) => handshake
 
-  def apply(timer: BroadcastTimer): FiniteDuration = timer match
-      case BroadcastTimer.Repair => repair
+  def apply(timer: BroadcastProtocol.Timer): FiniteDuration = timer match
+      case BroadcastProtocol.Timer.Repair => repair
 }

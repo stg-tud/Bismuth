@@ -4,7 +4,8 @@ import channels.connection.Peer
 import channels.broadcast.PlumtreeBroadcast.Event.Send
 import channels.broadcast.PlumtreeBroadcast.{Event, PeerRole}
 import channels.broadcast.PlumtreeMessage.*
-import channels.broadcast.{BroadcastTimer, PlumtreeBroadcast}
+import channels.broadcast.BroadcastProtocol.Timer
+import channels.broadcast.PlumtreeBroadcast
 import channels.{KeepAllHistory, NoHistory}
 import munit.FunSuite
 import rdts.base.Uid
@@ -107,18 +108,18 @@ class PlumtreeBroadcastTest extends FunSuite {
     )
 
     val PlumtreeBroadcast.Result(afterIHave, iHaveEvents) = state.handleMessage(missing, IHave(remote))
-    assertEquals(iHaveEvents.toList, List(Event.StartTimer(BroadcastTimer.Repair)))
+    assertEquals(iHaveEvents.toList, List(Event.StartTimer(Timer.Repair)))
     assertEquals(afterIHave.remoteContext(missing), remote)
 
     // a second announcement does not start a second timer
     val PlumtreeBroadcast.Result(afterSecond, secondEvents) = afterIHave.handleMessage(missing, IHave(remote))
     assertEquals(secondEvents.toList, Nil)
 
-    val PlumtreeBroadcast.Result(afterRepair, repairEvents) = afterSecond.timerFired(BroadcastTimer.Repair)
+    val PlumtreeBroadcast.Result(afterRepair, repairEvents) = afterSecond.timerFired(Timer.Repair)
     assertEquals(afterRepair.peerRoles(missing), PeerRole.Eager)
     assertEquals(
       repairEvents.toList,
-      List(Send(List(missing), Graft(local)), Event.StartTimer(BroadcastTimer.Repair)),
+      List(Send(List(missing), Graft(local)), Event.StartTimer(Timer.Repair)),
       "still missing, so the timer keeps running"
     )
   }
@@ -134,7 +135,7 @@ class PlumtreeBroadcastTest extends FunSuite {
       repairScheduled = true,
     )
 
-    val PlumtreeBroadcast.Result(after, events) = state.timerFired(BroadcastTimer.Repair)
+    val PlumtreeBroadcast.Result(after, events) = state.timerFired(Timer.Repair)
     assertEquals(events.toList, Nil)
     assertEquals(after.repairScheduled, false)
   }

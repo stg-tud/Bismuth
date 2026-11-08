@@ -5,7 +5,8 @@ import channels.broadcast.PlumtreeBroadcast.PeerRole
 import channels.connection.Peer
 import channels.broadcast.PlumtreeMessage.*
 import channels.JsoniterCodecs.given
-import channels.{DeltaStorage, NoHistory, MessagingIO}
+import channels.broadcast.BroadcastProtocol.{Effect, Step}
+import channels.{DeltaStorage, MessagingIO, NoHistory}
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import rdts.base.Uid
@@ -61,7 +62,7 @@ object PlumtreeBroadcast {
     def removePeer(state: State, peer: Peer): Result[S] = state.removePeer(peer)
     def handleMessage(state: State, from: Peer, message: Msg): Result[S] =
       state.handleMessage(from, message)
-    def timerFired(state: State, timer: BroadcastTimer): Result[S] = state.timerFired(timer)
+    def timerFired(state: State, timer: BroadcastProtocol.Timer): Result[S] = state.timerFired(timer)
   }
 
   given protocol[State]: Protocol[State] = Protocol[State]()
@@ -152,8 +153,8 @@ final case class PlumtreeBroadcast[State](
   /** The paper starts a timer per missing message after an `IHave`. We keep a single repair timer running while
     * any peer announced knowledge we lack; if the knowledge is still missing when it fires, we graft it.
     */
-  def timerFired(timer: BroadcastTimer): Result[State] = timer match
-      case BroadcastTimer.Repair =>
+  def timerFired(timer: BroadcastProtocol.Timer): Result[State] = timer match
+      case BroadcastProtocol.Timer.Repair =>
         val unscheduled = copy(repairScheduled = false)
         // note, this may very well select already eager peers, which is done to backfill in case of missing state
         Random.shuffle(peersWithMissing.toList).headOption match
@@ -165,7 +166,7 @@ final case class PlumtreeBroadcast[State](
 
   private def scheduleRepairIfNeeded(events: Seq[Event[State]]): Result[State] =
     if repairScheduled || peersWithMissing.isEmpty then Result(this, events)
-    else Result(copy(repairScheduled = true), events :+ Event.StartTimer(BroadcastTimer.Repair))
+    else Result(copy(repairScheduled = true), events :+ Event.StartTimer(BroadcastProtocol.Timer.Repair))
 
   /** Incoming message handler.
     *

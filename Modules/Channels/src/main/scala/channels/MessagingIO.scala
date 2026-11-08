@@ -3,7 +3,8 @@ package channels
 import channels.MessagingIO.Envelope
 import channels.JsoniterCodecs.given
 import channels.broadcast.PlumtreeMessage.*
-import channels.broadcast.{BroadcastProtocol, BroadcastTimer, Effect, PlumtreeBroadcast, PlumtreeMessage, Step}
+import channels.broadcast.BroadcastProtocol.{Effect, Step, Timer}
+import channels.broadcast.{BroadcastProtocol, PlumtreeBroadcast, PlumtreeMessage}
 import channels.connection.*
 import channels.experiments.Aead
 import channels.overlay.OverlayController.{OverlayAction, OverlayEvent, OverlayMessage}
@@ -109,7 +110,7 @@ object MessagingIO {
       aead: Aead = Aead.identity,
       timers: Timers = Timers.Manual(),
       overlayDelays: TimerDelays = TimerDelays(),
-      protocolDelays: BroadcastTimer => FiniteDuration,
+      protocolDelays: Timer => FiniteDuration,
   )(using JsonValueCodec[protocol.Msg]): MessagingIO[P] = {
     overlay.foreach(o =>
       require(o.selfPeer.uid == replicaId.uid, s"overlay identity ${o.selfPeer} does not match $replicaId")
@@ -155,13 +156,13 @@ class MessagingIO[P <: BroadcastProtocol](using val protocol: P)(
     val aead: Aead,
     val timers: Timers,
     overlayDelays: TimerDelays,
-    protocolDelays: BroadcastTimer => FiniteDuration,
+    protocolDelays: Timer => FiniteDuration,
 )(using val msgCodec: JsonValueCodec[protocol.Msg]) {
 
   /** A protocol message to send on `connection`, resolved from the overlay during the transition. */
   final private case class Transmit(connection: Connection, envelope: Envelope[protocol.Msg])
   final private case class Deliver(output: protocol.Out)
-  final private case class Schedule(timer: BroadcastTimer)
+  final private case class Schedule(timer: Timer)
 
   /** What the transitions ask for. `NeighborUp`/`NeighborDown` and protocol `Send`s are resolved inside the transition. */
   private type Output = OverlayAction | Transmit | Deliver | Schedule
