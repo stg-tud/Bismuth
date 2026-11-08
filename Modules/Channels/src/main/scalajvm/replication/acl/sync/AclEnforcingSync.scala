@@ -14,7 +14,6 @@ import replication.JsoniterCodecsJvm.given
 import replication.acl.sync.AclEnforcingSync.SyncMsg.{MyAclVersionIs, MyPeersAre, MyRdtVersionIs}
 import replication.acl.sync.AclEnforcingSync.{SyncMsg, encoder}
 import replication.acl.{Acl, BftDelta}
-import replication.sync.{ChannelConnectionManager, ConnectionManager, MessageReceiver}
 
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicReference

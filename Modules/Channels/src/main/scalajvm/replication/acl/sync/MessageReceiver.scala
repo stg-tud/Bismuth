@@ -1,4 +1,4 @@
-package replication.sync
+package replication.acl.sync
 
 import channels.crypto.PublicIdentity
 

@@ -1,4 +1,4 @@
-package replication.sync
+package replication.acl.sync
 
 import channels.{NioTCP, NioTls}
 import channels.connection.{Abort, Connection, ConnectionDescriptor, MessageBuffer, Receive}

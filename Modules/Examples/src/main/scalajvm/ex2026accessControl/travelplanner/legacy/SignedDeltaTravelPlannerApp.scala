@@ -7,7 +7,7 @@ import ex2026accessControl.travelplanner.model.{TravelPlanModel, TravelPlanModel
 import ex2026accessControl.travelplanner.{MainScene, TravelPlan}
 import javafx.scene.input.KeyCode
 import replication.acl.{Acl, AclRdt}
-import replication.sync.{ChannelConnectionManager, MessageReceiver}
+import replication.acl.sync.{ChannelConnectionManager, MessageReceiver}
 import scalafx.application.{JFXApp3, Platform}
 import scalafx.scene.control.{Menu, MenuBar, MenuItem}
 import scalafx.scene.input.KeyCodeCombination

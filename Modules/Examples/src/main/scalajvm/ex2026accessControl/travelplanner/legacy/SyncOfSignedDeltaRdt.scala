@@ -10,7 +10,7 @@ import rdts.filters.{Filter, PermissionTree}
 import rdts.time.Dots
 import replication.acl.sync.AclEnforcingSync
 import replication.acl.{Acl, BftDelta}
-import replication.sync.{ConnectionManager, MessageReceiver}
+import replication.acl.sync.{ConnectionManager, MessageReceiver}
 
 class SyncOfSignedDeltaRdt[State](
     private val localIdentity: PrivateIdentity,

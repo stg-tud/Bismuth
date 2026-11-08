@@ -13,7 +13,7 @@ import replication.acl.sync.AclEnforcingSync.SyncMsg.{MyAclVersionIs, MyRdtVersi
 import replication.acl.sync.AclEnforcingSync.{SyncMsg, encoder}
 import replication.acl.sync.{AclAntiEntropy, AclEnforcingSync, FilteredRdtAntiEntropy}
 import replication.acl.{Acl, BftDelta}
-import replication.sync.{ChannelConnectionManager, ConnectionManager, MessageReceiver}
+import replication.acl.sync.{ChannelConnectionManager, ConnectionManager, MessageReceiver}
 
 class ForwardingSync[State: {JsonValueCodec, Bottom, Decompose, Lattice, Filter}](
     localIdentity: PrivateIdentity,

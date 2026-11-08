@@ -8,7 +8,6 @@ import rdts.time.Dots
 import replication.acl.sync.AclEnforcingSync.SyncMsg
 import replication.acl.sync.AclEnforcingSync.SyncMsg.*
 import replication.acl.{Acl, BftDelta}
-import replication.sync.ConnectionManager
 
 class ConnectionManagerCommunicator[State](private val conn: ConnectionManager)(using JsonValueCodec[SyncMsg[State]])
     extends AntiEntropyCommunicator[State] {

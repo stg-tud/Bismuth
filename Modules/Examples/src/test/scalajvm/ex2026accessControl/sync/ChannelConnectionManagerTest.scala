@@ -7,7 +7,7 @@ import channels.crypto.PublicIdentity
 import channels.crypto.IdentityFactory
 import ex2026accessControl.sync.ChannelConnectionManagerTest.*
 import munit.FunSuite
-import replication.sync.ChannelConnectionManager
+import replication.acl.sync.ChannelConnectionManager
 
 import java.util.concurrent.{LinkedBlockingQueue, TimeUnit}
 

@@ -5,7 +5,7 @@ import ex2026accessControl.evaluation.acl.centralized.ForwardingSync
 import ex2026accessControl.travelplanner.TravelPlan
 import rdts.time.Dots
 import replication.acl.{Acl, BftDelta}
-import replication.sync.ChannelConnectionManager
+import replication.acl.sync.ChannelConnectionManager
 
 import java.net.InetAddress
 

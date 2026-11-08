@@ -5,7 +5,7 @@ import scala.language.unsafeNulls
 import channels.connection.MessageBuffer
 import channels.crypto.PublicIdentity
 import ex2026accessControl.Debug
-import replication.sync.MessageReceiver
+import replication.acl.sync.MessageReceiver
 
 import java.util.concurrent.LinkedBlockingQueue
 
