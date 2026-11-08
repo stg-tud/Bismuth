@@ -24,10 +24,4 @@ object GrowOnlyCounter {
   given decompose: Decompose[GrowOnlyCounter] =
       given Decompose[Int] = Decompose.atomic
       Decompose.derived
-
-  /** the delta must contain all replica ids of the buffered delta,
-    * and the counter of each replica must be greater equal
-    */
-  given redundancy: Redundancy[GrowOnlyCounter] = (delta, bufferedDelta) =>
-    bufferedDelta.inner.forall((uid, counter) => counter <= delta.inner.getOrElse(uid, -1))
 }

@@ -1,6 +1,6 @@
 package rdts.datatypes
 
-import rdts.base.{Bottom, Redundancy, Lattice}
+import rdts.base.{Bottom, Lattice}
 
 case class GrowOnlySet[A](set: Set[A]) {
 
@@ -17,7 +17,5 @@ object GrowOnlySet {
   given bottom[A]: Bottom[GrowOnlySet[A]] = Bottom.derived
 
   given lattice[A]: Lattice[GrowOnlySet[A]] = Lattice.derived
-
-  given redundancy[A]: Redundancy[GrowOnlySet[A]] = (delta, bufferedDelta) => bufferedDelta.set.subsetOf(delta.set)
 
 }

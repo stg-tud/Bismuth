@@ -1,6 +1,6 @@
 package rdts.datatypes
 
-import rdts.base.{Bottom, Decompose, Redundancy, Lattice, Orderings}
+import rdts.base.{Bottom, Decompose, Lattice, Orderings}
 import rdts.time.CausalTime
 
 import scala.math.Ordering.Implicits.infixOrderingOps
@@ -60,8 +60,5 @@ object LastWriterWins {
           case x if x < 0 => right
           case x if x > 0 => left
   }
-
-  given redundancy[A]: Redundancy[LastWriterWins[A]] = (delta, bufferedDelta) =>
-    bufferedDelta.timestamp <= delta.timestamp
 
 }
