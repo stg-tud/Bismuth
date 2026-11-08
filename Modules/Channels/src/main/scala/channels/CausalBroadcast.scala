@@ -13,7 +13,7 @@ import rdts.time.{Causal, CausalBuffer, Dots}
 import scala.concurrent.ExecutionContext
 
 /** A [[ProtocolIO]] running [[CausalPlumtree]]: delivers plain values `A` in causal order. */
-type CausalBroadcast[A] = ProtocolIO[CausalPlumtree[A], PlumtreeMessage[Causal[A]], BroadcastTimer, A]
+type CausalBroadcast[A] = ProtocolIO[CausalPlumtree[A], PlumtreeMessage[Causal[A]], A]
 
 /** Plumtree extended with causal delivery. Remote values are delivered in causal order and at most once.
   * Local values are not delivered: the caller applies them before calling [[CausalPlumtree.broadcastLocal]].
@@ -52,9 +52,9 @@ final case class CausalPlumtree[A](
 
 object CausalPlumtree {
 
-  type Result[A] = Step[CausalPlumtree[A], PlumtreeMessage[Causal[A]], BroadcastTimer, A]
+  type Result[A] = Step[CausalPlumtree[A], PlumtreeMessage[Causal[A]], A]
 
-  given protocol[A]: BroadcastProtocol[CausalPlumtree[A], PlumtreeMessage[Causal[A]], BroadcastTimer, A] with {
+  given protocol[A]: BroadcastProtocol[CausalPlumtree[A], PlumtreeMessage[Causal[A]], A] with {
     def addPeer(state: CausalPlumtree[A], peer: Peer): Result[A]    = state.lift(state.plumtree.addPeer(peer))
     def removePeer(state: CausalPlumtree[A], peer: Peer): Result[A] = state.lift(state.plumtree.removePeer(peer))
     def handleMessage(state: CausalPlumtree[A], from: Peer, message: PlumtreeMessage[Causal[A]]): Result[A] =
@@ -97,7 +97,7 @@ object CausalBroadcast {
       timers: Timers = Timers.Manual(),
       timerDelays: TimerDelays = TimerDelays(),
   )(using JsonValueCodec[A]): CausalBroadcast[A] =
-    ProtocolIO[CausalPlumtree[A], PlumtreeMessage[Causal[A]], BroadcastTimer, A](
+    ProtocolIO[CausalPlumtree[A], PlumtreeMessage[Causal[A]], A](
       replicaId,
       initial,
       deliver,

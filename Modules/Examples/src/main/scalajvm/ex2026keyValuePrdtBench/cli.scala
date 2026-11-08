@@ -22,7 +22,7 @@ object cli {
   private val ec: ExecutionContext      = ExecutionContext.fromExecutor(executor)
 
   def addRetryingConnection(
-      dataManager: ProtocolIO[?, ?, ?, ?],
+      dataManager: ProtocolIO[?, ?, ?],
       connection: Connector,
       delay: Long,
       tries: Int

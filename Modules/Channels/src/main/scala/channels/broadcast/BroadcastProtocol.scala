@@ -13,33 +13,33 @@ import channels.connection.Peer
   * disseminate, and what it gets back, such as an assigned dot) are protocol specific, and are run as plain functions
   * `S => (Step, R)` via [[channels.ProtocolIO.update]].
   */
-trait BroadcastProtocol[S, Msg, Timer, Out] {
-  def addPeer(state: S, peer: Peer): Step[S, Msg, Timer, Out]
-  def removePeer(state: S, peer: Peer): Step[S, Msg, Timer, Out]
+trait BroadcastProtocol[S, Msg, Out] {
+  def addPeer(state: S, peer: Peer): Step[S, Msg, Out]
+  def removePeer(state: S, peer: Peer): Step[S, Msg, Out]
 
   /** `from` has been checked by the driver to be a sender the receiving connection may carry. */
-  def handleMessage(state: S, from: Peer, message: Msg): Step[S, Msg, Timer, Out]
+  def handleMessage(state: S, from: Peer, message: Msg): Step[S, Msg, Out]
 
   /** A timer requested via [[Effect.StartTimer]] expired. */
-  def timerFired(state: S, timer: Timer): Step[S, Msg, Timer, Out]
+  def timerFired(state: S, timer: BroadcastTimer): Step[S, Msg, Out]
 }
 
 /** Effects requested by a protocol transition. */
-enum Effect[+Msg, +Timer, +Out] {
+enum Effect[+Msg, +Out] {
   case Send(peers: List[Peer], message: Msg)
 
   /** Hand `output` to the application. */
   case Deliver(output: Out)
 
   /** Request a [[BroadcastProtocol.timerFired]] callback later. */
-  case StartTimer(timer: Timer)
+  case StartTimer(timer: BroadcastTimer)
 }
 
 /** Result of a protocol transition: the next state and the effects to perform. */
-final case class Step[S, +Msg, +Timer, +Out](state: S, events: Seq[Effect[Msg, Timer, Out]]) {
+final case class Step[S, +Msg, +Out](state: S, events: Seq[Effect[Msg, Out]]) {
 
   /** Wrap the state, e.g., when the protocol is part of a larger state. */
-  def mapState[S2](f: S => S2): Step[S2, Msg, Timer, Out] = Step(f(state), events)
+  def mapState[S2](f: S => S2): Step[S2, Msg, Out] = Step(f(state), events)
 }
 
 /** Timers carry only their purpose; the driver decides what delay each purpose maps to. */

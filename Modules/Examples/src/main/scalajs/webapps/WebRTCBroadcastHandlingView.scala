@@ -32,7 +32,7 @@ given converterWrite[T](using JsonValueCodec[T]): Conversion[T, MessageBuffer] =
 
 given JsonValueCodec[BroadcastCommunication] = JsonCodecMaker.make
 
-class WebRTCConnectionView(val dataManager: ProtocolIO[?, ?, ?, ?]) {
+class WebRTCConnectionView(val dataManager: ProtocolIO[?, ?, ?]) {
 
   // label seems mostly for auto negotiation
   val channelLabel = "webrtc-channel"

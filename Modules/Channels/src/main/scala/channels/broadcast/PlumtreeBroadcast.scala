@@ -43,17 +43,17 @@ object PlumtreeBroadcast {
   /** Paper: `Deliver` ↔ `Deliver(m)`, `Send` ↔ `Send(...)`.
     * Deliver is to the local system.
     */
-  type Event[+State] = Effect[PlumtreeMessage[State], BroadcastTimer, Payload[State]]
+  type Event[+State] = Effect[PlumtreeMessage[State], Payload[State]]
   val Event: Effect.type = Effect
 
-  type Result[State] = Step[PlumtreeBroadcast[State], PlumtreeMessage[State], BroadcastTimer, Payload[State]]
+  type Result[State] = Step[PlumtreeBroadcast[State], PlumtreeMessage[State], Payload[State]]
   val Result: Step.type = Step
 
   /** Wire format. Not a given, as the derivation would find itself. */
   def messageCodec[State: JsonValueCodec]: JsonValueCodec[PlumtreeMessage[State]] = JsonCodecMaker.make
 
   given protocol[State]
-      : BroadcastProtocol[PlumtreeBroadcast[State], PlumtreeMessage[State], BroadcastTimer, Payload[State]] with {
+      : BroadcastProtocol[PlumtreeBroadcast[State], PlumtreeMessage[State], Payload[State]] with {
     def addPeer(state: PlumtreeBroadcast[State], peer: Peer): Result[State]    = state.addPeer(peer)
     def removePeer(state: PlumtreeBroadcast[State], peer: Peer): Result[State] = state.removePeer(peer)
     def handleMessage(state: PlumtreeBroadcast[State], from: Peer, message: PlumtreeMessage[State]): Result[State] =
@@ -68,7 +68,7 @@ object PlumtreeBroadcast {
   }
 
   /** Application API of a [[ProtocolIO]] running plumtree. */
-  extension [State](io: ProtocolIO[PlumtreeBroadcast[State], PlumtreeMessage[State], BroadcastTimer, Payload[State]]) {
+  extension [State](io: ProtocolIO[PlumtreeBroadcast[State], PlumtreeMessage[State], Payload[State]]) {
 
     /** Disseminate a local delta and return the dot assigned to it (`None` if `io` is closed).
       * Receivers get the same dot as part of the [[Payload]], which allows applications to track causality.

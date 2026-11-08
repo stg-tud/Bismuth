@@ -22,7 +22,7 @@ object TestUtil {
             case ex                                                                      => ex.printStackTrace()
 }
 
-extension (io: ProtocolIO[?, ?, ?, ?]) {
+extension (io: ProtocolIO[?, ?, ?]) {
 
   /** Fire all currently pending timers of a node using [[Timers.Manual]] (the default). */
   def fireTimers(): Int = io.timers match

@@ -23,7 +23,7 @@ import scala.util.{Failure, Success, Try}
   * The application API (`broadcast`, `allPayloads`) is provided by [[PlumtreeBroadcast]].
   */
 type BroadcastIO[State] =
-  ProtocolIO[PlumtreeBroadcast[State], PlumtreeMessage[State], BroadcastTimer, Payload[State]]
+  ProtocolIO[PlumtreeBroadcast[State], PlumtreeMessage[State], Payload[State]]
 
 object BroadcastIO {
   enum Envelope[+Msg] {
@@ -50,7 +50,7 @@ object BroadcastIO {
       timers: Timers = Timers.Manual(),
       timerDelays: TimerDelays = TimerDelays(),
   )(using stateCodec: JsonValueCodec[State]): BroadcastIO[State] =
-    ProtocolIO[PlumtreeBroadcast[State], PlumtreeMessage[State], BroadcastTimer, Payload[State]](
+    ProtocolIO[PlumtreeBroadcast[State], PlumtreeMessage[State], Payload[State]](
       replicaId,
       broadcast.getOrElse(PlumtreeBroadcast(deltaStorage = DiscardingHistory[State](size = 1000))),
       receiveCallback,
@@ -101,7 +101,7 @@ object ProtocolIO {
   /** `deliver` gets each output of the protocol. `replicaId` is the identity of the default overlay; a given
     * `overlay` must use the same id. `protocolDelays` maps the protocol's timer purposes to delays.
     */
-  def apply[S, Msg, Timer, Out](
+  def apply[S, Msg, Out](
       replicaId: ReplicaId,
       initial: S,
       deliver: Out => Unit,
@@ -112,8 +112,8 @@ object ProtocolIO {
       aead: Aead = Aead.identity,
       timers: Timers = Timers.Manual(),
       overlayDelays: TimerDelays = TimerDelays(),
-      protocolDelays: Timer => FiniteDuration,
-  )(using BroadcastProtocol[S, Msg, Timer, Out], JsonValueCodec[Msg]): ProtocolIO[S, Msg, Timer, Out] = {
+      protocolDelays: BroadcastTimer => FiniteDuration,
+  )(using BroadcastProtocol[S, Msg, Out], JsonValueCodec[Msg]): ProtocolIO[S, Msg, Out] = {
     overlay.foreach(o =>
       require(o.selfPeer.uid == replicaId.uid, s"overlay identity ${o.selfPeer} does not match $replicaId")
     )
@@ -148,7 +148,7 @@ object ProtocolIO {
   * performed on the calling thread after the lock is released. Exceptions therefore reach the caller. Outputs that
   * synchronously cause further inputs (e.g. synchronous local connections) simply recurse on already committed state.
   */
-class ProtocolIO[S, Msg, Timer, Out](
+class ProtocolIO[S, Msg, Out](
     deliver: Out => Unit,
     @volatile private var overlay: OverlayController,
     resolver: ChannelResolver,
@@ -158,13 +158,13 @@ class ProtocolIO[S, Msg, Timer, Out](
     val aead: Aead,
     val timers: Timers,
     overlayDelays: TimerDelays,
-    protocolDelays: Timer => FiniteDuration,
-)(using val protocol: BroadcastProtocol[S, Msg, Timer, Out], val msgCodec: JsonValueCodec[Msg]) {
+    protocolDelays: BroadcastTimer => FiniteDuration,
+)(using val protocol: BroadcastProtocol[S, Msg, Out], val msgCodec: JsonValueCodec[Msg]) {
 
   /** A protocol message to send on `connection`, resolved from the overlay during the transition. */
   final private case class Transmit(connection: Connection, envelope: Envelope[Msg])
   final private case class Deliver(output: Out)
-  final private case class Schedule(timer: Timer)
+  final private case class Schedule(timer: BroadcastTimer)
 
   /** What the transitions ask for. `NeighborUp`/`NeighborDown` and protocol `Send`s are resolved inside the transition. */
   private type Output = OverlayAction | Transmit | Deliver | Schedule
@@ -218,7 +218,7 @@ class ProtocolIO[S, Msg, Timer, Out](
   /** Run a local operation of the protocol. `f` runs under the lock, its effects are performed afterwards.
     * Returns `None` (and does not run `f`) if this is closed.
     */
-  def update[R](f: S => Step[S, Msg, Timer, Out]): Unit =
+  def update[R](f: S => Step[S, Msg, Out]): Unit =
     transition(protocolStep(f))
 
   // ------------------------------------------------------------------------------------------------
@@ -241,7 +241,7 @@ class ProtocolIO[S, Msg, Timer, Out](
     }
   }
 
-  private def protocolStep(f: S => Step[S, Msg, Timer, Out]): List[Output] = {
+  private def protocolStep(f: S => Step[S, Msg, Out]): List[Output] = {
     val result = f(protocolState)
     protocolState = result.state
     result.events.toList.flatMap {
