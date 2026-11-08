@@ -1,6 +1,6 @@
 package ex2025recipebook
 
-import rdts.base.{Bottom, Decompose, DecoratedLattice, Historized, Lattice, ReplicaId}
+import rdts.base.{Bottom, Decompose, DecoratedLattice, Redundancy, Lattice, ReplicaId}
 import rdts.time.{Dot, Dots}
 
 /** An MultiVersionRegister (Multi-Value Register) is a Delta CRDT modeling a register.
@@ -55,7 +55,7 @@ object MVRegister {
   /** The buffered delta is redundant if it happened before the delta
     * -> the key/dot of the write operation in the buffered delta is removed by the delta
     */
-  given historized[A]: Historized[MVRegister[A]] = (delta, bufferedDelta) =>
+  given redundancy[A]: Redundancy[MVRegister[A]] = (delta, bufferedDelta) =>
     delta.removed.contains(bufferedDelta.observed)
 
 }

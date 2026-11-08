@@ -1,6 +1,6 @@
 package ex2025recipebook
 
-import rdts.base.Historized.MetaDelta
+import rdts.base.Redundancy.MetaDelta
 import rdts.base.{Bottom, Lattice, ReplicaId}
 import rdts.datatypes.{EnableWinsFlag, LastWriterWins}
 import rdts.time.{Dot, Dots}

@@ -1,6 +1,6 @@
 package rdts.datatypes
 
-import rdts.base.{Bottom, Historized, Lattice}
+import rdts.base.{Bottom, Redundancy, Lattice}
 
 case class GrowOnlySet[A](set: Set[A]) {
 
@@ -18,6 +18,6 @@ object GrowOnlySet {
 
   given lattice[A]: Lattice[GrowOnlySet[A]] = Lattice.derived
 
-  given historized[A]: Historized[GrowOnlySet[A]] = (delta, bufferedDelta) => bufferedDelta.set.subsetOf(delta.set)
+  given redundancy[A]: Redundancy[GrowOnlySet[A]] = (delta, bufferedDelta) => bufferedDelta.set.subsetOf(delta.set)
 
 }

@@ -1,7 +1,7 @@
 package ex2025recipebook
 
 import ex2025recipebook.Ingredient.{Delta, stringBottom}
-import rdts.base.{Bottom, Historized, Lattice, ReplicaId}
+import rdts.base.{Bottom, Redundancy, Lattice, ReplicaId}
 import rdts.datatypes.LastWriterWins
 import rdts.syntax.deltalens.*
 
@@ -45,7 +45,7 @@ object Ingredient {
 
   given lattice: Lattice[Ingredient] = Lattice.derived
 
-  given history: Historized[Ingredient] = Historized.productHistorized
+  given redundancy: Redundancy[Ingredient] = Redundancy.productRedundancy
 
   def apply(name: String, amount: Double, unit: String): Ingredient =
     Ingredient(

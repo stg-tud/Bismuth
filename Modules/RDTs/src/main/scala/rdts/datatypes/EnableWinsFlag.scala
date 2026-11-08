@@ -1,6 +1,6 @@
 package rdts.datatypes
 
-import rdts.base.{Bottom, Decompose, Historized, Lattice, ReplicaId}
+import rdts.base.{Bottom, Decompose, Redundancy, Lattice, ReplicaId}
 import rdts.time.Dots
 
 /** An EWFlag (Enable-Wins Flag) is a Delta CRDT modeling a boolean flag.
@@ -34,6 +34,6 @@ object EnableWinsFlag {
     * and not in set, it is equivalent to only being present in unset. An enable modification does not make any previous
     * delta redundant other than the delta containing the exact same dot for enabling the flag.
     */
-  given historized: Historized[EnableWinsFlag] = (delta, bufferedDelta) => delta.unset.contains(bufferedDelta.observed)
+  given redundancy: Redundancy[EnableWinsFlag] = (delta, bufferedDelta) => delta.unset.contains(bufferedDelta.observed)
 
 }

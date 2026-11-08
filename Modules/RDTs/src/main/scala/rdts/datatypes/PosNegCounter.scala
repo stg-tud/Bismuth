@@ -1,6 +1,6 @@
 package rdts.datatypes
 
-import rdts.base.{Bottom, Decompose, Historized, Lattice, ReplicaId}
+import rdts.base.{Bottom, Decompose, Redundancy, Lattice, ReplicaId}
 
 case class PosNegCounter(pos: GrowOnlyCounter, neg: GrowOnlyCounter) derives Lattice, Bottom, Decompose {
   def value: Int =
@@ -26,6 +26,6 @@ object PosNegCounter {
 
   val zero: PosNegCounter = PosNegCounter(GrowOnlyCounter.zero, GrowOnlyCounter.zero)
 
-  given historized: Historized[PosNegCounter] = Historized.derived
+  given redundancy: Redundancy[PosNegCounter] = Redundancy.derived
 
 }

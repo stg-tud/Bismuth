@@ -1,7 +1,7 @@
 package test.rdts.bespoke
 
-import rdts.base.Historized.MetaDelta
-import rdts.base.{ReplicaId, Uid}
+import rdts.base.Redundancy.MetaDelta
+import rdts.base.{Redundancy, ReplicaId, Uid}
 import rdts.datatypes.MultiVersionRegister
 import rdts.time.Dots
 
@@ -116,7 +116,7 @@ class MultiVersionRegisterTest extends munit.FunSuite {
     given ReplicaId = ReplicaId(Uid.predefined("alice"))
     val write       = MultiVersionRegister.empty[String].write("a")
     val clear       = write.clear()
-    assert(clear.isRedundant(write))
+    assert(Redundancy[MultiVersionRegister[String]].isRedundant(clear, write))
   }
 
   test("clear does not make unobserved concurrent writes redundant") {
@@ -125,7 +125,7 @@ class MultiVersionRegisterTest extends munit.FunSuite {
     val aliceW   = MultiVersionRegister.empty[String].write("a")(using alice.convert)
     val bobW     = MultiVersionRegister.empty[String].write("b")(using bob.convert)
     val clear    = aliceW.clear()
-    assert(!clear.isRedundant(bobW))
+    assert(!Redundancy[MultiVersionRegister[String]].isRedundant(clear, bobW))
     // dropping bobW would lose information
     assertEquals((clear `merge` bobW).read, Set("b"))
   }

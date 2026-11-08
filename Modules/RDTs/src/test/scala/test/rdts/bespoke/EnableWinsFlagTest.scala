@@ -1,7 +1,7 @@
 package test.rdts.bespoke
 
-import rdts.base.Historized.MetaDelta
-import rdts.base.{Bottom, ReplicaId}
+import rdts.base.Redundancy.MetaDelta
+import rdts.base.{Bottom, Redundancy, ReplicaId}
 import rdts.datatypes.EnableWinsFlag
 import rdts.time.Dots
 
@@ -52,19 +52,19 @@ class EnableWinsFlagTest extends munit.FunSuite {
 
     assertEquals(redundantDeltas, dots)
 
-    assert(!delta2.isRedundant(delta1))
+    assert(!Redundancy[EnableWinsFlag].isRedundant(delta2, delta1))
 
-    assert(delta3.isRedundant(delta1))
-    assert(delta3.isRedundant(delta2))
+    assert(Redundancy[EnableWinsFlag].isRedundant(delta3, delta1))
+    assert(Redundancy[EnableWinsFlag].isRedundant(delta3, delta2))
 
-    assert(delta4.isRedundant(delta1))
-    assert(delta4.isRedundant(delta2))
-    assert(delta4.isRedundant(delta3))
+    assert(Redundancy[EnableWinsFlag].isRedundant(delta4, delta1))
+    assert(Redundancy[EnableWinsFlag].isRedundant(delta4, delta2))
+    assert(Redundancy[EnableWinsFlag].isRedundant(delta4, delta3))
 
-    assert(!delta5.isRedundant(delta1))
-    assert(!delta5.isRedundant(delta2))
-    assert(!delta5.isRedundant(delta3))
-    assert(!delta5.isRedundant(delta4))
+    assert(!Redundancy[EnableWinsFlag].isRedundant(delta5, delta1))
+    assert(!Redundancy[EnableWinsFlag].isRedundant(delta5, delta2))
+    assert(!Redundancy[EnableWinsFlag].isRedundant(delta5, delta3))
+    assert(!Redundancy[EnableWinsFlag].isRedundant(delta5, delta4))
   }
 
   test("new unset overrides all deltas containing a subset of the observed dots") {
@@ -147,14 +147,14 @@ class EnableWinsFlagTest extends munit.FunSuite {
     // println(delta4)
 
     // println("delta2")
-    // println(f"${delta2 `subsumes` delta1} ${delta2.isRedundant(delta1)}")
+    // println(f"${delta2 `subsumes` delta1} ${Redundancy[EnableWinsFlag].isRedundant(delta2, delta1)}")
     // println("delta3")
-    // println(f"${delta3 `subsumes` delta1} ${delta3.isRedundant(delta1)}")
-    // println(f"${delta3 `subsumes` delta2} ${delta3.isRedundant(delta2)}")
+    // println(f"${delta3 `subsumes` delta1} ${Redundancy[EnableWinsFlag].isRedundant(delta3, delta1)}")
+    // println(f"${delta3 `subsumes` delta2} ${Redundancy[EnableWinsFlag].isRedundant(delta3, delta2)}")
     // println("delta4")
-    // println(f"${delta4 `subsumes` delta1} ${delta4.isRedundant(delta1)}")
-    // println(f"${delta4 `subsumes` delta2} ${delta4.isRedundant(delta2)}")
-    // println(f"${delta4 `subsumes` delta3} ${delta4.isRedundant(delta3)}")
+    // println(f"${delta4 `subsumes` delta1} ${Redundancy[EnableWinsFlag].isRedundant(delta4, delta1)}")
+    // println(f"${delta4 `subsumes` delta2} ${Redundancy[EnableWinsFlag].isRedundant(delta4, delta2)}")
+    // println(f"${delta4 `subsumes` delta3} ${Redundancy[EnableWinsFlag].isRedundant(delta4, delta3)}")
   }
 
   test("disable makes a previous enable redundant even though it does not subsume it") {
@@ -166,12 +166,12 @@ class EnableWinsFlagTest extends munit.FunSuite {
 
     // the disable does not contain the enable dot in `set`, so lattice subsumption fails
     assert(!(disable `subsumes` enable))
-    // but Historized considers the enable redundant, as the disable covers its observed dots
-    assert(disable.isRedundant(enable))
+    // but Redundancy considers the enable redundant, as the disable covers its observed dots
+    assert(Redundancy[EnableWinsFlag].isRedundant(disable, enable))
     // and merging the redundant enable back in does not change the state
     assertEquals((disable `merge` enable).read, disable.read)
     // the reverse does not hold
-    assert(!enable.isRedundant(disable))
+    assert(!Redundancy[EnableWinsFlag].isRedundant(enable, disable))
   }
 
 }

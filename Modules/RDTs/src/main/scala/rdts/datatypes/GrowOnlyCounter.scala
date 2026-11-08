@@ -28,6 +28,6 @@ object GrowOnlyCounter {
   /** the delta must contain all replica ids of the buffered delta,
     * and the counter of each replica must be greater equal
     */
-  given historized: Historized[GrowOnlyCounter] = (delta, bufferedDelta) =>
+  given redundancy: Redundancy[GrowOnlyCounter] = (delta, bufferedDelta) =>
     bufferedDelta.inner.forall((uid, counter) => counter <= delta.inner.getOrElse(uid, -1))
 }

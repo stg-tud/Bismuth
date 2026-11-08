@@ -1,7 +1,7 @@
 package ex2025recipebook
 
 import ex2025recipebook.Recipe.Delta
-import rdts.base.{Bottom, Historized, Lattice, ReplicaId}
+import rdts.base.{Bottom, Redundancy, Lattice, ReplicaId}
 import rdts.datatypes.{EnableWinsFlag, LastWriterWins}
 import rdts.syntax.deltalens.*
 
@@ -66,7 +66,7 @@ object Recipe {
 
   given Lattice[Recipe] = Lattice.derived
 
-  given Historized[Recipe] = Historized.productHistorized
+  given Redundancy[Recipe] = Redundancy.productRedundancy
 
   def apply(title: String): Recipe = Recipe(
     LastWriterWins.empty[String].write(title),

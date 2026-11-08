@@ -95,10 +95,10 @@ object ObserveRemoveMap {
 
   given decompose[K, V: Decompose]: Decompose[ObserveRemoveMap[K, V]] = Decompose.derived
 
-  given historized[K, V: Historized]: Historized[ObserveRemoveMap[K, V]] = (delta, bufferedDelta) =>
+  given redundancy[K, V: Redundancy]: Redundancy[ObserveRemoveMap[K, V]] = (delta, bufferedDelta) =>
     bufferedDelta.inner.forall((key, entry) =>
       (delta.inner.contains(key)
-      && delta.inner(key).value.isRedundant(entry.value)) || delta.removed.contains(entry.dots)
+      && Redundancy[V].isRedundant(delta.inner(key).value, entry.value)) || delta.removed.contains(entry.dots)
     ) && delta.removed.contains(bufferedDelta.removed)
 
 }

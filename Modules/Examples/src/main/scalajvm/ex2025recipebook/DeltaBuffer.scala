@@ -1,7 +1,7 @@
 package ex2025recipebook
 
-import rdts.base.Historized.MetaDelta
-import rdts.base.{Historized, Lattice}
+import rdts.base.Redundancy.MetaDelta
+import rdts.base.{Redundancy, Lattice}
 import rdts.time.Dots
 
 abstract class DeltaBuffer[A, Self <: DeltaBuffer[A, Self]](buffer: Set[MetaDelta[A]]) {
@@ -39,7 +39,7 @@ object DeltaBufferEverything {
 }
 
 /** A delta buffer with test for redundancy */
-class DeltaBufferNonRedundant[A: Historized](buffer: Set[MetaDelta[A]], redundantDots: Dots)
+class DeltaBufferNonRedundant[A: Redundancy](buffer: Set[MetaDelta[A]], redundantDots: Dots)
     extends DeltaBuffer[A, DeltaBufferNonRedundant[A]](buffer) {
 
   def applyDelta(metaDelta: MetaDelta[A]): DeltaBufferNonRedundant[A] = {
@@ -69,9 +69,9 @@ class DeltaBufferNonRedundant[A: Historized](buffer: Set[MetaDelta[A]], redundan
 }
 
 object DeltaBufferNonRedundant {
-  def apply[A: Historized](set: Set[MetaDelta[A]], dots: Dots): DeltaBufferNonRedundant[A] =
+  def apply[A: Redundancy](set: Set[MetaDelta[A]], dots: Dots): DeltaBufferNonRedundant[A] =
     new DeltaBufferNonRedundant(set, dots)
-  def apply[A: Historized](): DeltaBufferNonRedundant[A] =
+  def apply[A: Redundancy](): DeltaBufferNonRedundant[A] =
     new DeltaBufferNonRedundant(Set.empty[MetaDelta[A]], Dots.empty)
 }
 

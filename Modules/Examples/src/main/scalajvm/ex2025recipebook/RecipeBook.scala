@@ -1,7 +1,7 @@
 package ex2025recipebook
 
 import ex2025recipebook.RecipeBook.Delta
-import rdts.base.{Bottom, Historized, Lattice, ReplicaId}
+import rdts.base.{Bottom, Redundancy, Lattice, ReplicaId}
 import rdts.datatypes.ObserveRemoveMap
 import rdts.syntax.deltalens.*
 
@@ -106,7 +106,7 @@ object RecipeBook {
 
   given Lattice[RecipeBook] = Lattice.derived
 
-  given Historized[RecipeBook] = Historized.productHistorized
+  given Redundancy[RecipeBook] = Redundancy.productRedundancy
 
   def apply(): RecipeBook = RecipeBook(ObserveRemoveMap.empty)
 

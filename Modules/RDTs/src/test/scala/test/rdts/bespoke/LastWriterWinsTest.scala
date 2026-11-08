@@ -1,6 +1,6 @@
 package test.rdts.bespoke
 
-import rdts.base.Historized.MetaDelta
+import rdts.base.Redundancy.MetaDelta
 import rdts.base.{Bottom, ReplicaId}
 import rdts.datatypes.LastWriterWins
 import rdts.time.Dots

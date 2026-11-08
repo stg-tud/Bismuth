@@ -1,6 +1,6 @@
 package rdts.datatypes
 
-import rdts.base.{Bottom, Decompose, DecoratedLattice, Historized, Lattice, ReplicaId}
+import rdts.base.{Bottom, Decompose, DecoratedLattice, Redundancy, Lattice, ReplicaId}
 import rdts.time.{Dot, Dots}
 
 /** A set that allows deletes.
@@ -77,7 +77,7 @@ object ReplicatedSet {
   }
   given decompose[E]: Decompose[ReplicatedSet[E]] = Decompose.derived
 
-  given historized[E]: Historized[ReplicatedSet[E]] = (delta, bufferedDelta) =>
+  given redundancy[E]: Redundancy[ReplicatedSet[E]] = (delta, bufferedDelta) =>
     delta.deleted.contains(bufferedDelta.observed)
 
 }

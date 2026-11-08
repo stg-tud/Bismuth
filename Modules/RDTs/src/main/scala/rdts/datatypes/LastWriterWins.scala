@@ -1,6 +1,6 @@
 package rdts.datatypes
 
-import rdts.base.{Bottom, Decompose, Historized, Lattice, Orderings}
+import rdts.base.{Bottom, Decompose, Redundancy, Lattice, Orderings}
 import rdts.time.CausalTime
 
 import scala.math.Ordering.Implicits.infixOrderingOps
@@ -61,7 +61,7 @@ object LastWriterWins {
           case x if x > 0 => left
   }
 
-  given historized[A]: Historized[LastWriterWins[A]] = (delta, bufferedDelta) =>
+  given redundancy[A]: Redundancy[LastWriterWins[A]] = (delta, bufferedDelta) =>
     bufferedDelta.timestamp <= delta.timestamp
 
 }
