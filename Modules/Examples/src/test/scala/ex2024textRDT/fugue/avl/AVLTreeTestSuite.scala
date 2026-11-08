@@ -2,7 +2,7 @@ package ex2024textRDT.fugue.avl
 
 import munit.diff.Printer
 import munit.{FunSuite, Location}
-import ex2024textRDT.{Helper, Side}
+import ex2024textRDT.{Side}
 
 given effe: AVLTreeNodeValueSize[String] with {
 

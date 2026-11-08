@@ -59,6 +59,7 @@ class CausalBroadcastTest extends munit.FunSuite {
 
   test("merged payloads are delivered once their external predecessors are applied") {
     import rdts.base.Lattice
+    given Lattice[Payload[Causal[Set[String]]]] = Lattice.derived
     val log = ArrayBuffer.empty[Set[String]]
     val c   = CausalBroadcast[Set[String]](ReplicaId.gen(), log.addOne)(using JsonCodecMaker.make)
     val a0  = Dots.single(Dot(Uid.predefined("a"), 0))

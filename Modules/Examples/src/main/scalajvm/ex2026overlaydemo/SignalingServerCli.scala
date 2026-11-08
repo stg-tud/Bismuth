@@ -4,6 +4,7 @@ import channels.*
 import channels.broadcast.PlumtreeMessage.Payload
 import channels.connection.{Abort, ConnectionDescriptor, Listener}
 import channels.experiments.{OverlayDemoNode, OverlayStatusProtocol, SignalingServer}
+import rdts.base.Lattice
 
 import java.net.InetSocketAddress
 import java.util.concurrent.Executors
@@ -35,7 +36,7 @@ object SignalingServerCli {
     val signaling = SignalingServer(debug = true)
     signaling.addIncomingConnection(signalServer)
 
-    given rdts.base.Lattice[Payload[OverlayStatusProtocol.Status]] = summon
+    given rdts.base.Lattice[Payload[OverlayStatusProtocol.Status]] = Lattice.derived
     val overlayNode                                                = new OverlayDemoNode(
       selfDetails = Set(overlayDetails),
       listenEnvelope = Some(overlayServer),

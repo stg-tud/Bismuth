@@ -7,7 +7,7 @@ import channels.experiments.{OverlayDemoNode, OverlayStatusProtocol}
 import com.github.plokhotnyuk.jsoniter_scala.core.{readFromString, writeToString}
 import org.scalajs.dom
 import org.scalajs.dom.{CanvasRenderingContext2D, document, window}
-import rdts.base.{ReplicaId, Uid}
+import rdts.base.{Lattice, ReplicaId, Uid}
 import scalatags.JsDom.all.*
 import webapps.ex2026overlaydemo.OverlayNetworkGraphModel.LocalViews
 import webapps.ex2026overlaydemo.OverlayNetworkGraphNetworking.WebRtcSignalingBridge
@@ -117,7 +117,7 @@ object OverlayNetworkGraph {
       onStateChanged = updateDisplayedState,
       printOverlayEventsToStdout = true,
       localUid = localUid,
-    )
+    )(using Lattice.derived)
 
     var nodeStarted                             = false
     def startNodeAndBootstrapDirectSeed(): Unit =

@@ -4,7 +4,7 @@ import channels.broadcast.PlumtreeBroadcast.Event.Send
 import channels.broadcast.PlumtreeBroadcast.{Peer, PeerRole}
 import channels.broadcast.PlumtreeMessage.*
 import channels.{DeltaStorage, NoHistory}
-import rdts.base.{Lattice, Uid}
+import rdts.base.Uid
 import rdts.time.Dots
 
 import scala.util.Random
@@ -21,9 +21,6 @@ object PlumtreeMessage {
     * then a.data <= b.data according to the lattice of T
     */
   case class Payload[+T](dots: Dots, data: T) extends PlumtreeMessage[T]
-
-  // exists so we can merge history
-  given [T: Lattice] => Lattice[Payload[T]] = Lattice.derived
 
   /** Lazy advertisement for Plumtree-style dissemination.
     * `knows` summarizes what the sender already has.
