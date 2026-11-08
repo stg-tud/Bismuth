@@ -1,17 +1,12 @@
 package channels
 
-import channels.MessagingIO.executeImmediately
 import channels.broadcast.BroadcastProtocol.{Effect, Step}
 import channels.broadcast.PlumtreeMessage.Payload
 import channels.broadcast.{BroadcastProtocol, PlumtreeBroadcast, PlumtreeMessage}
-import channels.connection.{Abort, ChannelResolver, Peer}
-import channels.experiments.Aead
-import channels.overlay.OverlayController
+import channels.connection.Peer
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReader, JsonValueCodec, JsonWriter}
 import rdts.base.{ReplicaId, Uid}
 import rdts.time.{Causal, CausalBuffer, Dots}
-
-import scala.concurrent.ExecutionContext
 
 /** A [[MessagingIO]] running [[CausalPlumtree]]: delivers plain values `A` in causal order. */
 type CausalBroadcast[A] = MessagingIO[CausalPlumtree.Protocol[A]]
@@ -95,28 +90,17 @@ object CausalBroadcast {
   def apply[A](
       replicaId: ReplicaId,
       deliver: A => Unit,
-      overlay: Option[OverlayController] = None,
-      resolver: ChannelResolver = ChannelResolver.disconnected,
-      sendingActor: ExecutionContext = executeImmediately,
-      globalAbort: Abort = Abort(),
+      config: MessagingIO.Config = MessagingIO.Config(),
       initial: CausalPlumtree[A] = CausalPlumtree[A](),
-      aead: Aead = Aead.identity,
-      timers: Timers = Timers.Manual(),
-      timerDelays: TimerDelays = TimerDelays(),
   )(using JsonValueCodec[A]): CausalBroadcast[A] =
-    MessagingIO.applyGen[CausalPlumtree.Protocol[A]](using CausalPlumtree.protocol[A])(
+    new MessagingIO[CausalPlumtree.Protocol[A]](
+      using CausalPlumtree.protocol[A], PlumtreeBroadcast.messageCodec[Causal[A]]
+    )(
       replicaId,
       initial,
       deliver,
-      overlay = overlay,
-      resolver = resolver,
-      sendingActor = sendingActor,
-      globalAbort = globalAbort,
-      aead = aead,
-      timers = timers,
-      overlayDelays = timerDelays,
-      protocolDelays = timerDelays.apply,
-    )(using PlumtreeBroadcast.messageCodec[Causal[A]])
+      config,
+    )
 
   /** Encodes `Causal(predecessors, value)` as `[predecessors, value]`. */
   given causalCodec[A](using codec: JsonValueCodec[A]): JsonValueCodec[Causal[A]] = new JsonValueCodec[Causal[A]] {

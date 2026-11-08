@@ -20,16 +20,16 @@ class ProBenchClient(val name: Uid, logTimings: Boolean) extends Client(name, lo
   private val promises: mutable.HashMap[Uid, Promise[String]] = mutable.HashMap.empty[Uid, Promise[String]]
 
   val writeDataManager: MessagingIO.Plumtree[ClientCommWrite] =
-    MessagingIO(
+    MessagingIO.usingPlumtree(
       localUid,
       payload => handleIncomingWrite(payload.data),
-      broadcast = Some(PlumtreeBroadcast(deltaStorage = KeepAllHistory()))
+      history = KeepAllHistory()
     )
   val readDataManager: MessagingIO.Plumtree[ClientCommRead] =
-    MessagingIO(
+    MessagingIO.usingPlumtree(
       localUid,
       payload => handleIncomingRead(payload.data),
-      broadcast = Some(PlumtreeBroadcast(deltaStorage = KeepAllHistory()))
+      history = KeepAllHistory()
     )
 
   inline def log(inline msg: String): Unit =

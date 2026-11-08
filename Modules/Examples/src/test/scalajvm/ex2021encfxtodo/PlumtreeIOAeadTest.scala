@@ -31,8 +31,8 @@ class PlumtreeIOAeadTest extends FunSuite {
     val received1 = mutable.ListBuffer.empty[Set[String]]
     val received2 = mutable.ListBuffer.empty[Set[String]]
 
-    val dd1 = MessagingIO[Set[String]](ReplicaId.gen(), p => received1 += p.data, aead = aead)
-    val dd2 = MessagingIO[Set[String]](ReplicaId.gen(), p => received2 += p.data, aead = aead)
+    val dd1 = MessagingIO.usingPlumtree[Set[String]](ReplicaId.gen(), p => received1 += p.data, config = MessagingIO.Config(aead = aead))
+    val dd2 = MessagingIO.usingPlumtree[Set[String]](ReplicaId.gen(), p => received2 += p.data, config = MessagingIO.Config(aead = aead))
 
     val queue = LocalMessageQueue()
     val link  = QueuedLocalConnection("aead", queue)

@@ -44,21 +44,20 @@ class OverlayDemoNode(
         broadcastIO.foreach(_.broadcast(delta))
 
   private def newOverlay() =
-    MessagingIO[OverlayStatusProtocol.Status](
+    MessagingIO.usingPlumtree[OverlayStatusProtocol.Status](
       localUid,
       payload => {
         state = state.merge(payload.data)
         emitStateChanged()
       },
-      overlay = Some(HyParViewStateMachine.empty(selfRef, config, random.between, _ => true)),
-      resolver = envelopeResolver,
-      globalAbort = abort,
-      broadcast =
-        Some(PlumtreeBroadcast(
-          deltaStorage = MergingHistory[OverlayStatusProtocol.Status](blockSize = 1000)
-        )),
-      // overlay maintenance and broadcast repair run on their own timers
-      timers = if runBackgroundTasks then Timers.OnJavaTimer(timer) else Timers.Manual(),
+      config = MessagingIO.Config(
+        overlay = Some(HyParViewStateMachine.empty(selfRef, config, random.between, _ => true)),
+        resolver = envelopeResolver,
+        globalAbort = abort,
+        // overlay maintenance and broadcast repair run on their own timers
+        timers = if runBackgroundTasks then Timers.OnJavaTimer(timer) else Timers.Manual(),
+      ),
+      history = MergingHistory[OverlayStatusProtocol.Status](blockSize = 1000),
     )
 
   private def startBackgroundTasks(): Unit =

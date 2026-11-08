@@ -13,7 +13,7 @@ import reactives.default.*
 object MiniSocialDataManager {
 
   val (receivedCallback, dataManager: MessagingIO.Plumtree[MiniSocial]) = Event.fromCallback {
-    MessagingIO[MiniSocial](MiniSocialMain.replicaId, payload => Event.handle(payload.data))
+    MessagingIO.usingPlumtree[MiniSocial](MiniSocialMain.replicaId, payload => Event.handle(payload.data))
   }
 
   def hookup(init: MiniSocial)(create: (

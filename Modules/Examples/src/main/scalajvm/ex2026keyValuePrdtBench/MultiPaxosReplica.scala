@@ -185,11 +185,10 @@ class MultiPaxosReplica(
     uniqueEndpointSets.map(endpoints =>
       (
         endpoints,
-        MessagingIO[MultiPaxos[Request]](
+        MessagingIO.usingPlumtree[MultiPaxos[Request]](
           ReplicaId(id),
           payload => { publish(payload.data, Some(endpoints)); handleDelta(payload.data) },
-          broadcast =
-            Some(PlumtreeBroadcast(deltaStorage = DeltaStorage.getStorage(DeltaStorage.Type.KeepAll, () => ???)))
+          history = DeltaStorage.getStorage(DeltaStorage.Type.KeepAll, () => ???)
         )
       )
     ).toMap

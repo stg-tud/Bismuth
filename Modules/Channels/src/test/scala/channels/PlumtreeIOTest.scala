@@ -20,7 +20,7 @@ class PlumtreeIOTest extends munit.FunSuite {
     // I have no clue why this syntax is still not deprecated xD
     val dd1, dd2, dd3 = {
       val uid = ReplicaId.gen()
-      MessagingIO[Set[String]](uid, _ => ())
+      MessagingIO.usingPlumtree[Set[String]](uid, _ => ())
     }
 
     val queue = LocalMessageQueue()
@@ -51,7 +51,7 @@ class PlumtreeIOTest extends munit.FunSuite {
 
     given JsonValueCodec[Set[String]] = JsonCodecMaker.make
 
-    val nodes = Vector.fill(5)(MessagingIO[Set[String]](ReplicaId.gen(), _ => ()))
+    val nodes = Vector.fill(5)(MessagingIO.usingPlumtree[Set[String]](ReplicaId.gen(), _ => ()))
 
     val queue = LocalMessageQueue()
 
@@ -89,7 +89,7 @@ class PlumtreeIOTest extends munit.FunSuite {
 
     given JsonValueCodec[Set[String]] = JsonCodecMaker.make
 
-    val dd1, dd2, dd3 = MessagingIO[Set[String]](ReplicaId.gen(), _ => ())
+    val dd1, dd2, dd3 = MessagingIO.usingPlumtree[Set[String]](ReplicaId.gen(), _ => ())
 
     val queue  = LocalMessageQueue()
     val queued = QueuedLocalConnection("queued-basics", queue)
@@ -149,11 +149,10 @@ class PlumtreeIOTest extends munit.FunSuite {
     final case class Node(id: String) {
       val uid: ReplicaId               = ReplicaId.gen()
       val selfInfo: PeerConnectInfo    = PeerConnectInfo(Peer.Claimed(uid.uid), Set(ConnectionDescriptor.QueuedLocal(id)))
-      val io: MessagingIO.Plumtree[Set[String]] = MessagingIO[Set[String]](
+      val io: MessagingIO.Plumtree[Set[String]] = MessagingIO.usingPlumtree[Set[String]](
         uid,
         _ => (),
-        overlay = Some(FullMeshOverlay(selfInfo)),
-        resolver = resolver,
+        config = MessagingIO.Config(overlay = Some(FullMeshOverlay(selfInfo)), resolver = resolver),
       )
     }
 
@@ -205,11 +204,10 @@ class PlumtreeIOTest extends munit.FunSuite {
     final case class Node(id: String) {
       val uid: ReplicaId               = ReplicaId.gen()
       val selfInfo: PeerConnectInfo    = PeerConnectInfo(Peer.Claimed(uid.uid), Set(ConnectionDescriptor.QueuedLocal(id)))
-      val io: MessagingIO.Plumtree[Set[String]] = MessagingIO[Set[String]](
+      val io: MessagingIO.Plumtree[Set[String]] = MessagingIO.usingPlumtree[Set[String]](
         uid,
         _ => (),
-        overlay = Some(FullMeshOverlay(selfInfo)),
-        resolver = resolver,
+        config = MessagingIO.Config(overlay = Some(FullMeshOverlay(selfInfo)), resolver = resolver),
       )
 
       def startListening(): Unit =
@@ -285,9 +283,9 @@ class PlumtreeIOTest extends munit.FunSuite {
     class Node(val uid: ReplicaId) {
       var state: ReplicatedSet[String]                      = ReplicatedSet.empty[String]
       val dissemination: MessagingIO.Plumtree[ReplicatedSet[String]] =
-        MessagingIO[ReplicatedSet[String]](
+        MessagingIO.usingPlumtree[ReplicatedSet[String]](
           uid,
-          payload => state = state.merge(payload.data)
+          payload => state = state.merge(payload.data),
         )
     }
 

@@ -45,11 +45,10 @@ class PlumtreeIOIntegrationTest extends munit.FunSuite {
       val selfInfo = PeerConnectInfo(Peer.Claimed(uid.uid), Set(ConnectionDescriptor.QueuedLocal(id)))
       val random   = Random(0xb15 + i)
       val overlay  = HyParViewStateMachine.empty(selfInfo, networkConfig, random.between, _ => true)
-      val io       = MessagingIO[Set[String]](
+      val io       = MessagingIO.usingPlumtree[Set[String]](
         uid,
         _ => (),
-        overlay = Some(overlay),
-        resolver = resolver,
+        config = MessagingIO.Config(overlay = Some(overlay), resolver = resolver),
       )
       Node(id, io, selfInfo)
     }

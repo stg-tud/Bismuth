@@ -1,7 +1,7 @@
 package webapps.ex2024textRDT
 
 import channels.connection.{LocalMessageQueue, QueuedLocalConnection}
-import channels.{CausalBroadcast, Timers}
+import channels.{CausalBroadcast, MessagingIO, Timers}
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import ex2024textRDT.{FugueFactory, Replica}
@@ -17,7 +17,7 @@ final class TextReplication[F <: FugueFactory](val replica: Replica[F]) {
   val timers: Timers.Manual = Timers.Manual()
 
   val causal: CausalBroadcast[replica.Ops] =
-    CausalBroadcast(ReplicaId.predefined(replica.state.replicaId), replica.applyRemoteUnchecked, timers = timers)
+    CausalBroadcast(ReplicaId.predefined(replica.state.replicaId), replica.applyRemoteUnchecked, config = MessagingIO.Config(timers = timers))
 
   def io = causal
 

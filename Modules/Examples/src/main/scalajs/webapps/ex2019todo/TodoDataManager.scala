@@ -21,7 +21,7 @@ object TodoDataManager {
   given Bottom[TodoRepState]         = Bottom.derived
 
   val (receivedCallback, dataManager: MessagingIO.Plumtree[TodoRepState]) = Event.fromCallback {
-    MessagingIO[TodoRepState](Todolist.replicaId, payload => Event.handle(payload.data))
+    MessagingIO.usingPlumtree[TodoRepState](Todolist.replicaId, payload => Event.handle(payload.data))
   }
 
   def hookup[A: Lattice](

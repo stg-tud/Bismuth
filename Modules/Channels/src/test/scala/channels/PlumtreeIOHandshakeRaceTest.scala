@@ -37,11 +37,11 @@ class PlumtreeIOHandshakeRaceTest extends munit.FunSuite {
 
     private def mkNode(cb: Set[String] => Unit): MessagingIO.Plumtree[Set[String]] = {
       val uid = ReplicaId.gen()
-      MessagingIO[Set[String]](
+      MessagingIO.usingPlumtree[Set[String]](
         replicaId = uid,
         receiveCallback = payload => cb(payload.data),
         // same overlay setup as used by ex2021encfxtodo.ConnectionManager
-        overlay = Some(FullMeshOverlay(PeerConnectInfo(Peer.Claimed(uid.uid)))),
+        config = MessagingIO.Config(overlay = Some(FullMeshOverlay(PeerConnectInfo(Peer.Claimed(uid.uid))))),
       )
     }
 

@@ -30,7 +30,7 @@ class AddWinsSetRDT(number_of_additions: Int, sleep_time_milliseconds: Long) ext
 
   given JsonValueCodec[RdtType] = JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))
 
-  val dataManager: MessagingIO.Plumtree[RdtType] = MessagingIO[RdtType](
+  val dataManager: MessagingIO.Plumtree[RdtType] = MessagingIO.usingPlumtree[RdtType](
     ReplicaId.gen(),
     _ => println("replica received new state information"),
   )
@@ -81,7 +81,7 @@ class ObserveRemoveSetRDT(number_of_changes: Int, sleep_time_milliseconds: Long)
 
   given replicaId: ReplicaId = ReplicaId.gen()
 
-  val dataManager: MessagingIO.Plumtree[RdtType] = MessagingIO[RdtType](
+  val dataManager: MessagingIO.Plumtree[RdtType] = MessagingIO.usingPlumtree[RdtType](
     replicaId,
     _ =>
       println("replica received new state information"),
@@ -159,7 +159,7 @@ class LastWriterWinsRDT(number_of_changes: Int, sleep_time_milliseconds: Long) e
 
   given replicaId: ReplicaId = ReplicaId.gen()
 
-  val dataManager: MessagingIO.Plumtree[RdtType] = MessagingIO[RdtType](
+  val dataManager: MessagingIO.Plumtree[RdtType] = MessagingIO.usingPlumtree[RdtType](
     replicaId,
     (_ => println("replica received new state information")): @unused,
   )

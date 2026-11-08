@@ -49,15 +49,15 @@ class ConnectionManager[State: JsonValueCodec](
   private val timer = java.util.Timer(s"broadcast-timers-${replicaId.uid}", true)
 
   val dataManager: MessagingIO.Plumtree[State] =
-    MessagingIO[State](
+    MessagingIO.usingPlumtree[State](
       replicaId = replicaId,
       receiveCallback = payload => receiveCallback(payload.data),
-      overlay = Some(FullMeshOverlay(PeerConnectInfo(Peer.Claimed(replicaId.uid)))),
-      resolver = nioResolver,
-      globalAbort = globalAbort,
-      aead = TinkBasedAead(aead),
-      timers = Timers.OnJavaTimer(timer),
-      timerDelays = TimerDelays(repair = 100.millis),
+      config = MessagingIO.Config(overlay = Some(FullMeshOverlay(PeerConnectInfo(Peer.Claimed(replicaId.uid)))),
+        resolver = nioResolver,
+        globalAbort = globalAbort,
+        aead = TinkBasedAead(aead),
+        timers = Timers.OnJavaTimer(timer),
+        timerDelays = TimerDelays(repair = 100.millis)),
     )
 
   dataManager.addServerConnection(nio.listen())

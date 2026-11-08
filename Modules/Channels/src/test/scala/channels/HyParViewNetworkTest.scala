@@ -54,11 +54,13 @@ class HyParViewNetworkTest extends munit.FunSuite {
             case ConnectionDescriptor.QueuedLocal(target) if unreachable.contains((id, target)) => None
             case _ => registry.connect(details)
       }
-      val io = MessagingIO[Set[String]](
+      val io = MessagingIO.usingPlumtree[Set[String]](
         replica,
         _ => (),
-        overlay = Some(HyParViewStateMachine.empty(info, config, (lo, _) => lo, _ => true)),
-        resolver = resolver,
+        config = MessagingIO.Config(
+          overlay = Some(HyParViewStateMachine.empty(info, config, (lo, _) => lo, _ => true)),
+          resolver = resolver,
+        ),
       )
       val n = Node(id, io, info)
       nodes(id) = n

@@ -20,10 +20,10 @@ class OverlayStatusProtocolTest extends FunSuite {
     val uid: ReplicaId            = ReplicaId.gen()
     val selfInfo: PeerConnectInfo = PeerConnectInfo(Peer.Claimed(uid.uid), Set(ConnectionDescriptor.QueuedLocal(id)))
     var status: Status            = OverlayStatusProtocol.empty
-    val io: MessagingIO.Plumtree[Status]   = MessagingIO[Status](
+    val io: MessagingIO.Plumtree[Status]   = MessagingIO.usingPlumtree[Status](
       uid,
       payload => status = status.merge(payload.data),
-      overlay = Some(FullMeshOverlay(selfInfo)),
+      config = MessagingIO.Config(overlay = Some(FullMeshOverlay(selfInfo))),
     )
 
     def publishStatus(round: Long): Unit = {
@@ -102,11 +102,13 @@ class OverlayStatusProtocolTest extends FunSuite {
       val uid: ReplicaId            = ReplicaId.gen()
       val selfInfo: PeerConnectInfo = PeerConnectInfo(Peer.Claimed(uid.uid), Set(ConnectionDescriptor.QueuedLocal(id)))
       var status: Status            = OverlayStatusProtocol.empty
-      val io: MessagingIO.Plumtree[Status]   = MessagingIO[Status](
+      val io: MessagingIO.Plumtree[Status]   = MessagingIO.usingPlumtree[Status](
         uid,
         payload => status = status.merge(payload.data),
-        overlay = Some(HyParViewStateMachine.empty(selfInfo, config, random.between, _ => true)),
-        resolver = resolver,
+        config = MessagingIO.Config(
+          overlay = Some(HyParViewStateMachine.empty(selfInfo, config, random.between, _ => true)),
+          resolver = resolver,
+        ),
       )
 
       def startListening(): Unit =

@@ -70,12 +70,11 @@ class KeyValueReplica(
     given Lattice[Payload[ClusterState]] =
       Lattice.derived
 
-    lazy val dataManager: MessagingIO.Plumtree[ClusterState] = MessagingIO[ClusterState](
+    lazy val dataManager: MessagingIO.Plumtree[ClusterState] = MessagingIO.usingPlumtree[ClusterState](
       localUid,
       payload => replicaActor.execute(() => handleIncoming(payload.data)),
-      sendingActor = sendingActor,
-      broadcast =
-        Some(PlumtreeBroadcast(deltaStorage = DeltaStorage.getStorage(deltaStorageType, () => state)))
+      history = DeltaStorage.getStorage(deltaStorageType, () => state),
+      config = MessagingIO.Config(sendingActor = sendingActor),
     )
 
     def handleIncoming(delta: ClusterState): Unit = currentStateLock.synchronized {
@@ -227,19 +226,17 @@ class KeyValueReplica(
 //    val nextProposal: AtomicReference[Option[ClientCommWrite.WriteReq]]     = AtomicReference(None)
 //    val currentReads: AtomicReference[Set[ClientCommRead.ReadReq]]        = AtomicReference(Set.empty)
 
-    lazy val dataManagerWrite: MessagingIO.Plumtree[ClientCommWrite] = MessagingIO(
+    lazy val dataManagerWrite: MessagingIO.Plumtree[ClientCommWrite] = MessagingIO.usingPlumtree(
       localUid,
       payload => replicaActor.execute(() => handleIncomingWrite(payload.data)),
-      sendingActor = sendingActor,
-      broadcast =
-        Some(PlumtreeBroadcast(deltaStorage = DeltaStorage.getStorage(deltaStorageType, () => ???)))
+      history = DeltaStorage.getStorage(deltaStorageType, () => ???),
+      config = MessagingIO.Config(sendingActor = sendingActor),
     )
-    lazy val dataManagerRead: MessagingIO.Plumtree[ClientCommRead] = MessagingIO(
+    lazy val dataManagerRead: MessagingIO.Plumtree[ClientCommRead] = MessagingIO.usingPlumtree(
       localUid,
       payload => replicaActor.execute(() => handleIncomingRead(payload.data)),
-      sendingActor = sendingActor,
-      broadcast =
-        Some(PlumtreeBroadcast(deltaStorage = DeltaStorage.getStorage(deltaStorageType, () => ???)))
+      history = DeltaStorage.getStorage(deltaStorageType, () => ???),
+      config = MessagingIO.Config(sendingActor = sendingActor),
     )
 
     def handleIncomingWrite(delta: ClientCommWrite): Unit =
@@ -289,15 +286,11 @@ class KeyValueReplica(
 
     var alivePeers: Set[Uid] = Set.empty
 
-    val dataManager: MessagingIO.Plumtree[ConnInformation] = MessagingIO(
+    val dataManager: MessagingIO.Plumtree[ConnInformation] = MessagingIO.usingPlumtree(
       localUid,
       payload => replicaActor.execute(() => handleIncoming(payload.data)),
-      sendingActor = sendingActor,
-      broadcast = Some(
-        PlumtreeBroadcast(
-          deltaStorage = DeltaStorage.getStorage(deltaStorageType, () => currentStateLock.synchronized(state))
-        )
-      )
+      history = DeltaStorage.getStorage(deltaStorageType, () => currentStateLock.synchronized(state)),
+      config = MessagingIO.Config(sendingActor = sendingActor),
     )
 
     def handleIncoming(delta: ConnInformation): Unit = {
