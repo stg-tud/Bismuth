@@ -41,7 +41,7 @@ class NioTls(privateIdentity: PrivateIdentity) {
   }
 
   /** The replica id of the remote side, from the session of a completed handshake.
-    * Becomes [[channels.connection.Connection.authenticatedPeerReplicaId]].
+    * Becomes [[channels.connection.ConnectionInfo.authenticatedPeer]].
     */
   def authenticatedPeer(session: SSLSession): Uid =
     val certificate = session.getPeerCertificates()(0).asInstanceOf[X509Certificate]

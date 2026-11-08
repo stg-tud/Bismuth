@@ -128,7 +128,7 @@ class ChannelConnectionManager(
   override def connectedPeers: Set[PublicIdentity] = connections.keySet
 
   private def trackConnection(connection: Connection): Unit =
-    connection.authenticatedPeerReplicaId.map(id => PublicIdentity(id.delegate)) match {
+    connection.info.authenticatedPeer.map(id => PublicIdentity(id.delegate)) match {
       case Some(`localPublicId`) =>
         if !disableLogging then println("Refusing attempt to track connection to myself")
         connection.close()
@@ -178,7 +178,7 @@ class ChannelConnectionManager(
 
   private def receiveMessageHandler(connection: Connection): Callback[MessageBuffer] = {
     trackConnection(connection)
-    val remotePeerId = PublicIdentity(connection.authenticatedPeerReplicaId.get.delegate)
+    val remotePeerId = PublicIdentity(connection.info.authenticatedPeer.get.delegate)
 
     new Callback[MessageBuffer] {
       def complete(result: Try[MessageBuffer]): Unit = result match {

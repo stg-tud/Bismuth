@@ -30,16 +30,17 @@ sealed trait NioSocketLayer {
   /** Whether the layer can transport data (i.e., the TLS handshake is done). */
   def ready: Boolean
 
-  /** Identity of the remote side, as established by this layer. */
+  /** Identity of the remote side, as established by this layer. Becomes [[ConnectionInfo.authenticatedPeer]]. */
   def authenticatedPeer: Option[Uid]
 
   /** Describes an address of this socket (as a descriptor of the kind of connection this layer provides). */
   protected def describe(address: SocketAddress): Option[ConnectionDescriptor]
 
-  /** Local and remote addresses of this socket, plus the given details. */
+  /** Local and remote addresses and the authenticated peer of this socket, plus the given details. */
   def connectionInfo(details: (String, String)*): ConnectionInfo = ConnectionInfo(
     local = Try(describe(channel.getLocalAddress)).getOrElse(None),
     remote = Try(describe(channel.getRemoteAddress)).getOrElse(None),
+    authenticatedPeer = authenticatedPeer,
     details = details.toMap
   )
 

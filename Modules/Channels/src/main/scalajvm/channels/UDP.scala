@@ -123,7 +123,7 @@ class UDPDatagramWrapper(target: SocketAddress, datagramSocket: DatagramSocket) 
             local = Some(ConnectionDescriptor.Udp(local.getHostString, local.getPort)),
             details = Map("type" -> "udp")
           )
-        case _ => ConnectionInfo("type" -> "udp")
+        case _ => ConnectionInfo(details = Map("type" -> "udp"))
 
   def send(message: MessageBuffer): Async[Any, Unit] = Async {
     val outArray   = message.convertToArray()

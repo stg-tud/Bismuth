@@ -4,7 +4,6 @@ import channels.NioTCP.*
 import channels.WebsocketProtocol.WebsocketHeader
 import channels.connection.{Abort, ByteBufferMessageBuffer, Connection, ConnectionDescriptor, ConnectionInfo, Connector, Listener, MessageBuffer, NoMoreDataException, Receive}
 import de.rmgk.delay.{Async, Callback, Sync}
-import rdts.base.Uid
 
 import java.net.{InetSocketAddress, SocketAddress, StandardProtocolFamily, StandardSocketOptions, UnixDomainSocketAddress}
 import java.nio.ByteBuffer
@@ -145,8 +144,6 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = BroadcastIO.executeImmedi
 
     override val info: ConnectionInfo = layer.connectionInfo("type" -> "niotcp")
 
-    override val authenticatedPeerReplicaId: Option[Uid] = layer.authenticatedPeer
-
     override def send(message: MessageBuffer): Async[Any, Unit] = Sync {
       val bytes         = message.asByteBuffer
       val messageLength = bytes.remaining()
@@ -164,8 +161,6 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = BroadcastIO.executeImmedi
   class WebSocketConnection(layer: NioSocketLayer) extends Connection {
 
     override val info: ConnectionInfo = layer.connectionInfo("type" -> "websocket")
-
-    override val authenticatedPeerReplicaId: Option[Uid] = layer.authenticatedPeer
 
     override def send(message: MessageBuffer): Async[Any, Unit] = Sync {
       val payload =

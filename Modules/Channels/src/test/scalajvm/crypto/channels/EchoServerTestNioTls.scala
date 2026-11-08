@@ -63,14 +63,14 @@ class NioTlsTest extends munit.FunSuite {
       }.runIn(abort)(result => client.complete(result))
 
       val clientConn = scala.concurrent.Await.result(client.future, scala.concurrent.duration.Duration(10, "s"))
-      if useTls then assertEquals(clientConn.authenticatedPeerReplicaId, Some(Uid(serverId.getPublic.id)))
+      if useTls then assertEquals(clientConn.info.authenticatedPeer, Some(Uid(serverId.getPublic.id)))
 
       val messages = sizes.map(size => Random.nextBytes(size))
       messages.foreach(message => clientConn.send(ByteBufferMessageBuffer(message)).run(_ => ()))
 
       // the accepting side reports connections once the first message determined the protocol
       val serverConn = scala.concurrent.Await.result(serverSide.future, scala.concurrent.duration.Duration(10, "s"))
-      if useTls then assertEquals(serverConn.authenticatedPeerReplicaId, Some(Uid(clientId.getPublic.id)))
+      if useTls then assertEquals(serverConn.info.authenticatedPeer, Some(Uid(clientId.getPublic.id)))
       messages.foreach { expected =>
         val got = received.poll(10, TimeUnit.SECONDS)
         assert(got != null, "timed out waiting for echo")

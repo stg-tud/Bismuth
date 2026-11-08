@@ -2,7 +2,6 @@ package channels.connection
 
 import channels.connection.MessageBuffer.convertByteBufferToArray
 import de.rmgk.delay.{Async, Callback}
-import rdts.base.Uid
 
 import java.nio.ByteBuffer
 
@@ -51,9 +50,8 @@ class Abort(@volatile var closeRequest: Boolean = false) {
 
 /** Connections are bidirectional. Receiving is handled by the incoming handler of the latent connection. */
 trait Connection {
-  // TODO: currently not consistently implemented
-  def info: ConnectionInfo                    = ConnectionInfo()
-  def authenticatedPeerReplicaId: Option[Uid] = None
+  // TODO: info is not implemented by all transports (e.g., WebRTC, JS websockets, local queues)
+  def info: ConnectionInfo = ConnectionInfo()
   def send(message: MessageBuffer): Async[Any, Unit]
   def close(): Unit
 }
