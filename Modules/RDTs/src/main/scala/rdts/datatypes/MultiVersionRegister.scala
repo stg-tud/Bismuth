@@ -67,6 +67,6 @@ object MultiVersionRegister {
     * -> the key/dot of the write operation in the buffered delta is removed by the delta
     */
   given historized[A]: Historized[MultiVersionRegister[A]] = (delta, bufferedDelta) =>
-    delta.removed.contains(delta.observed)
+    delta.removed.contains(bufferedDelta.observed)
 
 }

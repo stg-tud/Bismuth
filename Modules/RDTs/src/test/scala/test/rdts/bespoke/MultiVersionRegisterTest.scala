@@ -111,4 +111,22 @@ class MultiVersionRegisterTest extends munit.FunSuite {
     assertEquals(mvReg.merge(delta2).read, Set("c"))
     assertEquals(mvReg.merge(delta).merge(delta2).read, Set("b", "c"))
   }
+
+  test("clear makes observed writes redundant") {
+    given ReplicaId = ReplicaId(Uid.predefined("alice"))
+    val write       = MultiVersionRegister.empty[String].write("a")
+    val clear       = write.clear()
+    assert(clear.isRedundant(write))
+  }
+
+  test("clear does not make unobserved concurrent writes redundant") {
+    val alice    = Uid.predefined("alice")
+    val bob      = Uid.predefined("bob")
+    val aliceW   = MultiVersionRegister.empty[String].write("a")(using alice.convert)
+    val bobW     = MultiVersionRegister.empty[String].write("b")(using bob.convert)
+    val clear    = aliceW.clear()
+    assert(!clear.isRedundant(bobW))
+    // dropping bobW would lose information
+    assertEquals((clear `merge` bobW).read, Set("b"))
+  }
 }

@@ -157,4 +157,21 @@ class EnableWinsFlagTest extends munit.FunSuite {
     // println(f"${delta4 `subsumes` delta3} ${delta4.isRedundant(delta3)}")
   }
 
+  test("disable makes a previous enable redundant even though it does not subsume it") {
+    import EnableWinsFlag.given
+
+    val localId: ReplicaId = ReplicaId.gen()
+    val enable             = EnableWinsFlag.empty.enable(using localId)()
+    val disable            = enable.disable()
+
+    // the disable does not contain the enable dot in `set`, so lattice subsumption fails
+    assert(!(disable `subsumes` enable))
+    // but Historized considers the enable redundant, as the disable covers its observed dots
+    assert(disable.isRedundant(enable))
+    // and merging the redundant enable back in does not change the state
+    assertEquals((disable `merge` enable).read, disable.read)
+    // the reverse does not hold
+    assert(!enable.isRedundant(disable))
+  }
+
 }
