@@ -4,18 +4,22 @@ import channels.NioTCP.*
 import channels.WebsocketProtocol.WebsocketHeader
 import channels.connection.{Abort, ByteBufferMessageBuffer, Connection, ConnectionDescriptor, ConnectionInfo, Connector, Listener, MessageBuffer, NoMoreDataException, Receive}
 import de.rmgk.delay.{Async, Callback, Sync}
+import rdts.base.Uid
 
 import java.net.{InetSocketAddress, SocketAddress, StandardProtocolFamily, StandardSocketOptions, UnixDomainSocketAddress}
 import java.nio.ByteBuffer
 import java.nio.channels.{SelectionKey, Selector, ServerSocketChannel, SocketChannel}
 import java.util.concurrent.{ExecutorService, Executors}
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutorService}
-import scala.util.Try
 import scala.util.control.NonFatal
+import scala.util.{Failure, Success, Try}
 
 object NioTCP {
+
+  /** `tls` configures TLS for all accepted connections, if defined. */
   case class AcceptAttachment(
       incoming: Receive,
+      tls: Option[NioTls] = None,
   )
 
   case class WebSocketState(
@@ -48,11 +52,16 @@ object NioTCP {
     *   - `messageCallback` is populated once the connection has been initialized
     *   - `buffered` stores unread bytes across selector turns for either protocol
     *   - `WebSocketState` in the protocol holds `fragments` and `fragmentOpcode` for fragmented websocket messages
+    *   - `layer` is the byte stream all protocols read from and write to (the raw socket, or TLS on top of it)
+    *   - `onConnected` is set for outgoing connections whose layer is not yet ready (TLS handshake), it completes the
+    *     connector once the layer is ready, or failed
     */
   case class ReceiveAttachment(
       incoming: Receive,
+      layer: NioSocketLayer,
       protocol: ProtocolState = ProtocolState.Init,
       messageCallback: Callback[MessageBuffer] | Null = null,
+      onConnected: (Try[Connection] => Unit) | Null = null,
       primary: ByteBuffer = ByteBuffer.allocate(1024),
       secondary: ByteBuffer | Null = null,
   )
@@ -109,20 +118,17 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = BroadcastIO.executeImmedi
     selector.selectedKeys().forEach { key =>
       try
         if key.isValid && key.isReadable then
-            val clientChannel = key.channel().asInstanceOf[SocketChannel]
-            val attachment    = key.attachment().asInstanceOf[ReceiveAttachment]
-            handleReadable(key, clientChannel, attachment)
+            handleReadable(key, key.attachment().asInstanceOf[ReceiveAttachment])
         else if key.isValid && key.isAcceptable then
             val serverChannel = key.channel().asInstanceOf[ServerSocketChannel]
             val attachment    = key.attachment().asInstanceOf[AcceptAttachment]
             val clientChannel = serverChannel.accept()
             if clientChannel != null then {
               configureChannel(clientChannel)
-              clientChannel.register(
-                selector,
-                SelectionKey.OP_READ,
-                ReceiveAttachment(attachment.incoming)
-              )
+              val layer = attachment.tls match
+                  case None      => NioSocketLayer.Plain(clientChannel)
+                  case Some(tls) => NioSocketLayer.Tls(clientChannel, tls.createEngine(clientMode = false), tls)
+              clientChannel.register(selector, SelectionKey.OP_READ, ReceiveAttachment(attachment.incoming, layer))
               selector.wakeup()
               ()
             }
@@ -135,20 +141,11 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = BroadcastIO.executeImmedi
     selector.selectedKeys().clear()
   }
 
-  private def socketConnectInfo(address: SocketAddress)
-      : Option[ConnectionDescriptor.TcpWebSocket | ConnectionDescriptor.Unix] =
-    address match
-        case isa: InetSocketAddress       => Some(ConnectionDescriptor.TcpWebSocket(isa.getHostString, isa.getPort))
-        case uda: UnixDomainSocketAddress => Some(ConnectionDescriptor.Unix(uda.getPath.toString))
-        case _                            => None
+  class NioTCPConnection(layer: NioSocketLayer) extends Connection {
 
-  class NioTCPConnection(clientChannel: SocketChannel) extends Connection {
+    override val info: ConnectionInfo = layer.connectionInfo("type" -> "niotcp")
 
-    override val info: ConnectionInfo = ConnectionInfo(
-      local = Try(socketConnectInfo(clientChannel.getLocalAddress)).getOrElse(None),
-      remote = Try(socketConnectInfo(clientChannel.getRemoteAddress)).getOrElse(None),
-      details = Map("type" -> "niotcp")
-    )
+    override val authenticatedPeerReplicaId: Option[Uid] = layer.authenticatedPeer
 
     override def send(message: MessageBuffer): Async[Any, Unit] = Sync {
       val bytes         = message.asByteBuffer
@@ -158,20 +155,17 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = BroadcastIO.executeImmedi
       sizeBuffer.putInt(messageLength)
       sizeBuffer.flip()
 
-      writeFully(clientChannel, Array(sizeBuffer, bytes))
-      ()
+      layer.write(Array(sizeBuffer, bytes))
     }
 
-    override def close(): Unit = clientChannel.close()
+    override def close(): Unit = layer.close()
   }
 
-  class WebSocketConnection(clientChannel: SocketChannel) extends Connection {
+  class WebSocketConnection(layer: NioSocketLayer) extends Connection {
 
-    override val info: ConnectionInfo = ConnectionInfo(
-      local = Try(socketConnectInfo(clientChannel.getLocalAddress)).getOrElse(None),
-      remote = Try(socketConnectInfo(clientChannel.getRemoteAddress)).getOrElse(None),
-      details = Map("type" -> "websocket")
-    )
+    override val info: ConnectionInfo = layer.connectionInfo("type" -> "websocket")
+
+    override val authenticatedPeerReplicaId: Option[Uid] = layer.authenticatedPeer
 
     override def send(message: MessageBuffer): Async[Any, Unit] = Sync {
       val payload =
@@ -181,14 +175,13 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = BroadcastIO.executeImmedi
           bb.get(arr)
           arr
       val frame = WebsocketProtocol.encodeBinaryFrame(payload)
-      writeFully(clientChannel, Array(ByteBuffer.wrap(frame)))
-      ()
+      layer.write(Array(ByteBuffer.wrap(frame)))
     }
 
     override def close(): Unit = {
-      try writeFully(clientChannel, Array(ByteBuffer.wrap(WebsocketProtocol.encodeCloseFrame())))
+      try layer.write(Array(ByteBuffer.wrap(WebsocketProtocol.encodeCloseFrame())))
       catch case _: Throwable => ()
-      clientChannel.close()
+      layer.close()
     }
   }
 
@@ -212,17 +205,45 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = BroadcastIO.executeImmedi
 
     configureChannel(clientChannel)
 
-    val conn     = NioTCPConnection(clientChannel)
+    val layer    = NioSocketLayer.Plain(clientChannel)
+    val conn     = NioTCPConnection(layer)
     val callback = incoming.connectionEstablished(conn)
     clientChannel.register(
       selector,
       SelectionKey.OP_READ,
-      ReceiveAttachment(incoming, ProtocolState.Init, callback)
+      ReceiveAttachment(incoming, layer, ProtocolState.Init, callback)
     )
     selector.wakeup()
 
     conn
   }
+
+  /** Like [[connect]], but runs TLS configured by `tls` on the socket.
+    * Completes (and reports the connection to the receiver) once the handshake is done.
+    */
+  def connectTls(bindsocket: () => SocketChannel, tls: NioTls): Connector =
+    new Connector {
+      override def connect(incoming: Receive): Async[Any, Connection] =
+        Async.fromCallback {
+          val handler = Async.handler
+          try
+              val clientChannel = bindsocket()
+              configureChannel(clientChannel)
+              val layer = NioSocketLayer.Tls(clientChannel, tls.createEngine(clientMode = true), tls)
+              val onConnected: Try[Connection] => Unit = {
+                case Success(conn) => handler.succeed(conn)
+                case Failure(ex)   => handler.fail(ex)
+              }
+              clientChannel.register(
+                selector,
+                SelectionKey.OP_READ,
+                ReceiveAttachment(incoming, layer, onConnected = onConnected)
+              )
+              selector.wakeup()
+              ()
+          catch case NonFatal(exception) => handler.fail(exception)
+        }
+    }
 
   def defaultSocketChannel(socketAddress: SocketAddress): () => SocketChannel = () => {
     val pf = socketAddress match
@@ -259,25 +280,38 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = BroadcastIO.executeImmedi
 
   def listen(
       bindsocket: () => ServerSocketChannel,
+  ): Listener = listen(bindsocket, None)
+
+  /** Like [[listen]], but runs TLS configured by `tls` on every accepted socket. Only IP sockets are supported. */
+  def listenTls(bindsocket: () => ServerSocketChannel, tls: NioTls): Listener = listen(bindsocket, Some(tls))
+
+  private def listen(
+      bindsocket: () => ServerSocketChannel,
+      tls: Option[NioTls],
   ): Listener =
     new Listener {
-      override def listen(incoming: Receive)
-          : Async[Abort, ConnectionDescriptor.TcpWebSocket | ConnectionDescriptor.Unix] =
+      override def listen(incoming: Receive): Async[Abort, ConnectionDescriptor] =
         Async.fromCallback { abort ?=>
           try {
             val serverChannel: ServerSocketChannel = bindsocket()
 
-            serverChannel.register(selector, SelectionKey.OP_ACCEPT, AcceptAttachment(incoming))
-            selector.wakeup()
-
-            serverChannel.getLocalAddress match {
-              case isa: InetSocketAddress =>
-                Async.handler.succeed(ConnectionDescriptor.TcpWebSocket(isa.getHostString, isa.getPort))
-              case uda: UnixDomainSocketAddress =>
-                Async.handler.succeed(ConnectionDescriptor.Unix(uda.getPath.toString))
-              case _ =>
-                Async.handler.fail(new IllegalStateException("unknown socket address type"))
+            val descriptor = (serverChannel.getLocalAddress, tls) match {
+              case (isa: InetSocketAddress, None) =>
+                Some(ConnectionDescriptor.TcpWebSocket(isa.getHostString, isa.getPort))
+              case (isa: InetSocketAddress, Some(_)) =>
+                Some(ConnectionDescriptor.TcpTls(isa.getHostString, isa.getPort))
+              case (uda: UnixDomainSocketAddress, None) =>
+                Some(ConnectionDescriptor.Unix(uda.getPath.toString))
+              case _ => None
             }
+
+            descriptor match
+                case Some(descriptor) =>
+                  serverChannel.register(selector, SelectionKey.OP_ACCEPT, AcceptAttachment(incoming, tls))
+                  selector.wakeup()
+                  Async.handler.succeed(descriptor)
+                case None =>
+                  Async.handler.fail(IllegalStateException(s"unsupported socket address for $tls"))
 
             ()
           } catch
@@ -288,48 +322,58 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = BroadcastIO.executeImmedi
 
   private def handleReadable(
       key: SelectionKey,
-      clientChannel: SocketChannel,
-      attachment: ReceiveAttachment
+      readAttachment: ReceiveAttachment
   ): Unit = {
     val target =
-      if attachment.secondary == null
-      then Array(attachment.primary)
-      else Array(attachment.primary, attachment.secondary)
-    val read = clientChannel.read(target)
+      if readAttachment.secondary == null
+      then Array(readAttachment.primary)
+      else Array(readAttachment.primary, readAttachment.secondary)
+    val read = readAttachment.layer.read(target)
+
+    val attachment =
+      if readAttachment.onConnected != null && readAttachment.layer.ready then
+          val conn     = NioTCPConnection(readAttachment.layer)
+          val callback = readAttachment.incoming.connectionEstablished(conn)
+          readAttachment.onConnected(Success(conn))
+          readAttachment.copy(messageCallback = callback, onConnected = null)
+      else readAttachment
 
     attachment.primary.flip()
     attachment.protocol match {
       case ProtocolState.WebSocket(ws) if ws.pendingHeader.isDefined && attachment.secondary != null =>
+        attachment.secondary.flip()
+      case ProtocolState.Plain(_) if attachment.secondary != null =>
         attachment.secondary.flip()
       case _ => ()
     }
     val initialBytes = totalAvailable(attachment)
 
     val next = attachment.protocol match {
-      case ProtocolState.Init               => handleInitial(clientChannel, attachment)
+      case ProtocolState.Init               => handleInitial(attachment)
       case ProtocolState.Plain(len)         => handlePlain(len, attachment)
-      case ProtocolState.WebSocketHandshake => handleWebSocketHandshake(clientChannel, attachment)
+      case ProtocolState.WebSocketHandshake => handleWebSocketHandshake(attachment)
       case ProtocolState.WebSocket(ws)      => ws.pendingHeader match {
           case None    => handleWebsocketHeader(attachment)
-          case Some(_) => handleWebsocketBody(attachment, clientChannel, key, ws)
+          case Some(_) => handleWebsocketBody(attachment, key, ws)
         }
     }
     key.attach(next)
     if read == -1 then throw NoMoreDataException("remaining channel is empty")
     val bufferedAfter = bufferedBytes(next)
-    val recurse       = bufferedAfter > 0 && bufferedAfter < initialBytes
-    if recurse then handleReadable(key, clientChannel, next)
+    val recurse       =
+      (bufferedAfter > 0 && bufferedAfter < initialBytes) || (read > 0 && attachment.layer.hasBufferedInput)
+    if recurse then handleReadable(key, next)
     ()
   }
 
-  private def handleInitial(clientChannel: SocketChannel, attachment: ReceiveAttachment) =
+  private def handleInitial(attachment: ReceiveAttachment) =
     if attachment.primary.remaining() < 4 then
         attachment.primary.compact()
         attachment
     else
         val len = attachment.primary.getInt
         if len == WebsocketProtocol.handshakePrefix then
-            handleWebSocketHandshake(clientChannel, attachment.copy(protocol = ProtocolState.WebSocketHandshake))
+            handleWebSocketHandshake(attachment.copy(protocol = ProtocolState.WebSocketHandshake))
         else
             require(len < MessageBuffer.maxPayloadSize, "message too large")
             attachment.primary.compact()
@@ -341,9 +385,12 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = BroadcastIO.executeImmedi
             val withCallback =
               if upat.messageCallback != null then upat
               else
-                  val conn     = NioTCPConnection(clientChannel)
+                  val conn     = NioTCPConnection(attachment.layer)
                   val callback = upat.incoming.connectionEstablished(conn)
                   upat.copy(messageCallback = callback)
+            // handlePlain expects buffers in read mode
+            withCallback.primary.flip()
+            if withCallback.secondary != null then withCallback.secondary.flip(): Unit
             handlePlain(
               len,
               withCallback
@@ -357,11 +404,9 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = BroadcastIO.executeImmedi
     if attachment.secondary == null then attachment.primary.position()
     else attachment.primary.position() + attachment.secondary.position()
 
+  /** Expects the buffers in read mode, leaves them in write mode. */
   private def handlePlain(len: Int, attachment: ReceiveAttachment): ReceiveAttachment = {
     val callback = attachment.messageCallback.nn
-
-    attachment.primary.flip()
-    if attachment.secondary != null then { attachment.secondary.flip(); () }
 
     grabPayload(len, attachment) match {
       case Some(buffer) =>
@@ -373,6 +418,8 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = BroadcastIO.executeImmedi
         attachment.primary.compact()
         attachment.copy(secondary = null, protocol = ProtocolState.Init)
       case None =>
+        attachment.primary.compact()
+        if attachment.secondary != null then attachment.secondary.compact(): Unit
         attachment
     }
   }
@@ -393,7 +440,6 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = BroadcastIO.executeImmedi
   }
 
   private def handleWebSocketHandshake(
-      clientChannel: SocketChannel,
       attachment: ReceiveAttachment
   ): ReceiveAttachment = {
     attachment.primary.mark()
@@ -404,11 +450,11 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = BroadcastIO.executeImmedi
         attachment.primary.compact()
         attachment
       case Some(request) =>
-        writeFully(clientChannel, Array(ByteBuffer.wrap(WebsocketProtocol.handshakeResponse(request))))
+        attachment.layer.write(Array(ByteBuffer.wrap(WebsocketProtocol.handshakeResponse(request))))
         val connected =
           if attachment.messageCallback != null then attachment
           else
-              val conn     = WebSocketConnection(clientChannel)
+              val conn     = WebSocketConnection(attachment.layer)
               val callback = attachment.incoming.connectionEstablished(conn)
               attachment.copy(messageCallback = callback)
 
@@ -422,7 +468,6 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = BroadcastIO.executeImmedi
 
   private def handleWebsocketBody(
       attachment: ReceiveAttachment,
-      clientChannel: SocketChannel,
       key: SelectionKey | Null,
       ws: WebSocketState
   ) = {
@@ -436,7 +481,7 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = BroadcastIO.executeImmedi
           "secondary buffer should be fully consumed"
         )
         attachment.primary.compact()
-        handleWebsocketMessage(header, frame, attachment, clientChannel, key, ws).copy(
+        handleWebsocketMessage(header, frame, attachment, key, ws).copy(
           secondary = null
         )
       case None =>
@@ -477,7 +522,6 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = BroadcastIO.executeImmedi
       header: WebsocketHeader,
       websocketFrame: WebsocketFrame,
       attachment: ReceiveAttachment,
-      clientChannel: SocketChannel,
       key: SelectionKey | Null,
       ws: WebSocketState
   ): ReceiveAttachment = {
@@ -514,16 +558,16 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = BroadcastIO.executeImmedi
         }
 
       case PingFrame(data) =>
-        writeFully(clientChannel, Array(ByteBuffer.wrap(WebsocketProtocol.encodePongFrame(data))))
+        attachment.layer.write(Array(ByteBuffer.wrap(WebsocketProtocol.encodePongFrame(data))))
 
       case PongFrame(_) =>
         ()
 
       case CloseFrame(_, _) =>
-        try writeFully(clientChannel, Array(ByteBuffer.wrap(WebsocketProtocol.encodeCloseFrame())))
+        try attachment.layer.write(Array(ByteBuffer.wrap(WebsocketProtocol.encodeCloseFrame())))
         catch case _: Throwable => ()
         callback.fail(NoMoreDataException("websocket closed"))
-        clientChannel.close()
+        attachment.layer.close()
         if key != null then {
           key.cancel()
           ()
@@ -537,12 +581,6 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = BroadcastIO.executeImmedi
     attachment.copy(protocol = ProtocolState.WebSocket(updatedWs))
   }
 
-  private def writeFully(clientChannel: SocketChannel, buffers: Array[ByteBuffer]): Unit =
-    while buffers.exists(_.hasRemaining()) do {
-      clientChannel.write(buffers)
-      ()
-    }
-
   private def failKey(key: SelectionKey, ex: Exception): Unit = {
     val channel = key.channel()
     try channel.close()
@@ -551,6 +589,7 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = BroadcastIO.executeImmedi
     key.attachment() match {
       case attachment: ReceiveAttachment =>
         if attachment.messageCallback != null then attachment.messageCallback.fail(ex)
+        else if attachment.onConnected != null then attachment.onConnected(Failure(ex))
         else ()
       case _ => ()
     }

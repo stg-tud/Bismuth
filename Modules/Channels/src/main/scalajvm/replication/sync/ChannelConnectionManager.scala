@@ -1,11 +1,13 @@
 package replication.sync
 
-import channels.connection.{Abort, Connection, MessageBuffer, Receive}
+import channels.{NioTCP, NioTls}
+import channels.connection.{Abort, Connection, ConnectionDescriptor, MessageBuffer, Receive}
 import crypto.PublicIdentity
-import crypto.channels.{P2PTls, PrivateIdentity}
+import crypto.channels.PrivateIdentity
 import de.rmgk.delay.Callback
 
-import java.net.InetAddress
+import java.net.{InetAddress, InetSocketAddress}
+import java.nio.channels.ServerSocketChannel
 import java.util.concurrent.{ExecutorService, Executors}
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success, Try}
@@ -18,15 +20,19 @@ class ChannelConnectionManager(
     val abort: Abort = Abort(),
     disableLogging: Boolean = true
 ) extends ConnectionManager {
-  // accept loop and per-connection receive loops block indefinitely, so each needs its own thread
-  private val executor: ExecutorService = Executors.newCachedThreadPool()
-  private given ec: ExecutionContext    =
+  // one thread runs the selector loop, another delivers received messages (in order), so slow receivers do not
+  // block reading from sockets
+  private val selectorExecutor: ExecutorService = Executors.newSingleThreadExecutor()
+  private val deliveryExecutor: ExecutorService = Executors.newSingleThreadExecutor()
+  private def executionContext(executor: ExecutorService): ExecutionContext =
     if disableLogging
     then ExecutionContext.fromExecutor(executor, _ => ())
     else ExecutionContext.fromExecutor(executor)
-  private val p2pTls                                            = P2PTls(privateIdentity)
-  private val localPublicId                                     = privateIdentity.getPublic
-  @volatile private var listener: Option[p2pTls.P2PTlsListener] = None
+  private val tls           = NioTls(privateIdentity)
+  private val nio           = NioTCP(executionContext(deliveryExecutor))
+  private val localPublicId = privateIdentity.getPublic
+  @volatile private var listener: Option[(ServerSocketChannel, ConnectionDescriptor.TcpTls)] = None
+  selectorExecutor.execute(() => nio.loopSelection(abort))
   // Stores multiple connections
   @volatile private var connections: Map[PublicIdentity, Connection] = Map.empty
 
@@ -64,40 +70,45 @@ class ChannelConnectionManager(
 
   override def listenAddress: Option[(String, Int)] =
     if abort.closeRequest then None
-    else listener.map(listener => listener.ifAddress.getHostAddress -> listener.listenPort)
+    else listener.map((_, descriptor) => descriptor.host -> descriptor.port)
 
   override def shutdown(): Unit = synchronized {
     abort.closeRequest = true
-    listener.get.close()
+    listener.foreach((serverChannel, _) => Try { serverChannel.close() })
     val connectionsToClose = connections
     connections = Map.empty
     connectionsToClose.foreach {
       case (_, connection) => Try { connection.close() }
     }
-    executor.shutdownNow(): Unit
+    nio.selector.wakeup()
+    selectorExecutor.shutdown()
+    deliveryExecutor.shutdown()
   }
 
   override def acceptIncomingConnections(): Unit = {
     require(!abort.closeRequest)
     require(listener.isEmpty) // unsafe singleton, should be fine though™
-    listener = Some(p2pTls.latentListener(ifAddress, requestedListenPort, ec))
-    if !disableLogging then
-        println(
-          s"Listening on ${listener.get.ifAddress.getHostAddress}:${listener.get.listenPort} as ${localPublicId}"
-        )
-    listener.get.listen { conn =>
+    val serverChannel = nio.defaultServerSocketChannel(InetSocketAddress(ifAddress, requestedListenPort))()
+    // binding and registering happen synchronously, so the listener is set when this returns
+    nio.listenTls(() => serverChannel, tls).listen { conn =>
       receiveMessageHandler(conn)
     }.runIn(abort) {
-      case Success(_)         =>
+      case Success(descriptor: ConnectionDescriptor.TcpTls) =>
+        listener = Some(serverChannel -> descriptor)
+        if !disableLogging then println(s"Listening on ${descriptor.host}:${descriptor.port} as ${localPublicId}")
+      case Success(other) => throw IllegalStateException(s"unexpected listen descriptor: $other")
       case Failure(exception) =>
         // Connection not established yet, don't need to remove/close anything
+        Try { serverChannel.close() }
         if !disableLogging then exception.printStackTrace()
     }
   }
 
   override def connectTo(host: String, port: Int): Unit = {
     if !disableLogging then println(s"Attempting to connect to $host:$port")
-    p2pTls.latentConnect(host, port, ec).connect(receiveMessageHandler(_)).runIn(abort) {
+    nio.connectTls(nio.defaultSocketChannel(InetSocketAddress(host, port)), tls).connect(
+      receiveMessageHandler(_)
+    ).runIn(abort) {
       case Success(_)         => ()
       case Failure(exception) => if !disableLogging then exception.printStackTrace()
     }
@@ -127,8 +138,8 @@ class ChannelConnectionManager(
           connections = connections.updatedWith(remotePeerId) {
             case None                => Some(connection)
             case Some(oldConnection) => // Keep session with higher session id
-              val oldSessionId = oldConnection.info.details("hackyIdentifier")
-              val newSessionId = connection.info.details("hackyIdentifier")
+              val oldSessionId = sessionIdentifier(oldConnection, remotePeerId)
+              val newSessionId = sessionIdentifier(connection, remotePeerId)
               if oldSessionId < newSessionId
               then
                   duplicateConnection = Some(oldConnection)
@@ -145,11 +156,25 @@ class ChannelConnectionManager(
         if duplicateConnection.isEmpty then
             if !disableLogging then
                 println(
-                  "Connection established with: " + remotePeerId.id + s" (${connection.info.details("hackyIdentifier")})"
+                  "Connection established with: " + remotePeerId.id + s" (${sessionIdentifier(connection, remotePeerId)})"
                 )
             messageReceiver.connectionEstablished(remotePeerId)
       case None => ??? // Should not happen
     }
+
+  /** Identifies the TCP session underlying `connection`, the same on both sides, used to pick one of two duplicate
+    * connections consistently. Assumes the listen port is fixed and the initiator port varies. Not unique, if two
+    * replicas share an id.
+    */
+  private def sessionIdentifier(connection: Connection, remotePeerId: PublicIdentity): String = {
+    def port(descriptor: Option[ConnectionDescriptor]): Int = descriptor match
+        case Some(ConnectionDescriptor.TcpTls(_, port)) => port
+        case _                                          => -1
+    val ports   = List(remotePeerId.id -> port(connection.info.remote), localPublicId.id -> port(connection.info.local))
+    val minPort = ports.minBy(_._1)._2
+    val maxPort = ports.maxBy(_._1)._2
+    s"$minPort|$maxPort"
+  }
 
   private def receiveMessageHandler(connection: Connection): Callback[MessageBuffer] = {
     trackConnection(connection)

@@ -10,6 +10,9 @@ enum ConnectionDescriptor {
   case Udp(host: String, port: Int)
   case Unix(path: String)
   case TcpWebSocket(host: String, port: Int)
+
+  /** Length-prefixed messages over TLS over TCP, see `channels.NioTCP.listenTls`. */
+  case TcpTls(host: String, port: Int)
   case WebSocket(url: String)
   case WebRtc(peerId: String)
   case QueuedLocal(id: String)
@@ -20,6 +23,7 @@ enum ConnectionDescriptor {
       case ConnectionDescriptor.Udp(host, port)          => s"udp://$host:$port"
       case ConnectionDescriptor.Unix(path)               => s"unix://$path"
       case ConnectionDescriptor.TcpWebSocket(host, port) => s"tcp-ws://$host:$port"
+      case ConnectionDescriptor.TcpTls(host, port)       => s"tcp-tls://$host:$port"
       case ConnectionDescriptor.WebSocket(url)           => url
       case ConnectionDescriptor.WebRtc(peerId)           => s"webrtc://$peerId"
       case ConnectionDescriptor.QueuedLocal(id)          => s"queue://$id"
@@ -51,6 +55,11 @@ object ConnectionDescriptor {
                 host <- Option(uri.getHost)
                 port <- Option.when(uri.getPort >= 0)(uri.getPort)
             yield TcpWebSocket(host, port)
+          case "tcp+tls" | "tcp-tls" =>
+            for
+                host <- Option(uri.getHost)
+                port <- Option.when(uri.getPort >= 0)(uri.getPort)
+            yield TcpTls(host, port)
           case "ws" | "wss" => Some(WebSocket(value))
           case "webrtc"     =>
             Option(uri.getHost)
