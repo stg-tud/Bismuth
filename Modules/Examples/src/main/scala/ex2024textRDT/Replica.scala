@@ -31,8 +31,7 @@ final case class Replica[F <: FugueFactory](
     */
   def broadcast(send: Causal[Ops] => Option[Dot]): Unit =
     if state.outgoing.nonEmpty then
-        val delta = Causal(causalBuffer.applied, state.outgoing.toVector)
-        state.outgoing.clear()
+        val delta = Causal(causalBuffer.applied, takeOutgoing())
         send(delta).foreach { dot =>
           val (next, ready) = causalBuffer.markApplied(Dots.single(dot))
           causalBuffer = next
@@ -44,6 +43,13 @@ final case class Replica[F <: FugueFactory](
     val (next, ready) = causalBuffer.receive(dots, delta)
     causalBuffer = next
     ready.foreach(applyRemoteUnchecked)
+  }
+
+  /** Remove and return all local operations since the last call. */
+  def takeOutgoing(): Ops = {
+    val ops = state.outgoing.toVector
+    state.outgoing.clear()
+    ops
   }
 
   /** Apply remote operations directly, without causal delivery. The caller must ensure causal order. */

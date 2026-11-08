@@ -1,9 +1,20 @@
 package rdts.time
 
+import rdts.base.Lattice
+
 import scala.annotation.tailrec
 
 /** An operation (or batch of operations) together with the dots of everything that was applied before it was created. */
 final case class Causal[+A](predecessors: Dots, value: A)
+
+object Causal {
+
+  /** Merging unions the predecessors, so a merged value is ready once the predecessors of all parts are applied
+    * (except for the parts themselves, see [[CausalBuffer]]). Requires a lattice, because a merged value may be
+    * delivered to a receiver that already applied some of its parts.
+    */
+  given lattice[A: Lattice]: Lattice[Causal[A]] = Lattice.derived
+}
 
 /** Receiver-side causal delivery for operation-based data types.
   *

@@ -5,8 +5,7 @@ import org.scalacheck.{Arbitrary, Shrink}
 import rdts.base.Lattice
 import rdts.datatypes.*
 import rdts.experiments.AutomergyOpGraphLWW.OpGraph
-import rdts.experiments.CausalStore
-import rdts.time.{Dot, VectorClock}
+import rdts.time.{Causal, Dot, VectorClock}
 import test.rdts.DataGenerator.ReplicatedListGen.given
 import test.rdts.DataGenerator.{*, given}
 import test.rdts.isGithubCi
@@ -19,7 +18,7 @@ import test.rdts.isGithubCi
 
 // class CausalQueueChecks       extends LatticePropertyChecks[Dotted[CausalQueue[ExampleData]]]
 class OpGraphChecks         extends LatticePropertyChecks[OpGraph[ExampleData]]
-class CausalStoreChecks     extends LatticePropertyChecks[CausalStore[Map[Dot, ExampleData]]]
+class CausalChecks          extends LatticePropertyChecks[Causal[Map[Dot, ExampleData]]]
 class EnableWinsFlagChecks  extends LatticePropertyChecks[EnableWinsFlag]
 class ConMultiVersionChecks extends LatticePropertyChecks[MultiVersionRegister[Int]]
 class GrowOnlyCounterChecks extends LatticePropertyChecks[GrowOnlyCounter]

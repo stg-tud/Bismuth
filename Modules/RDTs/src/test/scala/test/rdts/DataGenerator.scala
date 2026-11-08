@@ -4,8 +4,6 @@ import org.scalacheck.{Arbitrary, Gen}
 import rdts.base.*
 import rdts.datatypes.*
 import rdts.experiments.AutomergyOpGraphLWW.OpGraph
-import rdts.experiments.CausalStore
-import rdts.experiments.CausalStore.CausalDelta
 import rdts.time.*
 
 import scala.annotation.tailrec
@@ -124,19 +122,11 @@ object DataGenerator {
     yield EnableWinsFlag(set, unset)
   }
 
-  given arbCausalDelta[A: {Arbitrary}]: Arbitrary[CausalDelta[A]] = Arbitrary:
+  given arbCausal[A: Arbitrary]: Arbitrary[Causal[A]] = Arbitrary:
       for
-          predec <- arbDots.arbitrary
-          value  <- Arbitrary.arbitrary[A]
-          dots   <- arbDot.arbitrary
-      yield CausalDelta(dots, Dots.empty, value)
-
-  given arbCausalStore[A: {Arbitrary, Lattice}]: Arbitrary[CausalStore[A]] = Arbitrary:
-      for
-          predec <- Gen.listOf(arbCausalDelta.arbitrary)
-          value  <- Arbitrary.arbitrary[A]
-          dots   <- arbDots.arbitrary
-      yield Lattice.normalize(CausalStore(predec.toSet, dots, Some(value)))
+          predecessors <- arbDots.arbitrary
+          value        <- Arbitrary.arbitrary[A]
+      yield Causal(predecessors, value)
 
   object ReplicatedListGen {
     def makeRGA[E](
