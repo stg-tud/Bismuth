@@ -1,4 +1,5 @@
 package channels
+package connection
 
 import channels.crypto.{PrivateIdentity, X509Util}
 import nl.altindag.ssl.SSLFactory

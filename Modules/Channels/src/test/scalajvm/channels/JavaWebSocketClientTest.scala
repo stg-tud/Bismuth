@@ -1,5 +1,6 @@
 package channels
 
+import channels.connection.*
 import channels.connection.ConnectionDescriptor
 
 import java.net.URI

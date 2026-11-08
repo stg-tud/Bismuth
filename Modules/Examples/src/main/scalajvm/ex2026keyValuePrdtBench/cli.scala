@@ -1,5 +1,6 @@
 package ex2026keyValuePrdtBench
 
+import channels.connection.*
 import channels.connection.{Abort, Connector}
 import channels.{DeltaStorage, *}
 import de.rmgk.options.*

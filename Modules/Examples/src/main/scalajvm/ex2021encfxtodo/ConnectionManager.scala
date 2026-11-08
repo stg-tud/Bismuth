@@ -4,7 +4,8 @@ import channels.broadcast.PlumtreeBroadcast
 
 import channels.connection.{Abort, ConnectionDescriptor, MessageBuffer, Peer, PeerConnectInfo}
 import channels.overlay.FullMeshOverlay
-import channels.{MessagingIO, NioTCP, NioTcpConnectionDetailsResolver, TimerDelays, Timers, experiments}
+import channels.{MessagingIO, TimerDelays, Timers, experiments}
+import channels.connection.{NioTCP, NioTcpConnectionDetailsResolver}
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.google.crypto.tink.aead.AeadConfig
 import com.google.crypto.tink.{Aead, CleartextKeysetHandle, JsonKeysetReader, RegistryConfiguration}

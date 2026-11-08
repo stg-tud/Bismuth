@@ -1,7 +1,8 @@
 package channels
+package connection
 
-import channels.NioTCP.*
-import channels.WebsocketProtocol.WebsocketHeader
+import channels.connection.NioTCP.*
+import channels.connection.WebsocketProtocol.WebsocketHeader
 import channels.connection.{Abort, ByteBufferMessageBuffer, Connection, ConnectionDescriptor, ConnectionInfo, Connector, Listener, MessageBuffer, NoMoreDataException, Receive}
 import de.rmgk.delay.{Async, Callback, Sync}
 

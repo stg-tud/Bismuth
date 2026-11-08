@@ -2,7 +2,8 @@ package replication.authz
 
 import channels.connection.{Abort, ConnectionDescriptor}
 import channels.crypto.PrivateIdentity
-import channels.{MessagingIO, NioTCP, NioTls, Timers}
+import channels.{MessagingIO, Timers}
+import channels.connection.{NioTCP, NioTls}
 import munit.FunSuite
 import rdts.filters.PermissionTree
 import replication.authz.AuthzProtocol.*

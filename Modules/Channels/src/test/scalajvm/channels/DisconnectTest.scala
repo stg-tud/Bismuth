@@ -1,5 +1,6 @@
 package channels
 
+import channels.connection.*
 import channels.connection.{Abort, ByteBufferMessageBuffer, NoMoreDataException}
 
 import java.net.StandardProtocolFamily

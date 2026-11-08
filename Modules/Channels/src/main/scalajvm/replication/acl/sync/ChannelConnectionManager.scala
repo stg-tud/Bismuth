@@ -1,6 +1,6 @@
 package replication.acl.sync
 
-import channels.{NioTCP, NioTls}
+import channels.connection.{NioTCP, NioTls}
 import channels.connection.{Abort, Connection, ConnectionDescriptor, MessageBuffer, Receive}
 import channels.crypto.PublicIdentity
 import channels.crypto.PrivateIdentity

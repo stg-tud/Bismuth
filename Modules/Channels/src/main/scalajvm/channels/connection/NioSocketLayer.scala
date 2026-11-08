@@ -1,4 +1,5 @@
 package channels
+package connection
 
 import channels.connection.{ConnectionClosedException, ConnectionDescriptor, ConnectionInfo}
 import rdts.base.Uid

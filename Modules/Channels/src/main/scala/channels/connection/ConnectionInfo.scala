@@ -7,7 +7,7 @@ import rdts.base.Uid
   * @param local           how the local end of the connection is reachable, if known
   * @param remote          how the remote end of the connection is reachable, if known
   * @param authenticatedPeer the replica id of the remote side, if the transport authenticated it
-  *                        (e.g., TLS with [[channels.NioTls]]); `None` for unauthenticated transports
+  *                        (e.g., TLS with [[channels.connection.NioTls]]); `None` for unauthenticated transports
   * @param details         free-form transport specific information
   */
 case class ConnectionInfo(

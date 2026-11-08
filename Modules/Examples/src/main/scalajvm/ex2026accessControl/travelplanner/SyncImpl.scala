@@ -2,7 +2,8 @@ package ex2026accessControl.travelplanner
 
 import channels.connection.{Abort, ConnectionDescriptor}
 import channels.crypto.{PrivateIdentity, PublicIdentity}
-import channels.{MessagingIO, NioTCP, NioTcpConnectionDetailsResolver, NioTls, Timers}
+import channels.{MessagingIO, Timers}
+import channels.connection.{NioTCP, NioTcpConnectionDetailsResolver, NioTls}
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.filters.{Filter, PermissionTree}

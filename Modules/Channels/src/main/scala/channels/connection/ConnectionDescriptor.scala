@@ -11,7 +11,7 @@ enum ConnectionDescriptor {
   case Unix(path: String)
   case TcpWebSocket(host: String, port: Int)
 
-  /** Length-prefixed messages over TLS over TCP, see `channels.NioTCP.listenTls`. */
+  /** Length-prefixed messages over TLS over TCP, see `channels.connection.NioTCP.listenTls`. */
   case TcpTls(host: String, port: Int)
   case WebSocket(url: String)
   case WebRtc(peerId: String)

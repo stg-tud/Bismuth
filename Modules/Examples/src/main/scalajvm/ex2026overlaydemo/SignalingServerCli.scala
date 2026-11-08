@@ -1,5 +1,6 @@
 package ex2026overlaydemo
 
+import channels.connection.*
 import channels.*
 import channels.broadcast.PlumtreeMessage.Payload
 import channels.connection.{Abort, ConnectionDescriptor, Listener}

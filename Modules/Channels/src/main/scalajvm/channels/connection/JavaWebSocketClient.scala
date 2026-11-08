@@ -1,4 +1,5 @@
 package channels
+package connection
 
 import channels.connection.{ByteBufferMessageBuffer, Connection, ConnectionDescriptor, ConnectionInfo, Connector, MessageBuffer, NoMoreDataException, Receive}
 import de.rmgk.delay.{Async, Callback, toAsync}

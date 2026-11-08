@@ -1,4 +1,5 @@
 package channels
+package connection
 
 import channels.connection.{ChannelResolver, ConnectionDescriptor, Connector}
 

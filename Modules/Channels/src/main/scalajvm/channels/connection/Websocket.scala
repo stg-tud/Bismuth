@@ -1,4 +1,5 @@
 package channels
+package connection
 
 import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer

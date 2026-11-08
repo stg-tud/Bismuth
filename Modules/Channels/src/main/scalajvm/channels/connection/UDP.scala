@@ -1,4 +1,5 @@
 package channels
+package connection
 
 import channels.connection.{Abort, ByteBufferMessageBuffer, Connection, ConnectionDescriptor, ConnectionInfo, Connector, Listener, MessageBuffer, Receive}
 import de.rmgk.delay.{Async, Callback}

@@ -1,5 +1,6 @@
 package channels
 
+import channels.connection.*
 import channels.crypto.{IdentityFactory, PrivateIdentity}
 
 import java.net.{InetAddress, InetSocketAddress}

@@ -445,7 +445,7 @@ object AuthzReplica {
       snapshot = None,
     )
 
-  /** Identity of authenticated peers, see [[channels.NioTls.authenticatedPeer]]. */
+  /** Identity of authenticated peers, see [[channels.connection.NioTls.authenticatedPeer]]. */
   def identityOf(peer: Peer): Option[PublicIdentity] = peer match
       case Peer.Authenticated(uid) => Some(PublicIdentity(Uid.unwrap(uid)))
       case Peer.Claimed(_)         => None
@@ -486,7 +486,7 @@ object AuthzProtocol {
 
   /** A [[MessagingIO]] for an authorization-aware replica of `RDT`, identified by `identity`.
     * Its overlay identifies itself as [[Peer.Authenticated]], so it only talks to peers over authenticated connections
-    * (e.g., [[channels.NioTCP.listenTls]]), whose identity is the one capabilities are granted to.
+    * (e.g., [[channels.connection.NioTCP.listenTls]]), whose identity is the one capabilities are granted to.
     */
   def messagingIO[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
       identity: PrivateIdentity,
