@@ -30,7 +30,7 @@ class BroadcastIOTest extends munit.FunSuite {
     while queue.nonEmpty do queue.deliverAll(): Unit
 
     assert(d1.isDefined && d2.isDefined && d1 != d2)
-    assertEquals(d1.get.place, sender.replicaId.uid)
+    assertEquals(d1.get.place, sender.selfPeer.uid)
     assertEquals(
       received.toSet,
       Set(rdts.time.Dots.single(d1.get) -> "a", rdts.time.Dots.single(d2.get) -> "b")

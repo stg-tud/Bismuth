@@ -29,7 +29,9 @@ object BroadcastIO {
     case Broadcast(sender: Peer, message: PlumtreeMessage[State])
   }
 
-  /** `receiveCallback` gets each delivered delta together with the dots assigned to it by the sender. */
+  /** `receiveCallback` gets each delivered delta together with the dots assigned to it by the sender.
+    * `replicaId` is the identity of the default overlay; a given `overlay` must use the same id.
+    */
   def apply[State](
       replicaId: ReplicaId,
       receiveCallback: Payload[State] => Unit,
@@ -41,9 +43,11 @@ object BroadcastIO {
       aead: Aead = Aead.identity,
       timers: Timers = Timers.Manual(),
       timerDelays: TimerDelays = TimerDelays(),
-  )(using stateCodec: JsonValueCodec[State]): BroadcastIO[State] =
+  )(using stateCodec: JsonValueCodec[State]): BroadcastIO[State] = {
+    overlay.foreach(o =>
+      require(o.selfPeer.uid == replicaId.uid, s"overlay identity ${o.selfPeer} does not match $replicaId")
+    )
     new BroadcastIO[State](
-      replicaId = replicaId,
       receiveCallback = receiveCallback,
       overlay = overlay.getOrElse(FullMeshOverlay(PeerConnectInfo(Peer.Claimed(replicaId.uid), Set.empty))),
       resolver = resolver,
@@ -55,6 +59,7 @@ object BroadcastIO {
       timers = timers,
       timerDelays = timerDelays,
     )
+  }
 
   val executeImmediately: ExecutionContext = new ExecutionContext {
     override def execute(runnable: Runnable): Unit     = runnable.run()
@@ -88,7 +93,6 @@ object BroadcastIO {
   * synchronously cause further inputs (e.g. synchronous local connections) simply recurse on already committed state.
   */
 class BroadcastIO[State](
-    val replicaId: ReplicaId,
     receiveCallback: Payload[State] => Unit,
     @volatile private var overlay: OverlayController,
     resolver: ChannelResolver,
@@ -119,6 +123,9 @@ class BroadcastIO[State](
   // ------------------------------------------------------------------------------------------------
 
   def overlayController: OverlayController = overlay
+
+  /** The identity of this node, as defined by the overlay. Also used to assign dots to local payloads. */
+  def selfPeer: Peer = overlay.selfPeer
 
   def plumtreeState: BroadcastProtocol[State] = broadcast
 
@@ -156,7 +163,7 @@ class BroadcastIO[State](
   def broadcast(delta: State): Option[Dot] = {
     var assigned: Option[Dot] = None
     transition(broadcastStep { protocol =>
-      val dot = protocol.localContext.nextDot(replicaId.uid)
+      val dot = protocol.localContext.nextDot(selfPeer.uid)
       assigned = Some(dot)
       protocol.broadcast(Payload(Dots.single(dot), delta))
     })
@@ -207,7 +214,7 @@ class BroadcastIO[State](
           then broadcastStep(_.handleMessage(sender, broadcastMessage))
           else Nil
         case Failure(error) =>
-          println(s"$replicaId: error during message decoding")
+          println(s"$selfPeer: error during message decoding")
           error.printStackTrace()
           OverlayAction.Close(conn) :: overlayStep(OverlayEvent.Closed(conn))
 
@@ -259,7 +266,7 @@ class BroadcastIO[State](
           case se: SocketException if se.getMessage == "Connection reset" =>
           case _: (NoMoreDataException | ConnectionClosedException)       =>
           case _                                                          =>
-            println(s"$replicaId: error during message handling")
+            println(s"$selfPeer: error during message handling")
             error.printStackTrace()
       transition(overlayStep(OverlayEvent.Closed(conn)))
   }

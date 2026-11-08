@@ -22,7 +22,7 @@ object MiniSocialMain {
         all.div(
           all.pre(all.stringFrag(pprint.apply(state).plainText)),
           all.br(),
-          all.pre(all.stringFrag(pprint.apply(MiniSocialDataManager.dataManager.replicaId).plainText))
+          all.pre(all.stringFrag(pprint.apply(MiniSocialDataManager.dataManager.selfPeer).plainText))
         ).render
       }.hold(all.span.render)
     )

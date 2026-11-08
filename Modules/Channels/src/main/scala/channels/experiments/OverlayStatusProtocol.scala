@@ -72,7 +72,7 @@ object OverlayStatusProtocol {
   }
 
   def statusDelta[State](current: Status, io: BroadcastIO[State], timestamp: Long)(using ReplicaId): Status =
-    current.update(io.replicaId.uid, localViewOf(io, timestamp))
+    current.update(io.selfPeer.uid, localViewOf(io, timestamp))
 
   def snapshot(status: Status): Map[Uid, Map[Uid, PeerState]] =
     status.entries.iterator.map { case (uid, view) =>

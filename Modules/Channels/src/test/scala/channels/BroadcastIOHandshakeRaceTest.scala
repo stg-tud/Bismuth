@@ -94,8 +94,8 @@ class BroadcastIOHandshakeRaceTest extends munit.FunSuite {
     assertEquals(receivedB, List(Set("initial")))
 
     // the graft exchange promoted both edges to eager; no spurious prune happened
-    assertEquals(eagerPeerUids(a), Set(b.replicaId.uid))
-    assertEquals(eagerPeerUids(b), Set(a.replicaId.uid))
+    assertEquals(eagerPeerUids(a), Set(b.selfPeer.uid))
+    assertEquals(eagerPeerUids(b), Set(a.selfPeer.uid))
 
     // and subsequent updates keep replicating without any repair timers
     a.broadcast(Set("edited by a"))

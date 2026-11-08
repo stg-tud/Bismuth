@@ -60,7 +60,7 @@ class AddWinsSetRDT(number_of_additions: Int, sleep_time_milliseconds: Long) ext
 
     for i <- 0 to number_of_additions do {
       Thread.sleep(sleep_time_milliseconds)
-      dataManager.broadcast(Set(s"hello world ${i} from ${dataManager.replicaId}"))
+      dataManager.broadcast(Set(s"hello world ${i} from ${dataManager.selfPeer.uid}"))
     }
 
     println("finshed adding changes")
@@ -89,7 +89,7 @@ class ObserveRemoveSetRDT(number_of_changes: Int, sleep_time_milliseconds: Long)
   var state: RdtType = ObserveRemoveMap.empty[String, Dot]
 
   private def addStringGetDelta(s: String): RdtType = {
-    val nextDot = state.observed.nextDot(dataManager.replicaId.uid)
+    val nextDot = state.observed.nextDot(dataManager.selfPeer.uid)
     state.update(s, nextDot)
   }
 
@@ -123,7 +123,7 @@ class ObserveRemoveSetRDT(number_of_changes: Int, sleep_time_milliseconds: Long)
     for i <- 0 to number_of_changes do {
       Thread.sleep(sleep_time_milliseconds)
 
-      var delta = addStringGetDelta(s"hello world ${i} from ${dataManager.replicaId}")
+      var delta = addStringGetDelta(s"hello world ${i} from ${dataManager.selfPeer.uid}")
       state = state.merge(delta)
 
       if i > 0 && i % 100 == 0 then {
@@ -134,7 +134,7 @@ class ObserveRemoveSetRDT(number_of_changes: Int, sleep_time_milliseconds: Long)
 
         /*
         for j <- i - 10 to Random().between(i - 10, i) do {
-          delta = delta.merge(removeStringGetDelta(s"hello world ${j} from ${dataManager.replicaId}"))
+          delta = delta.merge(removeStringGetDelta(s"hello world ${j} from ${dataManager.selfPeer.uid}"))
           state = state.merge(delta)
         }
          */
@@ -195,7 +195,7 @@ class LastWriterWinsRDT(number_of_changes: Int, sleep_time_milliseconds: Long) e
     for i <- 0 to number_of_changes do {
       Thread.sleep(sleep_time_milliseconds)
 
-      val state = writeStringGetDeltaInfo(s"hello world ${i} from ${dataManager.replicaId}")
+      val state = writeStringGetDeltaInfo(s"hello world ${i} from ${dataManager.selfPeer.uid}")
 
       dataManager.broadcast(state)
     }
