@@ -1,5 +1,6 @@
-package replication.dtn
+package channels.experiments
 
+import channels.JsoniterCodecs.uidKeyCodec
 import com.github.plokhotnyuk.jsoniter_scala.core.*
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import de.rmgk.delay.*
@@ -15,7 +16,7 @@ import java.time.Duration
 import java.util.concurrent.CompletionStage
 import java.util.concurrent.atomic.AtomicReference
 import scala.annotation.unused
-import scala.concurrent.{Await, Future}
+import scala.concurrent.Await
 
 /** API base path used for http request */
 def api(using scheme: String = "http"): String =
@@ -48,8 +49,6 @@ case class WsRecvData(bid: String, src: String, dst: String, data: BinaryAsBase6
 case class WsSendData(src: String, dst: String, data: BinaryAsBase64, delivery_notification: Boolean, lifetime: Long)
 given JsonValueCodec[WsRecvData] = JsonCodecMaker.make
 given JsonValueCodec[WsSendData] = JsonCodecMaker.make
-
-import channels.JsoniterCodecs.given
 given JsonValueCodec[PosNegCounter] = JsonCodecMaker.make
 
 class Replica[S: {Lattice, JsonValueCodec}](

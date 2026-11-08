@@ -224,6 +224,5 @@ object CreateAndSaveTrace {
 
   import channels.JsoniterCodecs.given
   import channels.JsoniterCodecsJvm.given
-  import ex2026accessControl.acl.sync.AclCodecs.given
   given JsonValueCodec[SavedTrace] = JsonCodecMaker.make
 }

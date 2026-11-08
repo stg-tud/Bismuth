@@ -10,7 +10,6 @@ import rdts.filters.{Filter, PermissionTree}
 import rdts.time.Dots
 import ex2026accessControl.acl.HashDag.Encoder
 import ex2026accessControl.acl.sync.AclCodecs
-import channels.JsoniterCodecsJvm.given
 import ex2026accessControl.acl.sync.AclCodecs.given
 import ex2026accessControl.acl.sync.AclEnforcingSync.SyncMsg.{MyAclVersionIs, MyPeersAre, MyRdtVersionIs}
 import ex2026accessControl.acl.sync.AclEnforcingSync.{SyncMsg, encoder}

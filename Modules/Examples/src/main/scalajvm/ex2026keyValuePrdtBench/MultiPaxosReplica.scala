@@ -6,7 +6,7 @@ import channels.broadcast.KnowledgeGroupBroadcast.publish
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import ex2026keyValuePrdtBench.KnowledgeGroups.leader
-import rdts.base.{Lattice, ReplicaId, Uid}
+import rdts.base.{ReplicaId, Uid}
 import rdts.datatypes.ReplicatedSet
 import rdts.protocols.knowledgeGroups.MultiPaxos
 import rdts.protocols.{Participants, Paxos, PaxosRound, Voting}

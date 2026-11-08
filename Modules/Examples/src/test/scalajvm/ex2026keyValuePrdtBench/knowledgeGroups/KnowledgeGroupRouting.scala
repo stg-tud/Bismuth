@@ -215,7 +215,7 @@ class KnowledgeGroupRouting extends munit.FunSuite {
 
 /** End-to-end runs of [[MultiPaxosReplica]] over local queued connections. */
 class KnowledgeGroupReplicas extends munit.FunSuite {
-  import KnowledgeGroupFixtures.{*, given}
+  import KnowledgeGroupFixtures.{*}
 
   val compartmentIds = List(leader, proxy1, proxy2, client, follower1, follower2, follower3, follower4)
 

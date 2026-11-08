@@ -5,7 +5,6 @@ import channels.connection.{Abort, Connector}
 import channels.{DeltaStorage, *}
 import de.rmgk.options.*
 import de.rmgk.options.Result.{Err, Ok}
-import ex2026keyValuePrdtBench.KnowledgeGroups.*
 import ex2026keyValuePrdtBench.clients.*
 import rdts.base.Uid
 import rdts.protocols.knowledgeGroups.MultiPaxos
