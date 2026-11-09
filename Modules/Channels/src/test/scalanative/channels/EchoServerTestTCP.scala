@@ -1,6 +1,6 @@
 package channels
 
-import channels.connection.ConnectionDescriptor
+import channels.connection.{ConnectionDescriptor, TCP}
 
 import java.net.{InetAddress, InetSocketAddress, ServerSocket, SocketException}
 

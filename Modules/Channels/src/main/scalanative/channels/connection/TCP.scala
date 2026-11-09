@@ -1,7 +1,6 @@
-package channels
+package channels.connection
 
-import channels.connection.{Abort, Connection, ConnectionDescriptor, JIOStreamConnection, Connector, Listener, Receive}
-import de.rmgk.delay.{Async, Callback}
+import de.rmgk.delay.Async
 
 import java.net.{InetSocketAddress, ServerSocket, Socket, SocketException, SocketTimeoutException}
 import scala.concurrent.ExecutionContext
