@@ -32,6 +32,9 @@ enum AuthzMessage {
   /** Ask for the given events (and the deltas the requester may read). */
   case Request(events: Set[Hash])
 
+  /** Ask for the deltas of the given (known) events, answered with those the requester may read. */
+  case RequestDeltas(events: Set[Hash])
+
   /** Ask for everything, sent by replicas that do not even know the genesis event yet. */
   case Bootstrap
 }
@@ -89,6 +92,13 @@ final case class AuthzReplica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Dec
 
   def containsEvent(eventHash: Hash): Boolean = eventGraph.events.contains(eventHash)
 
+  /** Known delta commitment events without a (pending) value, e.g., because they were not readable when received. */
+  def deltasWithoutValue: Set[Hash] =
+    eventGraph.events.iterator.collect {
+      case (hash, (ArdtEvent(DeltaCommitment(_), _, _, _, _), index))
+          if !deltas.contains(index) && !waitingDeltas.contains(hash) => hash
+    }.toSet
+
   def deltaValue(eventHash: Hash): Option[RevealedValue] =
     eventGraph.events.get(eventHash).flatMap((_, index) => deltas.get(index)).map(stored =>
       RevealedValue(writeToArray(stored.delta), stored.witness)
@@ -139,7 +149,7 @@ final case class AuthzReplica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Dec
         val next = copy(peers = peers + peer)
         val sync =
           if heads.isEmpty then List(Effect.Send(List(peer), AuthzMessage.Bootstrap))
-          else eventsWithDeltas(heads, peer, identity)
+          else eventsWithDeltas(heads, peer, identity) ++ requestDeltas(List(peer))
         Step(next, sync)
 
   def removePeer(peer: Peer): Result =
@@ -150,6 +160,7 @@ final case class AuthzReplica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Dec
       case Some(identity) =>
         message match
             case AuthzMessage.Events(events) =>
+              val capabilitiesBefore = eventGraph.capabilities(self).map(_._1)
               val (received, missingNow) = events.foldLeft((Changes(this), Set.empty[Hash])) {
                 case ((changes, missingAcc), encoded) =>
                   val (next, outcome) = changes.replica.receiveEncodedEvent(encoded)
@@ -163,7 +174,10 @@ final case class AuthzReplica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Dec
                       missing = r.missing ++ missingNow.filterNot(r.eventGraph.events.contains),
                       knowledgeable = if r.knowledgeable.contains(from) then r.knowledgeable else r.knowledgeable :+ from
                     )
-              withMissing.retryWaiting(received.copy(replica = withMissing)).result.scheduleRepairIfNeeded
+              val step = withMissing.retryWaiting(received.copy(replica = withMissing)).result.scheduleRepairIfNeeded
+              // a new capability may make deltas readable that were withheld from us, ask everyone for them
+              if step.state.eventGraph.capabilities(self).forall((hash, _) => capabilitiesBefore.contains(hash)) then step
+              else step.copy(events = step.events ++ step.state.requestDeltas(step.state.peers.toList))
 
             case AuthzMessage.Deltas(values) =>
               values.foldLeft(Changes(this)) { (changes, value) =>
@@ -173,6 +187,9 @@ final case class AuthzReplica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Dec
 
             case AuthzMessage.Request(hashes) =>
               Step(this, eventsWithDeltas(hashes.filter(eventGraph.events.contains), from, identity))
+
+            case AuthzMessage.RequestDeltas(hashes) =>
+              Step(this, deltasFor(hashes.filter(eventGraph.events.contains).toList, from))
 
             case AuthzMessage.Bootstrap =>
               Step(this, eventsWithDeltas(eventGraph.events.keySet, from, identity))
@@ -309,6 +326,11 @@ final case class AuthzReplica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Dec
         Effect.Send(List(peer), AuthzMessage.Events(ordered.map(h => writeToArray(eventGraph.events(h)._1))))
         :: deltasFor(ordered, peer)
   }
+
+  /** Ask `peers` for the deltas we do not have (they answer with those we may read). */
+  private def requestDeltas(peers: List[Peer]): List[Effect[AuthzMessage, Nothing]] =
+    val wanted = deltasWithoutValue
+    if wanted.isEmpty || peers.isEmpty then Nil else List(Effect.Send(peers, AuthzMessage.RequestDeltas(wanted)))
 
   /** The stored deltas of `hashes` that `peer` may read, as a single message (if any). */
   private def deltasFor(hashes: List[Hash], peer: Peer): List[Effect[AuthzMessage, Nothing]] =

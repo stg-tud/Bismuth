@@ -2,7 +2,7 @@ package channels.broadcast.authz
 
 import channels.broadcast.BroadcastProtocol.{Effect, Step}
 import channels.connection.Peer
-import channels.crypto.PrivateIdentity
+import channels.crypto.{Hash, PrivateIdentity}
 import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray
 import munit.FunSuite
 import rdts.base.Uid
@@ -40,6 +40,9 @@ class AuthzProtocolTest extends FunSuite {
       run(b)(_.addPeer(a.peer))
     }
 
+    /** Drop all queued messages matching `p`, e.g., to simulate a connection failing. */
+    def drop(p: AuthzMessage => Boolean): Unit = inbox.filterInPlace((_, _, message) => !p(message))
+
     def deliverAll(): Unit =
       while inbox.nonEmpty do
           val (from, to, message) = inbox.dequeue()
@@ -75,14 +78,36 @@ class AuthzProtocolTest extends FunSuite {
     assertEquals(b.replica.state, Set.empty[Int], "but bob may not read the delta")
 
     net.run(a)(_.delegate(a.identity, genesis.hash, b.identity.getPublic, PermissionTree.allow, PermissionTree.allow))
+    net.deliverAll()
+    assertEquals(b.replica.state, Set(1), "the delegation makes earlier deltas readable")
+
     net.run(a)(_.write(a.identity, Set(2)))
     net.deliverAll()
-    assertEquals(b.replica.state, Set(2))
-    assertEquals(b.delivered.lastOption, Some(Set(2)))
+    assertEquals(b.replica.state, Set(1, 2))
+    assertEquals(b.delivered.lastOption, Some(Set(1, 2)))
 
     net.run(b)(_.write(b.identity, Set(3)))
     net.deliverAll()
     assertEquals(a.replica.state, Set(1, 2, 3))
+  }
+
+  test("deltas that were lost in transit are requested again on reconnect") {
+    val (a, b, net, genesis) = setup()
+    net.run(a)(_.delegate(a.identity, genesis.hash, b.identity.getPublic, PermissionTree.allow, PermissionTree.allow))
+    net.deliverAll()
+
+    net.run(a)(_.write(a.identity, Set(1)))
+    net.drop { case AuthzMessage.Deltas(_) => true; case _ => false }
+    net.deliverAll()
+    assertEquals(b.replica.heads, a.replica.heads, "the event arrived")
+    assertEquals(b.replica.state, Set.empty[Int], "but its delta was lost")
+    assertEquals(b.replica.deltasWithoutValue.size, 1)
+
+    net.run(b)(_.removePeer(a.peer))
+    net.run(b)(_.addPeer(a.peer))
+    net.deliverAll()
+    assertEquals(b.replica.state, Set(1))
+    assertEquals(b.replica.deltasWithoutValue, Set.empty[Hash])
   }
 
   test("revoked capabilities can not be used anymore") {

@@ -58,9 +58,13 @@ class AuthzMessagingIOTest extends FunSuite {
       eventually(b.replica.heads == Set(genesis.hash), s"b bootstraps: ${b.replica.heads}")
 
       a.mutate(_ => Set(1))
+      eventually(b.replica.heads == a.replica.heads, s"b receives the event of a's first write: ${b.replica.heads}")
+      assertEquals(b.replica.state, Set.empty[Int], "b cannot read deltas without a capability")
+
       a.delegate(genesis.hash, bob.getPublic, PermissionTree.allow, PermissionTree.allow)
       a.mutate(_ => Set(2))
-      eventually(b.replica.state == Set(2), s"b only reads deltas after delegation: ${b.replica.state}")
+      // the delegation grants read access to all deltas, including those written before it
+      eventually(b.replica.state == Set(1, 2), s"b reads all deltas after delegation: ${b.replica.state}")
 
       b.mutate(_ => Set(3))
       eventually(a.replica.state == Set(1, 2, 3), s"a receives b's write: ${a.replica.state}")
