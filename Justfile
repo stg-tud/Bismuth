@@ -18,20 +18,10 @@ sonaRelease:
 runSimpleCaseStudy:
 	sbt 'examples / run'
 
-webappsPrepare:
-	cd Website && pnpm install # includes the dependencies of the web case studies (and jsdom for their tests)
-	# astro dev uses the fastLinkJS output, astro build the fullLinkJS output (see Website/astro.config.mjs)
-	sbt examplesJS/fastLinkJS
-
-# the case studies are pages of the website (Website/src/pages/examples); rerun `sbt examplesJS/fastLinkJS` (or `sbt ~examplesJS/fastLinkJS`) and astro reloads
-webappsServe: webappsPrepare
-	cd Website && pnpm exec astro dev --port 5173
-
 serve-scaladoc project="reactives" port="8081":
 	sbt '{{project}}/doc'
 	jwebserver -b 0.0.0.0 -p {{port}} -d "$(sbt --batch --error 'show {{project}}/Compile/doc/target' | sed -n 's#^\s*\[info\] ##p' | head -n 1)"
 
-# run with the project closed in IntelliJ, otherwise it overwrites the patched module files again
 intellij-bsp-import-fix *args:
 	sbt 'scripts/run patch-bsp-shared-test-modules {{args}}'
 
@@ -39,23 +29,17 @@ selectScheduler scheduler="levelled":
 	sbt 'scripts/run select-scheduler {{scheduler}}'
 
 
-# collect website inputs: the Scala.js output of the web demos (the scitzen documentation is compiled by astro, see Website/integrations/scitzen.mjs)
-[private]
-websitePrepare: webappsPrepare
-	sbt examplesJS/fullLinkJS
-
-websiteServe: websitePrepare
+websiteServe:
+	cd Website && pnpm install
+	sbt examplesJS/fastLinkJS
 	cd Website && pnpm exec astro dev
-
-# production build (fullLinkJS, bundled assets) served like on github pages, i.e., under /Bismuth/
-websitePreview: websitePrepare
-	cd Website && pnpm exec astro build --outDir ../target/website-preview
-	cd Website && pnpm exec astro preview --outDir ../target/website-preview
 
 websiteRemote := "git@github.com:stg-tud/Bismuth.git"
 
 # build into the `website` branch (worktree in website-deploy/, published by github pages from docs/) commit, and push
-websiteDeploy: websitePrepare
+websiteDeploy:
+	cd Website && pnpm install # includes the dependencies of the web case studies (and jsdom for their tests)
+	sbt examplesJS/fullLinkJS
 	if [ ! -e website-deploy ]; then \
 		git show-ref --quiet refs/heads/website || git fetch {{websiteRemote}} website:website; \
 		git worktree add website-deploy website; \
