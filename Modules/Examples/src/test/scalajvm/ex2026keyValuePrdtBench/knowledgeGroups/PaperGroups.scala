@@ -64,9 +64,8 @@ class PaperGroups extends munit.FunSuite {
       List(leader, proxy1, proxy2, client, follower1, follower2, follower3, follower4),
       Set(leader, follower1, follower2, follower3, follower4)
     )
-    val replicas        = cluster.replicas
-    def deliver(): Unit = cluster.deliver()
-    def settle(): Unit  = cluster.settle()
+    val replicas       = cluster.replicas
+    def settle(): Unit = cluster.settle()
 
     replicas(leader).startLeaderElection()
     settle()

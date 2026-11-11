@@ -9,7 +9,6 @@ import channels.connection.*
 import channels.experiments.Aead
 import channels.overlay.OverlayController.{OverlayAction, OverlayEvent, OverlayMessage}
 import channels.overlay.{AttemptId, FullMeshOverlay, OverlayController}
-import channels.routing.CausalPlumtree
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromByteBuffer, writeToArray}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import de.rmgk.delay.{Async, Callback}
@@ -117,7 +116,7 @@ object MessagingIO {
   *   protocol. It makes no protocol decisions of its own, and keeps no state besides the two state machines.
   *
   * The application interacts with the protocol through [[state]] and [[update]]; protocols typically provide a more
-  * convenient API as extension methods in the companion of their state type (see [[PlumtreeBroadcast]], [[CausalPlumtree]]).
+  * convenient API as extension methods in the companion of their state type (see [[PlumtreeBroadcast]], [[channels.routing.CausalPlumtree]]).
   *
   * Concurrency: each input runs the state transitions under `lock` and gets back the resulting [[Output]]s, which are
   * performed on the calling thread after the lock is released. Exceptions therefore reach the caller. Outputs that

@@ -3,19 +3,15 @@ package benchmarks.b2021encrdt
 import benchmarks.b2021encrdt.Codecs.given
 import benchmarks.b2021encrdt.deltabased.DecryptedDeltaGroup
 import benchmarks.b2021encrdt.mock.UntrustedDeltaBasedReplicaMock
-import channels.connection.MessageBuffer
 import channels.experiments
 import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray
-import com.google.crypto.tink.Aead
 import ex2021encfxtodo.TinkAead
 import rdts.syntax.oldCompat.DeltaAWLWWMContainer
 import rdts.time.{Dot, Dots}
 
 import java.io.PrintWriter
-import java.nio.ByteBuffer
 import java.nio.file.{Files, Path, Paths}
 import scala.language.implicitConversions
-import scala.util.Try
 
 object DeltaStateBasedUntrustedReplicaSizeBenchmark extends DeltaStateUntrustedReplicaSizeBenchEnvironment {
 

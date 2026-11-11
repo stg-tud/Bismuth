@@ -494,7 +494,7 @@ object AuthzReplica {
 /** [[Routing]] instance for [[AuthzReplica]]. Delivers the materialized state whenever it changes.
   * `identity` signs local events, see the extension methods in the companion.
   */
-final class AuthzProtocol[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](val identity: PrivateIdentity)
+final class AuthzProtocol[RDT](val identity: PrivateIdentity)
     extends Routing {
   type State = AuthzReplica[RDT]
   type Msg   = AuthzMessage

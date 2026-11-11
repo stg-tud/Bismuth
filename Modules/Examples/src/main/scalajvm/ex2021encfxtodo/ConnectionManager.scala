@@ -1,18 +1,16 @@
 package ex2021encfxtodo
 
 import channels.broadcast.PlumtreeBroadcast
-import channels.connection.{Abort, ConnectionDescriptor, MessageBuffer, NioTCP, NioTcpConnectionDetailsResolver, Peer, PeerConnectInfo}
+import channels.connection.{Abort, ConnectionDescriptor, NioTCP, NioTcpConnectionDetailsResolver, Peer, PeerConnectInfo}
 import channels.overlay.FullMeshOverlay
-import channels.{MessagingIO, TimerDelays, Timers, experiments}
+import channels.{MessagingIO, TimerDelays, Timers}
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.google.crypto.tink.aead.AeadConfig
 import com.google.crypto.tink.{Aead, CleartextKeysetHandle, JsonKeysetReader, RegistryConfiguration}
 import rdts.base.ReplicaId
 
-import java.nio.ByteBuffer
 import java.util.concurrent.ExecutorService
 import scala.concurrent.duration.DurationInt
-import scala.util.Try
 
 class ConnectionManager[State: JsonValueCodec](
     replicaId: ReplicaId,
