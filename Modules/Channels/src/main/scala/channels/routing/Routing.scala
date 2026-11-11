@@ -1,6 +1,6 @@
 package channels.broadcast
 
-import channels.broadcast.BroadcastProtocol.Step
+import channels.broadcast.Routing.Step
 import channels.connection.Peer
 
 /** Typeclass for broadcast protocol state machines driven by a [[channels.MessagingIO]].
@@ -14,7 +14,7 @@ import channels.connection.Peer
   * disseminate, and what it gets back, such as an assigned dot) are protocol specific, and are run as plain functions
   * `State => (Step, R)` via [[channels.MessagingIO.update]].
   */
-trait BroadcastProtocol {
+trait Routing {
   type State
   type Msg
   type Out
@@ -26,10 +26,10 @@ trait BroadcastProtocol {
   def handleMessage(state: State, from: Peer, message: Msg): Step[State, Msg, Out]
 
   /** A timer requested via [[Effect.StartTimer]] expired. */
-  def timerFired(state: State, timer: BroadcastProtocol.Timer): Step[State, Msg, Out]
+  def timerFired(state: State, timer: Routing.Timer): Step[State, Msg, Out]
 }
 
-object BroadcastProtocol {
+object Routing {
 
   /** Effects requested by a protocol transition. */
   enum Effect[+Msg, +Out] {
@@ -38,7 +38,7 @@ object BroadcastProtocol {
     /** Hand `output` to the application. */
     case Deliver(output: Out)
 
-    /** Request a [[BroadcastProtocol.timerFired]] callback later. */
+    /** Request a [[Routing.timerFired]] callback later. */
     case StartTimer(timer: Timer)
   }
 

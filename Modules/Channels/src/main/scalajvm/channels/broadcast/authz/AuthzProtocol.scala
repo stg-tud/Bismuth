@@ -1,8 +1,8 @@
 package channels.broadcast.authz
 
 import channels.MessagingIO
-import channels.broadcast.BroadcastProtocol
-import channels.broadcast.BroadcastProtocol.{Effect, Step, Timer}
+import channels.broadcast.Routing
+import channels.broadcast.Routing.{Effect, Step, Timer}
 import channels.connection.{Peer, PeerConnectInfo}
 import channels.crypto.{PrivateIdentity, PublicIdentity}
 import channels.overlay.FullMeshOverlay
@@ -489,11 +489,11 @@ object AuthzReplica {
   }
 }
 
-/** [[BroadcastProtocol]] instance for [[AuthzReplica]]. Delivers the materialized state whenever it changes.
+/** [[Routing]] instance for [[AuthzReplica]]. Delivers the materialized state whenever it changes.
   * `identity` signs local events, see the extension methods in the companion.
   */
 final class AuthzProtocol[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](val identity: PrivateIdentity)
-    extends BroadcastProtocol {
+    extends Routing {
   type State = AuthzReplica[RDT]
   type Msg   = AuthzMessage
   type Out   = RDT

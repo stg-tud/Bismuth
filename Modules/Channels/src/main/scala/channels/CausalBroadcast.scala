@@ -1,8 +1,8 @@
 package channels
 
-import channels.broadcast.BroadcastProtocol.{Effect, Step}
+import channels.broadcast.Routing.{Effect, Step}
 import channels.broadcast.PlumtreeMessage.Payload
-import channels.broadcast.{BroadcastProtocol, PlumtreeBroadcast, PlumtreeMessage}
+import channels.broadcast.{Routing, PlumtreeBroadcast, PlumtreeMessage}
 import channels.connection.Peer
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReader, JsonValueCodec, JsonWriter}
 import rdts.base.{ReplicaId, Uid}
@@ -50,7 +50,7 @@ object CausalPlumtree {
 
   type Result[A] = Step[CausalPlumtree[A], PlumtreeMessage[Causal[A]], A]
 
-  final class Protocol[A] extends BroadcastProtocol {
+  final class Protocol[A] extends Routing {
     type State = CausalPlumtree[A]
     type Msg   = PlumtreeMessage[Causal[A]]
     type Out   = A
@@ -59,7 +59,7 @@ object CausalPlumtree {
     def removePeer(state: State, peer: Peer): Result[A] = state.lift(state.plumtree.removePeer(peer))
     def handleMessage(state: State, from: Peer, message: Msg): Result[A] =
       state.lift(state.plumtree.handleMessage(from, message))
-    def timerFired(state: State, timer: BroadcastProtocol.Timer): Result[A] =
+    def timerFired(state: State, timer: Routing.Timer): Result[A] =
       state.lift(state.plumtree.timerFired(timer))
   }
 

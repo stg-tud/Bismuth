@@ -1,6 +1,6 @@
 package ex2026accessControl.authz.evaluation
 
-import channels.broadcast.BroadcastProtocol.{Effect, Step}
+import channels.broadcast.Routing.{Effect, Step}
 import channels.connection.Peer
 import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray
 import channels.crypto.PrivateIdentity

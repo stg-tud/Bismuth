@@ -3,8 +3,8 @@ package channels
 import channels.MessagingIO.Envelope
 import channels.JsoniterCodecs.given
 import channels.broadcast.PlumtreeMessage.*
-import channels.broadcast.BroadcastProtocol.{Effect, Step, Timer}
-import channels.broadcast.{BroadcastProtocol, PlumtreeBroadcast, PlumtreeMessage}
+import channels.broadcast.Routing.{Effect, Step, Timer}
+import channels.broadcast.{Routing, PlumtreeBroadcast, PlumtreeMessage}
 import channels.connection.*
 import channels.experiments.Aead
 import channels.overlay.OverlayController.{OverlayAction, OverlayEvent, OverlayMessage}
@@ -107,7 +107,7 @@ object MessagingIO {
 /** Driver connecting transports, an overlay state machine, and a broadcast protocol state machine.
   *
   * - the overlay ([[channels.overlay.OverlayController]]) decides which connections exist and which peers are neighbors
-  * - the protocol (an instance of [[channels.broadcast.BroadcastProtocol]]) decides what to send to which
+  * - the protocol (an instance of [[channels.broadcast.Routing]]) decides what to send to which
   *   neighbor, and what to deliver to the application
   * - this class only translates: transport callbacks become overlay events, actions become transport operations,
   *   timer requests are scheduled on [[channels.Timers]], and the overlay's `NeighborUp`/`NeighborDown` are passed on to the
@@ -120,7 +120,7 @@ object MessagingIO {
   * performed on the calling thread after the lock is released. Exceptions therefore reach the caller. Outputs that
   * synchronously cause further inputs (e.g. synchronous local connections) simply recurse on already committed state.
   */
-class MessagingIO[P <: BroadcastProtocol](
+class MessagingIO[P <: Routing](
     using
     val protocol: P,
     val msgCodec: JsonValueCodec[protocol.Msg],

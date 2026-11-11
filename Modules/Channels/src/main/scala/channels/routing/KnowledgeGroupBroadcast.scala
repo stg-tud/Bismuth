@@ -2,7 +2,7 @@ package channels.broadcast
 
 import channels.JsoniterCodecs.given
 import channels.MessagingIO
-import channels.broadcast.BroadcastProtocol.{Effect, Step}
+import channels.broadcast.Routing.{Effect, Step}
 import channels.connection.Peer
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
@@ -49,7 +49,7 @@ object KnowledgeGroupBroadcast {
 
   def messageCodec[A: JsonValueCodec]: JsonValueCodec[Message[A]] = JsonCodecMaker.make
 
-  final class Protocol[A](system: PrdtSystem[A])(using Bottom[A], ReplicaId) extends BroadcastProtocol {
+  final class Protocol[A](system: PrdtSystem[A])(using Bottom[A], ReplicaId) extends Routing {
     type State = KnowledgeGroupBroadcast.State
     type Msg   = Message[A]
     type Out   = Delivery[A]
@@ -58,7 +58,7 @@ object KnowledgeGroupBroadcast {
 
     def addPeer(state: State, peer: Peer): Result    = Step(state.copy(peers = state.peers + peer), Nil)
     def removePeer(state: State, peer: Peer): Result = Step(state.copy(peers = state.peers - peer), Nil)
-    def timerFired(state: State, timer: BroadcastProtocol.Timer): Result = Step(state, Nil)
+    def timerFired(state: State, timer: Routing.Timer): Result = Step(state, Nil)
 
     def handleMessage(state: State, from: Peer, message: Msg): Result =
       if message.dots <= state.context then Step(state, Nil)

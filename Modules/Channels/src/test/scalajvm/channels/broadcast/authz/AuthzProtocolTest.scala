@@ -1,6 +1,6 @@
 package channels.broadcast.authz
 
-import channels.broadcast.BroadcastProtocol.{Effect, Step}
+import channels.broadcast.Routing.{Effect, Step}
 import channels.connection.Peer
 import channels.crypto.{Hash, PrivateIdentity}
 import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray

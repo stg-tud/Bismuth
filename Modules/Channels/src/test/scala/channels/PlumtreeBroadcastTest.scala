@@ -4,7 +4,7 @@ import channels.connection.Peer
 import channels.broadcast.PlumtreeBroadcast.Event.Send
 import channels.broadcast.PlumtreeBroadcast.{Event, PeerRole}
 import channels.broadcast.PlumtreeMessage.*
-import channels.broadcast.BroadcastProtocol.Timer
+import channels.broadcast.Routing.Timer
 import channels.broadcast.PlumtreeBroadcast
 import channels.{KeepAllHistory, NoHistory}
 import munit.FunSuite
