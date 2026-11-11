@@ -55,27 +55,54 @@ import { demos } from "../../data/site";
 	const hint = document.getElementById("demo-hint")!;
 	const buttons = [...document.querySelectorAll<HTMLButtonElement>(".demo-cards button")];
 
-	type Host = { connect(bridge: string): void; stop(): void };
+	type Instance = { setOnline(online: boolean): void };
+	type Host = { connect(bridge: string): Instance; stop(): void };
 
 	let current: string | undefined;
 	let host: Host | undefined;
 
-	function addFrame(src: string, removable: boolean): HTMLIFrameElement {
+	let instanceCounter = 0;
+
+	/** `instance` gets a bar with controls to take it offline and to remove it */
+	function addFrame(src: string, instance?: Instance, removable = false): HTMLIFrameElement {
 		const wrapper = document.createElement("div");
 		wrapper.className = "demo-instance";
 		const frame = document.createElement("iframe");
 		frame.className = "card demo-frame";
 		frame.title = "Demo";
 		frame.src = src;
-		wrapper.append(frame);
-		if (removable) {
-			const close = document.createElement("button");
-			close.className = "demo-instance-close";
-			close.title = "Remove instance";
-			close.textContent = "×";
-			close.addEventListener("click", () => wrapper.remove());
-			wrapper.append(close);
+		if (instance) {
+			const bar = document.createElement("div");
+			bar.className = "demo-instance-bar";
+			const name = document.createElement("span");
+			name.textContent = `Instance ${++instanceCounter}`;
+			const toggle = document.createElement("button");
+			let online = true;
+			const render = () => {
+				toggle.textContent = online ? "● online" : "○ offline";
+				toggle.title = online ? "Disconnect this instance" : "Reconnect this instance";
+				wrapper.classList.toggle("offline", !online);
+			};
+			toggle.addEventListener("click", () => {
+				online = !online;
+				instance.setOnline(online);
+				render();
+			});
+			render();
+			bar.append(name, toggle);
+			if (removable) {
+				const close = document.createElement("button");
+				close.title = "Remove instance";
+				close.textContent = "×";
+				close.addEventListener("click", () => {
+					instance.setOnline(false);
+					wrapper.remove();
+				});
+				bar.append(close);
+			}
+			wrapper.append(bar);
 		}
+		wrapper.append(frame);
 		frames.append(wrapper);
 		return frame;
 	}
@@ -85,18 +112,19 @@ import { demos } from "../../data/site";
 	function addInstance(id: string, removable: boolean): HTMLIFrameElement | undefined {
 		if (!host) return;
 		const bridge = crypto.randomUUID();
-		host.connect(bridge);
-		return addFrame(`${url(`/examples/${id}.html`)}?bridge=${bridge}`, removable);
+		const instance = host.connect(bridge);
+		return addFrame(`${url(`/examples/${id}.html`)}?bridge=${bridge}`, instance, removable);
 	}
 
 	async function load(id: string, bridged: boolean) {
 		host?.stop();
 		host = undefined;
 		frames.replaceChildren();
+		instanceCounter = 0;
 		instances.hidden = !bridged;
 		frames.classList.toggle("multi", bridged);
 		if (!bridged) {
-			addFrame(url(`/examples/${id}.html`), false);
+			addFrame(url(`/examples/${id}.html`));
 			return;
 		}
 		// @ts-ignore the Scala.js output is untyped (alias defined in astro.config.mjs)

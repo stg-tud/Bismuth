@@ -2,7 +2,7 @@ package channels.broadcastchannel
 
 import channels.*
 import channels.JsArrayBufferMessageBuffer.convertToArrayBuffer
-import channels.connection.{Abort, Connection, Connector, MessageBuffer, Receive}
+import channels.connection.{Abort, Connection, ConnectionClosedException, Connector, MessageBuffer, Receive}
 import de.rmgk.delay
 import de.rmgk.delay.{Async, Callback, Sync}
 import org.scalajs.dom
@@ -57,39 +57,78 @@ class BroadcastChannelConnection(bc: BroadcastChannel) extends Connection {
   *
   * Messages posted to a broadcast channel before the other side opened it are lost, thus both sides first exchange a
   * handshake, and the connection is only established once the other side is known to listen.
-  * Each `hello` (e.g., when the other side reloads) establishes a fresh connection.
+  * Each `hello` (e.g., when the other side reloads, or [[PairConnector.reconnect]]s) establishes a fresh connection.
+  * [[PairConnector.disconnect]] closes the connection on both sides (e.g., to simulate going offline).
   */
 object BroadcastChannelPairConnector {
   private val hello = "bismuth-pair-hello"
   private val ready = "bismuth-pair-ready"
+  private val bye   = "bismuth-pair-bye"
 
-  def named(name: String): Connector = new Connector {
+  class PairConnector(name: String) extends Connector {
+    private var bc: BroadcastChannel | Null                                         = null
+    private var current: Option[(PairConnection, Callback[MessageBuffer])]          = None
+    private var establish: () => Unit                                               = () => ()
+
+    private def closeCurrent(): Unit = {
+      current.foreach { (connection, handler) =>
+        connection.open = false
+        handler.fail(ConnectionClosedException(s"pair channel closed ($name)"))
+      }
+      current = None
+    }
+
+    /** Close the connection on both sides. */
+    def disconnect(): Unit = if bc != null then {
+      bc.nn.postMessage(bye)
+      closeCurrent()
+    }
+
+    /** Establish a new connection, if the other side is still listening. */
+    def reconnect(): Unit = if bc != null && current.isEmpty then bc.nn.postMessage(hello)
+
     override def connect(incomingHandler: Receive): Async[Abort, Connection] = Async.fromCallback {
-      val bc                                  = new BroadcastChannel(name)
-      var current: Option[Callback[MessageBuffer]] = None
+      val channel = new BroadcastChannel(name)
+      bc = channel
 
-      def establish(): Unit = {
-        val connection = BroadcastChannelConnection(bc)
-        current = Some(incomingHandler.connectionEstablished(connection))
+      establish = () => {
+        closeCurrent()
+        val connection = PairConnection(channel)
+        current = Some((connection, incomingHandler.connectionEstablished(connection)))
         Async.handler.succeed(connection)
       }
 
-      bc.onmessage = (event: dom.MessageEvent) =>
+      channel.onmessage = (event: dom.MessageEvent) =>
         event.data match
             case data: ArrayBuffer =>
-              current.foreach(_.succeed(JsArrayBufferMessageBuffer(data)))
+              current.foreach(_._2.succeed(JsArrayBufferMessageBuffer(data)))
             case `hello` =>
-              bc.postMessage(ready)
+              channel.postMessage(ready)
               establish()
             case `ready` =>
               if current.isEmpty then establish()
+            case `bye` =>
+              closeCurrent()
             case other =>
-              current.foreach(_.fail(BroadcastException(s"unexpected message on pair channel ($name):\n$other", event)))
+              current.foreach(_._2.fail(BroadcastException(s"unexpected message on pair channel ($name):\n$other", event)))
 
-      bc.onmessageerror = (event: dom.MessageEvent) =>
-        current.foreach(_.fail(BroadcastException(s"broadcast error ($name):\n${event.data}", event)))
+      channel.onmessageerror = (event: dom.MessageEvent) =>
+        current.foreach(_._2.fail(BroadcastException(s"broadcast error ($name):\n${event.data}", event)))
 
-      bc.postMessage(hello)
+      channel.postMessage(hello)
     }
   }
+
+  /** Stops sending once closed, such that messages of an old connection never reach a newer one. */
+  private class PairConnection(bc: BroadcastChannel) extends Connection {
+    var open: Boolean = true
+
+    def send(message: MessageBuffer): delay.Async[Any, Unit] =
+      if open then Sync(bc.postMessage(message.convertToArrayBuffer()))
+      else Sync(throw ConnectionClosedException("pair channel closed"))
+
+    override def close(): Unit = open = false
+  }
+
+  def named(name: String): PairConnector = PairConnector(name)
 }

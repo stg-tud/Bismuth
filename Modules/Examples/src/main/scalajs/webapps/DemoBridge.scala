@@ -50,7 +50,8 @@ object DemoBridge {
     * Peers are only discovered among demo pages showing the same `app`.
     * Draws the connections of all replicas (demo pages and case studies in their iframes) as replicated in the
     * overlay part of the state, see [[OverlayReplication]].
-    * Returns `{connect(bridge), stop()}`.
+    * Returns `{connect(bridge), stop()}`, where `connect` returns `{setOnline(boolean)}` to simulate the instance going
+    * offline (closing its connection to the relay) and coming back online.
     */
   @JSExportTopLevel("DemoBridgeHost")
   def host(app: String, container: dom.Element): js.Dynamic = {
@@ -74,7 +75,14 @@ object DemoBridge {
 
     container.replaceChildren(graph, view.example().render)
     js.Dynamic.literal(
-      connect = (bridge: String) => relay.io.addClientConnection(BroadcastChannelPairConnector.named(channelName(bridge))),
+      // returns `{setOnline(boolean)}` to disconnect/reconnect this instance from the relay
+      connect = (bridge: String) => {
+        val connector = BroadcastChannelPairConnector.named(channelName(bridge))
+        relay.io.addClientConnection(connector)
+        js.Dynamic.literal(setOnline =
+          (online: Boolean) => if online then connector.reconnect() else connector.disconnect()
+        )
+      },
       stop = () => {
         running = false
         relay.stop()

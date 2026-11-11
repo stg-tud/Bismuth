@@ -190,12 +190,15 @@ a.lib-link.primary:hover { background: var(--yellow-500); color: var(--gray-950)
 /* demos with multiple instances: up to three side by side */
 #demo-frames.multi { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); }
 #demo-frames.multi .demo-frame { height: 560px; }
-.demo-instance { position: relative; }
-.demo-instance-close {
-	position: absolute; top: 0.5rem; right: 0.5rem;
-	width: 2rem; height: 2rem; border: none; border-radius: 50%;
-	background: rgba(0, 0, 0, 0.5); color: white; font-size: 1.25rem; line-height: 1; cursor: pointer;
+.demo-instance { display: flex; flex-direction: column; gap: 0.25rem; }
+.demo-instance-bar { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; }
+.demo-instance-bar span { flex: 1; font-weight: 600; }
+.demo-instance-bar button {
+	font: inherit; padding: 0.2rem 0.6rem; cursor: pointer;
+	border: 1px solid var(--gray-300, #d1d5db); border-radius: 5px; background: white;
 }
+.demo-instance.offline .demo-frame { outline: 2px dashed var(--gray-600); outline-offset: -2px; }
+.demo-instance.offline .demo-instance-bar button:first-of-type { background: var(--gray-100, #f3f4f6); }
 #demo-instances { margin-top: 1rem; }
 #demo-connections { margin-top: 1rem; }
 
