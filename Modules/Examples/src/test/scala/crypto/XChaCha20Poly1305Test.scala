@@ -1,4 +1,4 @@
-package exinfra
+package crypto
 
 import munit.FunSuite
 

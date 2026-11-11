@@ -42,27 +42,48 @@ object XChaCha20Poly1305 {
 
   /** Returns `nonce ‖ ciphertext ‖ tag`. */
   def seal(key: Array[Byte], nonce: Array[Byte], plain: Array[Byte], aad: Array[Byte]): Array[Byte] =
-    require(nonce.length == NonceSize)
+    require(key.length == KeySize, s"key must be $KeySize bytes")
+    require(nonce.length == NonceSize, s"nonce must be $NonceSize bytes")
     val (subkey, nonce12) = derive(key, nonce)
     val out               = new Array[Byte](NonceSize + plain.length + TagSize)
     System.arraycopy(nonce, 0, out, 0, NonceSize)
-    ChaCha20.xor(subkey, nonce12, 1, plain, 0, plain.length, out, NonceSize)
-    val tag = Poly1305.mac(polyKey(subkey, nonce12), macData(aad, out, NonceSize, plain.length))
-    System.arraycopy(tag, 0, out, NonceSize + plain.length, TagSize)
+    sealInto(subkey, nonce12, plain, aad, out, NonceSize)
     out
 
   /** Inverse of [[seal]]; throws on authentication failure. */
   def open(key: Array[Byte], boxed: Array[Byte], aad: Array[Byte]): Array[Byte] =
-    if boxed.length < NonceSize + TagSize then throw IllegalArgumentException("ciphertext too short")
-    val nonce             = java.util.Arrays.copyOfRange(boxed, 0, NonceSize)
-    val ctLen             = boxed.length - NonceSize - TagSize
-    val (subkey, nonce12) = derive(key, nonce)
-    val expected          = Poly1305.mac(polyKey(subkey, nonce12), macData(aad, boxed, NonceSize, ctLen))
-    var diff              = 0
-    for i <- 0 until TagSize do diff |= expected(i) ^ boxed(NonceSize + ctLen + i)
+    require(key.length == KeySize, s"key must be $KeySize bytes")
+    if boxed.length < NonceSize + TagSize then throw SecurityException("ciphertext too short")
+    val (subkey, nonce12) = derive(key, java.util.Arrays.copyOfRange(boxed, 0, NonceSize))
+    openFrom(subkey, nonce12, boxed, NonceSize, aad)
+
+  /** RFC 8439 ChaCha20-Poly1305 with 12 byte nonce, returns `ciphertext ‖ tag`. Exposed for test vectors only. */
+  private[crypto] def sealIetf(key: Array[Byte], nonce: Array[Byte], plain: Array[Byte], aad: Array[Byte]): Array[Byte] =
+    require(key.length == KeySize && nonce.length == 12)
+    val out = new Array[Byte](plain.length + TagSize)
+    sealInto(ChaCha20.toInts(key, 0, 8), ChaCha20.toInts(nonce, 0, 3), plain, aad, out, 0)
+    out
+
+  private[crypto] def openIetf(key: Array[Byte], nonce: Array[Byte], boxed: Array[Byte], aad: Array[Byte]): Array[Byte] =
+    require(key.length == KeySize && nonce.length == 12)
+    if boxed.length < TagSize then throw SecurityException("ciphertext too short")
+    openFrom(ChaCha20.toInts(key, 0, 8), ChaCha20.toInts(nonce, 0, 3), boxed, 0, aad)
+
+  /** Writes `ciphertext ‖ tag` into `out` starting at `off`. */
+  private def sealInto(key: Array[Int], nonce12: Array[Int], plain: Array[Byte], aad: Array[Byte], out: Array[Byte], off: Int): Unit =
+    ChaCha20.xor(key, nonce12, 1, plain, 0, plain.length, out, off)
+    val tag = Poly1305.mac(polyKey(key, nonce12), macData(aad, out, off, plain.length))
+    System.arraycopy(tag, 0, out, off + plain.length, TagSize)
+
+  /** Verifies the tag (in constant time) before decrypting anything. */
+  private def openFrom(key: Array[Int], nonce12: Array[Int], boxed: Array[Byte], off: Int, aad: Array[Byte]): Array[Byte] =
+    val ctLen    = boxed.length - off - TagSize
+    val expected = Poly1305.mac(polyKey(key, nonce12), macData(aad, boxed, off, ctLen))
+    var diff     = 0
+    for i <- 0 until TagSize do diff |= expected(i) ^ boxed(off + ctLen + i)
     if diff != 0 then throw SecurityException("invalid tag")
     val out = new Array[Byte](ctLen)
-    ChaCha20.xor(subkey, nonce12, 1, boxed, NonceSize, ctLen, out, 0)
+    ChaCha20.xor(key, nonce12, 1, boxed, off, ctLen, out, 0)
     out
 
   /** HChaCha20 subkey from first 16 nonce bytes; remaining 8 bytes form the 12 byte ChaCha20 nonce. */
