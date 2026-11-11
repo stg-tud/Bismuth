@@ -9,26 +9,13 @@ import channels.connection.{NioTCP, NioTcpConnectionDetailsResolver}
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.google.crypto.tink.aead.AeadConfig
 import com.google.crypto.tink.{Aead, CleartextKeysetHandle, JsonKeysetReader, RegistryConfiguration}
+import infra.crypto.TinkAead
 import rdts.base.ReplicaId
 
 import java.nio.ByteBuffer
 import java.util.concurrent.ExecutorService
 import scala.concurrent.duration.DurationInt
 import scala.util.Try
-
-class TinkBasedAead(aead: com.google.crypto.tink.Aead) extends experiments.Aead {
-  override def encrypt(data: ByteBuffer, associated: ByteBuffer): ByteBuffer =
-    ByteBuffer.wrap(aead.encrypt(
-      MessageBuffer.convertByteBufferToArray(data),
-      MessageBuffer.convertByteBufferToArray(associated)
-    ))
-
-  override def decrypt(data: ByteBuffer, associated: ByteBuffer): Try[ByteBuffer] =
-    Try(ByteBuffer.wrap(aead.decrypt(
-      MessageBuffer.convertByteBufferToArray(data),
-      MessageBuffer.convertByteBufferToArray(associated)
-    )))
-}
 
 class ConnectionManager[State: JsonValueCodec](
     replicaId: ReplicaId,
@@ -56,7 +43,7 @@ class ConnectionManager[State: JsonValueCodec](
       config = MessagingIO.Config(overlay = Some(FullMeshOverlay(PeerConnectInfo(Peer.Claimed(replicaId.uid)))),
         resolver = nioResolver,
         globalAbort = globalAbort,
-        aead = TinkBasedAead(aead),
+        aead = TinkAead(aead),
         timers = Timers.OnJavaTimer(timer),
         timerDelays = TimerDelays(repair = 100.millis)),
     )

@@ -2,8 +2,9 @@ package webapps.ex2026overlaydemo
 
 import channels.*
 import channels.connection.{Abort, Connection, ConnectionDescriptor, Connector, Receive}
-import channels.experiments.OverlayStatusProtocol.Status
-import channels.experiments.{OverlayDemoNode, SignalingClient, SignalingServer}
+import ex2026overlaydemo.OverlayStatusProtocol.Status
+import ex2026overlaydemo.OverlayDemoNode
+import ex2026overlaydemo.{SignalingClient, SignalingServer}
 import channels.webnativewebsockets.WebSocketConnectionDetailsResolver
 import channels.webrtc.{SessionDescription, WebRTCConnection, WebRTCConnectionFailed, WebRTCConnector}
 import de.rmgk.delay.Async

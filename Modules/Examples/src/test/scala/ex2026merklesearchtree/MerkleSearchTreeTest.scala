@@ -1,7 +1,6 @@
-package channels
+package ex2026merklesearchtree
 
 import channels.JsoniterCodecs.given
-import channels.experiments.MerkleSearchTree
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import org.scalacheck.Prop.forAll

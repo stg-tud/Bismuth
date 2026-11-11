@@ -1,4 +1,4 @@
-package channels.experiments
+package ex2026merklesearchtree
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
 import pt.kcry.blake3.Blake3

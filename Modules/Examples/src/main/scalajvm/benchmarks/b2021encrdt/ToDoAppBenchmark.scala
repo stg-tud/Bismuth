@@ -31,7 +31,7 @@ object ToDoAppBenchmark {
   def main(args: Array[String]): Unit = {
 
     if USE_ENCRYPTION then {
-      aead = AeadTranslation(Helper.setupAead("AES128_GCM"))
+      aead = infra.crypto.TinkAead(Helper.setupAead("AES128_GCM"))
       val intermediaryReplica = new ToDoListIntermediary
       intermediarySizeInfo = intermediaryReplica
       clientReplica = new SecureToDoListClient("client".convert, clientCrdt, aead, intermediaryReplica)

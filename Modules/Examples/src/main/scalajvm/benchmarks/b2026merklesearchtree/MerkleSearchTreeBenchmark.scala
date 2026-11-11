@@ -1,7 +1,7 @@
 package benchmarks.b2026merklesearchtree
 
 import channels.JsoniterCodecs.given
-import channels.experiments.MerkleSearchTree
+import ex2026merklesearchtree.MerkleSearchTree
 import org.openjdk.jmh.annotations.*
 import rdts.time.CausalTime
 

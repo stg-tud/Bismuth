@@ -1,8 +1,8 @@
-package channels.experiments
+package ex2026overlaydemo
 
 import channels.JsoniterCodecs.given
 import channels.connection.{Abort, ByteBufferMessageBuffer, ChannelResolver, Connection, ConnectionDescriptor, MessageBuffer}
-import channels.experiments.SignalingServer.{Message, Session}
+import SignalingServer.{Message, Session}
 import com.github.plokhotnyuk.jsoniter_scala.core.{readFromByteBuffer, writeToArray}
 import de.rmgk.delay.{Async, Callback}
 import rdts.base.Uid

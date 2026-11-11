@@ -1,4 +1,4 @@
-package channels.experiments
+package ex2026overlaydemo
 
 import channels.MessagingIO
 import channels.JsoniterCodecs.given

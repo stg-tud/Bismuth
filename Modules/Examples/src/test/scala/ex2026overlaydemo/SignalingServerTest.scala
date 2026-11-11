@@ -1,7 +1,7 @@
-package channels
+package ex2026overlaydemo
 
+import channels.QueueDrainingConnection
 import channels.connection.{Abort, ChannelResolver, ConnectionDescriptor, Connector, LocalMessageQueue, QueuedLocalConnection}
-import channels.experiments.{SignalingClient, SignalingServer}
 import de.rmgk.delay.Async
 import munit.FunSuite
 import rdts.base.Uid

@@ -22,7 +22,7 @@ class PlumtreeIOAeadTest extends FunSuite {
     val keyset =
       KeysetHandle.generateNew(KeyTemplates.get("XCHACHA20_POLY1305").toParameters, RegistryConfiguration.get())
     val aead = keyset.getPrimitive(RegistryConfiguration.get(), classOf[TinkAead])
-    TinkBasedAead(aead)
+    infra.crypto.TinkAead(aead)
   }
 
   test("PlumtreeIO disseminates over a real AEAD") {

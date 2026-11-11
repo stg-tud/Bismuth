@@ -1,4 +1,4 @@
-package channels.experiments
+package ex2026overlaydemo
 
 import channels.JsoniterCodecs.given
 import channels.broadcast.PlumtreeBroadcast

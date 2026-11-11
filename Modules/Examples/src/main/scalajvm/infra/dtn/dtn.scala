@@ -1,4 +1,4 @@
-package channels.experiments
+package infra.dtn
 
 import channels.JsoniterCodecs.uidKeyCodec
 import com.github.plokhotnyuk.jsoniter_scala.core.*
