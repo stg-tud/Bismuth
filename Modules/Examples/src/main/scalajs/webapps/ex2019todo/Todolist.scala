@@ -2,9 +2,7 @@ package webapps.ex2019todo
 
 import org.scalajs.dom.html.Div
 import org.scalajs.dom.{Element, document, window}
-import rdts.base.{Lattice, ReplicaId}
-import reactives.extra.Tags.reattach
-import scalatags.JsDom.all
+import rdts.base.ReplicaId
 import webapps.DemoBridge
 
 import java.util.Timer
@@ -30,12 +28,6 @@ object Todolist {
 
 //  lazy val dtnConnectorContents: Div = DTNTestConnector.getConnectorContents()
 
-  lazy val statusInfo: Div =
-    all.div.render.reattach(TodoDataManager.receivedCallback.map(_ =>
-        val state = TodoDataManager.dataManager.allPayloads.map(_.data).reduceOption(Lattice.merge)
-        all.pre(all.stringFrag(pprint.apply(state).plainText)).render
-    ).hold(all.span.render))
-
   @JSExportTopLevel("Todolist")
   def run(): Unit = {
 
@@ -46,8 +38,6 @@ object Todolist {
 //    container.appendChild(dtnConnectorContents)
 
     container.appendChild(webrtc)
-
-    container.appendChild(statusInfo)
 
     ()
   }
