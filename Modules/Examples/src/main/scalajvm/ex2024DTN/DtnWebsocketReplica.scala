@@ -1,4 +1,4 @@
-package infra.dtn
+package ex2024DTN
 
 import channels.JsoniterCodecs.uidKeyCodec
 import com.github.plokhotnyuk.jsoniter_scala.core.*
