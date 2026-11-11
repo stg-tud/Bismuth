@@ -104,19 +104,13 @@ code { background: var(--indigo-100); padding: 0 0.25em; border-radius: 3px; }
 
 /* Summary */
 .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.5rem; margin: 3rem 0 1.5rem; }
-.summary-card {
-	background: white; border-radius: 8px; padding: 1.25rem 1.5rem; border-top: 4px solid var(--teal);
-	box-shadow: 0 4px 16px rgb(64 52 114 / 0.08);
-}
-.summary-card:nth-child(2) { border-top-color: var(--magenta); }
-.summary-card:nth-child(3) { border-top-color: var(--orange); }
 .summary-card h3 { font-size: 1.2rem; margin-bottom: 0.5rem; }
 .summary-card p { margin: 0; text-align: justify; hyphens: auto; -webkit-hyphens: auto; }
 .summary-details {
-	margin-bottom: 4rem; background: white; border-radius: 8px; box-shadow: 0 4px 16px rgb(64 52 114 / 0.08);
+	margin-bottom: 4rem;
 }
 .summary-details summary {
-	display: flex; align-items: center; gap: 0.9rem; padding: 1rem 1.5rem; cursor: pointer; list-style: none; border-radius: 8px;
+	display: flex; align-items: center; gap: 0.9rem; padding: 1rem 1.5rem; cursor: pointer; list-style: none; border-radius: 5px;
 	font-family: "Barlow", sans-serif; font-weight: 700; font-size: 1.2rem; color: var(--indigo-900);
 }
 .summary-details summary::-webkit-details-marker { display: none; }
@@ -126,7 +120,7 @@ code { background: var(--indigo-100); padding: 0 0.25em; border-radius: 3px; }
 	transform: rotate(-45deg); transition: transform 0.2s;
 }
 .summary-details[open] summary::before { transform: rotate(45deg); }
-.summary-details[open] summary { border-radius: 8px 8px 0 0; }
+.summary-details[open] summary { border-radius: 5px 5px 0 0; }
 .summary-details summary:hover { background: var(--indigo-100); }
 .abstract-body { columns: 2 22rem; column-gap: 2.5rem; border-top: 1px solid var(--indigo-200); margin: 0 1.5rem; padding: 1.25rem 0 1.5rem; }
 .abstract-body p { margin: 0 0 1rem; break-inside: avoid; text-align: justify; hyphens: auto; -webkit-hyphens: auto; }
@@ -157,10 +151,9 @@ code { background: var(--indigo-100); padding: 0 0.25em; border-radius: 3px; }
 .bib-list .meta { color: var(--gray-600); font-size: 14px; }
 
 /* Libraries page */
-.lib-card {
-	display: flex; flex-direction: column; padding: 1.5rem; background: white;
-	border: 1px solid var(--indigo-200); border-radius: 5px;
-}
+.card { background: white; border: 1px solid var(--indigo-200); border-radius: 5px; }
+.card-padded { padding: 1.5rem; }
+.lib-card { display: flex; flex-direction: column; }
 .lib-card h3 { margin-bottom: 0.5rem; }
 .lib-card > p { margin: 0; flex: 1 0 auto; }
 .lib-links { display: flex; flex-direction: column; gap: 0.6rem; margin-top: 1.5rem; }
