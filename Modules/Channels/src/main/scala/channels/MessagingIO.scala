@@ -4,11 +4,12 @@ import channels.MessagingIO.Envelope
 import channels.JsoniterCodecs.given
 import channels.broadcast.PlumtreeMessage.*
 import channels.broadcast.Routing.{Effect, Step, Timer}
-import channels.broadcast.{Routing, PlumtreeBroadcast, PlumtreeMessage}
+import channels.broadcast.{PlumtreeBroadcast, PlumtreeMessage, Routing}
 import channels.connection.*
 import channels.experiments.Aead
 import channels.overlay.OverlayController.{OverlayAction, OverlayEvent, OverlayMessage}
 import channels.overlay.{AttemptId, FullMeshOverlay, OverlayController}
+import channels.routing.CausalPlumtree
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromByteBuffer, writeToArray}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import de.rmgk.delay.{Async, Callback}

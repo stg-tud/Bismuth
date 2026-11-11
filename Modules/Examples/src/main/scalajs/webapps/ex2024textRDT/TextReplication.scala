@@ -1,7 +1,8 @@
 package webapps.ex2024textRDT
 
 import channels.connection.{LocalMessageQueue, QueuedLocalConnection}
-import channels.{CausalBroadcast, MessagingIO, Timers}
+import channels.routing.CausalBroadcast
+import channels.{MessagingIO, Timers}
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import ex2024textRDT.{FugueFactory, Replica}

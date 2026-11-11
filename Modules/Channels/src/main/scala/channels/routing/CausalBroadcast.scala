@@ -1,9 +1,10 @@
-package channels
+package channels.routing
 
-import channels.broadcast.Routing.{Effect, Step}
 import channels.broadcast.PlumtreeMessage.Payload
-import channels.broadcast.{Routing, PlumtreeBroadcast, PlumtreeMessage}
+import channels.broadcast.Routing.{Effect, Step}
+import channels.broadcast.{PlumtreeBroadcast, PlumtreeMessage, Routing}
 import channels.connection.Peer
+import channels.{DiscardingHistory, JsoniterCodecs, MessagingIO}
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReader, JsonValueCodec, JsonWriter}
 import rdts.base.{ReplicaId, Uid}
 import rdts.time.{Causal, CausalBuffer, Dots}
