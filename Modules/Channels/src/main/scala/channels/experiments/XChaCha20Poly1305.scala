@@ -2,13 +2,11 @@
 // via the Scala port https://github.com/ckuessner/unofficial-tink-scala.
 // Copyright 2018 Google Inc., 2021 Google LLC, licensed under the Apache License, Version 2.0
 // (http://www.apache.org/licenses/LICENSE-2.0). Modified: condensed into a single minimal implementation.
-package crypto
+package channels.experiments
 
 import channels.connection.MessageBuffer
-import channels.experiments.Aead
 
 import java.nio.ByteBuffer
-import java.security.SecureRandom
 import scala.util.Try
 
 /** Minimal XChaCha20-Poly1305 AEAD (draft-irtf-cfrg-xchacha, RFC 8439) for JVM and Scala.js.
@@ -34,7 +32,7 @@ class XChaCha20Poly1305(key: Array[Byte]) extends Aead {
 
   override def encrypt(plain: ByteBuffer, associated: ByteBuffer): ByteBuffer =
     val nonce = new Array[Byte](NonceSize)
-    random.nextBytes(nonce)
+    SecureRandomBytes.fill(nonce)
     ByteBuffer.wrap(seal(key, nonce, MessageBuffer.convertByteBufferToArray(plain), MessageBuffer.convertByteBufferToArray(associated)))
 
   override def decrypt(cypher: ByteBuffer, associated: ByteBuffer): Try[ByteBuffer] =
@@ -46,11 +44,9 @@ object XChaCha20Poly1305 {
   val NonceSize = 24
   val TagSize   = 16
 
-  private lazy val random = new SecureRandom()
-
   def generateKey(): Array[Byte] =
     val k = new Array[Byte](KeySize)
-    random.nextBytes(k)
+    SecureRandomBytes.fill(k)
     k
 
   /** Returns `nonce ‖ ciphertext ‖ tag`. */
@@ -71,13 +67,13 @@ object XChaCha20Poly1305 {
     openFrom(subkey, nonce12, boxed, NonceSize, aad)
 
   /** RFC 8439 ChaCha20-Poly1305 with 12 byte nonce, returns `ciphertext ‖ tag`. Exposed for test vectors only. */
-  private[crypto] def sealIetf(key: Array[Byte], nonce: Array[Byte], plain: Array[Byte], aad: Array[Byte]): Array[Byte] =
+  private[experiments] def sealIetf(key: Array[Byte], nonce: Array[Byte], plain: Array[Byte], aad: Array[Byte]): Array[Byte] =
     require(key.length == KeySize && nonce.length == 12)
     val out = new Array[Byte](plain.length + TagSize)
     sealInto(ChaCha20.toInts(key, 0, 8), ChaCha20.toInts(nonce, 0, 3), plain, aad, out, 0)
     out
 
-  private[crypto] def openIetf(key: Array[Byte], nonce: Array[Byte], boxed: Array[Byte], aad: Array[Byte]): Array[Byte] =
+  private[experiments] def openIetf(key: Array[Byte], nonce: Array[Byte], boxed: Array[Byte], aad: Array[Byte]): Array[Byte] =
     require(key.length == KeySize && nonce.length == 12)
     if boxed.length < TagSize then throw SecurityException("ciphertext too short")
     openFrom(ChaCha20.toInts(key, 0, 8), ChaCha20.toInts(nonce, 0, 3), boxed, 0, aad)
@@ -126,7 +122,7 @@ object XChaCha20Poly1305 {
 /** ChaCha20 block function and HChaCha20 (RFC 8439 §2.1–2.4, draft-irtf-cfrg-xchacha §2.2).
   * Based on Tink's `ChaCha20Util` and `InsecureNonceChaCha20Base`/`InsecureNonceXChaCha20`.
   */
-private[crypto] object ChaCha20 {
+private[experiments] object ChaCha20 {
   // "expand 32-byte k"
   private val Sigma = Array(0x61707865, 0x3320646e, 0x79622d32, 0x6b206574)
 
@@ -188,7 +184,7 @@ private[crypto] object ChaCha20 {
   * Port of Tink's `aead.internal.Poly1305`, which in turn is based on the 32-bit (26-bit limb) variant of
   * poly1305-donna by Andrew Moon (https://github.com/floodyberry/poly1305-donna, public domain).
   */
-private[crypto] object Poly1305 {
+private[experiments] object Poly1305 {
   private def load32(in: Array[Byte], i: Int): Long = ChaCha20.load32(in, i) & 0xffffffffL
   private def load26(in: Array[Byte], i: Int, shift: Int): Long = (load32(in, i) >> shift) & 0x3ffffff
 

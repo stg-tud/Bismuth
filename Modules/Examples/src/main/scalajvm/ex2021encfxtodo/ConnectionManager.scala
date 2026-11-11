@@ -9,7 +9,6 @@ import channels.connection.{NioTCP, NioTcpConnectionDetailsResolver}
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.google.crypto.tink.aead.AeadConfig
 import com.google.crypto.tink.{Aead, CleartextKeysetHandle, JsonKeysetReader, RegistryConfiguration}
-import infra.crypto.TinkAead
 import rdts.base.ReplicaId
 
 import java.nio.ByteBuffer

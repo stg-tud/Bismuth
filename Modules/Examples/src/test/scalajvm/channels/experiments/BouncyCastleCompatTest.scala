@@ -1,4 +1,4 @@
-package crypto
+package channels.experiments
 
 import munit.FunSuite
 import org.bouncycastle.crypto.modes.ChaCha20Poly1305 as BcChaCha20Poly1305

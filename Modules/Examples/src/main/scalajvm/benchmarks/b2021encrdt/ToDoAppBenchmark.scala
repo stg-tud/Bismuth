@@ -5,6 +5,7 @@ import benchmarks.b2021encrdt.mock.insecure.{AlternativeInsecureToDoListClient, 
 import benchmarks.b2021encrdt.mock.{DisseminationStats, IntermediarySizeInfo, SecureToDoListClient, ToDoListClient, ToDoListIntermediary}
 import benchmarks.b2021encrdt.todolist.{AddToDoItem, CompleteToDoItem, RemoveToDoItems, ToDoEntry, ToDoListInteraction, ToDoListInteractionGenerator}
 import channels.experiments.Aead
+import ex2021encfxtodo.TinkAead
 import rdts.syntax.oldCompat.DeltaAWLWWMContainer
 
 import java.io.PrintWriter
@@ -31,7 +32,7 @@ object ToDoAppBenchmark {
   def main(args: Array[String]): Unit = {
 
     if USE_ENCRYPTION then {
-      aead = infra.crypto.TinkAead(Helper.setupAead("AES128_GCM"))
+      aead = TinkAead(Helper.setupAead("AES128_GCM"))
       val intermediaryReplica = new ToDoListIntermediary
       intermediarySizeInfo = intermediaryReplica
       clientReplica = new SecureToDoListClient("client".convert, clientCrdt, aead, intermediaryReplica)

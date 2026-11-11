@@ -1,4 +1,4 @@
-package crypto
+package channels.experiments
 
 /** Selected cases from Wycheproof (https://github.com/C2SP/wycheproof), testvectors/{x,}chacha20_poly1305_test.json.
   * Picked to cover Poly1305 edge cases (intermediate sums, extreme keys), tag manipulation and invalid nonce sizes.

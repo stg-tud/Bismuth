@@ -1,4 +1,4 @@
-package crypto
+package channels.experiments
 
 import munit.FunSuite
 

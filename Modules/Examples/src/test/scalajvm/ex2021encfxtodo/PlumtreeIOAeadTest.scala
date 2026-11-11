@@ -7,7 +7,7 @@ import channels.{MessagingIO, experiments}
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import com.google.crypto.tink.aead.AeadConfig
-import com.google.crypto.tink.{KeyTemplates, KeysetHandle, RegistryConfiguration, Aead as TinkAead}
+import com.google.crypto.tink.{KeyTemplates, KeysetHandle, RegistryConfiguration, Aead as GoogleAead}
 import munit.FunSuite
 import rdts.base.ReplicaId
 
@@ -21,8 +21,8 @@ class PlumtreeIOAeadTest extends FunSuite {
     AeadConfig.register()
     val keyset =
       KeysetHandle.generateNew(KeyTemplates.get("XCHACHA20_POLY1305").toParameters, RegistryConfiguration.get())
-    val aead = keyset.getPrimitive(RegistryConfiguration.get(), classOf[TinkAead])
-    infra.crypto.TinkAead(aead)
+    val aead = keyset.getPrimitive(RegistryConfiguration.get(), classOf[GoogleAead])
+    TinkAead(aead)
   }
 
   test("PlumtreeIO disseminates over a real AEAD") {

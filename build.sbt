@@ -83,7 +83,8 @@ lazy val channels = projectMatrix.in(file("Modules/Channels"))
     settings = Seq(
       libraryDependencies ++= Seq(
         scalajsDom,
-        "com.lihaoyi" %% "scalatags" % "0.13.1",
+        "com.lihaoyi"  %% "scalatags"                 % "0.13.1",
+        "org.scala-js" %% "scalajs-java-securerandom" % "1.0.0" `cross` CrossVersion.for3Use2_13,
       ),
     )
   )

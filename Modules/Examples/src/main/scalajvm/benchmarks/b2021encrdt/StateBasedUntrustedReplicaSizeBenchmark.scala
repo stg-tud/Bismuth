@@ -3,6 +3,7 @@ package benchmarks.b2021encrdt
 import benchmarks.b2021encrdt.Codecs.deltaAwlwwmapJsonCodec
 import benchmarks.b2021encrdt.statebased.{DecryptedState, EncryptedState, UntrustedReplica}
 import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray
+import ex2021encfxtodo.TinkAead
 import rdts.syntax.oldCompat.DeltaAWLWWMContainer
 import rdts.syntax.oldCompat.DeltaAWLWWMContainer.State
 import rdts.time.VectorClock
@@ -28,7 +29,7 @@ object StateBasedUntrustedReplicaSizeBenchmark {
     println(csvHeader)
     csvFile.println(csvHeader)
     val dummyKeyValuePairs: Array[(String, String)] = Helper.dummyKeyValuePairs(MAX_TESTED_ELEMENTS)
-    val aead: infra.crypto.TinkAead                       = infra.crypto.TinkAead(Helper.setupAead("AES128_GCM"))
+    val aead: TinkAead                       = TinkAead(Helper.setupAead("AES128_GCM"))
 
     for totalElements <- (minElementExponent to maxElementExponent).map(i => math.pow(10, i.toDouble).toInt) do {
       val crdt                       = new DeltaAWLWWMContainer[String, String]("0")
@@ -49,7 +50,7 @@ object StateBasedUntrustedReplicaSizeBenchmark {
 
         val commonState      = crdt.state
         val commonStateDec   = DecryptedState(commonState, versionVector)
-        val commonStateEnc   = commonStateDec.encrypt(infra.crypto.TinkAead(Helper.setupAead("AES128_GCM")))
+        val commonStateEnc   = commonStateDec.encrypt(TinkAead(Helper.setupAead("AES128_GCM")))
         val untrustedReplica = new UntrustedStateBasedReplicaMock(Set(commonStateEnc))
 
         var decryptedStatesMerged: DecryptedState[State[String, String]] = commonStateDec

@@ -7,6 +7,7 @@ import channels.connection.MessageBuffer
 import channels.experiments
 import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray
 import com.google.crypto.tink.Aead
+import ex2021encfxtodo.TinkAead
 import rdts.syntax.oldCompat.DeltaAWLWWMContainer
 import rdts.time.{Dot, Dots}
 
@@ -138,6 +139,6 @@ trait DeltaStateUntrustedReplicaSizeBenchEnvironment {
   if !outDir.toFile.exists() then
       outDir.toFile.mkdirs()
       ()
-  val aead: experiments.Aead                      = infra.crypto.TinkAead(Helper.setupAead("AES128_GCM"))
+  val aead: experiments.Aead                      = TinkAead(Helper.setupAead("AES128_GCM"))
   val dummyKeyValuePairs: Array[(String, String)] = Helper.dummyKeyValuePairs(10_000)
 }
