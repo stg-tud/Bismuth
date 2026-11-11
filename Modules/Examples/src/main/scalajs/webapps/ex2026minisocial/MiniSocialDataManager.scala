@@ -1,7 +1,7 @@
 package webapps.ex2026minisocial
 
 import channels.MessagingIO
-import channels.broadcast.PlumtreeBroadcast
+import webapps.OverlayReplication
 import rdts.base.Lattice
 import rdts.syntax.DeltaBuffer
 import reactives.default.*
@@ -11,9 +11,11 @@ import reactives.default.*
   */
 object MiniSocialDataManager {
 
-  val (receivedCallback, dataManager: MessagingIO.Plumtree[MiniSocial]) = Event.fromCallback {
-    MessagingIO.usingPlumtree[MiniSocial](MiniSocialMain.replicaId, payload => Event.handle(payload.data))
+  val (receivedCallback, replication: OverlayReplication[MiniSocial]) = Event.fromCallback {
+    OverlayReplication[MiniSocial](MiniSocialMain.replicaId, delta => Event.handle(delta))
   }
+
+  def dataManager: MessagingIO[?] = replication.io
 
   def hookup(init: MiniSocial)(create: (
       DeltaBuffer[MiniSocial],
@@ -26,8 +28,8 @@ object MiniSocialDataManager {
       wrap: A => MiniSocial,
       unwrap: MiniSocial => Option[A]
   )(create: (DeltaBuffer[A], Fold.Branch[DeltaBuffer[A]]) => Signal[DeltaBuffer[A]]): Signal[DeltaBuffer[A]] = {
-    dataManager.broadcast(wrap(init))
-    val fullInit = dataManager.allPayloads.flatMap(v => unwrap(v.data)).foldLeft(init)(Lattice.merge)
+    replication.broadcast(wrap(init))
+    val fullInit = replication.appPayloads.flatMap(unwrap).foldLeft(init)(Lattice.merge)
 
     val branch = Fold.branch[DeltaBuffer[A]] {
       receivedCallback.value.flatMap(unwrap) match
@@ -39,7 +41,7 @@ object MiniSocialDataManager {
 
     sig.observe { buffer =>
       buffer.deltaBuffer.foreach { delta =>
-        dataManager.broadcast(wrap(delta))
+        replication.broadcast(wrap(delta))
       }
     }
 

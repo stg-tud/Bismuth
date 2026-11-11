@@ -27,7 +27,6 @@ object OverlayNetworkGraph {
   private var currentSignalingBridge: Option[WebRtcSignalingBridge] = None
   private var infoNode: dom.html.TextArea | Null                    = null
   private var selfConnectionNode: dom.html.TextArea | Null          = null
-  private val positions = mutable.Map.empty[Uid, (Double, Double, Double, Double)]
 
   private def refreshText(): Unit = {
     if infoNode != null then {
@@ -225,15 +224,30 @@ object OverlayNetworkGraph {
             s"failed to parse/connect seed\nexpected ?bootstrap=<tcp-ws://host:port|webrtc://peer|base64|raw-json>\noptional: ?signal=<ws://...|tcp-ws://host:port>\noptional: ?uid=<peer-uid>\n${ex.getClass.getSimpleName}: ${Option(ex.getMessage).getOrElse("")}"
           refreshText()
 
-    val ctx           = graphCanvas.getContext("2d").asInstanceOf[CanvasRenderingContext2D]
-    def frame(): Unit = {
-      val (width, height) = OverlayNetworkGraphRendering.syncCanvasResolution(graphCanvas, ctx)
-      val (nodes, edges) = OverlayNetworkGraphModel.buildGraph(network, viewerUid, localViews, positions, width, height)
-      OverlayNetworkGraphModel.tick(nodes, edges, positions, width, height)
-      OverlayNetworkGraphRendering.renderGraph(ctx, width, height, nodes, edges)
-      dom.window.requestAnimationFrame((_: Double) => frame())
-      ()
-    }
+    animate(graphCanvas, () => network, () => viewerUid, () => localViews, () => true)
+  }
+
+  /** Draw the graph described by `status` into `canvas` on every animation frame, while `running`. */
+  def animate(
+      canvas: dom.html.Canvas,
+      status: () => OverlayStatusProtocol.Status,
+      viewer: () => Option[Uid],
+      views: () => Option[LocalViews],
+      running: () => Boolean,
+  ): Unit = {
+    val positions     = mutable.Map.empty[Uid, (Double, Double, Double, Double)]
+    val ctx           = canvas.getContext("2d").asInstanceOf[CanvasRenderingContext2D]
+    def frame(): Unit =
+      if running() then {
+        val (width, height) = OverlayNetworkGraphRendering.syncCanvasResolution(canvas, ctx)
+        val (nodes, edges)  = OverlayNetworkGraphModel.buildGraph(status(), viewer(), views(), positions, width, height)
+        OverlayNetworkGraphModel.tick(nodes, edges, positions, width, height)
+        OverlayNetworkGraphRendering.renderGraph(ctx, width, height, nodes, edges)
+        dom.window.requestAnimationFrame((_: Double) => frame())
+        ()
+      }
     frame()
   }
+
+
 }

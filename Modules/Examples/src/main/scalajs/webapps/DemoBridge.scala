@@ -5,6 +5,8 @@ import channels.broadcastchannel.BroadcastChannelPairConnector
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReader, JsonValueCodec, JsonWriter}
 import org.scalajs.dom
 import rdts.base.ReplicaId
+import scalatags.JsDom.all.*
+import webapps.ex2026overlaydemo.OverlayNetworkGraph
 
 import scala.scalajs.js
 import scala.scalajs.js.annotation.JSExportTopLevel
@@ -45,16 +47,35 @@ object DemoBridge {
 
   /** Runs on the demo page: relays between the iframe on `bridge` and WebRTC peers (whose connection UI is
     * rendered into `container`). Peers are only discovered among demo pages showing the same `app`.
+    * Draws the connections of all replicas (demo pages and case studies in their iframes) as replicated in the
+    * overlay part of the state, see [[OverlayReplication]].
     * Returns a function to stop the relay.
     */
   @JSExportTopLevel("DemoBridgeHost")
   def host(app: String, bridge: String, container: dom.Element): js.Function0[Unit] = {
-    val relay = MessagingIO.usingPlumtree[RawJson](ReplicaId.gen(), _ => ())
-    relay.addClientConnection(BroadcastChannelPairConnector.named(channelName(bridge)))
-    val view = WebRTCConnectionView(relay, offerChannel = s"channels local broadcast for webrtc offers ($app)", defaultRoom = app)
-    container.replaceChildren(view.example().render)
+    val relay = OverlayReplication[RawJson](ReplicaId.gen(), _ => ())
+    relay.io.addClientConnection(BroadcastChannelPairConnector.named(channelName(bridge)))
+
+    val view = WebRTCConnectionView(
+      relay.io,
+      offerChannel = s"channels local broadcast for webrtc offers ($app)",
+      defaultRoom = app,
+    )
+
+    var running = true
+    val graph   = canvas(
+      width           := "100%",
+      height          := "24rem",
+      display         := "block",
+      backgroundColor := "#0b1020",
+      borderRadius    := "0.5rem",
+    ).render
+    OverlayNetworkGraph.animate(graph, () => relay.status, () => Some(relay.replicaId.uid), () => None, () => running)
+
+    container.replaceChildren(graph, view.example().render)
     () => {
-      relay.globalAbort.abort()
+      running = false
+      relay.stop()
       container.replaceChildren()
     }
   }

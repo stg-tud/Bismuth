@@ -18,7 +18,7 @@ object MiniSocialMain {
 
     val statusInfo = all.div.render.reattach(
       MiniSocialDataManager.receivedCallback.map { _ =>
-        val state = MiniSocialDataManager.dataManager.allPayloads.map(_.data).reduceOption(Lattice.merge)
+        val state = MiniSocialDataManager.replication.appPayloads.reduceOption(Lattice.merge)
         all.div(
           all.pre(all.stringFrag(pprint.apply(state).plainText)),
           all.br(),
