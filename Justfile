@@ -52,13 +52,17 @@ websitePreview: websitePrepare
 	cd Website && pnpm exec astro build --outDir ../target/website-preview
 	cd Website && pnpm exec astro preview --outDir ../target/website-preview
 
-# build into the `website` branch (worktree in website-deploy/, published by github pages from docs/) and commit; push manually
+websiteRemote := "git@github.com:stg-tud/Bismuth.git"
+
+# build into the `website` branch (worktree in website-deploy/, published by github pages from docs/) commit, and push
 websiteDeploy: websitePrepare
 	if [ ! -e website-deploy ]; then \
-		if git show-ref --quiet refs/heads/website; then git worktree add website-deploy website; \
-		else git worktree add --orphan -b website website-deploy; fi; \
+		git show-ref --quiet refs/heads/website || git fetch {{websiteRemote}} website:website; \
+		git worktree add website-deploy website; \
 	fi
+	git -C website-deploy pull --ff-only {{websiteRemote}} website
 	rm -rf website-deploy/docs
 	cd Website && pnpm exec astro build --outDir ../website-deploy/docs
 	touch website-deploy/docs/.nojekyll
-	cd website-deploy && git add -A docs && git commit -m "deploy website from main $(git -C .. rev-parse --short HEAD)"
+	cd website-deploy && git add -A docs && (git diff --cached --quiet || git commit -m "deploy website from main $(git -C .. rev-parse --short HEAD)")
+	cd website-deploy && git push {{websiteRemote}} website
