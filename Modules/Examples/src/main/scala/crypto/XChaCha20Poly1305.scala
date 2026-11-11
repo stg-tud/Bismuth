@@ -1,3 +1,7 @@
+// Derived from Tink (https://github.com/google/tink, java_src at commit eaa48d17fc1d2d04f548a378ce20d994cac0db1f),
+// via the Scala port https://github.com/ckuessner/unofficial-tink-scala.
+// Copyright 2018 Google Inc., 2021 Google LLC, licensed under the Apache License, Version 2.0
+// (http://www.apache.org/licenses/LICENSE-2.0). Modified: condensed into a single minimal implementation.
 package crypto
 
 import channels.connection.MessageBuffer
@@ -12,8 +16,17 @@ import scala.util.Try
   * Ciphertext layout is `nonce (24) ‖ ciphertext ‖ tag (16)`, compatible with Tink's raw XChaCha20Poly1305.
   * Nonces are random, which is safe due to the 192-bit nonce size.
   *
-  * Ported down from Tink (Apache 2.0); Poly1305 is based on poly1305-donna (public domain).
-  * Not hardened against side channels beyond what the original does; for experiments only.
+  * Specifications:
+  *  - ChaCha20, Poly1305 and the AEAD construction: RFC 8439 (https://www.rfc-editor.org/rfc/rfc8439)
+  *  - HChaCha20 and XChaCha20: draft-irtf-cfrg-xchacha-03 (https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-xchacha)
+  *
+  * Lineage (see file header): condensed port of Tink's `subtle.XChaCha20Poly1305`,
+  * `aead.internal.{InsecureNonceChaCha20Poly1305Base, InsecureNonceXChaCha20, ChaCha20Util, Poly1305}`,
+  * taken from the Scala/Scala.js port unofficial-tink-scala.
+  * Validated against Wycheproof vectors, Tink, and BouncyCastle (see tests).
+  *
+  * Not hardened against side channels beyond what the original does
+  * (on Scala.js, emulated 64-bit arithmetic gives no constant-time guarantees); for experiments only.
   */
 class XChaCha20Poly1305(key: Array[Byte]) extends Aead {
   import XChaCha20Poly1305.*
@@ -110,6 +123,9 @@ object XChaCha20Poly1305 {
     buf
 }
 
+/** ChaCha20 block function and HChaCha20 (RFC 8439 §2.1–2.4, draft-irtf-cfrg-xchacha §2.2).
+  * Based on Tink's `ChaCha20Util` and `InsecureNonceChaCha20Base`/`InsecureNonceXChaCha20`.
+  */
 private[crypto] object ChaCha20 {
   // "expand 32-byte k"
   private val Sigma = Array(0x61707865, 0x3320646e, 0x79622d32, 0x6b206574)
@@ -168,7 +184,10 @@ private[crypto] object ChaCha20 {
       ctr += 1
 }
 
-/** Poly1305 one-time MAC (RFC 8439), 26-bit limb variant of poly1305-donna. */
+/** Poly1305 one-time MAC (RFC 8439 §2.5).
+  * Port of Tink's `aead.internal.Poly1305`, which in turn is based on the 32-bit (26-bit limb) variant of
+  * poly1305-donna by Andrew Moon (https://github.com/floodyberry/poly1305-donna, public domain).
+  */
 private[crypto] object Poly1305 {
   private def load32(in: Array[Byte], i: Int): Long = ChaCha20.load32(in, i) & 0xffffffffL
   private def load26(in: Array[Byte], i: Int, shift: Int): Long = (load32(in, i) >> shift) & 0x3ffffff
