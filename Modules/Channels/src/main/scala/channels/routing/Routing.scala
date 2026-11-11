@@ -43,11 +43,7 @@ object Routing {
   }
 
   /** Result of a protocol transition: the next state and the effects to perform. */
-  final case class Step[S, +Msg, +Out](state: S, events: Seq[Effect[Msg, Out]]) {
-
-    /** Wrap the state, e.g., when the protocol is part of a larger state. */
-    def mapState[S2](f: S => S2): Step[S2, Msg, Out] = Step(f(state), events)
-  }
+  final case class Step[S, +Msg, +Out](state: S, events: Seq[Effect[Msg, Out]])
 
   /** Timers carry only their purpose; the driver decides what delay each purpose maps to. */
   enum Timer {
