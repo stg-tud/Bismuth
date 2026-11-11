@@ -3,150 +3,63 @@ package webapps.ex2025tabular.app
 import japgolly.scalajs.react.*
 import japgolly.scalajs.react.vdom.html_<^.*
 import org.scalajs.dom.document
-import rdts.base.{Lattice, ReplicaId}
+import rdts.base.ReplicaId
 import webapps.ex2025tabular.lib.{Spreadsheet, SpreadsheetDeltaAggregator}
+import webapps.{DemoBridge, OverlayReplication}
 
+import scala.language.implicitConversions
 import scala.scalajs.js.annotation.JSExportTopLevel
 
+/** A single spreadsheet replica. Multiple replicas (and going offline) are handled by the demo page,
+  * see [[webapps.DemoBridge]].
+  */
 object Main {
+
+  val replicaId: ReplicaId = ReplicaId.gen()
+
+  /** re-renders the app, set once mounted */
+  private var refresh: () => Unit = () => ()
+
+  val aggregator = SpreadsheetDeltaAggregator(SpreadsheetComponent.sampleSpreadsheet, replicaId)
+
+  val replication: OverlayReplication[Spreadsheet[String]] =
+    OverlayReplication[Spreadsheet[String]](
+      replicaId,
+      delta => {
+        aggregator.accumulate(delta)
+        refresh()
+      }
+    )
 
   @JSExportTopLevel("Tabular")
   def run(): Unit = {
     val container = document.getElementById("app")
-    val root      = ReactDOMClient.createRoot(container)
-    root.render(App())
+    val reactRoot = document.createElement("div")
+    container.replaceChildren(reactRoot, DemoBridge.connectionView(replication.io))
+    ReactDOMClient.createRoot(reactRoot).render(App())
     ()
-  }
-
-  case class SpreadsheetData(
-      id: Int,
-      isOnline: Boolean,
-      aggregator: SpreadsheetDeltaAggregator[String],
-      replicaId: ReplicaId
-  )
-  case class State(spreadsheets: List[SpreadsheetData], nextId: Int)
-
-  class Backend($ : BackendScope[Unit, State]) {
-    def addSpreadsheet(): Callback =
-      $.modState { state =>
-        val onlineSpreadsheets = state.spreadsheets.filter(_.isOnline)
-        val replicaId          = ReplicaId.gen()
-
-        val newAggregator =
-          if state.spreadsheets.isEmpty then {
-            SpreadsheetComponent.createSampleSpreadsheet()
-          } else if onlineSpreadsheets.isEmpty then {
-            SpreadsheetDeltaAggregator(Spreadsheet[String](), replicaId)
-          } else {
-            val mergedObrem = onlineSpreadsheets
-              .map(_.aggregator.current)
-              .reduce((s1, s2) => Lattice.merge(s1, s2))
-            SpreadsheetDeltaAggregator(mergedObrem, replicaId)
-          }
-
-        state.copy(
-          spreadsheets = state.spreadsheets :+ SpreadsheetData(state.nextId, isOnline = true, newAggregator, replicaId),
-          nextId = state.nextId + 1
-        )
-      }
-
-    def removeSpreadsheet(id: Int): Callback =
-      $.modState(state => state.copy(spreadsheets = state.spreadsheets.filter(_.id != id)))
-
-    def toggleOnlineStatus(id: Int): Callback =
-      $.modState { state =>
-        state.spreadsheets.find(_.id == id) match {
-          case Some(sheet) if sheet.isOnline => // Is online -> turn offline
-            val updatedSpreadsheets = state.spreadsheets.map(s => if s.id == id then s.copy(isOnline = false) else s)
-            state.copy(spreadsheets = updatedSpreadsheets)
-
-          case Some(sheet) => // Is offline -> turn online and sync
-            val otherOnlineSheets = state.spreadsheets.filter(s => s.id != id && s.isOnline)
-            val sheetToSyncObrem  = sheet.aggregator.current
-
-            val updatedSpreadsheets = state.spreadsheets.map {
-              case s if s.id == id => // The sheet that is coming online
-                val mergedAggregator = otherOnlineSheets.foldLeft(s.aggregator) { (agg, other) =>
-                  agg.accumulate(other.aggregator.current)
-                }
-                s.copy(isOnline = true, aggregator = mergedAggregator)
-
-              case s if s.isOnline => // An already online sheet
-                s.copy(aggregator = s.aggregator.accumulate(sheetToSyncObrem))
-
-              case s => s // An offline sheet
-            }
-            state.copy(spreadsheets = updatedSpreadsheets)
-
-          case None => state // sheet not found
-        }
-      }
-
-    def handleDelta(sourceSheetId: Int, delta: Spreadsheet[String]): Callback =
-      $.modState { state =>
-        val updatedSpreadsheets = state.spreadsheets.map { sheet =>
-          if sheet.id != sourceSheetId && sheet.isOnline then {
-            sheet.copy(aggregator = sheet.aggregator.accumulate(delta))
-          } else {
-            sheet
-          }
-        }
-        state.copy(spreadsheets = updatedSpreadsheets)
-      }
   }
 
   private val App = ScalaComponent
     .builder[Unit]("App")
-    .initialState {
-      given ReplicaId = ReplicaId.gen()
-      State(
-        List(SpreadsheetData(1, isOnline = true, SpreadsheetComponent.createSampleSpreadsheet(), summon)),
-        2
-      )
-    }
-    .backend(new Backend(_))
+    .initialState(0)
     .render { $ =>
-      val state   = $.state
-      val backend = $.backend
-
       <.div(
-        ^.className := "min-h-screen bg-gradient-to-br from-blue-400 to-purple-600 p-8",
+        ^.className := "min-h-screen bg-gradient-to-br from-blue-400 to-purple-600 p-2 sm:p-8",
         <.div(
-          ^.className := "flex justify-center gap-4 mb-8",
-          <.button(
-            ^.className := "px-6 py-3 rounded-lg font-semibold text-white bg-green-500 hover:bg-green-600 shadow-lg hover:shadow-xl transition-all duration-200",
-            ^.onClick --> backend.addSpreadsheet(),
-            "Add Spreadsheet"
-          )
-        ),
-        <.div(
-          ^.className := "grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-full",
-          state.spreadsheets.map { sheetData =>
-            <.div(
-              ^.key       := s"spreadsheet-${sheetData.id}",
-              ^.className := "bg-white rounded-lg shadow-2xl p-8 max-w-4xl mx-auto",
-              SpreadsheetControls.Component(
-                SpreadsheetControls.Props(
-                  spreadsheetId = sheetData.id,
-                  isOnline = sheetData.isOnline,
-                  onToggleOnline = backend.toggleOnlineStatus,
-                  onRemove = backend.removeSpreadsheet
-                )
-              ),
-              SpreadsheetComponent.Component(
-                SpreadsheetComponent.Props(
-                  spreadsheetAggregator = sheetData.aggregator,
-                  onDelta =
-                    if sheetData.isOnline then delta => backend.handleDelta(sheetData.id, delta)
-                    else _ => Callback.empty,
-                  replicaId = sheetData.replicaId
-                )
-              )
+          ^.className := "bg-white rounded-lg shadow-2xl p-2 sm:p-8 max-w-4xl mx-auto overflow-x-auto",
+          SpreadsheetComponent.Component(
+            SpreadsheetComponent.Props(
+              spreadsheetAggregator = aggregator,
+              onDelta = delta => Callback(replication.broadcast(delta)),
+              replicaId = replicaId
             )
-          }.toVdomArray
+          )
         )
       )
     }
+    .componentDidMount { $ =>
+      Callback { refresh = () => $.modState(_ + 1).runNow() }
+    }
     .build
-
 }

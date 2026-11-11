@@ -1,5 +1,7 @@
 package webapps.ex2025tabular.lib
 
+import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
+import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import rdts.base.{Bottom, Lattice, ReplicaId, Uid}
 import rdts.datatypes.{ObserveRemoveMap, ReplicatedSet}
 import rdts.time.{Dot, Dots}
@@ -296,4 +298,11 @@ object Spreadsheet {
 
   given bottom[A]: Bottom[Spreadsheet[A]]   = Bottom.provide(empty)
   given lattice[A]: Lattice[Spreadsheet[A]] = Lattice.derived
+
+  /** For network replication. Defined here, as the derivation needs access to the private fields. */
+  given codec: JsonValueCodec[Spreadsheet[String]] = {
+    import channels.JsoniterCodecs.given
+    import webapps.ex2025tabular.lib.IdCodecs.given
+    JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))
+  }
 }

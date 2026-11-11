@@ -204,7 +204,7 @@ export const libraries: Library[] = [
 export const demos: { id: string; icon: string; title: string; summary: string; bridged?: boolean }[] = [
 	{ id: "todolist", icon: "✅", title: "Todo List", summary: "A classic collaborative todo list based on TodoMVC.", bridged: true },
 	{ id: "calendar", icon: "📅", title: "Calendar", summary: "A shared appointment calendar across replicas." },
-	{ id: "tabular", icon: "📊", title: "Tabular", summary: "A collaborative spreadsheet with offline sync." },
+	{ id: "tabular", icon: "📊", title: "Tabular", summary: "A collaborative spreadsheet with offline sync.", bridged: true },
 	{ id: "text-rdt", icon: "📝", title: "Collaborative Text", summary: "A Fugue-based collaborative rich text editor with peer-to-peer sync." },
 	{ id: "mini-social", icon: "💬", title: "Mini Social", summary: "A tiny replicated social feed.", bridged: true },
 	{ id: "social-media", icon: "📣", title: "Social Media", summary: "Posts with likes and comments, built from composed RDTs.", bridged: true },

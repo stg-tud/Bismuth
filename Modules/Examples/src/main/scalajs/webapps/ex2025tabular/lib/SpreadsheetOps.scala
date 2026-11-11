@@ -1,5 +1,8 @@
 package webapps.ex2025tabular.lib
 
+import channels.JsoniterCodecs
+import channels.JsoniterCodecs.given
+import com.github.plokhotnyuk.jsoniter_scala.core.{JsonKeyCodec, JsonValueCodec}
 import rdts.base.{ReplicaId, Uid}
 import rdts.time.Dot
 import webapps.ex2025tabular.lib.Spreadsheet.SpreadsheetCoordinate
@@ -17,6 +20,16 @@ object RangeId {
   def gen: RangeId = Uid.gen()
 
   def apply(id: Uid): RangeId = id
+}
+
+/** Codecs for the opaque ids (which are just a [[Dot]] or [[Uid]] at runtime). */
+object IdCodecs {
+  given rowIdCodec: JsonValueCodec[RowId]        = JsoniterCodecs.dotCodec.asInstanceOf[JsonValueCodec[RowId]]
+  given columnIdCodec: JsonValueCodec[ColumnId]  = JsoniterCodecs.dotCodec.asInstanceOf[JsonValueCodec[ColumnId]]
+  given rangeIdCodec: JsonValueCodec[RangeId]    = summon[JsonValueCodec[Uid]].asInstanceOf[JsonValueCodec[RangeId]]
+  given rowIdKeyCodec: JsonKeyCodec[RowId]       = JsoniterCodecs.dotKeyCodec.asInstanceOf[JsonKeyCodec[RowId]]
+  given columnIdKeyCodec: JsonKeyCodec[ColumnId] = JsoniterCodecs.dotKeyCodec.asInstanceOf[JsonKeyCodec[ColumnId]]
+  given rangeIdKeyCodec: JsonKeyCodec[RangeId]   = JsoniterCodecs.uidKeyCodec.asInstanceOf[JsonKeyCodec[RangeId]]
 }
 
 opaque type RowIndex <: Int    = Int

@@ -15,10 +15,14 @@ import scala.scalajs.js.timers.SetTimeoutHandle
 
 object SpreadsheetComponent {
 
-  def createSampleSpreadsheet(): SpreadsheetDeltaAggregator[String] =
-    new SpreadsheetDeltaAggregator(Spreadsheet[String](), ReplicaId.gen())
+  /** The initial 6×6 sheet. Created with a fixed replica id, so every replica creates the same rows and columns
+    * (instead of each adding its own 6 rows and columns when they sync).
+    */
+  def sampleSpreadsheet: Spreadsheet[String] =
+    new SpreadsheetDeltaAggregator(Spreadsheet[String](), ReplicaId.predefined("sample"))
       .repeatEdit(6, _.addRow().delta, allowUndo = false)
       .repeatEdit(6, _.addColumn().delta, allowUndo = false)
+      .current
 
   case class Props(
       spreadsheetAggregator: SpreadsheetDeltaAggregator[String],
