@@ -41,7 +41,9 @@ object MiniSocialUI {
 
     val (upvoteButtonEvent, upvoteButtonData)     = makeButtonEvent(Character.toString(0x1f44d))
     val (downvoteButtonEvent, downvoteButtonData) = makeButtonEvent(Character.toString(0x1f44e))
-    val (messageEvent, messageField)              = makeInputEvent("<your message to the world>")
+    val (messageEvent, messageField)              = makeInputEvent("Your message to the world …")
+    upvoteButtonData.classList.add("vote")
+    downvoteButtonData.classList.add("vote")
 
     val stateSignal: Signal[DeltaBuffer[MiniSocial]] =
       MiniSocialDataManager.hookup(MiniSocial()) { (init, incoming) =>
@@ -63,34 +65,21 @@ object MiniSocialUI {
 
     val appStateSignal = Signal { stateSignal.value.state }
     val messageSignal  = Signal {
-      span(appStateSignal.value.message.value).render
+      val message = appStateSignal.value.message.value
+      if message.isEmpty then span(cls := "empty", "No message yet").render else span(message).render
     }
-    val upvotesSignal = Signal {
-      span(appStateSignal.value.upvotes.value).render
-    }
-    val downvotesSignal = Signal {
-      span(appStateSignal.value.downvotes.value).render
-    }
+    val upvotesSignal   = Signal { span(cls := "count", appStateSignal.value.upvotes.value).render }
+    val downvotesSignal = Signal { span(cls := "count", appStateSignal.value.downvotes.value).render }
 
-    /* Just a DSL to create some HTML */
+    // the buttons show their count, the (static) emoji is the first child
+    upvoteButtonData.appendChild(span().render.reattach(upvotesSignal))
+    downvoteButtonData.appendChild(span().render.reattach(downvotesSignal))
+
     div(
-      table(
-        thead(
-          th("message to vote on"),
-          th("upvotes"),
-          th("downvotes"),
-          th(""),
-          th(""),
-        ),
-        tr(
-          td.render.reattach(messageSignal),
-          td.render.reattach(upvotesSignal),
-          td.render.reattach(downvotesSignal),
-          td(upvoteButtonData),
-          td(downvoteButtonData),
-        )
-      ),
-      p(messageField)
+      cls := "mini-social",
+      div(cls := "message", p.render.reattach(messageSignal)),
+      div(cls := "votes", upvoteButtonData, downvoteButtonData),
+      label(cls := "compose", span("Change the message"), messageField),
     ).render
 
   }
