@@ -19,6 +19,7 @@ const appHandlers = {
 	"unit-conversion": "UnitConversion",
 	"overlay-graph": "OverlayNetworkGraph",
 	"mini-social": "MiniSocial",
+	"social-media": "SocialMedia",
 	"text-rdt": "TextRDT",
 	reform: "Reform",
 };
