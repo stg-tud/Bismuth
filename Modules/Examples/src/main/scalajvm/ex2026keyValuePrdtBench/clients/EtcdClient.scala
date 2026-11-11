@@ -1,9 +1,9 @@
 package ex2026keyValuePrdtBench.clients
 
-import io.etcd.jetcd
-import io.etcd.jetcd.ByteSequence
 import ex2026keyValuePrdtBench.data
 import ex2026keyValuePrdtBench.data.KVOperation
+import io.etcd.jetcd
+import io.etcd.jetcd.ByteSequence
 import rdts.base.Uid
 
 class EtcdClient(val name: Uid, val endpoints: List[String], logTimings: Boolean) extends Client(name, logTimings) {

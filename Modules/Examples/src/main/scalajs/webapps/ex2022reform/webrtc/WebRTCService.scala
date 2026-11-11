@@ -20,9 +20,9 @@ package webapps.ex2022reform.webrtc
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, *}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
-import webapps.ex2022reform.utils.Base64
 import org.scalajs.dom.RTCPeerConnection
 import reactives.default.*
+import webapps.ex2022reform.utils.Base64
 
 import scala.concurrent.{Future, Promise}
 

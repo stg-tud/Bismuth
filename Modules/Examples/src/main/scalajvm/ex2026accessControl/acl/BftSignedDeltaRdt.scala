@@ -1,8 +1,6 @@
 package ex2026accessControl.acl
 
-import channels.crypto.PrivateIdentity
-import channels.crypto.Ed25519Util
-import channels.crypto.{Hash, Signature}
+import channels.crypto.{Ed25519Util, Hash, PrivateIdentity, Signature}
 import ex2026accessControl.acl.HashDag
 import ex2026accessControl.acl.HashDag.{Delta, Encoder, Hashable}
 

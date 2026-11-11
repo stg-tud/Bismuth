@@ -1,13 +1,12 @@
 package ex2024bft
 
-import scala.language.unsafeNulls
-
 import org.openjdk.jmh.annotations.{Benchmark, BenchmarkMode, Fork, Level, Measurement, Mode, OutputTimeUnit, Param, Scope, Setup, State, Warmup}
 import org.openjdk.jmh.infra.Blackhole
 import rdts.base.{Bottom, Lattice, ReplicaId}
 import rdts.datatypes.{GrowOnlyCounter, ReplicatedList}
 
 import java.util.concurrent.TimeUnit
+import scala.language.unsafeNulls
 
 @State(Scope.Thread)
 class BenchmarkState {

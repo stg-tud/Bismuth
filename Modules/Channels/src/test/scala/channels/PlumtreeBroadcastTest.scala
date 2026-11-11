@@ -1,11 +1,11 @@
 package channels
 
-import channels.connection.Peer
+import channels.broadcast.PlumtreeBroadcast
 import channels.broadcast.PlumtreeBroadcast.Event.Send
 import channels.broadcast.PlumtreeBroadcast.{Event, PeerRole}
 import channels.broadcast.PlumtreeMessage.*
 import channels.broadcast.Routing.Timer
-import channels.broadcast.PlumtreeBroadcast
+import channels.connection.Peer
 import channels.{KeepAllHistory, NoHistory}
 import munit.FunSuite
 import rdts.base.Uid

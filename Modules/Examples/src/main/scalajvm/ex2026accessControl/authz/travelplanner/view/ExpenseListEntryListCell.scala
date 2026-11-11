@@ -1,7 +1,5 @@
 package ex2026accessControl.authz.travelplanner.view
 
-import scala.language.unsafeNulls
-
 import ex2026accessControl.authz.travelplanner.model.TravelPlanModel
 import ex2026accessControl.authz.travelplanner.view.ExpenseListEntryListCell.amountTextFilter
 import javafx.scene.control.ListCell
@@ -12,6 +10,7 @@ import scalafx.scene.control.{TextField, TextFormatter}
 import scalafx.scene.layout.Priority
 
 import scala.collection.mutable
+import scala.language.unsafeNulls
 
 class ExpenseListEntryListCell(model: TravelPlanModel) extends ListCell[String] {
   private val subscriptions = mutable.Buffer.empty[Subscription]

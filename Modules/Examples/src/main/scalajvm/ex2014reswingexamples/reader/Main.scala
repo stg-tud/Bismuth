@@ -1,7 +1,5 @@
 package ex2014reswingexamples.reader
 
-import scala.language.unsafeNulls
-
 import ex2014reswingexamples.reader.connectors.{CentralizedEvents, SimpleReporter}
 import ex2014reswingexamples.reader.data.{FeedStore, RSSItem, XmlParser}
 import ex2014reswingexamples.reader.gui.GUI
@@ -10,6 +8,7 @@ import reactives.default.*
 
 import java.net.URL
 import scala.io.Source
+import scala.language.unsafeNulls
 import scala.swing.Dialog.Message
 import scala.swing.Swing.EmptyIcon
 import scala.swing.{Dialog, Swing}

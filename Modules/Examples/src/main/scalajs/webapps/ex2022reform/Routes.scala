@@ -16,9 +16,9 @@ limitations under the License.
 package webapps.ex2022reform
 
 import colibri.router.*
+import org.scalajs.dom.window
 import webapps.ex2022reform.pages.*
 import webapps.ex2022reform.services.Page
-import org.scalajs.dom.window
 object Routes {
   def fromPath(using
       jsImplicits: JSImplicits,

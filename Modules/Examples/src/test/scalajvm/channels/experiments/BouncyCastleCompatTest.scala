@@ -1,15 +1,15 @@
 package channels.experiments
 
 import munit.FunSuite
-import org.bouncycastle.crypto.modes.ChaCha20Poly1305 as BcChaCha20Poly1305
 import org.bouncycastle.crypto.macs.Poly1305 as BcPoly1305
+import org.bouncycastle.crypto.modes.ChaCha20Poly1305 as BcChaCha20Poly1305
 import org.bouncycastle.crypto.params.{AEADParameters, KeyParameter}
 
 import scala.util.Random
 
 /** Differential tests against BouncyCastle with random and adversarial (all 0x00 / 0xff) inputs. */
 class BouncyCastleCompatTest extends FunSuite {
-  val rnd = Random(42)
+  val rnd: Random = Random(42)
 
   def bytes(n: Int, mode: Int): Array[Byte] = mode match
       case 0 => Array.fill(n)(0.toByte)

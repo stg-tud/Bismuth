@@ -1,7 +1,5 @@
 package ex2026accessControl.authz.travelplanner
 
-import scala.language.unsafeNulls
-
 import ex2026accessControl.authz.travelplanner.model.{TravelPlanModel, TravelPlanModelFactory}
 import ex2026accessControl.authz.travelplanner.view.TravelPlanView
 import ex2026accessControl.authz.travelplanner.viewmodel.TravelPlanViewModel
@@ -14,6 +12,7 @@ import scalafx.scene.layout.{BorderPane, HBox, Priority, VBox}
 import scalafx.scene.{Group, Scene}
 
 import scala.concurrent.ExecutionContext.global
+import scala.language.unsafeNulls
 
 // Initial screen with creation / join functionality
 // The init checker (-Wsafe-init) cannot verify this constructor:

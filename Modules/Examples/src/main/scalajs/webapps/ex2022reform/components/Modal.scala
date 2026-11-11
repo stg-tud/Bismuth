@@ -1,11 +1,11 @@
 package webapps.ex2022reform.components
 
-import webapps.ex2022reform.components.common.*
-import webapps.ex2022reform.given
 import org.scalajs.dom.{Element, document}
 import outwatch.dsl.*
 import outwatch.{VNode, *}
 import reactives.default.*
+import webapps.ex2022reform.components.common.*
+import webapps.ex2022reform.given
 
 class ModalButton(
     val text: String,

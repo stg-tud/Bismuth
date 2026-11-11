@@ -1,11 +1,11 @@
 package ex2024textRDT.fugue
 
-import munit.FunSuite
+import ex2024textRDT.*
 import ex2024textRDT.fugue.complex.*
 import ex2024textRDT.fugue.complexavl.*
 import ex2024textRDT.fugue.simple.*
 import ex2024textRDT.fugue.simpleavl.*
-import ex2024textRDT.*
+import munit.FunSuite
 
 class SimpleInternalFugueTestSuite
     extends InternalFugueTestSuite(replicaId =>

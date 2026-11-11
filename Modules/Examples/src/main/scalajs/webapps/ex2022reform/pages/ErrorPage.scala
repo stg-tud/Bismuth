@@ -1,13 +1,13 @@
 package webapps.ex2022reform.pages
 
-import webapps.ex2022reform.components.common.*
-import webapps.ex2022reform.given
-import webapps.ex2022reform.services.*
-import webapps.ex2022reform.{JSImplicits, *}
 import org.scalajs.dom.HTMLElement
 import outwatch.*
 import outwatch.dsl.*
 import reactives.default.*
+import webapps.ex2022reform.components.common.*
+import webapps.ex2022reform.given
+import webapps.ex2022reform.services.*
+import webapps.ex2022reform.{JSImplicits, *}
 
 case class ErrorPage(code: Int = 404, title: String = "", description: String = "")(using
     jsImplicits: JSImplicits,

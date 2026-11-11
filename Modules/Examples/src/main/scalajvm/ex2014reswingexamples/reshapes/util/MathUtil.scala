@@ -1,8 +1,7 @@
 package ex2014reswingexamples.reshapes.util
 
-import scala.language.unsafeNulls
-
 import java.awt.Point
+import scala.language.unsafeNulls
 
 object MathUtil {
   def isInCircle(center: Point, radius: Int, point: Point): Boolean = {

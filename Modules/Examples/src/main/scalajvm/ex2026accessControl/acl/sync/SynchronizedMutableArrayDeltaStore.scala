@@ -1,7 +1,7 @@
 package ex2026accessControl.acl.sync
 
-import rdts.time.{Dot, Dots}
 import ex2026accessControl.acl.sync.SynchronizedMutableArrayDeltaStore.{calculateResize, resize}
+import rdts.time.{Dot, Dots}
 
 import scala.reflect.ClassTag
 

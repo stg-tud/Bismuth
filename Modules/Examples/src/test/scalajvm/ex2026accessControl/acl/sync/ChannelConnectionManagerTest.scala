@@ -1,15 +1,13 @@
 package ex2026accessControl.acl.sync
 
-import scala.language.unsafeNulls
-
 import channels.connection.{ByteBufferMessageBuffer, MessageBuffer}
-import channels.crypto.PublicIdentity
-import channels.crypto.IdentityFactory
+import channels.crypto.{IdentityFactory, PublicIdentity}
+import ex2026accessControl.acl.sync.ChannelConnectionManager
 import ex2026accessControl.acl.sync.ChannelConnectionManagerTest.*
 import munit.FunSuite
-import ex2026accessControl.acl.sync.ChannelConnectionManager
 
 import java.util.concurrent.{LinkedBlockingQueue, TimeUnit}
+import scala.language.unsafeNulls
 
 object ChannelConnectionManagerTest {
   val DEBUG      = false

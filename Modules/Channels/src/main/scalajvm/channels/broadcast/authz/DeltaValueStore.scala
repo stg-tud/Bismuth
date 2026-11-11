@@ -1,7 +1,7 @@
 package channels.broadcast.authz
 
-import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
 import channels.crypto.Commitment.RevealedValue
+import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
 import rdts.base.{Bottom, Lattice}
 
 import scala.collection.immutable.IntMap

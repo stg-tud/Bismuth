@@ -2,9 +2,9 @@ package webapps.ex2022reform.entity
 
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
+import rdts.base.*
 import webapps.ex2022reform.BasicCodecs.given
 import webapps.ex2022reform.entity.Attribute.given
-import rdts.base.*
 
 case class User(
     username: Attribute[String] = Attribute.empty,

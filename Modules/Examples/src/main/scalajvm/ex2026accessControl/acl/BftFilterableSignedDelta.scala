@@ -1,10 +1,8 @@
 package ex2026accessControl.acl
 
-import channels.crypto.PrivateIdentity
-import channels.crypto.PublicIdentity
-import channels.crypto.{Hash, Signature}
-import rdts.base.Bottom
+import channels.crypto.{Hash, PrivateIdentity, PublicIdentity, Signature}
 import ex2026accessControl.acl.HashDag.{Delta, Encoder, Hashable}
+import rdts.base.Bottom
 
 case class BftFilterableSignedDelta[RDT: Bottom](
     author: PublicIdentity,

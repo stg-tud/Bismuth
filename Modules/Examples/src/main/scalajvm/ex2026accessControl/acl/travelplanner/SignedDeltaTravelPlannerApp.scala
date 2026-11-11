@@ -2,12 +2,11 @@ package ex2026accessControl.acl.travelplanner
 
 import channels.connection.MessageBuffer
 import channels.crypto.{IdentityFactory, PrivateIdentity}
-import ex2026accessControl.acl.Debug
+import ex2026accessControl.acl.sync.{ChannelConnectionManager, MessageReceiver}
+import ex2026accessControl.acl.{Acl, AclRdt, Debug}
 import ex2026accessControl.authz.travelplanner.model.{TravelPlanModel, TravelPlanModelFactory}
 import ex2026accessControl.authz.travelplanner.{MainScene, TravelPlan}
 import javafx.scene.input.KeyCode
-import ex2026accessControl.acl.{Acl, AclRdt}
-import ex2026accessControl.acl.sync.{ChannelConnectionManager, MessageReceiver}
 import scalafx.application.{JFXApp3, Platform}
 import scalafx.scene.control.{Menu, MenuBar, MenuItem}
 import scalafx.scene.input.KeyCodeCombination

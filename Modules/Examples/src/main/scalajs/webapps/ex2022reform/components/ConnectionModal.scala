@@ -1,15 +1,15 @@
 package webapps.ex2022reform.components
 
-import webapps.ex2022reform.*
-import webapps.ex2022reform.components.common.*
-import webapps.ex2022reform.given
-import webapps.ex2022reform.services.{LoginException, LoginInfo}
-import webapps.ex2022reform.utils.FutureExtensions.*
 import org.scalajs.dom
 import org.scalajs.dom.{HTMLInputElement, console, document, window}
 import outwatch.*
 import outwatch.dsl.*
 import reactives.default.*
+import webapps.ex2022reform.*
+import webapps.ex2022reform.components.common.*
+import webapps.ex2022reform.given
+import webapps.ex2022reform.services.{LoginException, LoginInfo}
+import webapps.ex2022reform.utils.FutureExtensions.*
 
 import scala.util.{Failure, Success}
 

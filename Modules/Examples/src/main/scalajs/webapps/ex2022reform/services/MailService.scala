@@ -1,12 +1,12 @@
 package webapps.ex2022reform.services
 
 import cats.effect.SyncIO
-import webapps.ex2022reform.JSImplicits
-import webapps.ex2022reform.entity.{Hiwi, Supervisor}
-import webapps.ex2022reform.npm.JSUtils.toGermanDate
 import org.scalajs.dom.*
 import outwatch.*
 import outwatch.dsl.*
+import webapps.ex2022reform.JSImplicits
+import webapps.ex2022reform.entity.{Hiwi, Supervisor}
+import webapps.ex2022reform.npm.JSUtils.toGermanDate
 
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.{Future, Promise}

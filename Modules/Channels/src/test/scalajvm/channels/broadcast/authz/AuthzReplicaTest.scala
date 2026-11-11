@@ -1,16 +1,15 @@
 package channels.broadcast.authz
 
+import channels.JsoniterCodecsJvm.ardtEventCodec
 import channels.broadcast.Routing.{Effect, Step}
+import channels.broadcast.authz.ArdtEvent.Payload.{Capability, Revocation}
+import channels.broadcast.authz.AuthzTestSupport.{*, given}
 import channels.connection.Peer
-import channels.crypto.PrivateIdentity
+import channels.crypto.{Hash, PrivateIdentity}
 import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray}
 import munit.FunSuite
 import rdts.base.Uid
 import rdts.filters.PermissionTree
-import channels.broadcast.authz.ArdtEvent.Payload.{Capability, Revocation}
-import channels.broadcast.authz.AuthzTestSupport.{*, given}
-import channels.crypto.Hash
-import channels.JsoniterCodecsJvm.ardtEventCodec
 
 /** The local operations and direct inputs of [[AuthzReplica]]. See [[AuthzProtocolTest]] for the network side. */
 class AuthzReplicaTest extends FunSuite {

@@ -1,18 +1,15 @@
 package ex2026accessControl.acl.evaluation.insecure
 
-import scala.language.unsafeNulls
-
-import channels.crypto.PrivateIdentity
-import channels.crypto.PublicIdentity
-import channels.crypto.Hash
+import channels.crypto.{Hash, PrivateIdentity, PublicIdentity}
+import ex2026accessControl.acl.Acl
+import ex2026accessControl.acl.HashDag.Encoder
+import ex2026accessControl.acl.sync.{AclAntiEntropy, AntiEntropyCommunicator, FilteredRdtAntiEntropy, SignedDelta}
 import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.filters.Filter
 import rdts.time.{Dot, Dots}
-import ex2026accessControl.acl.HashDag.Encoder
-import ex2026accessControl.acl.Acl
-import ex2026accessControl.acl.sync.{AclAntiEntropy, AntiEntropyCommunicator, FilteredRdtAntiEntropy, SignedDelta}
 
 import scala.annotation.unused
+import scala.language.unsafeNulls
 
 class NonEnforcingNonSigningRdtAntiEntropy[State: {Decompose, Lattice, Bottom, Filter}](
     localIdentity: PrivateIdentity,

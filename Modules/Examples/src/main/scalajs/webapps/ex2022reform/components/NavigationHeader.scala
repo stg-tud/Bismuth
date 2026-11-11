@@ -15,13 +15,13 @@ limitations under the License.
  */
 package webapps.ex2022reform.components
 
-import webapps.ex2022reform.given
-import webapps.ex2022reform.pages.{DocumentsPage, *}
-import webapps.ex2022reform.{JSImplicits, *}
 import org.scalajs.dom.HTMLElement
 import outwatch.*
 import outwatch.dsl.*
 import reactives.default.*
+import webapps.ex2022reform.given
+import webapps.ex2022reform.pages.{DocumentsPage, *}
+import webapps.ex2022reform.{JSImplicits, *}
 
 def navigationMenu(using
     jsImplicits: JSImplicits,

@@ -1,6 +1,6 @@
 package rdts.datatypes
 
-import rdts.base.{Bottom, Decompose, DecoratedLattice, Redundancy, Lattice, ReplicaId}
+import rdts.base.{Bottom, Decompose, DecoratedLattice, Lattice, Redundancy, ReplicaId}
 import rdts.time.{Dot, Dots}
 
 /** A set that allows deletes.

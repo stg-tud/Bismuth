@@ -1,7 +1,7 @@
 package channels.crypto
 
-import com.github.plokhotnyuk.jsoniter_scala.core.{JsonKeyCodec, JsonReader, JsonValueCodec, JsonWriter}
 import channels.crypto.Ed25519Util
+import com.github.plokhotnyuk.jsoniter_scala.core.{JsonKeyCodec, JsonReader, JsonValueCodec, JsonWriter}
 
 import java.security.{PrivateKey, PublicKey}
 import java.util

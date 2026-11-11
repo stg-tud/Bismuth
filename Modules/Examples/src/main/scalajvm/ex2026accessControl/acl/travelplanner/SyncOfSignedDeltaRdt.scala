@@ -1,17 +1,15 @@
 package ex2026accessControl.acl.travelplanner
 
 import channels.connection.MessageBuffer
+import channels.crypto.{PrivateIdentity, PublicIdentity}
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
-import channels.crypto.PublicIdentity
-import channels.crypto.PrivateIdentity
+import ex2026accessControl.acl.sync.{AclEnforcingSync, MessageReceiver}
+import ex2026accessControl.acl.{Acl, BftDelta}
+import ex2026accessControl.authz.evaluation.ConnectionManager
 import ex2026accessControl.authz.travelplanner.{Invitation, Sync}
 import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.filters.{Filter, PermissionTree}
 import rdts.time.Dots
-import ex2026accessControl.acl.sync.AclEnforcingSync
-import ex2026accessControl.acl.{Acl, BftDelta}
-import ex2026accessControl.acl.sync.MessageReceiver
-import ex2026accessControl.authz.evaluation.ConnectionManager
 
 class SyncOfSignedDeltaRdt[State](
     private val localIdentity: PrivateIdentity,

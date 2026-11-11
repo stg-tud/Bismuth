@@ -1,8 +1,8 @@
 package webapps.ex2022reform.utils
 
-import webapps.ex2022reform.given_ExecutionContext
 import reactives.core.Disconnectable
 import reactives.default.*
+import webapps.ex2022reform.given_ExecutionContext
 
 import scala.concurrent.*
 

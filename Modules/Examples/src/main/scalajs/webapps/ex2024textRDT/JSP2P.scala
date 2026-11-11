@@ -1,11 +1,11 @@
 package webapps.ex2024textRDT
 
-import org.scalajs.dom.{Element, document}
 import ex2024textRDT.*
 import ex2024textRDT.debug.given
 import ex2024textRDT.fugue.complexavl.ComplexAVLFugueFactory.complexAVLFugueFactory
-import webapps.ex2024textRDT.typings.prosemirrorState.mod.EditorState
+import org.scalajs.dom.{Element, document}
 import webapps.WebRTCConnectionView
+import webapps.ex2024textRDT.typings.prosemirrorState.mod.EditorState
 
 import java.util.UUID
 

@@ -1,20 +1,18 @@
 package ex2026accessControl.acl.sync
 
-import ex2026accessControl.authz.evaluation.ConnectionManager
 import channels.connection.{ByteBufferMessageBuffer, MessageBuffer}
+import channels.crypto.{Hash, PrivateIdentity, PublicIdentity}
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
-import channels.crypto.PrivateIdentity
-import channels.crypto.PublicIdentity
-import channels.crypto.Hash
-import rdts.base.{Bottom, Decompose, Lattice}
-import rdts.filters.{Filter, PermissionTree}
-import rdts.time.Dots
 import ex2026accessControl.acl.HashDag.Encoder
 import ex2026accessControl.acl.sync.AclCodecs
 import ex2026accessControl.acl.sync.AclCodecs.given
 import ex2026accessControl.acl.sync.AclEnforcingSync.SyncMsg.{MyAclVersionIs, MyPeersAre, MyRdtVersionIs}
 import ex2026accessControl.acl.sync.AclEnforcingSync.{SyncMsg, encoder}
 import ex2026accessControl.acl.{Acl, BftDelta}
+import ex2026accessControl.authz.evaluation.ConnectionManager
+import rdts.base.{Bottom, Decompose, Lattice}
+import rdts.filters.{Filter, PermissionTree}
+import rdts.time.Dots
 
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicReference

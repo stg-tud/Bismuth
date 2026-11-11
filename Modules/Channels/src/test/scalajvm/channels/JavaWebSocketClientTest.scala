@@ -1,7 +1,6 @@
 package channels
 
-import channels.connection.*
-import channels.connection.ConnectionDescriptor
+import channels.connection.{ConnectionDescriptor, *}
 
 import java.net.URI
 import java.net.http.HttpClient

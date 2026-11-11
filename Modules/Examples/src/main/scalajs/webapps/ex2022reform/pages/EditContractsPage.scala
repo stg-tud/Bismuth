@@ -15,6 +15,10 @@ limitations under the License.
  */
 package webapps.ex2022reform.pages
 
+import org.scalajs.dom.*
+import outwatch.*
+import outwatch.dsl.*
+import reactives.default.*
 import webapps.ex2022reform.components.common.*
 import webapps.ex2022reform.components.icons
 import webapps.ex2022reform.entity.*
@@ -25,10 +29,6 @@ import webapps.ex2022reform.repo.Synced
 import webapps.ex2022reform.services.*
 import webapps.ex2022reform.utils.FutureExtensions.*
 import webapps.ex2022reform.{JSImplicits, *}
-import org.scalajs.dom.*
-import outwatch.*
-import outwatch.dsl.*
-import reactives.default.*
 
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.*

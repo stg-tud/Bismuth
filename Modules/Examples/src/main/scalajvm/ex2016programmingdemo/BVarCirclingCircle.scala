@@ -1,11 +1,10 @@
 package ex2016programmingdemo
 
-import scala.language.unsafeNulls
-
 import ex2016programmingdemo.ui.{Circle, ShapesPanel}
 import reactives.default.*
 
 import java.awt.Dimension
+import scala.language.unsafeNulls
 import scala.swing.{Frame, MainFrame, SimpleSwingApplication, UIElement}
 
 /** We define a new Var angle. We modify the main method

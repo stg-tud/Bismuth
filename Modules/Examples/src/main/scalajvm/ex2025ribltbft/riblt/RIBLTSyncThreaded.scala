@@ -1,7 +1,7 @@
 package ex2025ribltbft.riblt
+import channels.crypto.Ed25519Util
 import com.github.plokhotnyuk.jsoniter_scala.core.*
 import com.github.plokhotnyuk.jsoniter_scala.macros.*
-import channels.crypto.Ed25519Util
 import ex2025ribltbft.dag.Event
 import ex2025ribltbft.datatypes.{ORSet, Op, Replica}
 import ex2025ribltbft.network.Message.given_JsonValueCodec_Message

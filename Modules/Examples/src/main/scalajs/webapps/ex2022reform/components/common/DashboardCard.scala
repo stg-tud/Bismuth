@@ -1,8 +1,8 @@
 package webapps.ex2022reform.components.common
 
-import webapps.ex2022reform.*
 import outwatch.*
 import outwatch.dsl.*
+import webapps.ex2022reform.*
 
 def NumberCard(title: String, number: VMod, description: VMod, props: VMod*): VNode =
   div(

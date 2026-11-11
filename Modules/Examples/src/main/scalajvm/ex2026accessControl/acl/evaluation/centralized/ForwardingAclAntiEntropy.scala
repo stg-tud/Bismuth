@@ -1,7 +1,6 @@
 package ex2026accessControl.acl.evaluation.centralized
 
-import channels.crypto.PublicIdentity
-import channels.crypto.PrivateIdentity
+import channels.crypto.{PrivateIdentity, PublicIdentity}
 import ex2026accessControl.acl.sync.{AclAntiEntropy, AntiEntropyCommunicator}
 import ex2026accessControl.acl.{Acl, BftDelta}
 

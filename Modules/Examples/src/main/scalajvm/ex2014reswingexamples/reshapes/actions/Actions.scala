@@ -1,12 +1,11 @@
 package ex2014reswingexamples.reshapes.actions
 
-import scala.language.unsafeNulls
-
 import ex2014reswingexamples.reshapes.ReShapes
 import ex2014reswingexamples.reshapes.drawing.CreateShape
 import ex2014reswingexamples.reshapes.figures.Shape
 
 import java.io.File
+import scala.language.unsafeNulls
 import scala.swing.{Action, FileChooser}
 import scala.xml.XML
 

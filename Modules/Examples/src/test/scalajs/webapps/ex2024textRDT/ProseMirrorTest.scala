@@ -1,9 +1,9 @@
 package webapps.ex2024textRDT
 
-import munit.FunSuite
-import org.scalajs.dom
 import ex2024textRDT.*
 import ex2024textRDT.debug.{*, given}
+import munit.FunSuite
+import org.scalajs.dom
 import webapps.ex2024textRDT.typings.prosemirrorState.mod.EditorState
 
 import scala.scalajs.js

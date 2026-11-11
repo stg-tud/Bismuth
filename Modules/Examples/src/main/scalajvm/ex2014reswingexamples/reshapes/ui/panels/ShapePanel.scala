@@ -1,7 +1,5 @@
 package ex2014reswingexamples.reshapes.ui.panels
 
-import scala.language.unsafeNulls
-
 import ex2014reswingexamples.reshapes.drawing.{DeleteShape, DrawingSpaceState}
 import ex2014reswingexamples.reshapes.figures.Shape
 import ex2014reswingexamples.reshapes.util.ReactiveUtil.UnionEvent
@@ -9,6 +7,7 @@ import ex2014reswingexamples.reshapes.{ReShapes, ReactiveBoxPanel, ReactiveButto
 import reactives.default.*
 
 import java.awt.Color
+import scala.language.unsafeNulls
 import scala.swing.*
 import scala.swing.event.MouseClicked
 

@@ -1,8 +1,8 @@
 package webapps.ex2022reform.entity
 
-import webapps.ex2022reform.BasicCodecs.myReplicaID
 import rdts.base.*
 import rdts.datatypes.MultiVersionRegister
+import webapps.ex2022reform.BasicCodecs.myReplicaID
 
 case class Attribute[T](register: MultiVersionRegister[T]) {
 

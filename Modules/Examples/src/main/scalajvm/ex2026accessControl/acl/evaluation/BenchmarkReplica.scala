@@ -2,11 +2,10 @@ package ex2026accessControl.acl.evaluation
 
 import channels.crypto.PrivateIdentity
 import ex2026accessControl.acl.evaluation.insecure.NonEnforcingSync
+import ex2026accessControl.acl.sync.{AclEnforcingSync, ChannelConnectionManager}
+import ex2026accessControl.acl.{Acl, BftDelta}
 import ex2026accessControl.authz.travelplanner.TravelPlan
 import rdts.time.Dots
-import ex2026accessControl.acl.sync.AclEnforcingSync
-import ex2026accessControl.acl.{Acl, BftDelta}
-import ex2026accessControl.acl.sync.ChannelConnectionManager
 
 import java.net.InetAddress
 

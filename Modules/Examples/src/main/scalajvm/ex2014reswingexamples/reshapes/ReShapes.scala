@@ -1,7 +1,5 @@
 package ex2014reswingexamples.reshapes
 
-import scala.language.unsafeNulls
-
 import ex2014reswingexamples.reshapes.actions.{LoadAction, SaveAction}
 import ex2014reswingexamples.reshapes.drawing.{Command, DrawingSpaceState, MergeDrawingSpaces, NetworkSpaceState}
 import ex2014reswingexamples.reshapes.figures.Shape
@@ -14,6 +12,7 @@ import java.awt.Color
 import java.net.{BindException, ConnectException}
 import javax.swing.JOptionPane
 import scala.collection.mutable.HashMap
+import scala.language.unsafeNulls
 import scala.swing.BorderPanel.Position
 import scala.swing.TabbedPane.Page
 import scala.swing.event.SelectionChanged

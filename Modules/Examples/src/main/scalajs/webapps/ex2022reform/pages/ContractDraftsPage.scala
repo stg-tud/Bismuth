@@ -15,13 +15,13 @@ limitations under the License.
  */
 package webapps.ex2022reform.pages
 
+import outwatch.dsl.*
+import rdts.base.{Bottom, Lattice}
+import reactives.default.*
 import webapps.ex2022reform.JSImplicits
 import webapps.ex2022reform.components.common.*
 import webapps.ex2022reform.entity.*
 import webapps.ex2022reform.repo.{Repository, Synced}
-import outwatch.dsl.*
-import rdts.base.{Bottom, Lattice}
-import reactives.default.*
 
 def onlyDrafts(using jsImplicits: JSImplicits): Signal[Seq[Synced[Contract]]] = Signal.dynamic {
   jsImplicits.repositories.contracts.all.value.filter(_.signal.value.isDraft.getOrElse(true))

@@ -1,13 +1,12 @@
 package ex2026accessControl.acl.evaluation.centralized
 
-import channels.crypto.PublicIdentity
-import channels.crypto.PrivateIdentity
+import channels.crypto.{PrivateIdentity, PublicIdentity}
 import ex2026accessControl.acl.Debug
+import ex2026accessControl.acl.HashDag.Encoder
+import ex2026accessControl.acl.sync.{AclAntiEntropy, AntiEntropyCommunicator, FilteredRdtAntiEntropy, SignedDelta}
 import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.filters.Filter
 import rdts.time.Dots
-import ex2026accessControl.acl.HashDag.Encoder
-import ex2026accessControl.acl.sync.{AclAntiEntropy, AntiEntropyCommunicator, FilteredRdtAntiEntropy, SignedDelta}
 
 class FilteringForwarderRdtAntiEntropy[State: {Decompose, Lattice, Bottom, Filter}](
     localIdentity: PrivateIdentity,

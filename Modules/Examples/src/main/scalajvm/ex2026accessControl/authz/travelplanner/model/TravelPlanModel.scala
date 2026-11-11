@@ -1,7 +1,6 @@
 package ex2026accessControl.authz.travelplanner.model
 
-import channels.crypto.PublicIdentity
-import channels.crypto.PrivateIdentity
+import channels.crypto.{PrivateIdentity, PublicIdentity}
 import ex2026accessControl.authz.travelplanner.TravelPlan.given
 import ex2026accessControl.authz.travelplanner.{Invitation, Sync, TravelPlan}
 import rdts.base.{ReplicaId, Uid}

@@ -1,13 +1,12 @@
 package ex2014reswingexamples.reshapes.drawing
 
-import scala.language.unsafeNulls
-
 import ex2014reswingexamples.reshapes.figures.{Line, Shape}
 import reactives.default.*
 
 import java.awt.Color
 import java.io.{OutputStreamWriter, PrintWriter}
 import java.net.{InetAddress, ServerSocket, Socket, SocketException}
+import scala.language.unsafeNulls
 import scala.xml.{Attribute, Null, Text, XML}
 
 /** Represents the current state of one drawing space */

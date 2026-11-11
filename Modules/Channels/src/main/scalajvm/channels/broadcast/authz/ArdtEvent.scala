@@ -1,12 +1,11 @@
 package channels.broadcast.authz
 
-import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray
-import channels.crypto.PublicIdentity
-import channels.crypto.{Hash, Signature}
-import rdts.filters.PermissionTree
 import channels.JsoniterCodecsJvm.ardtEventCodec
 import channels.broadcast.authz.ArdtEvent.Payload
 import channels.broadcast.authz.ArdtEvent.Payload.Capability
+import channels.crypto.{Hash, PublicIdentity, Signature}
+import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray
+import rdts.filters.PermissionTree
 
 case class ArdtEvent(
     payload: Payload,

@@ -2,8 +2,8 @@ package webapps.ex2022reform.entity
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReader, JsonValueCodec, JsonWriter}
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
-import webapps.ex2022reform.BasicCodecs.given
 import rdts.base.*
+import webapps.ex2022reform.BasicCodecs.given
 
 case class SalaryChange(
     value: Attribute[BigDecimal] = Attribute.empty,

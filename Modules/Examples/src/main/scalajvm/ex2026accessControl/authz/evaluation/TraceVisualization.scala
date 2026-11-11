@@ -1,8 +1,8 @@
 package ex2026accessControl.authz.evaluation
 
+import channels.broadcast.authz.ArdtEvent.Payload.{Capability, DeltaCommitment, Revocation}
 import channels.crypto.Hash
 import rdts.filters.{Filter, PermissionTree}
-import channels.broadcast.authz.ArdtEvent.Payload.{Capability, DeltaCommitment, Revocation}
 
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Path, Paths}

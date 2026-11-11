@@ -1,10 +1,10 @@
 package webapps.ex2022reform.entity
 
-import webapps.ex2022reform.components.common.*
-import webapps.ex2022reform.{JSImplicits, toQueryParameterName, given}
 import outwatch.*
 import outwatch.dsl.*
 import reactives.default.*
+import webapps.ex2022reform.components.common.*
+import webapps.ex2022reform.{JSImplicits, toQueryParameterName, given}
 
 trait UIFilter[EntityType] {
   def render: VMod

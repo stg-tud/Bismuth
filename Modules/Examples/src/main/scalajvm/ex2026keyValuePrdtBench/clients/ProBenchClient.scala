@@ -1,7 +1,7 @@
 package ex2026keyValuePrdtBench.clients
 
 import channels.broadcast.PlumtreeBroadcast
-import channels.{MessagingIO, KeepAllHistory}
+import channels.{KeepAllHistory, MessagingIO}
 import ex2026keyValuePrdtBench.data
 import ex2026keyValuePrdtBench.data.Codecs.given
 import ex2026keyValuePrdtBench.data.{ClientCommRead, ClientCommWrite, KVOperation}

@@ -1,10 +1,10 @@
 package ex2024textRDT.fugue
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{readFromString, writeToString}
-import munit.FunSuite
 import ex2024textRDT.debug.{*, given}
 import ex2024textRDT.fugue.complexavl.{*, given}
 import ex2024textRDT.{*, given}
+import munit.FunSuite
 
 class JsoniterCodecsTest extends FunSuite {
 

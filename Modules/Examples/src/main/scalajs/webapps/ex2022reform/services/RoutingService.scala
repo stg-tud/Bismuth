@@ -16,10 +16,10 @@ limitations under the License.
 package webapps.ex2022reform.services
 
 import colibri.router.*
-import webapps.ex2022reform.{*, given}
 import org.scalajs.dom.*
 import outwatch.*
 import reactives.default.*
+import webapps.ex2022reform.{*, given}
 
 import scala.scalajs.js
 

@@ -2,12 +2,12 @@ package ex2024textRDT
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReader, JsonValueCodec, JsonWriter, readFromString}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
-import org.openjdk.jmh.annotations.*
+import ex2024textRDT.fugue.*
 import ex2024textRDT.fugue.complex.*
 import ex2024textRDT.fugue.complexavl.*
 import ex2024textRDT.fugue.simple.*
 import ex2024textRDT.fugue.simpleavl.*
-import ex2024textRDT.fugue.*
+import org.openjdk.jmh.annotations.*
 
 import java.lang.management.ManagementFactory
 import javax.management.ObjectName

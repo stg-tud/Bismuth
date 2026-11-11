@@ -1,22 +1,20 @@
 package ex2026accessControl.acl.evaluation
 
-import scala.language.unsafeNulls
-
+import channels.crypto.{Ed25519Util, IdentityFactory, PrivateIdentity}
 import com.github.plokhotnyuk.jsoniter_scala.core.*
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
-import channels.crypto.Ed25519Util
-import channels.crypto.{IdentityFactory, PrivateIdentity}
+import ex2026accessControl.acl.{Acl, BftDelta}
 import ex2026accessControl.authz.travelplanner.TravelPlan
 import rdts.base.Uid
 import rdts.filters.PermissionTree
 import rdts.time.{Dot, Dots}
-import ex2026accessControl.acl.{Acl, BftDelta}
 
 import java.net.InetAddress
 import java.nio.file.{Files, Path, Paths, StandardOpenOption}
 import java.security.KeyPair
 import java.util.concurrent.Semaphore
 import java.util.concurrent.atomic.{AtomicInteger, AtomicLong, AtomicLongArray, AtomicReference}
+import scala.language.unsafeNulls
 import scala.util.{Random, Try}
 
 class PingPongBenchmark(

@@ -2,7 +2,7 @@ package ex2025recipebook
 
 import org.openjdk.jmh.annotations.*
 import org.openjdk.jmh.infra.Blackhole
-import rdts.base.{Bottom, Redundancy, Lattice, ReplicaId}
+import rdts.base.{Bottom, Lattice, Redundancy, ReplicaId}
 import rdts.datatypes
 import rdts.datatypes.{EnableWinsFlag, GrowOnlyCounter, GrowOnlySet, LastWriterWins, ObserveRemoveMap, PosNegCounter, ReplicatedSet}
 

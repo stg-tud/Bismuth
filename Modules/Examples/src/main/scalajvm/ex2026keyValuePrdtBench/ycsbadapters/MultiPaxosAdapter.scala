@@ -1,7 +1,6 @@
 package ex2026keyValuePrdtBench.ycsbadapters
 
-import channels.connection.Abort
-import channels.connection.{ConcurrencyHelper, NioTCP}
+import channels.connection.{Abort, ConcurrencyHelper, NioTCP}
 import ex2026keyValuePrdtBench.KnowledgeGroups.*
 import ex2026keyValuePrdtBench.cli.addRetryingConnection
 import ex2026keyValuePrdtBench.ycsbadapters.MultiPaxosAdapterConnectionPool.multiPaxosReplica

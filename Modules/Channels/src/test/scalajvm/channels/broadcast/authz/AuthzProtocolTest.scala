@@ -1,14 +1,14 @@
 package channels.broadcast.authz
 
+import channels.JsoniterCodecsJvm.ardtEventCodec
 import channels.broadcast.Routing.{Effect, Step}
+import channels.broadcast.authz.AuthzTestSupport.{*, given}
 import channels.connection.Peer
 import channels.crypto.{Hash, PrivateIdentity}
 import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray
 import munit.FunSuite
 import rdts.base.Uid
 import rdts.filters.PermissionTree
-import channels.broadcast.authz.AuthzTestSupport.{*, given}
-import channels.JsoniterCodecsJvm.ardtEventCodec
 
 import scala.collection.mutable
 

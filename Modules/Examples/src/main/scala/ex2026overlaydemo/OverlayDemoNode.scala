@@ -6,7 +6,7 @@ import channels.broadcast.PlumtreeMessage.Payload
 import channels.connection.{Abort, ChannelResolver, ConnectionDescriptor, Connector, Listener, Peer, PeerConnectInfo}
 import channels.overlay.HyParViewStateMachine
 import channels.overlay.HyParViewStateMachine.HyParViewConfig
-import channels.{MessagingIO, MergingHistory, Timers}
+import channels.{MergingHistory, MessagingIO, Timers}
 import rdts.base.Lattice.syntax
 import rdts.base.{Bottom, Lattice, ReplicaId, Uid}
 

@@ -22,13 +22,13 @@ package webapps.ex2022reform.services
 
 import com.github.plokhotnyuk.jsoniter_scala.core.*
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
+import org.scalajs.dom
+import org.scalajs.dom.*
+import reactives.default.*
 import webapps.ex2022reform.utils.Cookies
 import webapps.ex2022reform.utils.FutureExtensions.*
 import webapps.ex2022reform.webrtc.PendingConnection
 import webapps.ex2022reform.{JSImplicits, given_ExecutionContext, *}
-import org.scalajs.dom
-import org.scalajs.dom.*
-import reactives.default.*
 
 import scala.concurrent.{Future, Promise}
 import scala.scalajs.js

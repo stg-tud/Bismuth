@@ -1,16 +1,15 @@
 package ex2026accessControl.acl
 
+import channels.crypto.{Hash, PublicIdentity, Signature}
 import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray
-import channels.crypto.PublicIdentity
-import channels.crypto.{Hash, Signature}
-import ex2026accessControl.authz.travelplanner.TravelPlan
-import rdts.base.Uid
-import rdts.time.{Dot, Dots}
 import ex2026accessControl.acl.AclRdt.given_JsonValueCodec_BftDelta
 import ex2026accessControl.acl.sync.AclEnforcingSync.SyncMsg
 import ex2026accessControl.acl.sync.AclEnforcingSync.SyncMsg.{AclDeltas, DataDeltas, MyAclVersionIs, MyPeersAre}
 import ex2026accessControl.acl.sync.SignedDelta
 import ex2026accessControl.acl.{Acl, BftDelta}
+import ex2026accessControl.authz.travelplanner.TravelPlan
+import rdts.base.Uid
+import rdts.time.{Dot, Dots}
 
 object Debug {
   inline val enabled = false

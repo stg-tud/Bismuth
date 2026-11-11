@@ -1,7 +1,6 @@
 package channels
 
-import channels.connection.Peer
-import channels.connection.{ConnectionDescriptor, PeerConnectInfo}
+import channels.connection.{ConnectionDescriptor, Peer, PeerConnectInfo}
 import channels.overlay.HyParViewStateMachine.{HyParViewConfig, Link}
 import channels.overlay.OverlayController.OverlayMessage.*
 import channels.overlay.OverlayController.{OverlayAction, OverlayEvent, OverlayTimer}

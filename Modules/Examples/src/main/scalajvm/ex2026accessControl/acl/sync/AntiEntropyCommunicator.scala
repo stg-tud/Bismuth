@@ -1,9 +1,8 @@
 package ex2026accessControl.acl.sync
 
-import channels.crypto.PublicIdentity
-import channels.crypto.Hash
-import rdts.time.Dots
+import channels.crypto.{Hash, PublicIdentity}
 import ex2026accessControl.acl.{Acl, BftDelta}
+import rdts.time.Dots
 
 trait AntiEntropyCommunicator[State] {
   def sendDeltas(

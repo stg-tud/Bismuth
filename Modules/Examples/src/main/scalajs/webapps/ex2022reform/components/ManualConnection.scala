@@ -1,14 +1,14 @@
 package webapps.ex2022reform.components
 
+import org.scalajs.dom.{RTCConfiguration, RTCIceServer, window}
+import outwatch.*
+import outwatch.dsl.*
+import reactives.default.*
 import webapps.ex2022reform.components.common.{Button, ButtonStyle, LabeledInput}
 import webapps.ex2022reform.given
 import webapps.ex2022reform.utils.FutureExtensions.*
 import webapps.ex2022reform.webrtc.{PendingConnection, WebRTC}
 import webapps.ex2022reform.{given_ExecutionContext, *}
-import org.scalajs.dom.{RTCConfiguration, RTCIceServer, window}
-import outwatch.*
-import outwatch.dsl.*
-import reactives.default.*
 
 import scala.scalajs.js
 

@@ -1,13 +1,11 @@
 package ex2026accessControl.acl.evaluation.centralized
 
-import channels.crypto.PrivateIdentity
-import channels.crypto.PublicIdentity
-import channels.crypto.Hash
+import channels.crypto.{Hash, PrivateIdentity, PublicIdentity}
+import ex2026accessControl.acl.HashDag.Encoder
+import ex2026accessControl.acl.sync.{AclAntiEntropy, AntiEntropyCommunicator, SignedDelta}
 import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.filters.Filter
 import rdts.time.Dots
-import ex2026accessControl.acl.HashDag.Encoder
-import ex2026accessControl.acl.sync.{AclAntiEntropy, AntiEntropyCommunicator, SignedDelta}
 
 import scala.annotation.unused
 

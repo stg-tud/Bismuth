@@ -1,11 +1,11 @@
 package channels.broadcast
 
+import channels.JsoniterCodecs.given
 import channels.broadcast.PlumtreeBroadcast.Event.Send
 import channels.broadcast.PlumtreeBroadcast.PeerRole
-import channels.connection.Peer
 import channels.broadcast.PlumtreeMessage.*
-import channels.JsoniterCodecs.given
 import channels.broadcast.Routing.{Effect, Step}
+import channels.connection.Peer
 import channels.{DeltaStorage, MessagingIO, NoHistory}
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker

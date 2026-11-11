@@ -14,16 +14,16 @@ class XChaCha20Poly1305Test extends FunSuite {
   val plaintext: Array[Byte] =
     "Ladies and Gentlemen of the class of '99: If I could offer you only one tip for the future, sunscreen would be it."
       .getBytes(StandardCharsets.US_ASCII)
-  val aad        = hex("50515253c0c1c2c3c4c5c6c7")
-  val key        = hex("808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9f")
-  val nonce      = hex("404142434445464748494a4b4c4d4e4f5051525354555657")
-  val ciphertext = hex(
+  val aad: Array[Byte]        = hex("50515253c0c1c2c3c4c5c6c7")
+  val key: Array[Byte]        = hex("808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9f")
+  val nonce: Array[Byte]      = hex("404142434445464748494a4b4c4d4e4f5051525354555657")
+  val ciphertext: Array[Byte] = hex(
     """bd6d179d3e83d43b9576579493c0e939572a1700252bfaccbed2902c21396cbb
       |731c7f1b0b4aa6440bf3a82f4eda7e39ae64c6708c54c216cb96b72e1213b452
       |2f8c9ba40db5d945b11b69b982c1bb9e3f3fac2bc369488f76b2383565d3fff9
       |21f9664c97637da9768812f615c68b13b52e""".stripMargin
   )
-  val tag = hex("c0875924c1c7987947deafd8780acf49")
+  val tag: Array[Byte] = hex("c0875924c1c7987947deafd8780acf49")
 
   test("draft-irtf-cfrg-xchacha test vector") {
     val boxed = XChaCha20Poly1305.seal(key, nonce, plaintext, aad)

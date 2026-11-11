@@ -1,9 +1,8 @@
 package ex2014reswingexamples.reshapes
 
-import scala.language.unsafeNulls
-
 import java.io.{BufferedReader, InputStreamReader, OutputStreamWriter}
 import java.net.{ConnectException, InetAddress, ServerSocket, Socket}
+import scala.language.unsafeNulls
 import scala.xml.NodeSeq.seqToNodeSeq
 import scala.xml.{Elem, XML}
 

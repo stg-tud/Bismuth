@@ -1,13 +1,13 @@
 package ex2024textRDT.fugue
 
-import munit.ScalaCheckSuite
-import org.scalacheck.Test
+import ex2024textRDT.*
 import ex2024textRDT.fugue.complex.*
 import ex2024textRDT.fugue.complexavl.*
 import ex2024textRDT.fugue.simple.*
 import ex2024textRDT.fugue.simpleavl.*
 import ex2024textRDT.helper.scalacheck
-import ex2024textRDT.*
+import munit.ScalaCheckSuite
+import org.scalacheck.Test
 
 class SimpleInternalFugueScalaCheckSuite
     extends InternalFugueScalaCheckSuite(replicaId =>

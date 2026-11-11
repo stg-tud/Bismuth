@@ -1,10 +1,10 @@
 package webapps.ex2022reform.entity
 
+import reactives.default.*
 import webapps.ex2022reform.JSImplicits
 import webapps.ex2022reform.components.common.*
 import webapps.ex2022reform.npm.JSUtils
 import webapps.ex2022reform.services.Page
-import reactives.default.*
 
 case class UIAttributeBuilder[AttributeType](
     readConverter: AttributeType => String,

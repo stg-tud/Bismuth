@@ -1,19 +1,18 @@
 package channels.broadcast.authz
 
+import channels.JsoniterCodecsJvm.{ardtEventCodec, hashValueCodec}
 import channels.MessagingIO
 import channels.broadcast.Routing
 import channels.broadcast.Routing.{Effect, Step, Timer}
+import channels.broadcast.authz.ArdtEvent.Payload.{Capability, DeltaCommitment, Revocation}
 import channels.connection.{Peer, PeerConnectInfo}
-import channels.crypto.{PrivateIdentity, PublicIdentity}
+import channels.crypto.Commitment.RevealedValue
+import channels.crypto.{Commitment, Hash, PrivateIdentity, PublicIdentity, Signature}
 import channels.overlay.FullMeshOverlay
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReader, JsonValueCodec, JsonWriter, readFromArray, writeToArray}
-import channels.JsoniterCodecsJvm.{ardtEventCodec, hashValueCodec}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import rdts.base.{Bottom, Decompose, Lattice, ReplicaId, Uid}
 import rdts.filters.{Filter, PermissionTree}
-import channels.broadcast.authz.ArdtEvent.Payload.{Capability, DeltaCommitment, Revocation}
-import channels.crypto.Commitment.RevealedValue
-import channels.crypto.{Commitment, Hash, Signature}
 
 import scala.annotation.tailrec
 import scala.util.Try

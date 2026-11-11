@@ -1,9 +1,9 @@
 package ex2014reswingexamples.millgame.versions.signals
 
-import scala.language.unsafeNulls
-
 import ex2014reswingexamples.millgame.types.{Black, Empty, Slot, SlotIndex, White}
 import reactives.default.*
+
+import scala.language.unsafeNulls
 
 sealed abstract class Gamestate {
   def getPlayer: Slot

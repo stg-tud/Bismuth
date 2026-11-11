@@ -1,13 +1,12 @@
 package ex2026accessControl.acl.evaluation
 
-import channels.crypto.PublicIdentity
-import channels.crypto.{IdentityFactory, PrivateIdentity}
+import channels.crypto.{IdentityFactory, PrivateIdentity, PublicIdentity}
 import ex2026accessControl.acl.evaluation.TravelPlanMutatorChoice.*
+import ex2026accessControl.acl.{Acl, AclRdt, BftDelta}
 import ex2026accessControl.authz.travelplanner.TravelPlan
 import rdts.base.{ReplicaId, Uid}
 import rdts.filters.PermissionTree
 import rdts.time.{ArrayRanges, Dots}
-import ex2026accessControl.acl.{Acl, AclRdt, BftDelta}
 
 import scala.annotation.tailrec
 import scala.collection.mutable

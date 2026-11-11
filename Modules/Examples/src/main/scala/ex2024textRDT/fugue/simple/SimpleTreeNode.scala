@@ -1,8 +1,8 @@
 package ex2024textRDT.fugue.simple
 
+import ex2024textRDT.*
 import ex2024textRDT.debug.pprintNonAVL
 import ex2024textRDT.fugue.*
-import ex2024textRDT.*
 
 import scala.collection.mutable
 

@@ -1,20 +1,17 @@
 package ex2026accessControl.acl.evaluation.centralized
 
 import channels.connection.{ByteBufferMessageBuffer, MessageBuffer}
+import channels.crypto.{PrivateIdentity, PublicIdentity}
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
-import channels.crypto.PublicIdentity
-import channels.crypto.PrivateIdentity
-import ex2026accessControl.acl.Debug
-import rdts.base.{Bottom, Decompose, Lattice}
-import rdts.filters.Filter
-import rdts.time.Dots
 import ex2026accessControl.acl.sync.AclCodecs.syncMsgCodec
 import ex2026accessControl.acl.sync.AclEnforcingSync.SyncMsg.{MyAclVersionIs, MyRdtVersionIs}
 import ex2026accessControl.acl.sync.AclEnforcingSync.{SyncMsg, encoder}
-import ex2026accessControl.acl.sync.{AclAntiEntropy, AclEnforcingSync, FilteredRdtAntiEntropy}
-import ex2026accessControl.acl.{Acl, BftDelta}
-import ex2026accessControl.acl.sync.{ChannelConnectionManager, MessageReceiver}
+import ex2026accessControl.acl.sync.{AclAntiEntropy, AclEnforcingSync, ChannelConnectionManager, FilteredRdtAntiEntropy, MessageReceiver}
+import ex2026accessControl.acl.{Acl, BftDelta, Debug}
 import ex2026accessControl.authz.evaluation.ConnectionManager
+import rdts.base.{Bottom, Decompose, Lattice}
+import rdts.filters.Filter
+import rdts.time.Dots
 
 class ForwardingSync[State: {JsonValueCodec, Bottom, Decompose, Lattice, Filter}](
     localIdentity: PrivateIdentity,

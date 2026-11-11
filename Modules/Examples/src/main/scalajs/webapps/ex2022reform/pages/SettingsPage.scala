@@ -15,6 +15,10 @@ limitations under the License.
  */
 package webapps.ex2022reform.pages
 
+import org.scalajs.dom.{HTMLInputElement, *}
+import outwatch.*
+import outwatch.dsl.*
+import reactives.default.*
 import webapps.ex2022reform.components.common.*
 import webapps.ex2022reform.components.{Modal, ModalButton, icons}
 import webapps.ex2022reform.given
@@ -23,10 +27,6 @@ import webapps.ex2022reform.npm.PDF
 import webapps.ex2022reform.services.{Page, ToastMode, ToastType}
 import webapps.ex2022reform.utils.{exportIndexedDBJson, importIndexedDBJson}
 import webapps.ex2022reform.{JSImplicits, given_ExecutionContext, *}
-import org.scalajs.dom.{HTMLInputElement, *}
-import outwatch.*
-import outwatch.dsl.*
-import reactives.default.*
 
 import scala.scalajs.js
 import scala.util.{Failure, Success}

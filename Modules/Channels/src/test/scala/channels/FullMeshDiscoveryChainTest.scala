@@ -1,8 +1,7 @@
 package channels
 
-import channels.connection.Peer
 import channels.MessagingIO
-import channels.connection.{ConnectionDescriptor, LocalConnectionRegistry, LocalMessageQueue, PeerConnectInfo, QueuedLocalConnection}
+import channels.connection.{ConnectionDescriptor, LocalConnectionRegistry, LocalMessageQueue, Peer, PeerConnectInfo, QueuedLocalConnection}
 import channels.experiments.Aead
 import channels.overlay.FullMeshOverlay
 import channels.overlay.OverlayController.OverlayMessage

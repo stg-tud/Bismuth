@@ -1,19 +1,16 @@
 package ex2026accessControl.acl.evaluation
 
-import channels.crypto.{IdentityFactory, PrivateIdentity}
-import channels.crypto.PublicIdentity
-import channels.crypto.Hash
+import channels.crypto.{Hash, IdentityFactory, PrivateIdentity, PublicIdentity}
+import ex2026accessControl.acl.AclRdt.given_Encoder_BftDelta
+import ex2026accessControl.acl.sync.AclEnforcingSync.encoder
+import ex2026accessControl.acl.sync.{AclEnforcingSync, SignedDelta}
+import ex2026accessControl.acl.{Acl, AclRdt, BftDelta, HashDag}
 import ex2026accessControl.authz.travelplanner.TravelPlan
 import org.openjdk.jmh.annotations.*
 import rdts.base.Lattice.syntax.merge
 import rdts.base.{ReplicaId, Uid}
 import rdts.filters.{Filter, PermissionTree}
 import rdts.time.Dot
-import ex2026accessControl.acl.HashDag
-import ex2026accessControl.acl.AclRdt.given_Encoder_BftDelta
-import ex2026accessControl.acl.sync.AclEnforcingSync.encoder
-import ex2026accessControl.acl.sync.{AclEnforcingSync, SignedDelta}
-import ex2026accessControl.acl.{Acl, AclRdt, BftDelta}
 
 import java.util.concurrent.TimeUnit
 import scala.util.Random

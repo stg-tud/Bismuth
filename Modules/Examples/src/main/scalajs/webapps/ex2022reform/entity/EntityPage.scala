@@ -15,6 +15,10 @@ limitations under the License.
  */
 package webapps.ex2022reform.entity
 
+import outwatch.*
+import outwatch.dsl.*
+import rdts.base.*
+import reactives.default.*
 import webapps.ex2022reform.components.common.*
 import webapps.ex2022reform.components.{Modal, ModalButton, icons}
 import webapps.ex2022reform.given
@@ -23,10 +27,6 @@ import webapps.ex2022reform.repo.{Repository, Synced}
 import webapps.ex2022reform.services.{Page, ToastMode}
 import webapps.ex2022reform.utils.FutureExtensions.*
 import webapps.ex2022reform.{given_ExecutionContext, *}
-import outwatch.*
-import outwatch.dsl.*
-import rdts.base.*
-import reactives.default.*
 
 import scala.collection.mutable
 

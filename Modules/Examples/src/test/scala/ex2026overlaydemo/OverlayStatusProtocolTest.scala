@@ -1,13 +1,11 @@
 package ex2026overlaydemo
 
-import channels.fireTimers
 import channels.broadcast.PlumtreeBroadcast
-import channels.connection.Peer
-import channels.MessagingIO
-import channels.connection.{ConnectionDescriptor, LocalConnectionRegistry, LocalMessageQueue, PeerConnectInfo, QueuedLocalConnection}
-import OverlayStatusProtocol.{PeerState, Status}
+import channels.connection.{ConnectionDescriptor, LocalConnectionRegistry, LocalMessageQueue, Peer, PeerConnectInfo, QueuedLocalConnection}
 import channels.overlay.HyParViewStateMachine.HyParViewConfig
 import channels.overlay.{FullMeshOverlay, HyParViewStateMachine}
+import channels.{MessagingIO, fireTimers}
+import ex2026overlaydemo.OverlayStatusProtocol.{PeerState, Status}
 import munit.FunSuite
 import rdts.base.Lattice.syntax.merge
 import rdts.base.ReplicaId

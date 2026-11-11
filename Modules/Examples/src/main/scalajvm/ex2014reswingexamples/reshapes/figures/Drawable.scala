@@ -1,11 +1,10 @@
 package ex2014reswingexamples.reshapes.figures
 
-import scala.language.unsafeNulls
-
 import ex2014reswingexamples.reshapes.drawing.DrawingSpaceState
 import ex2014reswingexamples.reshapes.util.MathUtil
 
 import java.awt.{BasicStroke, Color, Graphics2D, Point}
+import scala.language.unsafeNulls
 import scala.xml.NodeSeq.seqToNodeSeq
 import scala.xml.{Attribute, Elem, Node, Null, Text}
 

@@ -1,8 +1,8 @@
 package ex2024textRDT.fugue
 
+import ex2024textRDT.*
 import ex2024textRDT.fugue.avl.AVLTreeNode
 import ex2024textRDT.fugue.avl2.{AVL2Tree, AVL2TreeNode}
-import ex2024textRDT.*
 
 object DescendantCacheHelper {
 

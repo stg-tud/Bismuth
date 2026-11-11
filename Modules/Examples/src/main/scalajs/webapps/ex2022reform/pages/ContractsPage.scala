@@ -15,15 +15,15 @@ limitations under the License.
  */
 package webapps.ex2022reform.pages
 
+import outwatch.*
+import outwatch.dsl.*
+import rdts.base.{Bottom, Lattice}
+import reactives.default.*
 import webapps.ex2022reform.JSImplicits
 import webapps.ex2022reform.components.common.*
 import webapps.ex2022reform.entity.*
 import webapps.ex2022reform.npm.JSUtils.{dateDiffMonth, getMonth, getYear, toMoneyString}
 import webapps.ex2022reform.repo.{Repository, Synced}
-import outwatch.*
-import outwatch.dsl.*
-import rdts.base.{Bottom, Lattice}
-import reactives.default.*
 
 import scala.scalajs.js
 

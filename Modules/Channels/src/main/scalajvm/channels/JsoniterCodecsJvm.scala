@@ -1,12 +1,11 @@
 package channels
 
 import channels.JsoniterCodecs.given
+import channels.broadcast.authz.ArdtEvent
+import channels.crypto.{Hash, PublicIdentity, Signature}
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonKeyCodec, JsonReader, JsonValueCodec, JsonWriter}
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
-import channels.crypto.PublicIdentity
-import channels.crypto.{Hash, Signature}
 import rdts.filters.PermissionTree
-import channels.broadcast.authz.ArdtEvent
 
 object JsoniterCodecsJvm {
   given pubIdentityKeyCodec: JsonKeyCodec[PublicIdentity] = new JsonKeyCodec[PublicIdentity]:

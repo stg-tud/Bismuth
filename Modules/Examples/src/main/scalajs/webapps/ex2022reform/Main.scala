@@ -20,14 +20,14 @@ limitations under the License.
 package webapps.ex2022reform
 
 import cats.effect.SyncIO
+import outwatch.*
+import outwatch.dsl.*
 import webapps.ex2022reform.BasicCodecs.given
 import webapps.ex2022reform.components.navigationHeader
 import webapps.ex2022reform.given_ExecutionContext
 import webapps.ex2022reform.npm.{IIndexedDB, IndexedDB}
 import webapps.ex2022reform.services.{DiscoveryService, RoutingService, *}
 import webapps.ex2022reform.webrtc.WebRTCService
-import outwatch.*
-import outwatch.dsl.*
 
 import scala.scalajs.js.annotation.JSExportTopLevel
 

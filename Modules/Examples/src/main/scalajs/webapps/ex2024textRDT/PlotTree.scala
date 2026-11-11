@@ -1,7 +1,7 @@
 package webapps.ex2024textRDT
 
-import org.scalajs.dom.{SVGTextElement, document}
 import ex2024textRDT.debug.*
+import org.scalajs.dom.{SVGTextElement, document}
 
 import scala.scalajs.js
 

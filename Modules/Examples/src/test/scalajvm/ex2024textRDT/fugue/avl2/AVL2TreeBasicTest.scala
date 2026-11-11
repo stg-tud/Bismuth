@@ -1,8 +1,8 @@
 package ex2024textRDT.fugue.avl2
 
+import ex2024textRDT.Side
 import org.scalacheck.commands.Commands
 import org.scalacheck.{Gen, Prop}
-import ex2024textRDT.Side
 
 case class Wrapper(var value: AVL2Tree[Unit])
 

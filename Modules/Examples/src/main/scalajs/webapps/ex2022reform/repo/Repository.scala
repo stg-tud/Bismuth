@@ -20,12 +20,12 @@ package webapps.ex2022reform.repo
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReader, JsonValueCodec, JsonWriter}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
+import rdts.base.*
+import reactives.default.*
 import webapps.ex2022reform.entity.Entity
 import webapps.ex2022reform.npm.IIndexedDB
 import webapps.ex2022reform.webrtc.ReplicationGroup
 import webapps.ex2022reform.{given_ExecutionContext, *}
-import rdts.base.*
-import reactives.default.*
 
 import java.util.UUID
 import scala.collection.mutable

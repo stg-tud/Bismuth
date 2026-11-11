@@ -1,11 +1,10 @@
 package ex2014reswingexamples.reader.gui
 
-import scala.language.unsafeNulls
-
 import ex2014reswingexamples.reader.data.{FeedStore, RSSChannel, RSSItem}
 import reactives.default.*
 
 import java.awt.{Dimension, Point, Toolkit}
+import scala.language.unsafeNulls
 import scala.swing.*
 import scala.swing.event.*
 

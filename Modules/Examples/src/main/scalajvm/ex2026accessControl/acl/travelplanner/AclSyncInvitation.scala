@@ -1,12 +1,12 @@
 package ex2026accessControl.acl.travelplanner
 
+import channels.crypto.{Ed25519Util, PublicIdentity}
 import com.github.plokhotnyuk.jsoniter_scala.core
 import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray}
-import channels.crypto.{Ed25519Util, PublicIdentity}
-import ex2026accessControl.authz.travelplanner.Invitation
-import ex2026accessControl.acl.travelplanner.AclSyncInvitation.base64Encoder
 import ex2026accessControl.acl.AclRdt.given_JsonValueCodec_BftDelta
+import ex2026accessControl.acl.travelplanner.AclSyncInvitation.base64Encoder
 import ex2026accessControl.acl.{Acl, BftDelta}
+import ex2026accessControl.authz.travelplanner.Invitation
 
 import java.security.KeyPair
 import java.util.Base64

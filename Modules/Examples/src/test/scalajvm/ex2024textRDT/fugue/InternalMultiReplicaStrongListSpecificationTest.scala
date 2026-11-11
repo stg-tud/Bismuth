@@ -1,8 +1,8 @@
 package ex2024textRDT.fugue
 
+import ex2024textRDT.*
 import org.scalacheck.commands.Commands
 import org.scalacheck.{Gen, Prop}
-import ex2024textRDT.*
 
 import scala.collection.mutable
 

@@ -1,13 +1,12 @@
 package ex2026accessControl.acl.sync
 
-import scala.language.unsafeNulls
-
 import channels.connection.MessageBuffer
 import channels.crypto.PublicIdentity
 import ex2026accessControl.acl.Debug
 import ex2026accessControl.acl.sync.MessageReceiver
 
 import java.util.concurrent.LinkedBlockingQueue
+import scala.language.unsafeNulls
 
 class QueueAppendingMessageReceiver(_id: PublicIdentity = null) extends MessageReceiver[MessageBuffer] {
   private val localId = Option(_id)

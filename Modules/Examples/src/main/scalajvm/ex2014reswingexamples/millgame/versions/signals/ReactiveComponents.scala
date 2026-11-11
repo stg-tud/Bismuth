@@ -1,9 +1,8 @@
 package ex2014reswingexamples.millgame.versions.signals
 
-import scala.language.unsafeNulls
-
 import reactives.default.*
 
+import scala.language.unsafeNulls
 import scala.swing.*
 import scala.swing.event.{MouseDragged, MouseMoved, MouseReleased, UIElementMoved, UIElementResized}
 

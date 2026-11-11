@@ -1,17 +1,15 @@
 package ex2026accessControl.authz.evaluation
 
+import channels.JsoniterCodecsJvm.ardtEventCodec
 import channels.broadcast.Routing.{Effect, Step}
+import channels.broadcast.authz.*
+import channels.broadcast.authz.ArdtEvent.Payload.DeltaCommitment
 import channels.connection.Peer
+import channels.crypto.{Hash, PrivateIdentity, PublicIdentity}
 import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray
-import channels.crypto.PrivateIdentity
-import channels.crypto.PublicIdentity
-import channels.crypto.Hash
 import ex2026accessControl.authz.evaluation.EvaluationBenchmarks.{encodeTrace, receiveTrace, replayTrace}
 import org.openjdk.jmh.annotations.*
 import rdts.base.{ReplicaId, Uid}
-import channels.JsoniterCodecsJvm.ardtEventCodec
-import channels.broadcast.authz.*
-import channels.broadcast.authz.ArdtEvent.Payload.DeltaCommitment
 
 import java.util.concurrent.TimeUnit
 import scala.util.Random

@@ -1,7 +1,5 @@
 package ex2014reswingexamples.reshapes.ui.panels
 
-import scala.language.unsafeNulls
-
 import ex2014reswingexamples.reshapes.drawing.{Command, CreateShape, DrawingSpaceState, EditShape}
 import ex2014reswingexamples.reshapes.figures.{Movable, Resizable, Shape}
 import ex2014reswingexamples.reshapes.util.MathUtil
@@ -9,6 +7,7 @@ import reactives.default.*
 
 import java.awt.BasicStroke
 import scala.collection.mutable.ListBuffer
+import scala.language.unsafeNulls
 import scala.swing.event.{MouseDragged, MousePressed, MouseReleased}
 import scala.swing.{Color, Graphics2D, Panel, Point}
 

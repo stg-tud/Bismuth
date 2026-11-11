@@ -1,13 +1,11 @@
 package ex2026accessControl.authz.evaluation
 
-import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
-import channels.crypto.{IdentityFactory, PrivateIdentity}
-import channels.crypto.PublicIdentity
-import channels.crypto.Hash
-import rdts.base.{ReplicaId, Uid}
-import rdts.filters.PermissionTree
 import channels.broadcast.authz.ArdtEvent.Payload.{Capability, DeltaCommitment}
 import channels.broadcast.authz.{ArdtEvent, ArdtEventGraph, Authorization, DeltaValueStore}
+import channels.crypto.{Hash, IdentityFactory, PrivateIdentity, PublicIdentity}
+import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
+import rdts.base.{ReplicaId, Uid}
+import rdts.filters.PermissionTree
 
 import scala.annotation.tailrec
 import scala.collection.mutable

@@ -1,16 +1,15 @@
 package ex2026accessControl.acl.evaluation.insecure
 
 import channels.connection.MessageBuffer
-import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import channels.crypto.PrivateIdentity
+import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
+import ex2026accessControl.acl.sync.AclEnforcingSync.encoder
+import ex2026accessControl.acl.sync.{AclAntiEntropy, AclEnforcingSync, ChannelConnectionManager, FilteredRdtAntiEntropy, MessageReceiver}
+import ex2026accessControl.acl.{Acl, BftDelta}
+import ex2026accessControl.authz.evaluation.ConnectionManager
 import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.filters.Filter
 import rdts.time.Dots
-import ex2026accessControl.acl.sync.AclEnforcingSync.encoder
-import ex2026accessControl.acl.sync.{AclAntiEntropy, AclEnforcingSync, FilteredRdtAntiEntropy}
-import ex2026accessControl.acl.{Acl, BftDelta}
-import ex2026accessControl.acl.sync.{ChannelConnectionManager, MessageReceiver}
-import ex2026accessControl.authz.evaluation.ConnectionManager
 
 class NonEnforcingSync[State: {JsonValueCodec, Bottom, Decompose, Lattice, Filter}](
     localIdentity: PrivateIdentity,

@@ -1,6 +1,6 @@
 package ex2025recipebook
 
-import rdts.base.{Bottom, Decompose, DecoratedLattice, Redundancy, Lattice, ReplicaId}
+import rdts.base.{Bottom, Decompose, DecoratedLattice, Lattice, Redundancy, ReplicaId}
 import rdts.time.{Dot, Dots}
 
 /** An MultiVersionRegister (Multi-Value Register) is a Delta CRDT modeling a register.

@@ -1,7 +1,7 @@
 package ex2024textRDT.fugue.simple
 
-import ex2024textRDT.fugue.{*, given}
 import ex2024textRDT.*
+import ex2024textRDT.fugue.{*, given}
 
 import scala.annotation.{tailrec, targetName}
 import scala.collection.mutable

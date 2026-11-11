@@ -15,11 +15,11 @@ limitations under the License.
  */
 package webapps.ex2022reform.pages
 
-import webapps.ex2022reform.JSImplicits
-import webapps.ex2022reform.entity.{Document, *}
 import org.scalajs.dom.HTMLElement
 import outwatch.*
 import outwatch.dsl.*
+import webapps.ex2022reform.JSImplicits
+import webapps.ex2022reform.entity.{Document, *}
 
 case class DocumentsPage()(using
     jsImplicits: JSImplicits,

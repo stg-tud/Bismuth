@@ -1,10 +1,8 @@
 package ex2026accessControl.acl.sync
 
-import channels.crypto.PrivateIdentity
-import channels.crypto.PublicIdentity
-import channels.crypto.Signature
-import rdts.time.Dot
+import channels.crypto.{PrivateIdentity, PublicIdentity, Signature}
 import ex2026accessControl.acl.HashDag.Encoder
+import rdts.time.Dot
 
 case class SignedDelta[State](
     dot: Dot,

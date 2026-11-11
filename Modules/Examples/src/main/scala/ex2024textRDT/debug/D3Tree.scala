@@ -1,12 +1,12 @@
 package ex2024textRDT.debug
 
+import ex2024textRDT.*
+import ex2024textRDT.fugue.*
 import ex2024textRDT.fugue.avl.AVLTreeNode
 import ex2024textRDT.fugue.complex.*
 import ex2024textRDT.fugue.complexavl.*
 import ex2024textRDT.fugue.simple.{*, given}
 import ex2024textRDT.fugue.simpleavl.*
-import ex2024textRDT.fugue.*
-import ex2024textRDT.*
 
 import scala.collection.mutable
 

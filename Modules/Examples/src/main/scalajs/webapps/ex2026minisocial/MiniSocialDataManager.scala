@@ -1,8 +1,7 @@
 package webapps.ex2026minisocial
 
-import channels.broadcast.PlumtreeBroadcast
-
 import channels.MessagingIO
+import channels.broadcast.PlumtreeBroadcast
 import rdts.base.Lattice
 import rdts.syntax.DeltaBuffer
 import reactives.default.*

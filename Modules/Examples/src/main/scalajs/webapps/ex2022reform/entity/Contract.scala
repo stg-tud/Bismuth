@@ -2,8 +2,8 @@ package webapps.ex2022reform.entity
 
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.*
-import webapps.ex2022reform.BasicCodecs.given
 import rdts.base.*
+import webapps.ex2022reform.BasicCodecs.given
 
 case class Contract(
     contractAssociatedProject: Attribute[String] = Attribute.empty,

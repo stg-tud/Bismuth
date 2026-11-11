@@ -1,7 +1,6 @@
 package channels
 
-import channels.connection.Peer
-import channels.connection.{ConnectionDescriptor, PeerConnectInfo}
+import channels.connection.{ConnectionDescriptor, Peer, PeerConnectInfo}
 import channels.overlay.OverlayController.{OverlayAction, OverlayEvent, OverlayMessage}
 import channels.overlay.{AttemptId, FullMeshOverlay}
 import munit.FunSuite

@@ -1,11 +1,9 @@
 package ex2026accessControl.acl.sync
 
-import ex2026accessControl.authz.evaluation.ConnectionManager
-import channels.connection.{NioTCP, NioTls}
-import channels.connection.{Abort, Connection, ConnectionDescriptor, MessageBuffer, Receive}
-import channels.crypto.PublicIdentity
-import channels.crypto.PrivateIdentity
+import channels.connection.{Abort, Connection, ConnectionDescriptor, MessageBuffer, NioTCP, NioTls, Receive}
+import channels.crypto.{PrivateIdentity, PublicIdentity}
 import de.rmgk.delay.Callback
+import ex2026accessControl.authz.evaluation.ConnectionManager
 
 import java.net.{InetAddress, InetSocketAddress}
 import java.nio.channels.ServerSocketChannel

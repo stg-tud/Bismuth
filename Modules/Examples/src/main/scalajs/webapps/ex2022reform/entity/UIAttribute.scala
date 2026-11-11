@@ -1,13 +1,13 @@
 package webapps.ex2022reform.entity
 
+import outwatch.*
+import outwatch.dsl.*
+import reactives.default.*
 import webapps.ex2022reform.components.common.*
 import webapps.ex2022reform.given
 import webapps.ex2022reform.npm.JSUtils
 import webapps.ex2022reform.services.Page
 import webapps.ex2022reform.{duplicateValuesHandler, *}
-import outwatch.*
-import outwatch.dsl.*
-import reactives.default.*
 
 import scala.annotation.nowarn
 import scala.scalajs.js

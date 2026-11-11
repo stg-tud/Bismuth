@@ -1,8 +1,8 @@
 package ex2024textRDT.fugue.avl
 
+import ex2024textRDT.helper.scalacheck
 import munit.ScalaCheckSuite
 import org.scalacheck.Test
-import ex2024textRDT.helper.scalacheck
 
 class AVLTreeScalaCheckSuite extends ScalaCheckSuite {
 

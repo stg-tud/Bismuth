@@ -1,6 +1,6 @@
 package rdts.datatypes
 
-import rdts.base.{Bottom, Decompose, Redundancy, Lattice, ReplicaId}
+import rdts.base.{Bottom, Decompose, Lattice, Redundancy, ReplicaId}
 import rdts.time.Dots
 
 /** An EWFlag (Enable-Wins Flag) is a Delta CRDT modeling a boolean flag.

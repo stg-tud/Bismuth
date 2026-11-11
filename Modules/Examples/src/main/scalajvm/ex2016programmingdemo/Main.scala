@@ -1,11 +1,10 @@
 package ex2016programmingdemo
 
-import scala.language.unsafeNulls
-
 import ex2016programmingdemo.GModularClockCircle.Clock
 import ex2016programmingdemo.ui.ShapesPanel
 
 import java.awt.Dimension
+import scala.language.unsafeNulls
 import scala.swing.{Frame, MainFrame, SimpleSwingApplication, UIElement}
 
 abstract class Main extends SimpleSwingApplication {

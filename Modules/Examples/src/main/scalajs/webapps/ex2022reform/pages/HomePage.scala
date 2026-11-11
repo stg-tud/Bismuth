@@ -15,6 +15,9 @@ limitations under the License.
  */
 package webapps.ex2022reform.pages
 
+import outwatch.*
+import outwatch.dsl.*
+import reactives.default.*
 import webapps.ex2022reform.components.*
 import webapps.ex2022reform.components.common.*
 import webapps.ex2022reform.entity.Contract
@@ -22,9 +25,6 @@ import webapps.ex2022reform.given
 import webapps.ex2022reform.npm.JSUtils.{toGermanDate, toHumanMonth, toMoneyString}
 import webapps.ex2022reform.services.Page
 import webapps.ex2022reform.{JSImplicits, *}
-import outwatch.*
-import outwatch.dsl.*
-import reactives.default.*
 
 import scala.scalajs.js
 

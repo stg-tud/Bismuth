@@ -1,7 +1,5 @@
 package ex2026accessControl.authz.travelplanner.view
 
-import scala.language.unsafeNulls
-
 import channels.crypto.PublicIdentity
 import ex2026accessControl.authz.travelplanner.model.TravelPlanModel
 import ex2026accessControl.authz.travelplanner.{Invitation, TravelPlan}
@@ -14,6 +12,7 @@ import scalafx.scene.layout.{BorderPane, HBox}
 import scalafx.util.StringConverter
 
 import scala.concurrent.ExecutionContext
+import scala.language.unsafeNulls
 
 class InvitationDialogScene(invitation: Invitation, travelPlanModel: TravelPlanModel) extends Scene {
   private val rootPane = BorderPane()

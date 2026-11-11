@@ -1,12 +1,13 @@
 package test.rdts.protocols.knowledgeGroups
 
+import channels.broadcast.PrdtSystem
 import ex2026keyValuePrdtBench.KnowledgeGroups.*
 import ex2026keyValuePrdtBench.{MultiPaxosReplica, Request}
 import rdts.base.Lattice.syntax.merge
 import rdts.base.{ReplicaId, Uid}
 import rdts.protocols.Participants
 import rdts.protocols.knowledgeGroups.MultiPaxos
-import channels.broadcast.PrdtSystem
+import channels.connection.LocalMessageQueue
 
 /** Characterization tests of the current knowledge group routing ([[PrdtSystem.matches]]) and of
   * [[MultiPaxosReplica]]. They pin the existing behaviour, so a reimplementation can be checked
@@ -53,7 +54,7 @@ object KnowledgeGroupFixtures {
       i -> MultiPaxosReplica(id = i, participants = participants, systemConfig = system, state = MultiPaxos())
     ).toMap
 
-    val queue                             = channels.connection.LocalMessageQueue()
+    val queue: LocalMessageQueue          = channels.connection.LocalMessageQueue()
     def deliver(): Unit                   = while queue.nonEmpty do queue.deliverAll(): Unit
     def apply(id: Uid): MultiPaxosReplica = replicas(id)
 
@@ -217,7 +218,7 @@ class KnowledgeGroupRouting extends munit.FunSuite {
 class KnowledgeGroupReplicas extends munit.FunSuite {
   import KnowledgeGroupFixtures.*
 
-  val compartmentIds = List(leader, proxy1, proxy2, client, follower1, follower2, follower3, follower4)
+  val compartmentIds: List[Uid] = List(leader, proxy1, proxy2, client, follower1, follower2, follower3, follower4)
 
   test("every replica is connected to all replicas it shares a group with") {
     val c                  = Cluster(compartmentalized, compartmentIds, acceptors)

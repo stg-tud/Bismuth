@@ -1,13 +1,12 @@
 package channels.broadcast.authz
 
+import channels.JsoniterCodecsJvm.ardtEventCodec
+import channels.broadcast.authz.ArdtEvent.Payload.{Capability, DeltaCommitment}
+import channels.crypto.Commitment.RevealedValue
+import channels.crypto.{Ed25519Util, IdentityFactory, PrivateIdentity, PublicIdentity, *}
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
-import channels.crypto.*
-import channels.crypto.Commitment.RevealedValue
-import channels.crypto.{Ed25519Util, IdentityFactory, PrivateIdentity, PublicIdentity}
 import rdts.filters.{Filter, PermissionTree}
-import channels.broadcast.authz.ArdtEvent.Payload.{Capability, DeltaCommitment}
-import channels.JsoniterCodecsJvm.ardtEventCodec
 
 import java.security.{KeyPair, PrivateKey}
 

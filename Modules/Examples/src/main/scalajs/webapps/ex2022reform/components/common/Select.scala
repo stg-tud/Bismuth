@@ -1,12 +1,12 @@
 package webapps.ex2022reform.components.common
 
-import webapps.ex2022reform.components.icons
-import webapps.ex2022reform.given
-import webapps.ex2022reform.npm.JSUtils.{cleanPopper, createPopper}
 import org.scalajs.dom.{HTMLElement, document}
 import outwatch.*
 import outwatch.dsl.*
 import reactives.default.*
+import webapps.ex2022reform.components.icons
+import webapps.ex2022reform.given
+import webapps.ex2022reform.npm.JSUtils.{cleanPopper, createPopper}
 
 import scala.scalajs.js
 

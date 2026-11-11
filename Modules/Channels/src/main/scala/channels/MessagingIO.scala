@@ -1,7 +1,7 @@
 package channels
 
-import channels.MessagingIO.Envelope
 import channels.JsoniterCodecs.given
+import channels.MessagingIO.Envelope
 import channels.broadcast.PlumtreeMessage.*
 import channels.broadcast.Routing.{Effect, Step, Timer}
 import channels.broadcast.{PlumtreeBroadcast, PlumtreeMessage, Routing}

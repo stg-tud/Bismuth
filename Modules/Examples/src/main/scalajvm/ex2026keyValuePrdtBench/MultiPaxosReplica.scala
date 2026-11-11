@@ -1,8 +1,8 @@
 package ex2026keyValuePrdtBench
 
 import channels.MessagingIO
-import channels.broadcast.KnowledgeGroupBroadcast
 import channels.broadcast.KnowledgeGroupBroadcast.publish
+import channels.broadcast.{KnowledgeGroup, KnowledgeGroupBroadcast, PrdtSystem}
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import ex2026keyValuePrdtBench.KnowledgeGroups.leader
@@ -10,7 +10,6 @@ import rdts.base.{ReplicaId, Uid}
 import rdts.datatypes.ReplicatedSet
 import rdts.protocols.knowledgeGroups.MultiPaxos
 import rdts.protocols.{Participants, Paxos, PaxosRound, Voting}
-import channels.broadcast.{KnowledgeGroup, PrdtSystem}
 
 import scala.collection.mutable
 import scala.concurrent.{Future, Promise}

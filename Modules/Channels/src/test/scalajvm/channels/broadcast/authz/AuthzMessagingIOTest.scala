@@ -1,13 +1,12 @@
 package channels.broadcast.authz
 
-import channels.connection.{Abort, ConnectionDescriptor}
-import channels.crypto.PrivateIdentity
-import channels.{MessagingIO, Timers}
-import channels.connection.{NioTCP, NioTls}
-import munit.FunSuite
-import rdts.filters.PermissionTree
 import channels.broadcast.authz.AuthzProtocol.*
 import channels.broadcast.authz.AuthzTestSupport.{*, given}
+import channels.connection.{Abort, ConnectionDescriptor, NioTCP, NioTls}
+import channels.crypto.PrivateIdentity
+import channels.{MessagingIO, Timers}
+import munit.FunSuite
+import rdts.filters.PermissionTree
 
 import java.net.{InetAddress, InetSocketAddress}
 import scala.concurrent.duration.DurationInt

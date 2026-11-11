@@ -1,11 +1,11 @@
 package webapps.ex2022reform.components
 
-import webapps.ex2022reform.given
-import webapps.ex2022reform.services.AvailableConnection
-import webapps.ex2022reform.{JSImplicits, given_ExecutionContext, *}
 import outwatch.*
 import outwatch.dsl.*
 import reactives.default.*
+import webapps.ex2022reform.given
+import webapps.ex2022reform.services.AvailableConnection
+import webapps.ex2022reform.{JSImplicits, given_ExecutionContext, *}
 
 // NOTE: scala-loci RemoteRef removed – connection rows use String alias/name instead
 def connectionRow(name: String, source: String, uuid: String, displayId: String, tpe: String, ref: String)(using

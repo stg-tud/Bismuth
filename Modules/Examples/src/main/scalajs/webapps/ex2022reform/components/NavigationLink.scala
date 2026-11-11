@@ -15,11 +15,11 @@ limitations under the License.
  */
 package webapps.ex2022reform.components
 
-import webapps.ex2022reform.*
-import webapps.ex2022reform.services.Page
 import org.scalajs.dom.HTMLElement
 import outwatch.*
 import outwatch.dsl.*
+import webapps.ex2022reform.*
+import webapps.ex2022reform.services.Page
 
 def navigationLink(page: Page, label: String)(using jsImplicits: JSImplicits): VNode =
   a(

@@ -1,9 +1,9 @@
 package webapps.ex2022reform.npm
 
 import com.github.plokhotnyuk.jsoniter_scala.core.*
+import org.scalajs.dom.{IDBVersionChangeEvent, window}
 import webapps.ex2022reform.utils.FutureExtensions.*
 import webapps.ex2022reform.{Globals, JSImplicits, given_ExecutionContext}
-import org.scalajs.dom.{IDBVersionChangeEvent, window}
 
 import scala.concurrent.Future
 import scala.scalajs.js

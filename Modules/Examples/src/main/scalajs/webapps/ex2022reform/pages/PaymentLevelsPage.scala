@@ -15,13 +15,13 @@ limitations under the License.
  */
 package webapps.ex2022reform.pages
 
-import webapps.ex2022reform.JSImplicits
-import webapps.ex2022reform.entity.*
-import webapps.ex2022reform.npm.JSUtils.toMoneyString
 import org.scalajs.dom.HTMLElement
 import outwatch.*
 import outwatch.dsl.*
 import reactives.default.*
+import webapps.ex2022reform.JSImplicits
+import webapps.ex2022reform.entity.*
+import webapps.ex2022reform.npm.JSUtils.toMoneyString
 
 case class PaymentLevelsPage()(using
     jsImplicits: JSImplicits,

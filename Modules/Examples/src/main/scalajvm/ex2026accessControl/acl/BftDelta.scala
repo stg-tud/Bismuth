@@ -1,7 +1,6 @@
 package ex2026accessControl.acl
 
-import channels.crypto.PublicIdentity
-import channels.crypto.{Hash, Signature}
+import channels.crypto.{Hash, PublicIdentity, Signature}
 import ex2026accessControl.acl.HashDag.{Delta, Encoder, Hashable}
 
 case class BftDelta[State](

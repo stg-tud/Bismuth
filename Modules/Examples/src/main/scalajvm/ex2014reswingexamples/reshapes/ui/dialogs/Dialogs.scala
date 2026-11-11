@@ -1,8 +1,7 @@
 package ex2014reswingexamples.reshapes.ui.dialogs
 
-import scala.language.unsafeNulls
-
 import java.awt.Point
+import scala.language.unsafeNulls
 import scala.swing.{Action, BoxPanel, Button, CheckBox, Dialog, Label, Orientation, TextField}
 
 abstract class CustomDialog extends Dialog {

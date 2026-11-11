@@ -1,7 +1,7 @@
 package ex2025recipebook
 
 import ex2025recipebook.Recipe.Delta
-import rdts.base.{Bottom, Redundancy, Lattice, ReplicaId}
+import rdts.base.{Bottom, Lattice, Redundancy, ReplicaId}
 import rdts.datatypes.{EnableWinsFlag, LastWriterWins}
 import rdts.syntax.deltalens.*
 

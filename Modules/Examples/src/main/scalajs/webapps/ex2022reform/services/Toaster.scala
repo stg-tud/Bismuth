@@ -1,14 +1,14 @@
 package webapps.ex2022reform.services
 
+import org.scalajs.dom.{HTMLHtmlElement, document, window}
+import outwatch.dsl.*
+import outwatch.{VNode, *}
+import reactives.default.*
 import webapps.ex2022reform.*
 import webapps.ex2022reform.components.icons
 import webapps.ex2022reform.given
 import webapps.ex2022reform.services.ToastMode.*
 import webapps.ex2022reform.services.ToastType.*
-import org.scalajs.dom.{HTMLHtmlElement, document, window}
-import outwatch.dsl.*
-import outwatch.{VNode, *}
-import reactives.default.*
 
 import scala.scalajs.js
 

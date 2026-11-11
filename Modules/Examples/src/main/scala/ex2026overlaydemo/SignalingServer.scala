@@ -2,9 +2,9 @@ package ex2026overlaydemo
 
 import channels.JsoniterCodecs.given
 import channels.connection.{Abort, ByteBufferMessageBuffer, Connection, Connector, Listener, Receive}
-import SignalingServer.Message
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromByteBuffer, writeToArray}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
+import ex2026overlaydemo.SignalingServer.Message
 import rdts.base.Uid
 
 import scala.collection.mutable

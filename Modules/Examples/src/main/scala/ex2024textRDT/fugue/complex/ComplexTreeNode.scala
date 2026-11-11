@@ -1,9 +1,9 @@
 package ex2024textRDT.fugue.complex
 
+import ex2024textRDT.*
 import ex2024textRDT.Helper.myAssert
 import ex2024textRDT.debug.pprintNonAVL
 import ex2024textRDT.fugue.*
-import ex2024textRDT.*
 
 import scala.collection.mutable
 

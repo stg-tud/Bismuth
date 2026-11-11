@@ -1,13 +1,11 @@
 package ex2026accessControl.authz.evaluation
 
-import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
-import channels.crypto.PrivateIdentity
-import channels.crypto.PublicIdentity
-import channels.crypto.Hash
-import rdts.base.{Bottom, Decompose, Lattice}
-import channels.connection.ByteBufferMessageBuffer
 import channels.broadcast.authz.AuthzMessage
+import channels.connection.ByteBufferMessageBuffer
+import channels.crypto.{Hash, PrivateIdentity, PublicIdentity}
+import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
 import ex2026accessControl.authz.evaluation.ConnectionManager
+import rdts.base.{Bottom, Decompose, Lattice}
 
 class HashDagReplica[Entry <: HashDagEntry[RDT]: JsonValueCodec, RDT: {Lattice, Bottom, JsonValueCodec, Decompose}](
     genesis: Hash,

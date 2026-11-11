@@ -1,15 +1,13 @@
 package channels.broadcast.authz
 
-import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray}
-import channels.crypto.Commitment.RevealedValue
-import channels.crypto.PrivateIdentity
-import channels.crypto.PublicIdentity
-import channels.crypto.Hash
-import munit.{FunSuite, Location}
-import rdts.filters.PermissionTree
+import channels.JsoniterCodecsJvm.ardtEventCodec
 import channels.broadcast.authz.ArdtEvent.Payload.{Capability, Revocation}
 import channels.broadcast.authz.AuthzTestSupport.{*, given}
-import channels.JsoniterCodecsJvm.ardtEventCodec
+import channels.crypto.Commitment.RevealedValue
+import channels.crypto.{Hash, PrivateIdentity, PublicIdentity}
+import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray}
+import munit.{FunSuite, Location}
+import rdts.filters.PermissionTree
 
 import java.security.PrivateKey
 import scala.collection.mutable

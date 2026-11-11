@@ -15,11 +15,11 @@ limitations under the License.
  */
 package webapps.ex2022reform.pages
 
+import outwatch.*
+import reactives.default.*
 import webapps.ex2022reform.entity.{UIBasicAttribute, *}
 import webapps.ex2022reform.npm.JSUtils.dateDiffMonth
 import webapps.ex2022reform.{JSImplicits, *}
-import outwatch.*
-import reactives.default.*
 
 case class ProjectsPage()(using
     jsImplicits: JSImplicits,

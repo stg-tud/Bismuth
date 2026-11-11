@@ -1,7 +1,7 @@
 package ex2025recipebook
 
 import rdts.base.Redundancy.MetaDelta
-import rdts.base.{Redundancy, Lattice}
+import rdts.base.{Lattice, Redundancy}
 import rdts.time.Dots
 
 abstract class DeltaBuffer[A, Self <: DeltaBuffer[A, Self]](buffer: Set[MetaDelta[A]]) {
