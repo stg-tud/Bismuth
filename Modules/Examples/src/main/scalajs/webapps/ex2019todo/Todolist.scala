@@ -5,7 +5,7 @@ import org.scalajs.dom.{Element, document, window}
 import rdts.base.{Lattice, ReplicaId}
 import reactives.extra.Tags.reattach
 import scalatags.JsDom.all
-import webapps.WebRTCConnectionView
+import webapps.DemoBridge
 
 import java.util.Timer
 import scala.scalajs.js.annotation.JSExportTopLevel
@@ -26,7 +26,7 @@ object Todolist {
 
   // TodoDataManager.dataManager.addLatentConnection(WebviewAdapterChannel.listen())
 
-  lazy val webrtc: Element = WebRTCConnectionView(TodoDataManager.dataManager).example().render
+  lazy val webrtc: Element = DemoBridge.connectionView(TodoDataManager.dataManager)
 
 //  lazy val dtnConnectorContents: Div = DTNTestConnector.getConnectorContents()
 

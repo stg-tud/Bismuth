@@ -4,7 +4,7 @@ import org.scalajs.dom.document
 import rdts.base.{Lattice, ReplicaId}
 import reactives.extra.Tags.reattach
 import scalatags.JsDom.all
-import webapps.WebRTCConnectionView
+import webapps.DemoBridge
 
 import scala.scalajs.js.annotation.JSExportTopLevel
 
@@ -27,11 +27,11 @@ object MiniSocialMain {
       }.hold(all.span.render)
     )
 
-    val webrtc = WebRTCConnectionView(MiniSocialDataManager.dataManager).example()
+    val webrtc = DemoBridge.connectionView(MiniSocialDataManager.dataManager)
 
     val container = document.getElementById("app")
     container.replaceChildren(content)
-    container.appendChild(webrtc.render)
+    container.appendChild(webrtc)
     container.appendChild(statusInfo)
     ()
   }

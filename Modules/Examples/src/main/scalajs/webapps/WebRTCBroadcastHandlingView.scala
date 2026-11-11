@@ -32,7 +32,11 @@ given converterWrite[T](using JsonValueCodec[T]): Conversion[T, MessageBuffer] =
 
 given JsonValueCodec[BroadcastCommunication] = JsonCodecMaker.make
 
-class WebRTCConnectionView(val dataManager: MessagingIO[?]) {
+/** `offerChannel` is the broadcast channel used to automatically connect to other tabs of the same browser. */
+class WebRTCConnectionView(
+    val dataManager: MessagingIO[?],
+    offerChannel: String = "channels local broadcast for webrtc offers"
+) {
 
   // label seems mostly for auto negotiation
   val channelLabel = "webrtc-channel"
@@ -60,6 +64,7 @@ class WebRTCConnectionView(val dataManager: MessagingIO[?]) {
         val handling = WebRTCHandling(None)
         renderedConnectionTable.appendChild(handling.controlRow().render)
         addDataChannel(handling)
+        handling.peer.smartUpdateLocalDescription.run(errorReporter)
     .runIn(ExecutionContext.global)(errorReporter)
 
     useLocalBroadcastChannel(renderedConnectionTable)
@@ -75,7 +80,7 @@ class WebRTCConnectionView(val dataManager: MessagingIO[?]) {
   }
 
   private def useLocalBroadcastChannel(renderedConnectionTable: Table) = {
-    val connector = BroadcastChannelConnector.named("channels local broadcast for webrtc offers")
+    val connector = BroadcastChannelConnector.named(offerChannel)
 
     var autoconnections: Map[Long, WebRTCHandling] = Map.empty
     val selfId                                     = Random.nextLong()
@@ -96,6 +101,8 @@ class WebRTCConnectionView(val dataManager: MessagingIO[?]) {
                   autoconnections = autoconnections.updated(id, handling)
                   renderedConnectionTable.appendChild(handling.controlRow().render)
                   addDataChannel(handling)
+                  // pre-negotiated channels do not trigger `negotiationneeded`, so create the offer explicitly
+                  handling.peer.smartUpdateLocalDescription.run(Async.handler)
 
                 case BroadcastCommunication.Request(from, `selfId`, sessionDescription) =>
                   val handling = WebRTCHandling(Some {

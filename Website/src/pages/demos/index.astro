@@ -21,7 +21,7 @@ import { demos } from "../../data/site";
 			<div class="demo-cards" role="tablist">
 				{
 					demos.map((d) => (
-						<button class="card card-padded" role="tab" data-demo={d.id} data-summary={d.summary} aria-selected="false">
+						<button class="card card-padded" role="tab" data-demo={d.id} data-summary={d.summary} data-bridged={d.bridged ? "true" : undefined} aria-selected="false">
 							<span class="icon" aria-hidden="true">{d.icon}</span>
 							<strong>{d.title}</strong>
 							<span class="text">{d.summary}</span>
@@ -34,6 +34,7 @@ import { demos } from "../../data/site";
 				<span></span> <a id="demo-open" target="_blank">Open in new tab ↗</a>
 			</p>
 			<iframe id="demo-frame" class="card demo-frame" title="Demo" hidden></iframe>
+			<div id="demo-connections"></div>
 		</div>
 	</section>
 </Base>
@@ -48,10 +49,36 @@ import { demos } from "../../data/site";
 	const buttons = [...document.querySelectorAll<HTMLButtonElement>(".demo-cards button")];
 
 	// nothing is loaded until a demo is selected; the selected demo is kept in the url hash (e.g. demos/#tabular), so it survives reloads and can be linked
+	const connections = document.getElementById("demo-connections")!;
+	let current: string | undefined;
+	let stopBridge: (() => void) | undefined;
+
+	// bridged demos connect to a relay on this page (via a broadcast channel only known to this page and the iframe),
+	// which handles the WebRTC connections to other replicas, see webapps.DemoBridge
+	async function load(id: string, bridged: boolean) {
+		stopBridge?.();
+		stopBridge = undefined;
+		const demo = url(`/examples/${id}.html`);
+		if (!bridged) {
+			frame.src = demo;
+			return;
+		}
+		const bridge = crypto.randomUUID();
+		// @ts-ignore the Scala.js output is untyped (alias defined in astro.config.mjs)
+		const { DemoBridgeHost } = await import("scalajs:examples");
+		if (current !== id) return; // another demo was selected in the meantime
+		stopBridge = DemoBridgeHost(id, bridge, connections);
+		frame.src = `${demo}?bridge=${bridge}`;
+	}
+
 	function select(btn: HTMLButtonElement, scroll: boolean) {
 		buttons.forEach((b) => b.setAttribute("aria-selected", String(b === btn)));
-		const demo = url(`/examples/${btn.dataset.demo}.html`);
-		if (frame.getAttribute("src") !== demo) frame.src = demo;
+		const id = btn.dataset.demo!;
+		const demo = url(`/examples/${id}.html`);
+		if (current !== id) {
+			current = id;
+			load(id, btn.dataset.bridged === "true");
+		}
 		open.href = demo;
 		summary.querySelector("span")!.textContent = btn.dataset.summary ?? "";
 		summary.hidden = false;
