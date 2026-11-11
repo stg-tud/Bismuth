@@ -11,7 +11,7 @@ trait Aead {
 object Aead {
   val emptyAssociatedData: ByteBuffer = ByteBuffer.allocate(0)
 
-  val identity: Aead = new Aead {
+  object identity extends Aead {
     override def encrypt(plain: ByteBuffer, associated: ByteBuffer): ByteBuffer = plain
 
     override def decrypt(cypher: ByteBuffer, associated: ByteBuffer): Try[ByteBuffer] = Try(cypher)
