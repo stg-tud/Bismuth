@@ -225,6 +225,7 @@ export interface TreeEntry {
 export const repoTree: TreeEntry[] = [
 	{ name: "build.sbt", summary: "The sbt build with all modules." },
 	{ name: "Justfile", summary: "Common commands." },
+	{ name: "project/", summary: "sbt plugins and shared build settings." },
 	{
 		name: "Modules/",
 		summary: "One folder per module.",
@@ -242,7 +243,7 @@ export const repoTree: TreeEntry[] = [
 			{
 				name: "LoRe Compiler Plugin/",
 				sbt: ["loreCompilerPlugin"],
-				summary: "Verifies LoRe code embedded in Scala by compiling it to Dafny. Currently dormant.",
+				summary: "Verifies LoRe code embedded in Scala by compiling it to Dafny.",
 			},
 			{
 				name: "Examples/",
@@ -266,7 +267,7 @@ export const repoTree: TreeEntry[] = [
 					{ name: "ex2024DTN/", summary: "Delay-tolerant networking: routers that disseminate RDT deltas, with monitoring and simulation clients." },
 					{ name: "ex2024ot/", summary: "An operational transformation algorithm over causal broadcast, for comparison with RDTs." },
 					{ name: "ex2024socialMedia/", summary: "Sketch of a reactive social media application." },
-					{ name: "ex2024textRDT/", summary: "Fugue-based collaborative text editing: shared tree implementations, a JVM benchmark, and the browser editor." },
+					{ name: "ex2024textRDT/ (JS)", summary: "Fugue-based collaborative text editing: shared tree implementations, a JVM benchmark, and the browser editor." },
 					{ name: "ex2025blockchain/", summary: "Proof-of-work and proof-of-stake blockchains built on RDTs." },
 					{ name: "ex2025recipebook/", summary: "A replicated recipe book with evaluations of MV-register and OR-map designs." },
 					{ name: "ex2025ribltbft/", summary: "BFT synchronization of hash DAGs using rateless invertible Bloom lookup tables (RIBLT)." },
@@ -276,13 +277,13 @@ export const repoTree: TreeEntry[] = [
 					{ name: "ex2026keyHierarchies/", summary: "Key hierarchies for encrypting parts of deltas with derived keys." },
 					{ name: "ex2026keyValuePrdtBench/", summary: "A key-value store replicated by consensus protocols built from protocol RDTs, benchmarked against etcd (YCSB adapters, CLI, clients)." },
 					{ name: "ex2026minisocial/ (JS)", summary: "The tiny replicated social feed." },
-					{ name: "ex2026overlaydemo/", summary: "The overlay network visualization, with a JVM signaling server." },
+					{ name: "ex2026merklesearchtree/", summary: "A Merkle search tree." },
+					{ name: "ex2026overlaydemo/ (JS)", summary: "The overlay network visualization, with a JVM signaling server." },
 				],
 			},
-			{ name: "Webview/", sbt: ["webview"], summary: "Runs the web demos in a native window, using Scala Native." },
+			{ name: "scripts/", sbt: ["scripts"], summary: "Repository maintenance commands, such as selecting the default reactives scheduler and fixing the IntelliJ BSP import." },
 		],
 	},
 	{ name: "Research Artifacts/", summary: "Evaluation scripts, results, and notebooks of published papers." },
-	{ name: "Scripts/", summary: "Helper scripts." },
 	{ name: "Website/", summary: "This website, including the manuals (a scitzen project in Website/documentation/) and the web pages of the demos." },
 ];
