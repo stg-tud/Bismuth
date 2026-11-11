@@ -15,14 +15,6 @@ import scala.scalajs.js.timers.SetTimeoutHandle
 
 object SpreadsheetComponent {
 
-  /** The initial 6×6 sheet. Created with a fixed replica id, so every replica creates the same rows and columns
-    * (instead of each adding its own 6 rows and columns when they sync).
-    */
-  def sampleSpreadsheet: Spreadsheet[String] =
-    new SpreadsheetDeltaAggregator(Spreadsheet[String](), ReplicaId.predefined("sample"))
-      .repeatEdit(6, _.addRow().delta, allowUndo = false)
-      .repeatEdit(6, _.addColumn().delta, allowUndo = false)
-      .current
 
   case class Props(
       spreadsheetAggregator: SpreadsheetDeltaAggregator[String],
@@ -504,13 +496,13 @@ object SpreadsheetComponent {
           }
         ),
         <.div(
-          ^.className := "overflow-x-auto",
           <.table(
-            ^.className := "min-w-full border-collapse border border-gray-300",
+            // fixed layout: the columns share the available width, no horizontal scrolling
+            ^.className := "w-full table-fixed border-collapse border border-gray-300",
             <.thead(
               <.tr(
                 <.th(
-                  ^.className := "border border-gray-300 px-4 py-2 bg-gray-50 font-semibold w-16",
+                  ^.className := "border border-gray-300 px-2 py-1 bg-gray-50 font-semibold w-10",
                   "#",
                   ^.onDragOver ==> backend.handleColumnDragOver((-1).toColumnIndex),
                   ^.onDrop ==> backend.handleColumnDrop((-1).toColumnIndex)
@@ -521,7 +513,7 @@ object SpreadsheetComponent {
                       ^.key       := s"header-$i",
                       ^.className := {
                         val baseClass =
-                          "border border-gray-300 px-4 py-2 font-semibold w-32 max-w-32 cursor-pointer hover:bg-gray-200"
+                          "border border-gray-300 px-2 py-1 font-semibold cursor-pointer hover:bg-gray-200"
                         val selectedClass =
                           if state.selectedColumn.contains(i.toColumnIndex) then " bg-blue-200" else " bg-gray-100"
                         val previewLeft =
@@ -551,7 +543,7 @@ object SpreadsheetComponent {
                   <.td(
                     ^.className := {
                       val baseClass =
-                        "border border-gray-300 px-4 py-2 font-medium text-center cursor-pointer hover:bg-gray-200"
+                        "border border-gray-300 px-2 py-1 font-medium text-center cursor-pointer hover:bg-gray-200"
                       val selectedClass = if state.selectedRow.contains(rowIdx) then " bg-blue-200" else " bg-gray-50"
                       val previewTop = if state.previewRow.contains(rowIdx) then " border-t-4 border-blue-400" else ""
                       val previewBottom =
@@ -572,7 +564,7 @@ object SpreadsheetComponent {
                     <.td(
                       ^.key       := s"cell-$rowIdx-$colIdx",
                       ^.className := {
-                        val baseClass = "border border-gray-300 px-4 py-2 text-center relative w-32 max-w-32"
+                        val baseClass = "border border-gray-300 p-0 text-center relative"
                         baseClass + cellStyleClasses(rowIdx, colIdx)
                       },
                       ^.onDoubleClick --> backend.handleDoubleClick(rowIdx, colIdx),
@@ -593,12 +585,12 @@ object SpreadsheetComponent {
                             ^.value  := state.editingValue,
                             ^.onChange ==> backend.handleInputChange,
                             ^.onKeyDown ==> backend.handleKeyPress,
-                            ^.className := "w-full h-full border-none outline-none px-2 py-1 max-w-full",
+                            ^.className := "block w-full min-w-0 border-none outline-none px-2 py-1 bg-blue-50",
                             ^.autoFocus := true
                           )
                         case _ =>
                           <.span(
-                            ^.className := "block cursor-pointer min-h-[1.5rem] overflow-hidden text-ellipsis whitespace-nowrap",
+                            ^.className := "block w-full px-2 py-1 cursor-pointer min-h-[2rem] overflow-hidden text-ellipsis whitespace-nowrap",
                             ^.title := cell.formatConflicts(),
                             cell.formatConflicts()
                           )

@@ -28,3 +28,13 @@ class SpreadsheetCodecSuite extends munit.FunSuite {
     assertEquals(a.current.toList, b.current.toList)
   }
 }
+
+class SampleSpreadsheetSuite extends munit.FunSuite {
+  test("the sample sheet has 6 rows and 3 columns and identical for all replicas") {
+    val a = webapps.ex2025tabular.app.SampleSpreadsheet()
+    val b = webapps.ex2025tabular.app.SampleSpreadsheet()
+    assertEquals(a.numRows, 6)
+    assertEquals(a.numColumns, 3)
+    assertEquals(Lattice.merge(a, b), a)
+  }
+}

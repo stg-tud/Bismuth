@@ -20,7 +20,7 @@ object Main {
   /** re-renders the app, set once mounted */
   private var refresh: () => Unit = () => ()
 
-  val aggregator = SpreadsheetDeltaAggregator(SpreadsheetComponent.sampleSpreadsheet, replicaId)
+  val aggregator = SpreadsheetDeltaAggregator(SampleSpreadsheet(), replicaId)
 
   val replication: OverlayReplication[Spreadsheet[String]] =
     OverlayReplication[Spreadsheet[String]](
@@ -47,7 +47,7 @@ object Main {
       <.div(
         ^.className := "min-h-screen bg-gradient-to-br from-blue-400 to-purple-600 p-2 sm:p-8",
         <.div(
-          ^.className := "bg-white rounded-lg shadow-2xl p-2 sm:p-8 max-w-4xl mx-auto overflow-x-auto",
+          ^.className := "bg-white rounded-lg shadow-2xl p-2 sm:p-8 max-w-4xl mx-auto",
           SpreadsheetComponent.Component(
             SpreadsheetComponent.Props(
               spreadsheetAggregator = aggregator,
