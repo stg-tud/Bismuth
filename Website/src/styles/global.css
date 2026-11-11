@@ -151,7 +151,7 @@ code { background: var(--indigo-100); padding: 0 0.25em; border-radius: 3px; }
 .bib-list .meta { color: var(--gray-600); font-size: 14px; }
 
 /* Libraries page */
-.card { background: white; border: 1px solid var(--indigo-200); border-radius: 5px; }
+.card { background: white; border-radius: 5px; }
 .card-padded { padding: 1.5rem; }
 .lib-card { display: flex; flex-direction: column; }
 .lib-card h3 { margin-bottom: 0.5rem; }
@@ -176,15 +176,15 @@ a.lib-link.primary:hover { background: var(--yellow-500); color: var(--gray-950)
 /* Demos page */
 .demo-cards { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); margin-bottom: 1.5rem; }
 .demo-cards button {
-	display: flex; flex-direction: column; gap: 0.3rem; text-align: left; cursor: pointer; padding: 1rem 1.25rem;
-	font: inherit; color: inherit; background: white; border: 1px solid var(--indigo-200); border-radius: 8px;
+	display: flex; flex-direction: column; gap: 0.3rem; text-align: left; cursor: pointer;
+	font: inherit; color: inherit; border: none;
 }
 .demo-cards button:hover { background: var(--indigo-100); }
-.demo-cards button[aria-selected="true"] { border-color: var(--indigo-700); box-shadow: inset 0 0 0 1px var(--indigo-700); }
+.demo-cards button[aria-selected="true"] { box-shadow: inset 0 0 0 2px var(--indigo-700); }
 .demo-cards .icon { font-size: 1.75rem; }
 .demo-cards strong { font-family: "Barlow", sans-serif; font-size: 1.1rem; color: var(--indigo-900); }
 .demo-cards .text { font-size: 14px; color: var(--gray-600); }
-.demo-frame { width: 100%; height: 640px; border: 1px solid var(--indigo-200); border-radius: 5px; background: white; }
+.demo-frame { width: 100%; height: 640px; border: none; }
 
 /* Footer */
 footer { background: var(--indigo-900); color: white; }
@@ -204,7 +204,7 @@ footer .bottom { background: var(--indigo-800); text-align: center; font-size: 1
 #development pre { background: var(--indigo-900); color: white; padding: 0.6rem 1rem; border-radius: 5px; overflow-x: auto; margin: 0.5rem 0; }
 #development pre code { background: none; padding: 0; color: inherit; }
 .steps { list-style: none; counter-reset: step; padding: 0; margin: 2rem 0 3rem; display: grid; gap: 1.5rem; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
-.steps li { counter-increment: step; position: relative; padding: 1.25rem 1.5rem; background: var(--indigo-100); border-radius: 8px; }
+.steps li { counter-increment: step; position: relative; }
 .steps li::before {
 	content: counter(step); position: absolute; top: -0.9rem; left: 1.25rem; width: 1.8rem; height: 1.8rem; border-radius: 50%;
 	background: var(--yellow-400); color: var(--gray-950); font-family: "Barlow", sans-serif; font-weight: 700; display: grid; place-items: center;
@@ -215,11 +215,11 @@ footer .bottom { background: var(--indigo-800); text-align: center; font-size: 1
 #development > .container > .hint { color: var(--gray-600); margin: -1.5rem 0 3rem; }
 .subhead { margin-top: 1rem; }
 .ide { margin-bottom: 3rem; }
-.ide-card { padding: 1.25rem 1.5rem; border: 1px solid var(--indigo-200); border-radius: 8px; }
 .ide-card h4 { margin-bottom: 0.5rem; }
 .ide-card p { margin: 0; }
-.tree, .tree ul { list-style: none; margin: 0; padding: 0; }
-.tree { margin-top: 1rem; padding: 1rem 1.5rem; border: 1px solid var(--indigo-200); border-radius: 8px; background: white; }
+.tree, .tree ul { list-style: none; margin: 0; }
+.tree ul { padding: 0; }
+.tree { margin-top: 1rem; }
 .tree ul { margin-left: 0.6rem; padding-left: 1.4rem; border-left: 2px solid var(--indigo-200); }
 .tree-row { display: grid; grid-template-columns: minmax(12rem, 16rem) 1fr; gap: 1rem; padding: 0.35rem 0; align-items: baseline; }
 .tree ul .tree-row { grid-template-columns: minmax(10.5rem, 14.6rem) 1fr; }
@@ -234,7 +234,7 @@ footer .bottom { background: var(--indigo-800); text-align: center; font-size: 1
 .hero.secondary:hover { background: white; color: var(--indigo-900); }
 
 /* Dependency snippets */
-.deps { margin-top: 2.5rem; padding: 1.5rem; background: white; border: 1px solid var(--indigo-200); border-radius: 8px; }
+.deps { margin-top: 2.5rem; }
 .deps h3 { margin-bottom: 0.5rem; }
 .deps input { position: absolute; opacity: 0; pointer-events: none; }
 .deps label {

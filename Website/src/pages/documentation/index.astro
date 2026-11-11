@@ -48,7 +48,7 @@ import { changelog, libraries, manualPath, repoTree, site, version } from "../..
 			}
 		</div>
 		<div class="container">
-			<div class="deps">
+			<div class="card card-padded deps">
 				<h3>Using the libraries</h3>
 				<p>
 					The current version is {version}. See the <a href={url(manualPath(changelog))}>changelog</a> for what changed.
@@ -73,7 +73,7 @@ libraryDependencies += "de.tu-darmstadt.stg" %% "channels" % "${version}"`}</cod
 			</div>
 		</div>
 	</section>
-	<section class="section" id="development">
+	<section class="section bg-light" id="development">
 		<div class="container">
 			<h2>Working with the repository</h2>
 			<p class="lead">
@@ -82,7 +82,7 @@ libraryDependencies += "de.tu-darmstadt.stg" %% "channels" % "${version}"`}</cod
 			</p>
 
 			<ol class="steps">
-				<li>
+				<li class="card card-padded">
 					<h3>Install sbt</h3>
 					<p>
 						Follow the <a href="https://www.scala-sbt.org/download/">official install instructions</a>. You also need
@@ -90,7 +90,7 @@ libraryDependencies += "de.tu-darmstadt.stg" %% "channels" % "${version}"`}</cod
 					</p>
 					<pre><code>sbt compile</code></pre>
 				</li>
-				<li>
+				<li class="card card-padded">
 					<h3>Compile and test</h3>
 					<p>
 						Prefix a command with the module name, and use <code>projects</code> to list all modules. The JVM variant has no suffix, the others end in <code>JS</code>{" "}
@@ -109,7 +109,7 @@ sbt 'reactivesJS/test'</code></pre>
 			<h3 class="subhead">IDE setup</h3>
 			<p>Both IntelliJ and Metals generally work well with the project. Start sbt once from the command line before importing.</p>
 			<div class="grid ide">
-				<div class="ide-card">
+				<div class="card card-padded ide-card">
 					<h4><a href="https://www.jetbrains.com/help/idea/get-started-with-scala.html">IntelliJ</a> with the Scala plugin</h4>
 					<p>
 						Open the root folder and use the normal sbt import. Alternatively, choose <b>BSP</b> so IntelliJ compiles and tests
@@ -118,7 +118,7 @@ sbt 'reactivesJS/test'</code></pre>
 					</p>
 					<pre><code>just intellij-bsp-import-fix</code></pre>
 				</div>
-				<div class="ide-card">
+				<div class="card card-padded ide-card">
 					<h4><a href="https://scalameta.org/metals/">Metals</a> language server</h4>
 					<p>
 						Works with VS Code and many other editors. Metals can also use{" "}
@@ -129,7 +129,7 @@ sbt 'reactivesJS/test'</code></pre>
 			</div>
 
 			<h3 class="subhead">Repository layout</h3>
-			<ul class="tree">
+			<ul class="card card-padded tree">
 				{
 					repoTree.map((e) => (
 						<li class:list={{ dim: e.dim }}>

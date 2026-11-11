@@ -21,7 +21,7 @@ import { demos } from "../../data/site";
 			<div class="demo-cards" role="tablist">
 				{
 					demos.map((d) => (
-						<button role="tab" data-demo={d.id} data-summary={d.summary} aria-selected="false">
+						<button class="card card-padded" role="tab" data-demo={d.id} data-summary={d.summary} aria-selected="false">
 							<span class="icon" aria-hidden="true">{d.icon}</span>
 							<strong>{d.title}</strong>
 							<span class="text">{d.summary}</span>
@@ -33,7 +33,7 @@ import { demos } from "../../data/site";
 			<p id="demo-summary" hidden>
 				<span></span> <a id="demo-open" target="_blank">Open in new tab ↗</a>
 			</p>
-			<iframe id="demo-frame" class="demo-frame" title="Demo" hidden></iframe>
+			<iframe id="demo-frame" class="card demo-frame" title="Demo" hidden></iframe>
 		</div>
 	</section>
 </Base>
