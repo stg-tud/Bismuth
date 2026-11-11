@@ -12,6 +12,8 @@ const scalajsExamples = {
 				vite: {
 					// outwatch (Reform) accesses `.default` of namespace imports of the CommonJS snabbdom fork
 					legacy: { inconsistentCjsInterop: true },
+					// the Scala.js output of the case studies is one large chunk by design
+					build: { chunkSizeWarningLimit: 10000 },
 					// vite does not discover the npm imports of the (dynamically imported) Scala.js output up front;
 					// discovering them while the app loads makes vite re-optimize and fail the in-flight module requests
 					optimizeDeps: {
