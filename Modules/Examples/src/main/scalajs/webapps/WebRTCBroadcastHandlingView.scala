@@ -32,10 +32,13 @@ given converterWrite[T](using JsonValueCodec[T]): Conversion[T, MessageBuffer] =
 
 given JsonValueCodec[BroadcastCommunication] = JsonCodecMaker.make
 
-/** `offerChannel` is the broadcast channel used to automatically connect to other tabs of the same browser. */
+/** `offerChannel` is the broadcast channel used to automatically connect to other tabs of the same browser.
+  * `defaultRoom` is the initial room for connecting to other browsers via the public PeerJS signaling server.
+  */
 class WebRTCConnectionView(
     val dataManager: MessagingIO[?],
-    offerChannel: String = "channels local broadcast for webrtc offers"
+    offerChannel: String = "channels local broadcast for webrtc offers",
+    defaultRoom: String = "default",
 ) {
 
   // label seems mostly for auto negotiation
@@ -69,9 +72,19 @@ class WebRTCConnectionView(
 
     useLocalBroadcastChannel(renderedConnectionTable)
 
+    val roomInput  = input(placeholder := "room", value := defaultRoom).render
+    val roomStatus = span("not connected to any room").render
+    val joinButton = button("join room").render
+    var leave: () => Unit = () => ()
+    joinButton.onclick = (_: MouseEvent) => {
+      leave()
+      leave = joinRoom(roomInput.value, renderedConnectionTable, roomStatus.textContent = _)
+    }
+
     val para =
       section(
         hr(),
+        div(roomInput, joinButton, " ", roomStatus),
         renderedConnectionTable,
         renderedAddConnectionButton
       )
@@ -130,6 +143,103 @@ class WebRTCConnectionView(
     }
   }
 
+  /** Connect to other browsers in `room` using the public PeerJS signaling server.
+    * The PeerJS server does not tell us about other peers, so the first peer claims a well known id derived from the room
+    * (becoming the hub), and all others connect to the hub (the broadcast protocol relays through the hub).
+    * If the connection to the hub fails, peers try to become the hub themselves.
+    * Returns a function to leave the room.
+    */
+  private def joinRoom(room: String, renderedConnectionTable: Table, status: String => Unit): () => Unit = {
+    // ids on the public PeerJS server are global, so use a namespace unlikely to be used by anyone else
+    val hubId = s"${PeerJsSignaling.namespace}-room-${PeerJsSignaling.sanitize(room)}"
+
+    var signaling: Option[PeerJsSignaling] = None
+    var left                               = false
+    // as non-hub: the connection to the hub, and when it was started
+    var toHub: Option[(WebRTCHandling, Double)] = None
+    var answering: Map[String, WebRTCHandling]  = Map.empty
+
+    def newHandling(onReady: SessionDescription => Unit): WebRTCHandling = {
+      val handling = WebRTCHandling(Some {
+        case Success(sd) => onReady(sd)
+        case Failure(ex) => errorReporter.fail(ex)
+      })
+      renderedConnectionTable.appendChild(handling.controlRow().render)
+      addDataChannel(handling)
+      handling
+    }
+
+    def restart(): Unit = {
+      signaling.foreach(_.close())
+      signaling = None
+      toHub = None
+      if !left then dom.window.setTimeout(() => if !left then asHub(), 1000 + Random.nextInt(2000)): Unit
+    }
+
+    def asHub(): Unit = {
+      status(s"connecting to signaling server …")
+      lazy val sig: PeerJsSignaling = PeerJsSignaling(
+        hubId,
+        new PeerJsSignaling.Handler {
+          override def open(): Unit    = status(s"room “$room”: waiting for peers (hub)")
+          override def idTaken(): Unit = if !left then asClient()
+          override def offer(from: String, sd: SessionDescription): Unit = {
+            val handling = newHandling(answer => sig.sendAnswer(from, answer))
+            answering = answering.updated(from, handling)
+            handling.peer.updateRemoteDescription(sd).run(errorReporter)
+            status(s"room “$room”: hub, ${answering.size} peer(s) joined")
+          }
+          override def disconnected(): Unit = restart()
+        }
+      )
+      signaling = Some(sig)
+    }
+
+    def asClient(): Unit = {
+      lazy val sig: PeerJsSignaling = PeerJsSignaling(
+        PeerJsSignaling.randomId(),
+        new PeerJsSignaling.Handler {
+          override def open(): Unit = {
+            status(s"room “$room”: connecting to hub …")
+            val handling = newHandling(offer => sig.sendOffer(hubId, offer))
+            toHub = Some((handling, Date.now()))
+            handling.peer.smartUpdateLocalDescription.run(errorReporter)
+          }
+          override def answer(from: String, sd: SessionDescription): Unit =
+            toHub.foreach((handling, _) => handling.peer.updateRemoteDescription(sd).run(errorReporter))
+          override def gone(peer: String): Unit = if peer == hubId then restart()
+          override def disconnected(): Unit     = if toHub.isEmpty then restart()
+        }
+      )
+      signaling = Some(sig)
+    }
+
+    // watch the connection to the hub, and try to take over if it fails
+    val watchdog = dom.window.setInterval(
+      () =>
+        toHub.foreach { (handling, started) =>
+          handling.peer.peerConnection.iceConnectionState match
+              case RTCIceConnectionState.connected | RTCIceConnectionState.completed =>
+                status(s"room “$room”: connected to hub")
+              case RTCIceConnectionState.failed | RTCIceConnectionState.disconnected |
+                  RTCIceConnectionState.closed =>
+                restart()
+              case _ if Date.now() - started > 30000 => restart()
+              case _                                  => ()
+        },
+      5000
+    )
+
+    asHub()
+
+    () => {
+      left = true
+      dom.window.clearInterval(watchdog)
+      signaling.foreach(_.close())
+      status("not connected to any room")
+    }
+  }
+
   def addDataChannel(handling: WebRTCHandling): Unit = {
 
     val channel = handling.peer.peerConnection.createDataChannel(
@@ -156,11 +266,31 @@ class WebRTCHandling(readyChannel: Option[Callback[SessionDescription]]) {
 
   val peer: WebRTCConnector = WebRTCConnector(new dom.RTCConfiguration {
     iceServers = js.Array[dom.RTCIceServer](new RTCIceServer {
-      urls = js.Array[String]("stun:stun.t-online.de:3478")
+      urls = js.Array[String]("stun:stun.t-online.de:3478", "stun:stun.l.google.com:19302")
+    }, new RTCIceServer {
+      // public TURN servers of PeerJS (credentials are published in the PeerJS client)
+      urls = js.Array[String]("turn:eu-0.turn.peerjs.com:3478", "turn:us-0.turn.peerjs.com:3478")
+      username = "peerjs"
+      credential = "peerjsp"
     })
   })
 
   var readyChannelSent = false
+
+  /** Pass the local session description on once ICE gathering is complete (or `force`d, e.g., after a timeout). */
+  def signalReady(force: Boolean): Unit = {
+    val overview = peer.readOverview
+    if !readyChannelSent && (force || overview.iceGatheringState == RTCIceGatheringState.complete) then
+        overview.localSession.foreach { sd =>
+          readyChannelSent = true
+          readyChannel.foreach(_.succeed(sd))
+        }
+  }
+
+  // the gathering state may become complete without any of the events observed by `lifecycle`
+  peer.peerConnection.addEventListener("icegatheringstatechange", (_: dom.Event) => signalReady(force = false))
+  // gathering may take very long (or never finish) with unreachable STUN/TURN servers, use what we have by then
+  if readyChannel.isDefined then dom.window.setTimeout(() => signalReady(force = true), 5000): Unit
 
   def controlRow(): ConcreteHtmlTag[dom.html.TableRow] = {
 
@@ -208,9 +338,7 @@ class WebRTCHandling(readyChannel: Option[Callback[SessionDescription]]) {
       connectionState.innerText = lifecycle.iceConnectionState
       signalingState.innerText = lifecycle.signalingState
 
-      if !readyChannelSent && lifecycle.iceGatheringState == RTCIceGatheringState.complete then
-          readyChannelSent = true
-          readyChannel.foreach(cb => lifecycle.localSession.foreach(cb.succeed))
+      signalReady(force = false)
 
     }.run(errorReporter)
 

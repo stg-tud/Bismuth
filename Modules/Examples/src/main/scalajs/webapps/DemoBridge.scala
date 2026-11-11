@@ -51,7 +51,7 @@ object DemoBridge {
   def host(app: String, bridge: String, container: dom.Element): js.Function0[Unit] = {
     val relay = MessagingIO.usingPlumtree[RawJson](ReplicaId.gen(), _ => ())
     relay.addClientConnection(BroadcastChannelPairConnector.named(channelName(bridge)))
-    val view = WebRTCConnectionView(relay, offerChannel = s"channels local broadcast for webrtc offers ($app)")
+    val view = WebRTCConnectionView(relay, offerChannel = s"channels local broadcast for webrtc offers ($app)", defaultRoom = app)
     container.replaceChildren(view.example().render)
     () => {
       relay.globalAbort.abort()
