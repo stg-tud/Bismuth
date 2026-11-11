@@ -9,7 +9,6 @@ import rdts.syntax.DeltaBuffer
 import reactives.default.*
 import reactives.extra.Tags.*
 import scalatags.JsDom.all.*
-import webapps.Storing
 import webapps.ex2019todo.TodoDataManager.TodoRepState
 import webapps.ex2019todo.Todolist.replicaId
 
@@ -103,9 +102,10 @@ class TaskReferences(toggleAll: Event[dom.Event], storePrefix: String) {
           db.mod(_.map(f))
 
     val crdt: Signal[DeltaBuffer[LastWriterWins[Option[TaskData]]]] =
-      Storing.storedAs(s"$storePrefix$taskID", lww) { init =>
+      // no local persistence, the state is only restored from other replicas
+      {
         TodoDataManager.hookup[LastWriterWins[Option[TaskData]]](
-          init.state,
+          lww.state,
           entry => Bottom.empty[TodoRepState].copy(entries = Map(taskID -> entry)),
           fs => fs.entries.get(taskID)
         ) { (init, branch) =>
@@ -116,7 +116,7 @@ class TaskReferences(toggleAll: Event[dom.Event], storePrefix: String) {
             branch
           )
         }
-      }(using Codecs.codecLww)
+      }
 
     val taskData = Signal {
       crdt.value.state.read.getOrElse(TaskData(desc = "LWW Empty"))

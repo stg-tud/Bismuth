@@ -33,7 +33,11 @@ import { demos } from "../../data/site";
 			<p id="demo-summary" hidden>
 				<span></span> <a id="demo-open" target="_blank">Open in new tab ↗</a>
 			</p>
-			<iframe id="demo-frame" class="card demo-frame" title="Demo" hidden></iframe>
+			<div id="demo-frames"></div>
+			<p id="demo-instances" hidden>
+				<button id="demo-add" class="hero">Add instance</button>
+				Each instance is a separate replica of the case study, all synchronized through this page.
+			</p>
 			<div id="demo-connections"></div>
 		</div>
 	</section>
@@ -42,50 +46,84 @@ import { demos } from "../../data/site";
 <script>
 	import { url } from "../../lib/url";
 
-	const frame = document.getElementById("demo-frame") as HTMLIFrameElement;
+	const frames = document.getElementById("demo-frames")!;
+	const instances = document.getElementById("demo-instances")!;
+	const addButton = document.getElementById("demo-add") as HTMLButtonElement;
+	const connections = document.getElementById("demo-connections")!;
 	const open = document.getElementById("demo-open") as HTMLAnchorElement;
 	const summary = document.getElementById("demo-summary")!;
 	const hint = document.getElementById("demo-hint")!;
 	const buttons = [...document.querySelectorAll<HTMLButtonElement>(".demo-cards button")];
 
-	// nothing is loaded until a demo is selected; the selected demo is kept in the url hash (e.g. demos/#tabular), so it survives reloads and can be linked
-	const connections = document.getElementById("demo-connections")!;
+	type Host = { connect(bridge: string): void; stop(): void };
+
 	let current: string | undefined;
-	let stopBridge: (() => void) | undefined;
+	let host: Host | undefined;
+
+	function addFrame(src: string, removable: boolean): HTMLIFrameElement {
+		const wrapper = document.createElement("div");
+		wrapper.className = "demo-instance";
+		const frame = document.createElement("iframe");
+		frame.className = "card demo-frame";
+		frame.title = "Demo";
+		frame.src = src;
+		wrapper.append(frame);
+		if (removable) {
+			const close = document.createElement("button");
+			close.className = "demo-instance-close";
+			close.title = "Remove instance";
+			close.textContent = "×";
+			close.addEventListener("click", () => wrapper.remove());
+			wrapper.append(close);
+		}
+		frames.append(wrapper);
+		return frame;
+	}
 
 	// bridged demos connect to a relay on this page (via a broadcast channel only known to this page and the iframe),
 	// which handles the WebRTC connections to other replicas, see webapps.DemoBridge
+	function addInstance(id: string, removable: boolean): HTMLIFrameElement | undefined {
+		if (!host) return;
+		const bridge = crypto.randomUUID();
+		host.connect(bridge);
+		return addFrame(`${url(`/examples/${id}.html`)}?bridge=${bridge}`, removable);
+	}
+
 	async function load(id: string, bridged: boolean) {
-		stopBridge?.();
-		stopBridge = undefined;
-		const demo = url(`/examples/${id}.html`);
+		host?.stop();
+		host = undefined;
+		frames.replaceChildren();
+		instances.hidden = !bridged;
+		frames.classList.toggle("multi", bridged);
 		if (!bridged) {
-			frame.src = demo;
+			addFrame(url(`/examples/${id}.html`), false);
 			return;
 		}
-		const bridge = crypto.randomUUID();
 		// @ts-ignore the Scala.js output is untyped (alias defined in astro.config.mjs)
 		const { DemoBridgeHost } = await import("scalajs:examples");
 		if (current !== id) return; // another demo was selected in the meantime
-		stopBridge = DemoBridgeHost(id, bridge, connections);
-		frame.src = `${demo}?bridge=${bridge}`;
+		host = DemoBridgeHost(id, connections) as Host;
+		addInstance(id, false);
 	}
 
+	addButton.addEventListener("click", () => {
+		if (current) addInstance(current, true)?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+	});
+
+	// nothing is loaded until a demo is selected; the selected demo is kept in the url hash (e.g. demos/#tabular), so it survives reloads and can be linked
 	function select(btn: HTMLButtonElement, scroll: boolean) {
 		buttons.forEach((b) => b.setAttribute("aria-selected", String(b === btn)));
 		const id = btn.dataset.demo!;
-		const demo = url(`/examples/${id}.html`);
 		if (current !== id) {
 			current = id;
 			load(id, btn.dataset.bridged === "true");
 		}
-		open.href = demo;
+		open.href = url(`/examples/${id}.html`);
 		summary.querySelector("span")!.textContent = btn.dataset.summary ?? "";
 		summary.hidden = false;
-		frame.hidden = false;
 		hint.hidden = true;
-		history.replaceState(null, "", `#${btn.dataset.demo}`);
-		if (scroll) frame.scrollIntoView({ behavior: "smooth", block: "nearest" });
+		history.replaceState(null, "", `#${id}`);
+		if (scroll) frames.scrollIntoView({ behavior: "smooth", block: "nearest" });
 	}
 
 	for (const btn of buttons) btn.addEventListener("click", () => select(btn, true));

@@ -45,16 +45,16 @@ object DemoBridge {
     def nullValue: RawJson                                     = RawJson("null".getBytes)
   }
 
-  /** Runs on the demo page: relays between the iframe on `bridge` and WebRTC peers (whose connection UI is
-    * rendered into `container`). Peers are only discovered among demo pages showing the same `app`.
+  /** Runs on the demo page: relays between the iframes connected via [[connect]] (any number of instances of
+    * the case study `app`) and WebRTC peers (whose connection UI is rendered into `container`).
+    * Peers are only discovered among demo pages showing the same `app`.
     * Draws the connections of all replicas (demo pages and case studies in their iframes) as replicated in the
     * overlay part of the state, see [[OverlayReplication]].
-    * Returns a function to stop the relay.
+    * Returns `{connect(bridge), stop()}`.
     */
   @JSExportTopLevel("DemoBridgeHost")
-  def host(app: String, bridge: String, container: dom.Element): js.Function0[Unit] = {
+  def host(app: String, container: dom.Element): js.Dynamic = {
     val relay = OverlayReplication[RawJson](ReplicaId.gen(), _ => ())
-    relay.io.addClientConnection(BroadcastChannelPairConnector.named(channelName(bridge)))
 
     val view = WebRTCConnectionView(
       relay.io,
@@ -73,10 +73,13 @@ object DemoBridge {
     OverlayNetworkGraph.animate(graph, () => relay.status, () => Some(relay.replicaId.uid), () => None, () => running)
 
     container.replaceChildren(graph, view.example().render)
-    () => {
-      running = false
-      relay.stop()
-      container.replaceChildren()
-    }
+    js.Dynamic.literal(
+      connect = (bridge: String) => relay.io.addClientConnection(BroadcastChannelPairConnector.named(channelName(bridge))),
+      stop = () => {
+        running = false
+        relay.stop()
+        container.replaceChildren()
+      },
+    )
   }
 }

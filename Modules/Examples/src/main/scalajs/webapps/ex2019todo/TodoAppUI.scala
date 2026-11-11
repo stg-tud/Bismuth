@@ -11,7 +11,6 @@ import reactives.extra.Tags.*
 import scalatags.JsDom
 import scalatags.JsDom.all.*
 import scalatags.JsDom.tags2.section
-import webapps.Storing
 import webapps.ex2019todo.Codecs.given
 import webapps.ex2019todo.TodoDataManager.TodoRepState
 import webapps.ex2019todo.Todolist.replicaId
@@ -46,9 +45,10 @@ class TodoAppUI(val storagePrefix: String) {
     val taskOps  = new TaskOps(taskrefs, replicaId)
 
     val tasksRDT: Signal[DeltaBuffer[ReplicatedList[TaskRef]]] =
-      Storing.storedAs(storagePrefix, DeltaBuffer(ReplicatedList.empty[TaskRef])) { init =>
+      // no local persistence, the state is only restored from other replicas
+      {
         TodoDataManager.hookup(
-          init.state,
+          ReplicatedList.empty[TaskRef],
           list => Bottom.empty[TodoRepState].copy(list = list),
           fs => Option.when(!Bottom.isEmpty(fs.list))(fs.list)
         ) { (init, branch) =>
