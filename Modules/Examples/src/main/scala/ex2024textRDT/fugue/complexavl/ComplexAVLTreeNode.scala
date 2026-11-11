@@ -4,8 +4,8 @@ import ex2024textRDT.Helper.myAssert
 import ex2024textRDT.debug.pprintNonAVL
 import ex2024textRDT.fugue.avl.AVLTreeNode
 import ex2024textRDT.fugue.avl2.AVL2TreeNode
-import ex2024textRDT.fugue.{*}
-import ex2024textRDT.{*}
+import ex2024textRDT.fugue.*
+import ex2024textRDT.*
 
 import scala.collection.mutable.SortedSet
 import scala.collection.{View, mutable}

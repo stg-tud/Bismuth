@@ -3,12 +3,12 @@ package ex2024textRDT.debug
 import pprint.PPrinter
 import ex2024textRDT.fugue.avl.AVLTreeNode
 import ex2024textRDT.fugue.avl2.AVL2TreeNode
-import ex2024textRDT.fugue.complex.{*}
-import ex2024textRDT.fugue.complexavl.{*}
-import ex2024textRDT.fugue.simple.{*}
-import ex2024textRDT.fugue.simpleavl.{*}
-import ex2024textRDT.fugue.{*}
-import ex2024textRDT.{*}
+import ex2024textRDT.fugue.complex.*
+import ex2024textRDT.fugue.complexavl.*
+import ex2024textRDT.fugue.simple.*
+import ex2024textRDT.fugue.simpleavl.*
+import ex2024textRDT.fugue.*
+import ex2024textRDT.*
 
 lazy val pprintNonAVL: PPrinter = {
   pprint.copy(

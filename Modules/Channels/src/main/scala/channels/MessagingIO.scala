@@ -70,7 +70,9 @@ object MessagingIO {
       config: Config = Config(),
   )(using stateCodec: JsonValueCodec[State]): MessagingIO.Plumtree[State] =
     new MessagingIO[PlumtreeBroadcast.Protocol[State]](
-      using PlumtreeBroadcast.protocol[State], PlumtreeBroadcast.messageCodec[State]
+      using
+      PlumtreeBroadcast.protocol[State],
+      PlumtreeBroadcast.messageCodec[State]
     )(
       replicaId,
       PlumtreeBroadcast(deltaStorage = history),

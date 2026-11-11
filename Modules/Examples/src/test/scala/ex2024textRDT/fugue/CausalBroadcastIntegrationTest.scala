@@ -2,11 +2,11 @@ package ex2024textRDT.fugue
 
 import rdts.base.Uid
 import rdts.time.{Causal, Dot, Dots}
-import ex2024textRDT.fugue.complex.{*}
-import ex2024textRDT.fugue.complexavl.{*}
-import ex2024textRDT.fugue.simple.{*}
-import ex2024textRDT.fugue.simpleavl.{*}
-import ex2024textRDT.{*}
+import ex2024textRDT.fugue.complex.*
+import ex2024textRDT.fugue.complexavl.*
+import ex2024textRDT.fugue.simple.*
+import ex2024textRDT.fugue.simpleavl.*
+import ex2024textRDT.*
 
 import scala.collection.mutable
 

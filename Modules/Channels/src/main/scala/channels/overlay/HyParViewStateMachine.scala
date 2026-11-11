@@ -133,7 +133,7 @@ final case class HyParViewStateMachine(
   def activeEntries: Vector[(Connection, PeerConnectInfo)] =
     links.toVector.collect { case (conn, Link.Active(peer)) => conn -> peer }
 
-  def activeView: Set[Peer]               = activeEntries.iterator.map(_._2.id).toSet
+  def activeView: Set[Peer]              = activeEntries.iterator.map(_._2.id).toSet
   def activePeers: Set[PeerConnectInfo]  = activeEntries.iterator.map(_._2).toSet
   def passivePeers: Set[PeerConnectInfo] =
       val act = activeView

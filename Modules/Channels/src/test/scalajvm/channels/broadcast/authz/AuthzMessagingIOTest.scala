@@ -29,7 +29,7 @@ class AuthzMessagingIOTest extends FunSuite {
     val genesis = Authorization.createGenesis(root)
 
     def node(identity: PrivateIdentity): (MessagingIO[AuthzProtocol[Set[Int]]], NioTCP, NioTls) = {
-      val nio = NioTCP()
+      val nio    = NioTCP()
       val thread = Thread(() => nio.loopSelection(abort))
       thread.setDaemon(true)
       thread.start()

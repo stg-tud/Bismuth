@@ -57,9 +57,9 @@ class Pong(val tick: Evt[Unit], val mouse: Mouse) {
 
   private val network = game()
 
-  val x: Signal[Int]         = network._1
-  val y: Signal[Int]         = network._2
-  val leftRacket: Racket     = network._3
-  val rightRacket: Racket    = network._4
-  val score: Signal[String]  = network._5
+  val x: Signal[Int]        = network._1
+  val y: Signal[Int]        = network._2
+  val leftRacket: Racket    = network._3
+  val rightRacket: Racket   = network._4
+  val score: Signal[String] = network._5
 }

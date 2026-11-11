@@ -9,9 +9,12 @@ import rdts.base.Uid
 
 class FullMeshOverlayTest extends FunSuite {
 
-  private val self  = PeerConnectInfo(Peer.Claimed(Uid.predefined("self")), Set(ConnectionDescriptor.QueuedLocal("self")))
-  private val peer  = PeerConnectInfo(Peer.Claimed(Uid.predefined("peer")), Set(ConnectionDescriptor.QueuedLocal("peer")))
-  private val other = PeerConnectInfo(Peer.Claimed(Uid.predefined("other")), Set(ConnectionDescriptor.QueuedLocal("other")))
+  private val self =
+    PeerConnectInfo(Peer.Claimed(Uid.predefined("self")), Set(ConnectionDescriptor.QueuedLocal("self")))
+  private val peer =
+    PeerConnectInfo(Peer.Claimed(Uid.predefined("peer")), Set(ConnectionDescriptor.QueuedLocal("peer")))
+  private val other =
+    PeerConnectInfo(Peer.Claimed(Uid.predefined("other")), Set(ConnectionDescriptor.QueuedLocal("other")))
 
   private val c1 = StubConnection("c1")
   private val c2 = StubConnection("c2")
@@ -87,7 +90,8 @@ class FullMeshOverlayTest extends FunSuite {
   }
 
   test("Join is answered with the known peers; the answer makes the joiner connect to them") {
-    val contact = PeerConnectInfo(Peer.Claimed(Uid.predefined("contact")), Set(ConnectionDescriptor.QueuedLocal("contact")))
+    val contact =
+      PeerConnectInfo(Peer.Claimed(Uid.predefined("contact")), Set(ConnectionDescriptor.QueuedLocal("contact")))
 
     val (_, joinActions) = FullMeshOverlay(self, known = Map(other.id -> other))
       .on(OverlayEvent.Incoming(c1))._1

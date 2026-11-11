@@ -254,7 +254,10 @@ class HyParViewStateMachineTest extends FunSuite {
     assertEquals(accepted.activeView, Set(a.id))
     assertEquals(
       acceptedActions,
-      List(OverlayAction.NeighborUp(a.id), OverlayAction.Send(authenticatedAsA, NeighborReply(self.id, accepted = true)))
+      List(
+        OverlayAction.NeighborUp(a.id),
+        OverlayAction.Send(authenticatedAsA, NeighborReply(self.id, accepted = true))
+      )
     )
   }
 

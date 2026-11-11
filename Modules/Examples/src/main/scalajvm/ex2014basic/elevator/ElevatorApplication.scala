@@ -28,7 +28,7 @@ class ElevatorApplication(val elevator: Elevator) {
   for i <- 0 until elevator.nFloors do
       floorButtons.contents += new Button(Action(elevator.nameOfFloor(i)) { elevator.callToFloor.fire(i) })
 
-  val layout: GridPanel = new GridPanel(0, 2)
+  val layout: GridPanel        = new GridPanel(0, 2)
   val painter: ElevatorPainter = new ElevatorPainter(elevator)
   painter.preferredSize = new Dimension(painter.sizeX, painter.sizeY)
   layout.contents += painter

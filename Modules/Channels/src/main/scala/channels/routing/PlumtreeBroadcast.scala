@@ -58,8 +58,8 @@ object PlumtreeBroadcast {
     type Msg   = PlumtreeMessage[S]
     type Out   = Payload[S]
 
-    def addPeer(state: State, peer: Peer): Result[S]    = state.addPeer(peer)
-    def removePeer(state: State, peer: Peer): Result[S] = state.removePeer(peer)
+    def addPeer(state: State, peer: Peer): Result[S]                     = state.addPeer(peer)
+    def removePeer(state: State, peer: Peer): Result[S]                  = state.removePeer(peer)
     def handleMessage(state: State, from: Peer, message: Msg): Result[S] =
       state.handleMessage(from, message)
     def timerFired(state: State, timer: Routing.Timer): Result[S] = state.timerFired(timer)

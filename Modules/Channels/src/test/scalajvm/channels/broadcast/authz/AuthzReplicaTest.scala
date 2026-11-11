@@ -47,7 +47,13 @@ class AuthzReplicaTest extends FunSuite {
     step.events.toList.collect { case Effect.Send(_, AuthzMessage.Deltas(deltas)) => deltas }.flatten
 
   private def revocationOf(capability: ArdtEvent, identity: PrivateIdentity, parents: Set[Hash]): ArdtEvent =
-    buildEvent(Revocation(capability.hash), identity.getPublic, identity.identityKey.getPrivate, parents, capability.hash)
+    buildEvent(
+      Revocation(capability.hash),
+      identity.getPublic,
+      identity.identityKey.getPrivate,
+      parents,
+      capability.hash
+    )
 
   // --- construction & basic queries ---
 
@@ -154,7 +160,10 @@ class AuthzReplicaTest extends FunSuite {
     )
 
     val step = receive(replica, deltaEvent)
-      .handleMessage(peerOf(rootIdentity), AuthzMessage.Deltas(List(AuthzMessage.DeltaValue(deltaEvent.hash, revealed))))
+      .handleMessage(
+        peerOf(rootIdentity),
+        AuthzMessage.Deltas(List(AuthzMessage.DeltaValue(deltaEvent.hash, revealed)))
+      )
 
     assertEquals(step.events.toList, List(Effect.Deliver(Set(1, 2))))
   }
@@ -207,7 +216,7 @@ class AuthzReplicaTest extends FunSuite {
     assertEquals(sentDeltas(step).size, 3)
 
     // values sent later, e.g. on request, are taken from the delta value store
-    val other = events.foldLeft(newReplicaWithGenesis(rootIdentity, genesisEvent))(receive)
+    val other  = events.foldLeft(newReplicaWithGenesis(rootIdentity, genesisEvent))(receive)
     val synced = events.foldLeft(other)((r, event) => r.receiveDelta(event.hash, step.state.deltaValue(event.hash).get))
 
     assertEquals(synced.state, Set(1, 2, 3))
@@ -326,7 +335,13 @@ class AuthzReplicaTest extends FunSuite {
   test("revoke revokes a capability delegated by the local replica, using the capability it holds") {
     val (replica, rootIdentity, genesisEvent) = newReplica()
     val (delegateHolder, _)                   = newIdentity()
-    val delegated = replica.delegate(rootIdentity, genesisEvent.hash, delegateHolder, PermissionTree.allow, PermissionTree.allow).state
+    val delegated                             = replica.delegate(
+      rootIdentity,
+      genesisEvent.hash,
+      delegateHolder,
+      PermissionTree.allow,
+      PermissionTree.allow
+    ).state
     val (delegation, _) = delegated.activeCapabilitiesOf(delegateHolder).head
 
     val step = withPeer(delegated, rootIdentity).revoke(rootIdentity, delegation)

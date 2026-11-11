@@ -15,7 +15,7 @@ def pprint     = "com.lihaoyi"   %% "pprint"      % "0.9.6"
 def scalajsDom = "org.scala-js"  %% "scalajs-dom" % "2.8.1"
 def slips      = "de.rmgk.slips" %% "slips"       % "0.20.0"
 def scalafx    = "org.scalafx"   %% "scalafx"     % "27.0.0-R39"
-def upickle = "com.lihaoyi" %% "upickle" % "4.4.3"
+def upickle    = "com.lihaoyi"   %% "upickle"     % "4.4.3"
 
 def jsoniterScala = Seq(
   "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core"   % "2.42.3",
@@ -121,7 +121,7 @@ lazy val examples = projectMatrix.in(file("Modules/Examples"))
       fork := true,
       Settings.jolSettings,
       libraryDependencies ++= {
-        val jettyVersion  = "12.1.14"
+        val jettyVersion = "12.1.14"
         Seq(
           "com.github.alexandrnikitin"     % "bloom-filter_2.13"            % "0.13.1",
           "com.google.crypto.tink"         % "tink"                         % "1.24.0",
@@ -241,8 +241,8 @@ lazy val scripts = project.in(file("Modules/scripts"))
     libraryDependencies ++= Seq(
       slips,
     ),
-    fork                   := true,
-    run / baseDirectory    := (ThisBuild / baseDirectory).value,
+    fork                := true,
+    run / baseDirectory := (ThisBuild / baseDirectory).value,
   )
 
 lazy val rdts = projectMatrix.in(file("Modules/RDTs"))

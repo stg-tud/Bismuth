@@ -1,7 +1,7 @@
 package ex2024textRDT.fugue.complexavl
 
-import ex2024textRDT.fugue.{*}
-import ex2024textRDT.{*}
+import ex2024textRDT.fugue.*
+import ex2024textRDT.*
 
 enum ComplexAVLMessage {
   case Insert(

@@ -4,18 +4,18 @@ import de.rmgk.options.*
 
 @main def main(args: String*): Unit =
     val result = parseArguments(args.toList) {
-        alternatives(
-          subcommand("select-scheduler", "select the default scheduler for reactives") {
-              val selection = positional[String]("scheduler", "default scheduler for all").value
-              rejectUnknown()
-              () => selectScheduler(selection)
-          },
-          subcommand("patch-bsp-shared-test-modules", "add module dependencies IntelliJ drops from shared test modules") {
-              val dryRun = flag("--dry-run", "only print what would be changed").value
-              rejectUnknown()
-              () => patchBspSharedTestModules(dryRun)
-          },
-        )
+      alternatives(
+        subcommand("select-scheduler", "select the default scheduler for reactives") {
+          val selection = positional[String]("scheduler", "default scheduler for all").value
+          rejectUnknown()
+          () => selectScheduler(selection)
+        },
+        subcommand("patch-bsp-shared-test-modules", "add module dependencies IntelliJ drops from shared test modules") {
+          val dryRun = flag("--dry-run", "only print what would be changed").value
+          rejectUnknown()
+          () => patchBspSharedTestModules(dryRun)
+        },
+      )
     }
     result match
         case Result.Ok(run, _) => run()

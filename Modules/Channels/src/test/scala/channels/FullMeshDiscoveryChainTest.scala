@@ -32,8 +32,8 @@ class FullMeshDiscoveryChainTest extends FunSuite {
     val resolver = LocalConnectionRegistry(Map("listener" -> link))
 
     final case class Node(id: String) {
-      val uid: ReplicaId               = ReplicaId.gen()
-      val selfInfo: PeerConnectInfo    = PeerConnectInfo(Peer.Claimed(uid.uid), Set(ConnectionDescriptor.QueuedLocal(id)))
+      val uid: ReplicaId            = ReplicaId.gen()
+      val selfInfo: PeerConnectInfo = PeerConnectInfo(Peer.Claimed(uid.uid), Set(ConnectionDescriptor.QueuedLocal(id)))
       val io: MessagingIO.Plumtree[Set[String]] = MessagingIO.usingPlumtree[Set[String]](
         uid,
         _ => (),
@@ -91,7 +91,7 @@ class FullMeshDiscoveryChainTest extends FunSuite {
     val discovererOverlay = discoverer.io.overlayController.asInstanceOf[FullMeshOverlay]
 
     // Both sides report NeighborUp → both have the peer in the broadcast-protocol active view.
-    val listenerPeers = listener.io.state.peerRoles.keySet
+    val listenerPeers   = listener.io.state.peerRoles.keySet
     val discovererPeers =
       discoverer.io.state.peerRoles.keySet
     assertEquals(listenerPeers.map(_.uid), Set(discoverer.uid.uid))

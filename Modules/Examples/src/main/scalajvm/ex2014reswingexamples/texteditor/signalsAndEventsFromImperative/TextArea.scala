@@ -22,9 +22,9 @@ class TextArea extends Component with Reactor {
   focusable = true
 
   protected def stringWidth: String => Int = peer.metrics.stringWidth
-  protected def lineHeight  = peer.unitHeight
+  protected def lineHeight                 = peer.unitHeight
 
-  protected val padding   = 5
+  protected val padding                                    = 5
   protected val clipboard: java.awt.datatransfer.Clipboard = Toolkit.getDefaultToolkit.getSystemClipboard
 
   protected lazy val buffer = new GapBuffer

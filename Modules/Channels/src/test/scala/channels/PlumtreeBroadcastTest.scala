@@ -33,7 +33,7 @@ class PlumtreeBroadcastTest extends FunSuite {
       )
     )
 
-    val expectedPayload                           = Payload(Dots.single(self, 0), "v1")
+    val expectedPayload                        = Payload(Dots.single(self, 0), "v1")
     val PlumtreeBroadcast.Result(next, events) = state.broadcast(expectedPayload)
 
     assert(next.localContext.contains(expectedPayload.dots))
@@ -57,7 +57,7 @@ class PlumtreeBroadcastTest extends FunSuite {
       )
     )
 
-    val msg                                       = payload(Uid.predefined("origin"), 0, "hello")
+    val msg                                    = payload(Uid.predefined("origin"), 0, "hello")
     val PlumtreeBroadcast.Result(next, events) = state.handleMessage(sender, msg)
 
     assert(next.localContext.contains(msg.dots))

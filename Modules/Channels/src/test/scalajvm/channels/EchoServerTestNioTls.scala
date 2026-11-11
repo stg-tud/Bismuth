@@ -24,8 +24,8 @@ class EchoServerTestNioTls extends EchoCommunicationTest(
 object EchoServerTestNioTls {
   val id1: PrivateIdentity = IdentityFactory.createNewIdentity
   val id2: PrivateIdentity = IdentityFactory.createNewIdentity
-  val tls1: NioTls       = NioTls(id1)
-  val tls2: NioTls       = NioTls(id2)
+  val tls1: NioTls         = NioTls(id1)
+  val tls2: NioTls         = NioTls(id2)
 }
 
 class NioTlsTest extends munit.FunSuite {
@@ -51,7 +51,7 @@ class NioTlsTest extends munit.FunSuite {
     }
 
     try {
-      val serverSide = Promise[Connection]()
+      val serverSide   = Promise[Connection]()
       val serverSocket = nio.defaultServerSocketChannel(InetSocketAddress(InetAddress.getLoopbackAddress, 0))
       val listener     = if useTls then nio.listenTls(serverSocket, NioTls(serverId)) else nio.listen(serverSocket)
       var descriptor: Option[channels.connection.ConnectionDescriptor] = None
@@ -92,5 +92,8 @@ class NioTlsTest extends munit.FunSuite {
   echoTest("small messages", List(1, 100, 5))
   echoTest("empty message", List(0, 3))
   echoTest("messages larger than a TLS record", List(17000, 70_000))
-  echoTest("large messages are echoed in order and both sides see the authenticated peer", List(0, 1, 17000, 3_000_000, 100, 70_000))
+  echoTest(
+    "large messages are echoed in order and both sides see the authenticated peer",
+    List(0, 1, 17000, 3_000_000, 100, 70_000)
+  )
 }

@@ -122,7 +122,9 @@ object NestedKeepRemoveList {
   given redundancy[E: Redundancy]: Redundancy[NestedKeepRemoveList[E]] = (delta, bufferedDelta) =>
     (isInsertOperation(delta) && delta.flags.forall((dot, _) => bufferedDelta.flags.contains(dot)))
     || (isUpdateOperation(delta) && bufferedDelta.flags.forall((dot, _) => delta.flags.contains(dot))
-    && bufferedDelta.payloads.keys.forall(key => Redundancy[E].isRedundant(delta.payloads(key), bufferedDelta.read(key).get)))
+    && bufferedDelta.payloads.keys.forall(key =>
+      Redundancy[E].isRedundant(delta.payloads(key), bufferedDelta.read(key).get)
+    ))
 
   private def isInsertOperation[E](delta: NestedKeepRemoveList[E]): Boolean =
     !delta.order.isEmpty && delta.payloads.nonEmpty && delta.flags.nonEmpty && delta.flags.forall(_._2.read)

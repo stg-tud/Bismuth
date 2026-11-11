@@ -33,8 +33,12 @@ class FoldVersion {
     (next, if next < 0 || next + Size > max then !switched else switched)
   }
 
-  val xState: Signal[(Int, Boolean)] = tick.fold((initPosition.x, false)) { (state, _) => bounce(speed.x, Max_X)(state) }
-  val yState: Signal[(Int, Boolean)] = tick.fold((initPosition.y, false)) { (state, _) => bounce(speed.y, Max_Y)(state) }
+  val xState: Signal[(Int, Boolean)] = tick.fold((initPosition.x, false)) { (state, _) =>
+    bounce(speed.x, Max_X)(state)
+  }
+  val yState: Signal[(Int, Boolean)] = tick.fold((initPosition.y, false)) { (state, _) =>
+    bounce(speed.y, Max_Y)(state)
+  }
 
   val xx: Signal[Int] = xState.map(_._1)
   val yy: Signal[Int] = yState.map(_._1)

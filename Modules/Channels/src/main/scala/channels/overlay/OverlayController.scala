@@ -85,12 +85,12 @@ object OverlayController {
 
     /** The peer that sent this message (on the connection it arrived on), as claimed by the message. */
     def claimedSender: Peer = this match
-        case Join(newNode)                  => newNode.id
-        case ForwardJoin(_, _, sender)      => sender
-        case Neighbor(from, _)              => from.id
-        case NeighborReply(from, _)         => from
-        case Shuffle(_, _, _, sender)       => sender
-        case ShuffleReply(from, _, _)       => from
+        case Join(newNode)             => newNode.id
+        case ForwardJoin(_, _, sender) => sender
+        case Neighbor(from, _)         => from.id
+        case NeighborReply(from, _)    => from
+        case Shuffle(_, _, _, sender)  => sender
+        case ShuffleReply(from, _, _)  => from
 
     case Join(newNode: PeerConnectInfo)
     case ForwardJoin(newNode: PeerConnectInfo, ttl: Int, sender: Peer)

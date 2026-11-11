@@ -23,8 +23,8 @@ class ChannelConnectionManager(
 ) extends ConnectionManager {
   // one thread runs the selector loop, another delivers received messages (in order), so slow receivers do not
   // block reading from sockets
-  private val selectorExecutor: ExecutorService = Executors.newSingleThreadExecutor()
-  private val deliveryExecutor: ExecutorService = Executors.newSingleThreadExecutor()
+  private val selectorExecutor: ExecutorService                             = Executors.newSingleThreadExecutor()
+  private val deliveryExecutor: ExecutorService                             = Executors.newSingleThreadExecutor()
   private def executionContext(executor: ExecutorService): ExecutionContext =
     if disableLogging
     then ExecutionContext.fromExecutor(executor, _ => ())
@@ -97,7 +97,7 @@ class ChannelConnectionManager(
       case Success(descriptor: ConnectionDescriptor.TcpTls) =>
         listener = Some(serverChannel -> descriptor)
         if !disableLogging then println(s"Listening on ${descriptor.host}:${descriptor.port} as ${localPublicId}")
-      case Success(other) => throw IllegalStateException(s"unexpected listen descriptor: $other")
+      case Success(other)     => throw IllegalStateException(s"unexpected listen descriptor: $other")
       case Failure(exception) =>
         // Connection not established yet, don't need to remove/close anything
         Try { serverChannel.close() }

@@ -443,9 +443,14 @@ class UnsignedHashDagBenchmarkStateWithReplica extends UnsignedHashDagBenchmarkS
 }
 
 object EvaluationBenchmarks {
+
   /** Has a fresh replica of the root identity receive every event of `state`'s trace, along with its delta */
   def receiveTrace(state: ArdtEventGraphBenchmarkState): Set[Hash] =
-    replayTrace(AuthzReplica.initial(state.rootIdentity.getPublic, state.genesisHash), state.trace, state.deltaValueStore)
+    replayTrace(
+      AuthzReplica.initial(state.rootIdentity.getPublic, state.genesisHash),
+      state.trace,
+      state.deltaValueStore
+    )
       .heads
 
   /** Has `replica` receive every event of `trace` in order, each directly followed by its delta (if any) */

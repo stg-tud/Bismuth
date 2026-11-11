@@ -1,6 +1,6 @@
 package ex2024textRDT.fugue
 
-import ex2024textRDT.{*}
+import ex2024textRDT.*
 
 final case class SimpleID(rid: RID, counter: Int) {}
 

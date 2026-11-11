@@ -2,7 +2,7 @@ package ex2024textRDT.fugue
 
 import rdts.base.Uid
 import rdts.time.{Causal, Dots}
-import ex2024textRDT.{*}
+import ex2024textRDT.*
 
 import scala.collection.mutable
 

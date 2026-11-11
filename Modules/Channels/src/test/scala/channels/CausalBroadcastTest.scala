@@ -47,7 +47,7 @@ class CausalBroadcastTest extends munit.FunSuite {
   }
 
   test("three nodes deliver in causal order") {
-    val logs              = Vector.fill(3)(ArrayBuffer.empty[String])
+    val logs               = Vector.fill(3)(ArrayBuffer.empty[String])
     val Vector(n0, n1, n2) = logs.map(node)
 
     val queue = LocalMessageQueue()
@@ -72,10 +72,10 @@ class CausalBroadcastTest extends munit.FunSuite {
   test("merged payloads are delivered once their external predecessors are applied") {
     import rdts.base.Lattice
     given Lattice[Payload[Causal[Set[String]]]] = Lattice.derived
-    val log = ArrayBuffer.empty[Set[String]]
-    val a0  = Dots.single(Dot(Uid.predefined("a"), 0))
-    val b0  = Dots.single(Dot(Uid.predefined("b"), 0))
-    val b1  = Dots.single(Dot(Uid.predefined("b"), 1))
+    val log                                     = ArrayBuffer.empty[Set[String]]
+    val a0                                      = Dots.single(Dot(Uid.predefined("a"), 0))
+    val b0                                      = Dots.single(Dot(Uid.predefined("b"), 0))
+    val b1                                      = Dots.single(Dot(Uid.predefined("b"), 1))
 
     val first  = Payload(b0, Causal(a0, Set("x")))
     val second = Payload(b1, Causal(a0.union(b0), Set("y")))

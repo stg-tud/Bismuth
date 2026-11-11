@@ -1,6 +1,6 @@
 package ex2024textRDT.fugue
 
-import ex2024textRDT.{*}
+import ex2024textRDT.*
 
 enum Message[ID] {
   case Insert(

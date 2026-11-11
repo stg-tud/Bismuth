@@ -2,11 +2,11 @@ package webapps.ex2024textRDT
 
 import org.scalajs.dom.{URL, document}
 import ex2024textRDT.*
-import ex2024textRDT.debug.{*}
+import ex2024textRDT.debug.*
 import ex2024textRDT.fugue.avl.AVLTreeNode
-import ex2024textRDT.fugue.complexavl.{*}
-import ex2024textRDT.fugue.simpleavl.{*}
-import ex2024textRDT.fugue.{*}
+import ex2024textRDT.fugue.complexavl.*
+import ex2024textRDT.fugue.simpleavl.*
+import ex2024textRDT.fugue.*
 import webapps.ex2024textRDT.typings.prosemirrorState.mod.{EditorState, Transaction}
 import webapps.ex2024textRDT.typings.prosemirrorTransform.mod.ReplaceStep_
 import webapps.ex2024textRDT.typings.prosemirrorView.mod.{DirectEditorProps, EditorView}

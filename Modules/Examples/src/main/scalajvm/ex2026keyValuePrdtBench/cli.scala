@@ -22,10 +22,10 @@ object cli {
   private val ec: ExecutionContext      = ExecutionContext.fromExecutor(executor)
 
   def addRetryingConnection(
-                             dataManager: MessagingIO[?],
-                             connection: Connector,
-                             delay: Long,
-                             tries: Int
+      dataManager: MessagingIO[?],
+      connection: Connector,
+      delay: Long,
+      tries: Int
   ): Unit =
 
     // TODO, does not actually retry anymore 😬

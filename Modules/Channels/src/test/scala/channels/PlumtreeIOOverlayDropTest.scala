@@ -1,6 +1,6 @@
 package channels
 
-import channels.broadcast.{PlumtreeBroadcast}
+import channels.broadcast.PlumtreeBroadcast
 import channels.connection.{LocalMessageQueue, Peer, PeerConnectInfo, QueuedLocalConnection}
 import channels.overlay.FullMeshOverlay
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec

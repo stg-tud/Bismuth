@@ -47,8 +47,8 @@ given JsonValueCodec[BinaryAsBase64] = new JsonValueCodec[BinaryAsBase64] {
 // what follows are the data type and codec definitions for receiving and sending bundles
 case class WsRecvData(bid: String, src: String, dst: String, data: BinaryAsBase64)
 case class WsSendData(src: String, dst: String, data: BinaryAsBase64, delivery_notification: Boolean, lifetime: Long)
-given JsonValueCodec[WsRecvData] = JsonCodecMaker.make
-given JsonValueCodec[WsSendData] = JsonCodecMaker.make
+given JsonValueCodec[WsRecvData]    = JsonCodecMaker.make
+given JsonValueCodec[WsSendData]    = JsonCodecMaker.make
 given JsonValueCodec[PosNegCounter] = JsonCodecMaker.make
 
 class Replica[S: {Lattice, JsonValueCodec}](

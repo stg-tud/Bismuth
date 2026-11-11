@@ -179,7 +179,8 @@ class MultiPaxosReplica(
     */
   val io: MessagingIO[KnowledgeGroupBroadcast.Protocol[MultiPaxos[Request]]] =
     new MessagingIO[KnowledgeGroupBroadcast.Protocol[MultiPaxos[Request]]](
-      using KnowledgeGroupBroadcast.Protocol(systemConfig),
+      using
+      KnowledgeGroupBroadcast.Protocol(systemConfig),
       KnowledgeGroupBroadcast.messageCodec[MultiPaxos[Request]]
     )(
       summon[ReplicaId],

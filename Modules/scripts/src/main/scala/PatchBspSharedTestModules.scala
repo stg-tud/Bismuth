@@ -27,13 +27,13 @@ def patchBspSharedTestModules(dryRun: Boolean): Unit =
     val moduleEntry = Regex("""<orderEntry type="module" module-name="([^"]+)"""")
 
     val imls: Map[String, String] =
-        Files.list(modulesDir).iterator().asScala
-            .filter(_.getFileName.toString.endsWith(".iml"))
-            .map(p => p.getFileName.toString.stripSuffix(".iml") -> Files.readString(p))
-            .toMap
+      Files.list(modulesDir).iterator().asScala
+        .filter(_.getFileName.toString.endsWith(".iml"))
+        .map(p => p.getFileName.toString.stripSuffix(".iml") -> Files.readString(p))
+        .toMap
 
     def deps(module: String): Set[String] =
-        imls.get(module).iterator.flatMap(moduleEntry.findAllMatchIn(_).map(_.group(1))).toSet
+      imls.get(module).iterator.flatMap(moduleEntry.findAllMatchIn(_).map(_.group(1))).toSet
 
     def isShared(module: String) = module.endsWith(" (shared)")
 
@@ -42,8 +42,8 @@ def patchBspSharedTestModules(dryRun: Boolean): Unit =
     for testModule <- testModules do
         val platforms = imls.keys.filter(m => !isShared(m) && deps(m).contains(testModule))
         val wanted    = platforms.flatMap(deps).filter(_ != testModule).flatMap { dep =>
-            if isShared(dep) then Set(dep)
-            else deps(dep).filter(isShared)
+          if isShared(dep) then Set(dep)
+          else deps(dep).filter(isShared)
         }.toList.sorted
 
         if wanted.nonEmpty then
@@ -59,7 +59,7 @@ def patchBspSharedTestModules(dryRun: Boolean): Unit =
                 val end = content.lastIndexOf("  </component>")
                 if end < 0 then throw IllegalStateException(s"no </component> in $testModule")
                 val entries = missing.map(name =>
-                    s"""    <orderEntry type="module" module-name="$name" scope="TEST" />\n"""
+                  s"""    <orderEntry type="module" module-name="$name" scope="TEST" />\n"""
                 ).mkString
                 Files.writeString(
                   modulesDir.resolve(s"$testModule.iml"),

@@ -56,8 +56,8 @@ object CausalPlumtree {
     type Msg   = PlumtreeMessage[Causal[A]]
     type Out   = A
 
-    def addPeer(state: State, peer: Peer): Result[A]    = state.lift(state.plumtree.addPeer(peer))
-    def removePeer(state: State, peer: Peer): Result[A] = state.lift(state.plumtree.removePeer(peer))
+    def addPeer(state: State, peer: Peer): Result[A]                     = state.lift(state.plumtree.addPeer(peer))
+    def removePeer(state: State, peer: Peer): Result[A]                  = state.lift(state.plumtree.removePeer(peer))
     def handleMessage(state: State, from: Peer, message: Msg): Result[A] =
       state.lift(state.plumtree.handleMessage(from, message))
     def timerFired(state: State, timer: Routing.Timer): Result[A] =
@@ -69,7 +69,7 @@ object CausalPlumtree {
   /** Local operation: wrap `value` with everything applied so far, disseminate it, and mark it as applied.
     * Values released by marking it applied are delivered (they were only waiting on local values).
     */
-  def broadcastLocal[A](self: Uid, value: A)(state: CausalPlumtree[A]): (Result[A]) = {
+  def broadcastLocal[A](self: Uid, value: A)(state: CausalPlumtree[A]): Result[A] = {
     val (sent, dot)     = PlumtreeBroadcast.broadcastLocal(self, Causal(state.buffer.applied, value))(state.plumtree)
     val lifted          = state.lift(sent)
     val (buffer, ready) = lifted.state.buffer.markApplied(Dots.single(dot))
@@ -95,7 +95,9 @@ object CausalBroadcast {
       initial: CausalPlumtree[A] = CausalPlumtree[A](),
   )(using JsonValueCodec[A]): CausalBroadcast[A] =
     new MessagingIO[CausalPlumtree.Protocol[A]](
-      using CausalPlumtree.protocol[A], PlumtreeBroadcast.messageCodec[Causal[A]]
+      using
+      CausalPlumtree.protocol[A],
+      PlumtreeBroadcast.messageCodec[Causal[A]]
     )(
       replicaId,
       initial,

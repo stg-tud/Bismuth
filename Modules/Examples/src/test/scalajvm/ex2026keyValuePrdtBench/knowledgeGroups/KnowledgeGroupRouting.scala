@@ -15,17 +15,17 @@ import channels.broadcast.PrdtSystem
 object KnowledgeGroupFixtures {
   type MP = MultiPaxos[Request]
 
-  val allIds: Set[Uid]       = Set(client, leader, follower1, follower2, follower3, follower4, proxy1, proxy2)
-  val followers: Set[Uid]    = Set(follower1, follower2, follower3, follower4)
-  val acceptors: Set[Uid]    = followers + leader
-  given Participants         = Participants(acceptors)
-  val req0: Request          = Request(Uid.predefined("r0"), "0")
-  val req1: Request          = Request(Uid.predefined("r1"), "1")
+  val allIds: Set[Uid]    = Set(client, leader, follower1, follower2, follower3, follower4, proxy1, proxy2)
+  val followers: Set[Uid] = Set(follower1, follower2, follower3, follower4)
+  val acceptors: Set[Uid] = followers + leader
+  given Participants      = Participants(acceptors)
+  val req0: Request       = Request(Uid.predefined("r0"), "0")
+  val req1: Request       = Request(Uid.predefined("r1"), "1")
 
   /** Everyone `sender` would send `delta` to (a replica is never its own receiver). */
   def receivers(system: PrdtSystem[MP], sender: Uid, delta: MP): Set[Uid] =
-    given ReplicaId = ReplicaId(sender)
-    (allIds - sender).filter(r => system.matches(delta, r))
+      given ReplicaId = ReplicaId(sender)
+      (allIds - sender).filter(r => system.matches(delta, r))
 
   def as[T](id: Uid)(f: ReplicaId ?=> T): T = f(using ReplicaId(id))
 
@@ -53,8 +53,8 @@ object KnowledgeGroupFixtures {
       i -> MultiPaxosReplica(id = i, participants = participants, systemConfig = system, state = MultiPaxos())
     ).toMap
 
-    val queue                        = channels.connection.LocalMessageQueue()
-    def deliver(): Unit              = while queue.nonEmpty do queue.deliverAll(): Unit
+    val queue                             = channels.connection.LocalMessageQueue()
+    def deliver(): Unit                   = while queue.nonEmpty do queue.deliverAll(): Unit
     def apply(id: Uid): MultiPaxosReplica = replicas(id)
 
     /** Full mesh between all replicas that share at least one group. */
@@ -215,12 +215,12 @@ class KnowledgeGroupRouting extends munit.FunSuite {
 
 /** End-to-end runs of [[MultiPaxosReplica]] over local queued connections. */
 class KnowledgeGroupReplicas extends munit.FunSuite {
-  import KnowledgeGroupFixtures.{*}
+  import KnowledgeGroupFixtures.*
 
   val compartmentIds = List(leader, proxy1, proxy2, client, follower1, follower2, follower3, follower4)
 
   test("every replica is connected to all replicas it shares a group with") {
-    val c = Cluster(compartmentalized, compartmentIds, acceptors)
+    val c                  = Cluster(compartmentalized, compartmentIds, acceptors)
     def neighbors(id: Uid) = c(id).io.state.peers.map(_.uid)
     assertEquals(neighbors(leader), Set(client, proxy1, proxy2))
     assertEquals(neighbors(follower1), Set(proxy1, follower3))

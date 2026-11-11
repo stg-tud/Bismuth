@@ -147,8 +147,8 @@ class PlumtreeIOTest extends munit.FunSuite {
     val resolver = LocalConnectionRegistry(links)
 
     final case class Node(id: String) {
-      val uid: ReplicaId               = ReplicaId.gen()
-      val selfInfo: PeerConnectInfo    = PeerConnectInfo(Peer.Claimed(uid.uid), Set(ConnectionDescriptor.QueuedLocal(id)))
+      val uid: ReplicaId            = ReplicaId.gen()
+      val selfInfo: PeerConnectInfo = PeerConnectInfo(Peer.Claimed(uid.uid), Set(ConnectionDescriptor.QueuedLocal(id)))
       val io: MessagingIO.Plumtree[Set[String]] = MessagingIO.usingPlumtree[Set[String]](
         uid,
         _ => (),
@@ -202,8 +202,8 @@ class PlumtreeIOTest extends munit.FunSuite {
     val resolver = LocalConnectionRegistry(links)
 
     final case class Node(id: String) {
-      val uid: ReplicaId               = ReplicaId.gen()
-      val selfInfo: PeerConnectInfo    = PeerConnectInfo(Peer.Claimed(uid.uid), Set(ConnectionDescriptor.QueuedLocal(id)))
+      val uid: ReplicaId            = ReplicaId.gen()
+      val selfInfo: PeerConnectInfo = PeerConnectInfo(Peer.Claimed(uid.uid), Set(ConnectionDescriptor.QueuedLocal(id)))
       val io: MessagingIO.Plumtree[Set[String]] = MessagingIO.usingPlumtree[Set[String]](
         uid,
         _ => (),
@@ -281,7 +281,7 @@ class PlumtreeIOTest extends munit.FunSuite {
     given JsonValueCodec[ReplicatedSet[String]] = AWSetStateCodec[String]
 
     class Node(val uid: ReplicaId) {
-      var state: ReplicatedSet[String]                      = ReplicatedSet.empty[String]
+      var state: ReplicatedSet[String]                               = ReplicatedSet.empty[String]
       val dissemination: MessagingIO.Plumtree[ReplicatedSet[String]] =
         MessagingIO.usingPlumtree[ReplicatedSet[String]](
           uid,

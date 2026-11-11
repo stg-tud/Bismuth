@@ -29,7 +29,7 @@ object StateBasedUntrustedReplicaSizeBenchmark {
     println(csvHeader)
     csvFile.println(csvHeader)
     val dummyKeyValuePairs: Array[(String, String)] = Helper.dummyKeyValuePairs(MAX_TESTED_ELEMENTS)
-    val aead: TinkAead                       = TinkAead(Helper.setupAead("AES128_GCM"))
+    val aead: TinkAead                              = TinkAead(Helper.setupAead("AES128_GCM"))
 
     for totalElements <- (minElementExponent to maxElementExponent).map(i => math.pow(10, i.toDouble).toInt) do {
       val crdt                       = new DeltaAWLWWMContainer[String, String]("0")

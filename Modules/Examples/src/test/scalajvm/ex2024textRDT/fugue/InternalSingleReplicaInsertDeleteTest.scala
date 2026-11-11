@@ -2,7 +2,7 @@ package ex2024textRDT.fugue
 
 import org.scalacheck.commands.Commands
 import org.scalacheck.{Gen, Prop}
-import ex2024textRDT.{*}
+import ex2024textRDT.*
 
 final case class InternalSingleReplicaInsertDeleteTest[A](
     val factoryConstructor: String => A

@@ -3,8 +3,8 @@ package ex2024textRDT.fugue.complexavl
 import ex2024textRDT.Helper.myAssert
 import ex2024textRDT.fugue.avl.{AVLTree, AVLTreeNode, AVLTreeNodeValueSize}
 import ex2024textRDT.fugue.avl2.AVL2TreeNode
-import ex2024textRDT.fugue.{*}
-import ex2024textRDT.{*}
+import ex2024textRDT.fugue.*
+import ex2024textRDT.*
 
 import scala.collection.mutable
 

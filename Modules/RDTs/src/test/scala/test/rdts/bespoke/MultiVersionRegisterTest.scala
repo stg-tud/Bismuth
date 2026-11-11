@@ -120,11 +120,11 @@ class MultiVersionRegisterTest extends munit.FunSuite {
   }
 
   test("clear does not make unobserved concurrent writes redundant") {
-    val alice    = Uid.predefined("alice")
-    val bob      = Uid.predefined("bob")
-    val aliceW   = MultiVersionRegister.empty[String].write("a")(using alice.convert)
-    val bobW     = MultiVersionRegister.empty[String].write("b")(using bob.convert)
-    val clear    = aliceW.clear()
+    val alice  = Uid.predefined("alice")
+    val bob    = Uid.predefined("bob")
+    val aliceW = MultiVersionRegister.empty[String].write("a")(using alice.convert)
+    val bobW   = MultiVersionRegister.empty[String].write("b")(using bob.convert)
+    val clear  = aliceW.clear()
     assert(!Redundancy[MultiVersionRegister[String]].isRedundant(clear, bobW))
     // dropping bobW would lose information
     assertEquals((clear `merge` bobW).read, Set("b"))

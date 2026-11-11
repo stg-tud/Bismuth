@@ -46,8 +46,8 @@ class NioTls(privateIdentity: PrivateIdentity) {
     * Becomes [[channels.connection.ConnectionInfo.authenticatedPeer]].
     */
   def authenticatedPeer(session: SSLSession): Uid =
-    val certificate = session.getPeerCertificates()(0).asInstanceOf[X509Certificate]
-    Uid(X509Util.certificateToPublicIdentity(certificate).id)
+      val certificate = session.getPeerCertificates()(0).asInstanceOf[X509Certificate]
+      Uid(X509Util.certificateToPublicIdentity(certificate).id)
 }
 
 object NioTls {

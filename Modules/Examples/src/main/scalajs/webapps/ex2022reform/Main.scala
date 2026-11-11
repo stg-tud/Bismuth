@@ -80,4 +80,3 @@ object Main {
     jsImplicits.toaster.render,
   )
 }
-

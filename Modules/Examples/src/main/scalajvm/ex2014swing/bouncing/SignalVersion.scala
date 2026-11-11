@@ -40,7 +40,6 @@ class SignalVersion {
     if (d / width) % 2 == 0 then d % width else width - d % width
   }
 
-
   // drawing code
   val canvas: Panel = new Panel() {
     override def paintComponent(g: Graphics2D): Unit =

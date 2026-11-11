@@ -16,7 +16,7 @@ import scala.collection.mutable
 class AuthzProtocolTest extends FunSuite {
 
   final class Node(val identity: PrivateIdentity, var replica: AuthzReplica[Set[Int]]) {
-    val peer: Peer                       = Peer.Authenticated(Uid(identity.getPublic.id))
+    val peer: Peer                          = Peer.Authenticated(Uid(identity.getPublic.id))
     val delivered: mutable.Buffer[Set[Int]] = mutable.Buffer.empty
   }
 
@@ -30,8 +30,8 @@ class AuthzProtocolTest extends FunSuite {
       step.events.foreach {
         case Effect.Send(peers, message) =>
           peers.foreach(p => nodes.find(_.peer == p).foreach(to => inbox.enqueue((node, to, message))))
-        case Effect.Deliver(state)  => node.delivered += state
-        case Effect.StartTimer(_)   => ()
+        case Effect.Deliver(state) => node.delivered += state
+        case Effect.StartTimer(_)  => ()
       }
     }
 
@@ -127,11 +127,11 @@ class AuthzProtocolTest extends FunSuite {
     net.deliverAll()
 
     // create two writes at a without bob being connected
-    val solo = a.replica.removePeer(b.peer).state
-    val w1   = solo.write(a.identity, Set(10)).state
-    val w2   = w1.write(a.identity, Set(11)).state
-    val e1   = w2.eventGraph.events(w1.heads.head)._1
-    val e2   = w2.eventGraph.events(w2.heads.head)._1
+    val solo   = a.replica.removePeer(b.peer).state
+    val w1     = solo.write(a.identity, Set(10)).state
+    val w2     = w1.write(a.identity, Set(11)).state
+    val e1     = w2.eventGraph.events(w1.heads.head)._1
+    val e2     = w2.eventGraph.events(w2.heads.head)._1
     val deltas = List(e1, e2).map(e => AuthzMessage.DeltaValue(e.hash, w2.deltaValue(e.hash).get))
 
     // deltas first, then the second event, then the first
@@ -146,7 +146,7 @@ class AuthzProtocolTest extends FunSuite {
 
   test("unauthenticated peers are ignored") {
     val (a, _, _, _) = setup()
-    val claimed        = Peer.Claimed(Uid.gen())
+    val claimed      = Peer.Claimed(Uid.gen())
     assertEquals(a.replica.addPeer(claimed).events, Nil)
     assertEquals(a.replica.handleMessage(claimed, AuthzMessage.Bootstrap).events, Nil)
   }
@@ -154,7 +154,7 @@ class AuthzProtocolTest extends FunSuite {
   test("message codec roundtrip") {
     import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray as write}
     val (_, _, _, genesis) = setup()
-    val message = AuthzMessage.Events(List(writeToArray(genesis)))
+    val message            = AuthzMessage.Events(List(writeToArray(genesis)))
     readFromArray[AuthzMessage](write[AuthzMessage](message)) match
         case AuthzMessage.Events(List(bytes)) => assertEquals(bytes.toSeq, writeToArray(genesis).toSeq)
         case other                            => fail(s"unexpected $other")

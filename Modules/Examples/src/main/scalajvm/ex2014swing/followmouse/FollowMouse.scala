@@ -45,7 +45,7 @@ class FollowMouse {
   val stateChanged: Event[Any] = mouse.position.changed.||[Any](tick)
 
   // drawing code
-  def top              = frame
+  def top = frame
   // lazy, so the Swing components are wired up after construction
   lazy val canvas: Panel = {
     val canvas = new Panel() {

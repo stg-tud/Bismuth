@@ -30,9 +30,9 @@ class SwitchVersion {
   // Using switch: position and speed depend on each other, which local lazy vals allow
   // (unlike class fields, which would be accessed before they are initialized)
   private def bouncing(init: Int, speed: Int, max: Int): Signal[Int] = {
-    lazy val pos: Signal[Int]      = tick.fold(init) { (pos, _) => pos + speedS.now }
-    lazy val bounce: Event[Int]    = pos.changed && (p => p < 0 || p + Size > max)
-    lazy val speedS: Signal[Int]   = bounce.toggle(Var(speed), Var(-speed))
+    lazy val pos: Signal[Int]    = tick.fold(init) { (pos, _) => pos + speedS.now }
+    lazy val bounce: Event[Int]  = pos.changed && (p => p < 0 || p + Size > max)
+    lazy val speedS: Signal[Int] = bounce.toggle(Var(speed), Var(-speed))
     pos
   }
 

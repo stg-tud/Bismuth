@@ -57,11 +57,11 @@ object NioSocketLayer {
     }
 
   class Plain(val channel: SocketChannel) extends NioSocketLayer {
-    override def read(targets: Array[ByteBuffer]): Long  = channel.read(targets)
-    override def write(buffers: Array[ByteBuffer]): Unit = writeFully(channel, buffers)
-    override def hasBufferedInput: Boolean               = false
-    override def ready: Boolean                          = true
-    override def authenticatedPeer: Option[Uid]          = None
+    override def read(targets: Array[ByteBuffer]): Long                                   = channel.read(targets)
+    override def write(buffers: Array[ByteBuffer]): Unit                                  = writeFully(channel, buffers)
+    override def hasBufferedInput: Boolean                                                = false
+    override def ready: Boolean                                                           = true
+    override def authenticatedPeer: Option[Uid]                                           = None
     override protected def describe(address: SocketAddress): Option[ConnectionDescriptor] =
       address match
           case isa: InetSocketAddress       => Some(ConnectionDescriptor.TcpWebSocket(isa.getHostString, isa.getPort))
@@ -160,30 +160,29 @@ object NioSocketLayer {
       * Returns true if the peer closed the session.
       */
     private def unwrapAvailable(): Boolean = {
-      while true do {
-        engine.getHandshakeStatus match
-            case HandshakeStatus.NEED_TASK => runDelegatedTasks()
-            case HandshakeStatus.NEED_WRAP => writeLock.synchronized(handshakeWraps())
-            case _                         =>
-              netIn.flip()
-              val result =
-                try engine.unwrap(netIn, appIn)
-                finally netIn.compact(): Unit
-              result.getStatus match
-                  case Status.OK =>
-                    val noProgress = result.bytesConsumed() == 0 && result.bytesProduced() == 0
-                    if noProgress && result.getHandshakeStatus != HandshakeStatus.NEED_UNWRAP_AGAIN then return false
-                  case Status.BUFFER_UNDERFLOW =>
-                    if !netIn.hasRemaining then netIn = grow(netIn, engine.getSession.getPacketBufferSize)
-                    return false
-                  case Status.BUFFER_OVERFLOW =>
-                    appIn = grow(appIn, engine.getSession.getApplicationBufferSize)
-                  case Status.CLOSED =>
-                    // answer the close_notify, if the engine wants to
-                    try writeLock.synchronized(handshakeWraps())
-                    catch case _: Exception => ()
-                    return true
-      }
+      while true do
+          engine.getHandshakeStatus match
+              case HandshakeStatus.NEED_TASK => runDelegatedTasks()
+              case HandshakeStatus.NEED_WRAP => writeLock.synchronized(handshakeWraps())
+              case _                         =>
+                netIn.flip()
+                val result =
+                  try engine.unwrap(netIn, appIn)
+                  finally netIn.compact(): Unit
+                result.getStatus match
+                    case Status.OK =>
+                      val noProgress = result.bytesConsumed() == 0 && result.bytesProduced() == 0
+                      if noProgress && result.getHandshakeStatus != HandshakeStatus.NEED_UNWRAP_AGAIN then return false
+                    case Status.BUFFER_UNDERFLOW =>
+                      if !netIn.hasRemaining then netIn = grow(netIn, engine.getSession.getPacketBufferSize)
+                      return false
+                    case Status.BUFFER_OVERFLOW =>
+                      appIn = grow(appIn, engine.getSession.getApplicationBufferSize)
+                    case Status.CLOSED =>
+                      // answer the close_notify, if the engine wants to
+                      try writeLock.synchronized(handshakeWraps())
+                      catch case _: Exception => ()
+                      return true
       false
     }
 

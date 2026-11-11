@@ -32,7 +32,7 @@ class HyParViewNetworkTest extends munit.FunSuite {
 
   final class Node(val id: String, val io: MessagingIO.Plumtree[Set[String]], val info: PeerConnectInfo) {
     def hv: HyParViewStateMachine = io.overlayController.asInstanceOf[HyParViewStateMachine]
-    def peer: Peer                 = info.id
+    def peer: Peer                = info.id
     override def toString: String = id
   }
 
@@ -193,7 +193,8 @@ class HyParViewNetworkTest extends munit.FunSuite {
     assertEquals(net.active(end), Set("middle", "q"), net.describe)
 
     // a peer only end knows about
-    val secret = PeerConnectInfo(Peer.Claimed(Uid.predefined("secret")), Set(ConnectionDescriptor.QueuedLocal("secret")))
+    val secret =
+      PeerConnectInfo(Peer.Claimed(Uid.predefined("secret")), Set(ConnectionDescriptor.QueuedLocal("secret")))
     end.io.discover(Set(secret))
     net.drain()
 

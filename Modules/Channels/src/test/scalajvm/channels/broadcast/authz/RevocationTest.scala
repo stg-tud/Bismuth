@@ -534,89 +534,89 @@ class RevocationTest extends FunSuite {
   // --- 9. snapshots ---
 
   test("a snapshot taken before every invalidated delta is kept and the state is correct") {
-  // capA <- dR | snapshot | dR <- dA0 <- {dA1, dR2, revocation}
-  val fx    = Fixture()
-  val alice = fx.principal()
-  val capA  = fx.grant(alice, fx.root, fx.genesis, fx.genesis)
-  val dR    = fx.write(Set(9), fx.root, fx.genesis, capA)
-  fx.receive(capA, dR)
-  fx.createSnapshot()
-  val snapshotVersion = fx.replica.eventGraph.nextEventIndex - 1
-  assertEquals(fx.snapshotVersion, snapshotVersion)
+    // capA <- dR | snapshot | dR <- dA0 <- {dA1, dR2, revocation}
+    val fx    = Fixture()
+    val alice = fx.principal()
+    val capA  = fx.grant(alice, fx.root, fx.genesis, fx.genesis)
+    val dR    = fx.write(Set(9), fx.root, fx.genesis, capA)
+    fx.receive(capA, dR)
+    fx.createSnapshot()
+    val snapshotVersion = fx.replica.eventGraph.nextEventIndex - 1
+    assertEquals(fx.snapshotVersion, snapshotVersion)
 
-  val dA0        = fx.write(Set(2), alice, capA, dR)
-  val dA1        = fx.write(Set(1), alice, capA, dA0)
-  val dR2        = fx.write(Set(8), fx.root, fx.genesis, dA0)
-  val revocation = fx.revoke(capA, dA0)
-  fx.receive(dA0, dA1, dR2, revocation)
+    val dA0        = fx.write(Set(2), alice, capA, dR)
+    val dA1        = fx.write(Set(1), alice, capA, dA0)
+    val dR2        = fx.write(Set(8), fx.root, fx.genesis, dA0)
+    val revocation = fx.revoke(capA, dA0)
+    fx.receive(dA0, dA1, dR2, revocation)
 
-  fx.assertInvalidated(revocation, dA1)
-  assertEquals(fx.snapshotVersion, snapshotVersion, "the snapshot should have been kept")
-  fx.assertState(Set(2, 8, 9))
+    fx.assertInvalidated(revocation, dA1)
+    assertEquals(fx.snapshotVersion, snapshotVersion, "the snapshot should have been kept")
+    fx.assertState(Set(2, 8, 9))
   }
 
   test("a snapshot containing an invalidated delta is discarded and the state is correct") {
-  // capA <- dA, capA <- dR | snapshot | dR <- dR2 <- revocation
-  val fx    = Fixture()
-  val alice = fx.principal()
-  val capA  = fx.grant(alice, fx.root, fx.genesis, fx.genesis)
-  val dA    = fx.write(Set(1), alice, capA, capA)
-  val dR    = fx.write(Set(9), fx.root, fx.genesis, capA)
-  fx.receive(capA, dA, dR)
-  fx.createSnapshot()
-  fx.assertState(Set(1, 9))
+    // capA <- dA, capA <- dR | snapshot | dR <- dR2 <- revocation
+    val fx    = Fixture()
+    val alice = fx.principal()
+    val capA  = fx.grant(alice, fx.root, fx.genesis, fx.genesis)
+    val dA    = fx.write(Set(1), alice, capA, capA)
+    val dR    = fx.write(Set(9), fx.root, fx.genesis, capA)
+    fx.receive(capA, dA, dR)
+    fx.createSnapshot()
+    fx.assertState(Set(1, 9))
 
-  val dR2        = fx.write(Set(8), fx.root, fx.genesis, dR)
-  val revocation = fx.revoke(capA, dR2)
-  fx.receive(dR2, revocation)
+    val dR2        = fx.write(Set(8), fx.root, fx.genesis, dR)
+    val revocation = fx.revoke(capA, dR2)
+    fx.receive(dR2, revocation)
 
-  fx.assertInvalidated(revocation, dA)
-  assertEquals(fx.snapshotVersion, -1, "the snapshot should have been discarded")
-  fx.assertState(Set(8, 9))
+    fx.assertInvalidated(revocation, dA)
+    assertEquals(fx.snapshotVersion, -1, "the snapshot should have been discarded")
+    fx.assertState(Set(8, 9))
   }
 
   test("a valid delta value received after the snapshot for an event it covers is kept") {
-  // Suspected problem: capA <- dR (value arrives after the snapshot) <- revocation, capA <- dA
-  val fx    = Fixture()
-  val alice = fx.principal()
-  val capA  = fx.grant(alice, fx.root, fx.genesis, fx.genesis)
-  val dR    = fx.write(Set(9), fx.root, fx.genesis, capA)
-  fx.receive(capA)
-  fx.receiveEvent(dR)
-  fx.createSnapshot()
-  val snapshotVersion = fx.replica.eventGraph.nextEventIndex - 1
-  fx.receiveValue(dR)
-  fx.assertState(Set(9))
+    // Suspected problem: capA <- dR (value arrives after the snapshot) <- revocation, capA <- dA
+    val fx    = Fixture()
+    val alice = fx.principal()
+    val capA  = fx.grant(alice, fx.root, fx.genesis, fx.genesis)
+    val dR    = fx.write(Set(9), fx.root, fx.genesis, capA)
+    fx.receive(capA)
+    fx.receiveEvent(dR)
+    fx.createSnapshot()
+    val snapshotVersion = fx.replica.eventGraph.nextEventIndex - 1
+    fx.receiveValue(dR)
+    fx.assertState(Set(9))
 
-  val dA         = fx.write(Set(1), alice, capA, capA)
-  val revocation = fx.revoke(capA, dR)
-  fx.receive(dA, revocation)
+    val dA         = fx.write(Set(1), alice, capA, capA)
+    val revocation = fx.revoke(capA, dR)
+    fx.receive(dA, revocation)
 
-  fx.assertInvalidated(revocation, dA)
-  assertEquals(fx.snapshotVersion, snapshotVersion, "the snapshot should have been kept")
-  fx.assertState(Set(9))
+    fx.assertInvalidated(revocation, dA)
+    assertEquals(fx.snapshotVersion, snapshotVersion, "the snapshot should have been kept")
+    fx.assertState(Set(9))
   }
 
   test(
-  "an invalidated delta value received after the snapshot for an event it covers is removed"
+    "an invalidated delta value received after the snapshot for an event it covers is removed"
   ) {
-  // capA <- dA (value arrives after the snapshot), capA <- dR <- revocation
-  val fx    = Fixture()
-  val alice = fx.principal()
-  val capA  = fx.grant(alice, fx.root, fx.genesis, fx.genesis)
-  val dA    = fx.write(Set(1), alice, capA, capA)
-  val dR    = fx.write(Set(9), fx.root, fx.genesis, capA)
-  fx.receive(capA, dR)
-  fx.receiveEvent(dA)
-  fx.createSnapshot()
-  fx.receiveValue(dA)
-  fx.assertState(Set(1, 9))
+    // capA <- dA (value arrives after the snapshot), capA <- dR <- revocation
+    val fx    = Fixture()
+    val alice = fx.principal()
+    val capA  = fx.grant(alice, fx.root, fx.genesis, fx.genesis)
+    val dA    = fx.write(Set(1), alice, capA, capA)
+    val dR    = fx.write(Set(9), fx.root, fx.genesis, capA)
+    fx.receive(capA, dR)
+    fx.receiveEvent(dA)
+    fx.createSnapshot()
+    fx.receiveValue(dA)
+    fx.assertState(Set(1, 9))
 
-  val revocation = fx.revoke(capA, dR)
-  fx.receive(revocation)
+    val revocation = fx.revoke(capA, dR)
+    fx.receive(revocation)
 
-  fx.assertInvalidated(revocation, dA)
-  fx.assertState(Set(9))
+    fx.assertInvalidated(revocation, dA)
+    fx.assertState(Set(9))
   }
 }
 

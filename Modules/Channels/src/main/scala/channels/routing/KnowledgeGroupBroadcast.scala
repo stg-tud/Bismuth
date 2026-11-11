@@ -56,14 +56,14 @@ object KnowledgeGroupBroadcast {
 
     private type Result = Step[State, Msg, Out]
 
-    def addPeer(state: State, peer: Peer): Result    = Step(state.copy(peers = state.peers + peer), Nil)
-    def removePeer(state: State, peer: Peer): Result = Step(state.copy(peers = state.peers - peer), Nil)
+    def addPeer(state: State, peer: Peer): Result              = Step(state.copy(peers = state.peers + peer), Nil)
+    def removePeer(state: State, peer: Peer): Result           = Step(state.copy(peers = state.peers - peer), Nil)
     def timerFired(state: State, timer: Routing.Timer): Result = Step(state, Nil)
 
     def handleMessage(state: State, from: Peer, message: Msg): Result =
       if message.dots <= state.context then Step(state, Nil)
       else
-          val next = state.copy(context = state.context.merge(message.dots))
+          val next    = state.copy(context = state.context.merge(message.dots))
           val covered = system.knowledgeGroups.iterator
             .filter(g => g.ids.contains(from.uid) && g.ids.contains(self) && g.matches(message.data))
             .flatMap(_.ids).toSet + from.uid

@@ -6,7 +6,7 @@ import rdts.time.{Dot, Dots}
 
 class DeltaBufferTest extends munit.FunSuite {
 
-  private val uid                = Uid.predefined("alice")
+  private val uid                 = Uid.predefined("alice")
   private def id(time: Int): Dots = Dots.single(Dot(uid, time))
 
   // uses the default subsumption-based Redundancy for Set[Int]

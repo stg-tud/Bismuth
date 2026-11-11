@@ -14,12 +14,12 @@ class WycheproofTest extends FunSuite {
       open: (Array[Byte], Array[Byte], Array[Byte], Array[Byte]) => Array[Byte]
   ): Unit =
     for v <- vectors do
-      val (k, n, a, m) = (hex(v.key), hex(v.iv), hex(v.aad), hex(v.msg))
-      val expected     = hex(v.ct) ++ hex(v.tag)
-      if v.valid then
-          assertEquals(seal(k, n, m, a).toSeq, expected.toSeq, s"tcId ${v.tcId}")
-          assertEquals(open(k, n, expected, a).toSeq, m.toSeq, s"tcId ${v.tcId}")
-      else assert(Try(open(k, n, expected, a)).isFailure, s"tcId ${v.tcId}")
+        val (k, n, a, m) = (hex(v.key), hex(v.iv), hex(v.aad), hex(v.msg))
+        val expected     = hex(v.ct) ++ hex(v.tag)
+        if v.valid then
+            assertEquals(seal(k, n, m, a).toSeq, expected.toSeq, s"tcId ${v.tcId}")
+            assertEquals(open(k, n, expected, a).toSeq, m.toSeq, s"tcId ${v.tcId}")
+        else assert(Try(open(k, n, expected, a)).isFailure, s"tcId ${v.tcId}")
 
   test("xchacha20_poly1305") {
     run(

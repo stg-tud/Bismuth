@@ -31,8 +31,16 @@ class PlumtreeIOAeadTest extends FunSuite {
     val received1 = mutable.ListBuffer.empty[Set[String]]
     val received2 = mutable.ListBuffer.empty[Set[String]]
 
-    val dd1 = MessagingIO.usingPlumtree[Set[String]](ReplicaId.gen(), p => received1 += p.data, config = MessagingIO.Config(aead = aead))
-    val dd2 = MessagingIO.usingPlumtree[Set[String]](ReplicaId.gen(), p => received2 += p.data, config = MessagingIO.Config(aead = aead))
+    val dd1 = MessagingIO.usingPlumtree[Set[String]](
+      ReplicaId.gen(),
+      p => received1 += p.data,
+      config = MessagingIO.Config(aead = aead)
+    )
+    val dd2 = MessagingIO.usingPlumtree[Set[String]](
+      ReplicaId.gen(),
+      p => received2 += p.data,
+      config = MessagingIO.Config(aead = aead)
+    )
 
     val queue = LocalMessageQueue()
     val link  = QueuedLocalConnection("aead", queue)
@@ -50,7 +58,10 @@ class PlumtreeIOAeadTest extends FunSuite {
   test("AEAD encrypted envelopes are not readable with the identity AEAD") {
     val aead    = newAead()
     val encoded = MessagingIO.encodeEnvelope[Set[String]](
-      MessagingIO.Envelope.Broadcast(channels.connection.Peer.Claimed(ReplicaId.gen().uid), PlumtreeMessage.Graft(rdts.time.Dots.empty)),
+      MessagingIO.Envelope.Broadcast(
+        channels.connection.Peer.Claimed(ReplicaId.gen().uid),
+        PlumtreeMessage.Graft(rdts.time.Dots.empty)
+      ),
       aead
     )
 

@@ -39,12 +39,14 @@ class ConnectionManager[State: JsonValueCodec](
     MessagingIO.usingPlumtree[State](
       replicaId = replicaId,
       receiveCallback = payload => receiveCallback(payload.data),
-      config = MessagingIO.Config(overlay = Some(FullMeshOverlay(PeerConnectInfo(Peer.Claimed(replicaId.uid)))),
+      config = MessagingIO.Config(
+        overlay = Some(FullMeshOverlay(PeerConnectInfo(Peer.Claimed(replicaId.uid)))),
         resolver = nioResolver,
         globalAbort = globalAbort,
         aead = TinkAead(aead),
         timers = Timers.OnJavaTimer(timer),
-        timerDelays = TimerDelays(repair = 100.millis)),
+        timerDelays = TimerDelays(repair = 100.millis)
+      ),
     )
 
   dataManager.addServerConnection(nio.listen())
