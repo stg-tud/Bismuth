@@ -1,7 +1,7 @@
 import org.scalajs.linker.interface.{ESVersion, ModuleInitializer, ModuleSplitStyle}
 
 // for some reason, project matrix REALLY likes to require this everywhere
-lazy val s3v = "3.10.0"
+lazy val s3v = "3.10.1"
 scalaVersion := s3v
 Settings.defaultScalacFlags
 
@@ -18,8 +18,8 @@ def scalafx    = "org.scalafx"   %% "scalafx"     % "27.0.0-R39"
 def upickle    = "com.lihaoyi"   %% "upickle"     % "4.4.3"
 
 def jsoniterScala = Seq(
-  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core"   % "2.42.3",
-  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % "2.42.3" % Provided
+  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core"   % "2.43.0",
+  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % "2.43.0" % Provided
 )
 
 lazy val bismuth = project.in(file(".")).settings(Settings.strictScalacFlags).aggregate(
@@ -121,14 +121,14 @@ lazy val examples = projectMatrix.in(file("Modules/Examples"))
       fork := true,
       Settings.jolSettings,
       libraryDependencies ++= {
-        val jettyVersion = "12.1.14"
+        val jettyVersion = "12.1.15"
         Seq(
           "com.github.alexandrnikitin"     % "bloom-filter_2.13"            % "0.13.1",
           "com.google.crypto.tink"         % "tink"                         % "1.24.0",
           "com.softwaremill.sttp.client4" %% "core"                         % "4.1.1",
           "io.bullet"                     %% "borer-core"                   % "1.19.0",
           "io.bullet"                     %% "borer-derivation"             % "1.19.0",
-          "io.etcd"                        % "jetcd-core"                   % "0.8.7",
+          "io.etcd"                        % "jetcd-core"                   % "0.8.8",
           "site.ycsb"                      % "core"                         % "0.17.0",
           "org.conscrypt"                  % "conscrypt-openjdk-uber"       % "2.9.0",
           "org.eclipse.jetty.websocket"    % "jetty-websocket-jetty-api"    % jettyVersion,
