@@ -14,6 +14,7 @@ import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.scalajs.js
 import scala.util.{Failure, Success}
+import scala.util.control.NonFatal
 
 object OverlayNetworkGraphNetworking {
 
@@ -29,7 +30,7 @@ object OverlayNetworkGraphNetworking {
   private def installPeerFailurePropagation(connector: WebRTCConnector, channel: dom.RTCDataChannel): Unit = {
     def connectionStateString: String =
       try connector.peerConnection.asInstanceOf[js.Dynamic].connectionState.asInstanceOf[String]
-      catch case _: Throwable => "<unsupported>"
+      catch case NonFatal(_) => "<unsupported>"
 
     def closeChannel(): Unit =
       if channel.readyState != dom.RTCDataChannelState.closed && channel.readyState != dom.RTCDataChannelState.closing
@@ -181,9 +182,9 @@ object OverlayNetworkGraphNetworking {
                 def failAttempt(err: Throwable): Unit = {
                   outgoing.remove(target).foreach(a => dom.window.clearTimeout(a.timeoutHandle))
                   try channel.close()
-                  catch case _: Throwable => ()
+                  catch case NonFatal(_) => ()
                   try connector.peerConnection.close()
-                  catch case _: Throwable => ()
+                  catch case NonFatal(_) => ()
                   Async.handler.fail(err)
                 }
                 WebRTCConnection.openLatent(channel).connect(receiver).runIn(abort) {

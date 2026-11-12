@@ -5,6 +5,11 @@ import channels.connection.{Abort, *}
 import java.util.concurrent.{Executors, ThreadFactory}
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutorService, Future, Promise}
 
+// a fatal error escaping a selector loop must still fail the promise, otherwise the test hangs forever
+private def completeWithFailure(done: Promise[Unit]): PartialFunction[Throwable, Unit] = { case err: Throwable =>
+  done.failure(err)
+}
+
 private def fixedThreadExecutionContext(threads: Int): ExecutionContextExecutorService = {
   val factory: ThreadFactory = r => {
     val thread = new Thread(r)
@@ -26,9 +31,7 @@ class NioTCPAbortTest extends munit.FunSuite {
       try {
         nio.loopSelection(abort)
         done.success(())
-      } catch {
-        case err: Throwable => done.failure(err)
-      }
+      } catch completeWithFailure(done)
     )
 
     abort.abort()
@@ -55,9 +58,7 @@ class NioTCPAbortRegressionTest extends munit.FunSuite {
         try {
           nio.loopSelection(abort)
           done.success(())
-        } catch {
-          case err: Throwable => done.failure(err)
-        }
+        } catch completeWithFailure(done)
       )
       (nio, abort, done.future)
     }

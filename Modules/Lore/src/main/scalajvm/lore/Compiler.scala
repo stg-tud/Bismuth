@@ -97,7 +97,7 @@ object Compiler {
               .Red(s"Parsing error!\n${e.getMessage()}")
               .overlay(fansi.Bold.On, 0, 14)
           )
-        case e: Throwable =>
+        case e: Exception =>
           println(
             fansi.Color
               .Red("Unknown error!")

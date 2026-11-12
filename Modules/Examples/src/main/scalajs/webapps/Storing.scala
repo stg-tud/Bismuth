@@ -3,6 +3,7 @@ package webapps
 import com.github.plokhotnyuk.jsoniter_scala.core.*
 import org.scalajs.dom
 import reactives.default.Signal
+import scala.util.control.NonFatal
 
 object Storing {
 
@@ -14,7 +15,7 @@ object Storing {
         try
           readFromString[A](item)
         catch {
-          case cause: Throwable =>
+          case NonFatal(cause) =>
             println(s"could not restore $key: $cause")
             cause.printStackTrace()
             dom.window.localStorage.removeItem(key)

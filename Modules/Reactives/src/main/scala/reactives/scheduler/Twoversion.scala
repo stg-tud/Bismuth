@@ -2,6 +2,7 @@ package reactives.scheduler
 
 import reactives.core.{AccessHandler, AdmissionTicket, DynamicTicket, InitialChange, Observation, ReSource, ReadAs, ReevTicket, SchedulerWithDynamicScope, Tracing, Transaction}
 
+import scala.annotation.nowarn
 import scala.collection.mutable.ListBuffer
 
 class Token
@@ -73,6 +74,9 @@ trait Twoversion {
       *     - run the party! phase
       *   - not yet implemented
       */
+    // rollback must also run if something like an Error or a ControlThrowable escapes,
+    // otherwise the transaction would leave locks and half-written state behind
+    @nowarn("id=E235")
     override def forceNewTransaction[R](
         initialWrites: Set[ReSource.of[State]],
         admissionPhase: AdmissionTicket[State] => R

@@ -7,6 +7,7 @@ import de.rmgk.delay.{Async, Callback, Sync}
 
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
 /** Echo tests for a transport: `serverConn` listens, and clients connect to the descriptor it reports through the
@@ -65,11 +66,11 @@ trait EchoCommunicationTest(
     body(abort, clients).transform { result =>
       clients.synchronized(clients.toList).foreach { conn =>
         try conn.close()
-        catch case _: Throwable => ()
+        catch case NonFatal(_) => ()
       }
       cleanups.synchronized(cleanups.toList).foreach { cleanup =>
         try cleanup()
-        catch case _: Throwable => ()
+        catch case NonFatal(_) => ()
       }
       abort.abort()
       result

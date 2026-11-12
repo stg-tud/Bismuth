@@ -4,9 +4,12 @@ import munit.FunSuite
 import rdts.base.ReplicaId
 
 import java.util.UUID
+import scala.annotation.nowarn
 
 class TodoSignalingIntegrationTest extends FunSuite {
 
+  // munit reports failed assertions as AssertionErrors, which are exactly what we want to retry here
+  @nowarn("id=E235")
   private def eventually(timeoutMs: Long = 5000, sleepMs: Long = 20)(assertion: => Unit): Unit = {
     val deadline                = System.currentTimeMillis() + timeoutMs
     var last: Option[Throwable] = None

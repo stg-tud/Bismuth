@@ -7,7 +7,7 @@ import reactives.parrp.Backoff
 
 import java.util.concurrent.locks.ReentrantLock
 import java.util.concurrent.{Executors, ThreadLocalRandom}
-import scala.annotation.{tailrec, unused}
+import scala.annotation.{nowarn, tailrec, unused}
 import scala.concurrent.duration.*
 import scala.concurrent.{Await, Future, TimeoutException}
 import scala.util.{Failure, Success, Try}
@@ -240,6 +240,8 @@ object PaperPhilosophers {
       }
 
     @volatile var abort: Boolean = false
+    // abort must be set even if a fatal error escapes a worker, otherwise the benchmark spins forever
+    @nowarn("id=E235")
     def driver(idx: Int): Int    =
       try {
         var localCount = 0

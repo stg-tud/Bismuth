@@ -57,7 +57,7 @@ private class MultiSelect(
   private def handleResize: Signal[Unit] = Signal.dynamic {
     val element = Option(document.querySelector(s"#$id"))
     if element.nonEmpty then {
-      val maxWidth = element.get.getBoundingClientRect().width - remToPx(4.5)
+      val maxWidth = element.get.getBoundingClientRect().width - remToPx(4.5f)
       val items    = options.value
         .filter(v => value.value.contains(v.id))
       val rect = element.get.querySelector(".multiselect-value-wrapper").getBoundingClientRect()

@@ -4,6 +4,7 @@ import reactives.default.*
 import tests.reactives.testtools.Spawn
 
 import java.util.concurrent.{ConcurrentLinkedQueue, CountDownLatch}
+import scala.annotation.nowarn
 import scala.util.Random
 
 class PaperGlitchTest extends munit.FunSuite {
@@ -34,6 +35,9 @@ class PaperGlitchTest extends munit.FunSuite {
 
     val latch = new CountDownLatch(3)
 
+    // the AssertionErrors caught below are the invalid-buffer symptom this test is looking for,
+    // so they must be caught deliberately
+    @nowarn("id=E235")
     val t1 = Spawn {
       latch.countDown()
       latch.await()
@@ -47,6 +51,7 @@ class PaperGlitchTest extends munit.FunSuite {
             case e: NoSuchElementException => glitches.add(-43); ()
           }
     }
+    @nowarn("id=E235")
     val t2 = Spawn {
       latch.countDown()
       latch.await()

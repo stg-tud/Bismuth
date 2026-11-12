@@ -15,6 +15,7 @@ import webapps.ex2026overlaydemo.OverlayNetworkGraphNetworking.WebRtcSignalingBr
 import java.util.Base64
 import scala.collection.mutable
 import scala.scalajs.js.annotation.JSExportTopLevel
+import scala.util.control.NonFatal
 
 /** vibecoded as part of the hyparview experiments */
 object OverlayNetworkGraph {
@@ -219,7 +220,7 @@ object OverlayNetworkGraph {
 
     try connect(defaultSeedString)
     catch
-        case ex: Throwable =>
+        case NonFatal(ex) =>
           connectionInfoText =
             s"failed to parse/connect seed\nexpected ?bootstrap=<tcp-ws://host:port|webrtc://peer|base64|raw-json>\noptional: ?signal=<ws://...|tcp-ws://host:port>\noptional: ?uid=<peer-uid>\n${ex.getClass.getSimpleName}: ${Option(ex.getMessage).getOrElse("")}"
           refreshText()

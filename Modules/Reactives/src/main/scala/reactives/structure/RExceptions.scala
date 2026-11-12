@@ -20,7 +20,9 @@ object RExceptions {
         // TODO: there is a API to add a cause to the exception, but only in JDK 15 …
         throw new java.util.NoSuchElementException(s"${r.info} is empty (propagated from ${esct.info}")
       // todo improve error message
-      case other: Throwable => throw ObservedException(r.info, "was accessed but contained an exception", other)
+      // only Exceptions are stored in a Pulse, see Pulse.tryCatch; Errors and other
+      // fatal throwables should propagate unchanged instead of being wrapped
+      case other: Exception => throw ObservedException(r.info, "was accessed but contained an exception", other)
     }
 
 }

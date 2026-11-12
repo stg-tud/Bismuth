@@ -122,6 +122,14 @@ object Settings {
         "-Wunused:locals",
         // Warn if an implicit parameter is unused,
         "-Wunused:implicits",
+        // Warn when catching Throwable or subclasse of Error
+        "-Wunreasonable-catch",
+        // 3.10.1 regression: the compiler-generated `fromOrdinal` contains a catch-all,
+        // which is reported at the last case of any enum that has only singleton cases.
+        // Combined with `msg` so that the `Catching Throwable` variants are still reported.
+        // See https://github.com/scala/scala3/issues/27548, fixed after 3.10.1;
+        // remove this filter once we are on a release that contains the fix.
+        "-Wconf:id=E235&msg=Catching everything can lead to unexpected behavior:silent",
         // also make unused warnings not warnings but just infos
         "-Wconf:id=E198:info",
       )

@@ -10,7 +10,7 @@ class AVLTreeScalaCheckSuite extends ScalaCheckSuite {
     super.scalaCheckTestParameters
       .withWorkers(16)
       .withMaxSize(100)
-      .withMaxDiscardRatio(0.00001)
+      .withMaxDiscardRatio(0.00001f)
 
   property(
     "avl".tag(scalacheck)

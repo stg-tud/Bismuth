@@ -3,6 +3,7 @@ package ex2016universe
 import reactives.default.*
 
 import scala.util.Random
+import scala.util.control.NonFatal
 
 /** A World object unites a space (Board object), time (Time object), and a random object
   * It also defines all repetitive actions, such as spawning new Animals and Plants
@@ -63,7 +64,7 @@ class World(val width: Int = 100, val height: Int = 100) {
       try
         u()
       catch {
-        case e: Throwable => e.printStackTrace()
+        case NonFatal(e) => e.printStackTrace()
       }
     }
     updates = Nil

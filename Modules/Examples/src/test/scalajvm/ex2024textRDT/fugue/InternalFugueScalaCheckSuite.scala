@@ -38,7 +38,7 @@ class ComplexAVLInternalFugueScalaCheckSuite
       .withMaxSize(
         50
       )
-      .withMaxDiscardRatio(0.00001)
+      .withMaxDiscardRatio(0.00001f)
 
 }
 
@@ -55,7 +55,7 @@ abstract class InternalFugueScalaCheckSuite[A](
       .withMaxSize(
         50
       )
-      .withMaxDiscardRatio(0.00001)
+      .withMaxDiscardRatio(0.00001f)
 
   property(
     "A replica should be able to do arbitrary insertions and deletions".tag(
@@ -81,7 +81,7 @@ class InternalFugueTreeEqualityCheckSuite extends ScalaCheckSuite {
     super.scalaCheckTestParameters
       .withWorkers(16)
       .withMaxSize(100)
-      .withMaxDiscardRatio(0.00001)
+      .withMaxDiscardRatio(0.00001f)
 
   property(
     "Different Fugue implementations create the same tree (simple, complex)"

@@ -176,7 +176,7 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = MessagingIO.executeImmedi
 
     override def close(): Unit = {
       try layer.write(Array(ByteBuffer.wrap(WebsocketProtocol.encodeCloseFrame())))
-      catch case _: Throwable => ()
+      catch case NonFatal(_) => ()
       layer.close()
     }
   }
@@ -561,7 +561,7 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = MessagingIO.executeImmedi
 
       case CloseFrame(_, _) =>
         try attachment.layer.write(Array(ByteBuffer.wrap(WebsocketProtocol.encodeCloseFrame())))
-        catch case _: Throwable => ()
+        catch case NonFatal(_) => ()
         callback.fail(NoMoreDataException("websocket closed"))
         attachment.layer.close()
         if key != null then {
@@ -580,7 +580,7 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = MessagingIO.executeImmedi
   private def failKey(key: SelectionKey, ex: Exception): Unit = {
     val channel = key.channel()
     try channel.close()
-    catch case _: Throwable => ()
+    catch case NonFatal(_) => ()
     key.cancel()
     key.attachment() match {
       case attachment: ReceiveAttachment =>

@@ -11,6 +11,7 @@ import rdts.time.{ArrayRanges, Dots}
 import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.util.Random
+import scala.util.control.NonFatal
 
 object TraceGeneration {
   def dummy(using random: Random): String = random.alphanumeric.take(20).mkString("")
@@ -22,7 +23,7 @@ object TraceGeneration {
     try
       action
     catch {
-      case _: Throwable => retryUntilSuccess(action)
+      case NonFatal(_) => retryUntilSuccess(action)
     }
 
   def generateReplicaIds(numReplicas: Int): Array[PrivateIdentity] = {

@@ -8,6 +8,7 @@ import reactives.default.*
 
 import java.net.URL
 import scala.io.Source
+import scala.util.control.NonFatal
 import scala.language.unsafeNulls
 import scala.swing.Dialog.Message
 import scala.swing.Swing.EmptyIcon
@@ -87,7 +88,7 @@ object Main {
     println("trying to load from " + path)
     val res =
       try Some(Source.fromFile(path).getLines().toList)
-      catch { case _: Throwable => None }
+      catch { case NonFatal(_) => None }
     println("result: " + res)
     res
   }
