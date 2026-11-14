@@ -8,7 +8,7 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import ex2024textRDT.{FugueFactory, Replica}
 import rdts.base.ReplicaId
 
-/** Replicates a Fugue [[Replica]] over a [[CausalBroadcast]]. Local operations are sent as one batch on [[publish]]. */
+/** Replicates a Fugue [[ex2024textRDT.Replica]] over a [[channels.routing.CausalBroadcast]]. Local operations are sent as one batch on [[publish]]. */
 final class TextReplication[F <: FugueFactory](val replica: Replica[F]) {
 
   given JsonValueCodec[replica.state.factoryContext.MSG] = replica.state.factoryContext.messageCodec

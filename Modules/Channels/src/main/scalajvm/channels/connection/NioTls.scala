@@ -11,8 +11,8 @@ import java.security.cert.{CertificateException, X509Certificate}
 import javax.net.ssl.{SSLEngine, SSLSession, X509TrustManager}
 
 /** TLS configuration for [[NioTCP.listenTls]] and [[NioTCP.connectTls]]: mutually authenticated TLS 1.3 between
-  * [[PrivateIdentity]]s. Both sides present a certificate bound to their identity key (see
-  * [[X509Util.generateCustomP2PX509Certificate]]), the authenticated peer replica id is the id of the remote
+  * [[channels.crypto.PrivateIdentity]]s. Both sides present a certificate bound to their identity key (see
+  * [[channels.crypto.X509Util.generateCustomP2PX509Certificate]]), the authenticated peer replica id is the id of the remote
   * [[channels.crypto.PublicIdentity]]. Any well-formed identity is accepted; deciding which peers to trust is up to the user.
   */
 class NioTls(privateIdentity: PrivateIdentity) {
@@ -52,7 +52,7 @@ class NioTls(privateIdentity: PrivateIdentity) {
 
 object NioTls {
 
-  /** Accepts exactly the certificates created by [[X509Util.generateCustomP2PX509Certificate]]: a single Ed25519
+  /** Accepts exactly the certificates created by [[channels.crypto.X509Util.generateCustomP2PX509Certificate]]: a single Ed25519
     * X.509v3 certificate that is signed by the identity key it names.
     */
   private val trustManager: X509TrustManager = new X509TrustManager {

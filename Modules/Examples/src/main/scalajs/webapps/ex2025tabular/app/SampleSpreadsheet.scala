@@ -6,7 +6,7 @@ import webapps.ex2025tabular.lib.Spreadsheet
 /** The initial sheet (6 rows, columns A–C), as a fixed serialized state.
   * Creating it at runtime would stamp rows and columns with the current time, so the sheets of different replicas
   * would differ (and merging them would reorder rows and columns).
-  * Generated once by adding 6 rows and 3 columns with replica id `sample`, serialized with [[Spreadsheet.codec]].
+  * Generated once by adding 6 rows and 3 columns with replica id `sample`, serialized with [[webapps.ex2025tabular.lib.Spreadsheet.codec]].
   */
 object SampleSpreadsheet {
   def apply(): Spreadsheet[String] = readFromString[Spreadsheet[String]](json)

@@ -51,7 +51,7 @@ object AuthzMessage {
 /** Immutable state of an authorization-aware replica: the [[ArdtEventGraph]], the delta values this replica may read,
   * and the anti-entropy bookkeeping. Driven by a [[channels.MessagingIO]] through [[AuthzProtocol]].
   *
-  * Only authenticated peers ([[Peer.Authenticated]]) take part: their uid is their [[PublicIdentity]], which is what
+  * Only authenticated peers ([[channels.connection.Peer.Authenticated]]) take part: their uid is their [[channels.crypto.PublicIdentity]], which is what
   * capabilities are granted to, and what deltas are filtered for.
   */
 final case class AuthzReplica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
@@ -508,8 +508,8 @@ final class AuthzProtocol[RDT](val identity: PrivateIdentity)
 
 object AuthzProtocol {
 
-  /** A [[MessagingIO]] for an authorization-aware replica of `RDT`, identified by `identity`.
-    * Its overlay identifies itself as [[Peer.Authenticated]], so it only talks to peers over authenticated connections
+  /** A [[channels.MessagingIO]] for an authorization-aware replica of `RDT`, identified by `identity`.
+    * Its overlay identifies itself as [[channels.connection.Peer.Authenticated]], so it only talks to peers over authenticated connections
     * (e.g., [[channels.connection.NioTCP.listenTls]]), whose identity is the one capabilities are granted to.
     */
   def messagingIO[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](

@@ -12,7 +12,7 @@ import scala.scalajs.js
 import scala.scalajs.js.annotation.JSExportTopLevel
 
 /** Connects a case study running in an iframe of the demo page (`Website/src/pages/demos`) to a relaying
-  * [[MessagingIO]] on the demo page, which handles connections to other replicas (WebRTC) for all case studies.
+  * [[channels.MessagingIO]] on the demo page, which handles connections to other replicas (WebRTC) for all case studies.
   *
   * The demo page passes a random `bridge` name as url parameter to the iframe, both sides then connect via
   * a broadcast channel of that name.

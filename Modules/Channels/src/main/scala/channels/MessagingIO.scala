@@ -21,10 +21,10 @@ import scala.util.{Failure, Success, Try}
 
 object MessagingIO {
 
-  /** A [[MessagingIO]] running [[PlumtreeBroadcast]]. */
+  /** A [[channels.MessagingIO]] running [[channels.broadcast.PlumtreeBroadcast]]. */
   type Plumtree[State] = MessagingIO[PlumtreeBroadcast.Protocol[State]]
 
-  /** Settings shared by all [[MessagingIO]] instances. */
+  /** Settings shared by all [[channels.MessagingIO]] instances. */
   final case class Config(
       overlay: Option[OverlayController] = None,
       resolver: ChannelResolver = ChannelResolver.disconnected,
@@ -54,7 +54,7 @@ object MessagingIO {
     case Membership(message: OverlayMessage)
 
     /** `sender` is part of the message, as a single (unauthenticated) connection may be shared by multiple peers.
-      * Receivers only accept it if the connection may carry messages of `sender`, see [[Peer.mayUse]].
+      * Receivers only accept it if the connection may carry messages of `sender`, see [[channels.connection.Peer.mayUse]].
       */
     case Broadcast(sender: Peer, message: Msg)
   }
@@ -116,7 +116,7 @@ object MessagingIO {
   *   protocol. It makes no protocol decisions of its own, and keeps no state besides the two state machines.
   *
   * The application interacts with the protocol through [[state]] and [[update]]; protocols typically provide a more
-  * convenient API as extension methods in the companion of their state type (see [[PlumtreeBroadcast]], [[channels.routing.CausalPlumtree]]).
+  * convenient API as extension methods in the companion of their state type (see [[channels.broadcast.PlumtreeBroadcast]], [[channels.routing.CausalPlumtree]]).
   *
   * Concurrency: each input runs the state transitions under `lock` and gets back the resulting [[Output]]s, which are
   * performed on the calling thread after the lock is released. Exceptions therefore reach the caller. Outputs that

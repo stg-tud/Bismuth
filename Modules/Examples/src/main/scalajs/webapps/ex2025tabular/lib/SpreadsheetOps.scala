@@ -22,7 +22,7 @@ object RangeId {
   def apply(id: Uid): RangeId = id
 }
 
-/** Codecs for the opaque ids (which are just a [[Dot]] or [[Uid]] at runtime). */
+/** Codecs for the opaque ids (which are just a [[rdts.time.Dot]] or [[rdts.base.Uid]] at runtime). */
 object IdCodecs {
   given rowIdCodec: JsonValueCodec[RowId]        = JsoniterCodecs.dotCodec.asInstanceOf[JsonValueCodec[RowId]]
   given columnIdCodec: JsonValueCodec[ColumnId]  = JsoniterCodecs.dotCodec.asInstanceOf[JsonValueCodec[ColumnId]]

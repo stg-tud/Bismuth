@@ -75,7 +75,7 @@ object OverlayController {
     case Handshake(conn: Connection)
   }
 
-  /** Whether `message` may have been sent by the peer at the other end of `conn`, see [[Peer.mayUse]].
+  /** Whether `message` may have been sent by the peer at the other end of `conn`, see [[channels.connection.Peer.mayUse]].
     * Overlays discard messages that fail this check.
     */
   def isAuthentic(conn: Connection, message: OverlayMessage): Boolean =

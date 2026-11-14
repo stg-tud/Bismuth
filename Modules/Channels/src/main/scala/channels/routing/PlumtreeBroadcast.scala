@@ -77,7 +77,7 @@ object PlumtreeBroadcast {
   extension [State](io: MessagingIO[Protocol[State]]) {
 
     /** Disseminate a local delta and return the dot assigned to it (`None` if `io` is closed).
-      * Receivers get the same dot as part of the [[Payload]], which allows applications to track causality.
+      * Receivers get the same dot as part of the [[channels.broadcast.PlumtreeMessage.Payload]], which allows applications to track causality.
       */
     def broadcast(delta: State): Unit = io.update(s => broadcastLocal(io.selfPeer.uid, delta)(s).res)
 

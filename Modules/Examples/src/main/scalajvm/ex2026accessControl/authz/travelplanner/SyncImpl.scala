@@ -12,7 +12,7 @@ import rdts.filters.{Filter, PermissionTree}
 
 import java.net.{InetAddress, InetSocketAddress}
 
-/** [[Sync]] via the [[AuthzProtocol]] over mutually authenticated TLS. Peers learn about each other's addresses
+/** [[Sync]] via the [[channels.broadcast.authz.AuthzProtocol]] over mutually authenticated TLS. Peers learn about each other's addresses
   * through the full mesh overlay, and connect to all of them.
   */
 class SyncImpl[State: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](

@@ -15,7 +15,7 @@ type CausalBroadcast[A] = MessagingIO[CausalPlumtree.Protocol[A]]
 /** Plumtree extended with causal delivery. Remote values are delivered in causal order and at most once.
   * Local values are not delivered: the caller applies them before calling [[CausalPlumtree.broadcastLocal]].
   * Missing predecessors are not requested separately; plumtree is responsible for (best effort) reliable delivery.
-  * A [[MergingHistory]] can be used if `A` is a lattice (see [[Causal.lattice]]).
+  * A [[MergingHistory]] can be used if `A` is a lattice (see [[rdts.time.Causal.lattice]]).
   */
 final case class CausalPlumtree[A](
     plumtree: PlumtreeBroadcast[Causal[A]] =

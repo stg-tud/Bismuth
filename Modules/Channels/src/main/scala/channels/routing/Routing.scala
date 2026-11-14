@@ -25,7 +25,7 @@ trait Routing {
   /** `from` has been checked by the driver to be a sender the receiving connection may carry. */
   def handleMessage(state: State, from: Peer, message: Msg): Step[State, Msg, Out]
 
-  /** A timer requested via [[Effect.StartTimer]] expired. */
+  /** A timer requested via [[Routing.Effect.StartTimer]] expired. */
   def timerFired(state: State, timer: Routing.Timer): Step[State, Msg, Out]
 }
 

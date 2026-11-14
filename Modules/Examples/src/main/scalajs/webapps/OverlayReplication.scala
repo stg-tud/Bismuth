@@ -14,7 +14,7 @@ import scala.collection.immutable.Queue
 import scala.scalajs.js.Date
 
 /** The replicated state of a case study: the application data `A`, combined with the overlay status
-  * (who is connected to whom, see [[OverlayStatusProtocol]]), such that both are replicated over the same connections.
+  * (who is connected to whom, see [[ex2026overlaydemo.OverlayStatusProtocol]]), such that both are replicated over the same connections.
   * Deltas usually only contain one of the two.
   */
 case class Replicated[A](app: Option[A] = None, overlay: Status = OverlayStatusProtocol.empty)
@@ -42,7 +42,7 @@ final case class ReplicatedHistory[A](
         copy(app = if next.sizeIs > size then next.drop(1) else next)
 }
 
-/** A [[MessagingIO]] for [[Replicated]] state, which regularly publishes its own connections as overlay status,
+/** A [[channels.MessagingIO]] for [[Replicated]] state, which regularly publishes its own connections as overlay status,
   * and collects the overlay status of all other replicas in [[status]] (e.g., to draw it with
   * [[ex2026overlaydemo.OverlayNetworkGraph.animate]]).
   * `receive` gets the application part of incoming deltas.

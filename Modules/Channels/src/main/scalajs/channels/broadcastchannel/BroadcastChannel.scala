@@ -53,7 +53,7 @@ class BroadcastChannelConnection(bc: BroadcastChannel) extends Connection {
 }
 
 /** Point-to-point connection between exactly two contexts (e.g., a page and an iframe it embeds) over a
-  * [[BroadcastChannel]] with a name only known to the two of them.
+  * `BroadcastChannel` with a name only known to the two of them.
   *
   * Messages posted to a broadcast channel before the other side opened it are lost, thus both sides first exchange a
   * handshake, and the connection is only established once the other side is known to listen.
