@@ -75,7 +75,7 @@ lazy val channels = projectMatrix.in(file("Modules/Channels"))
     scalaVersions = Seq(s3v),
     settings = Seq(
       Test / fork                               := true,
-      libraryDependencies += "io.github.hakky54" % "ayza-for-pem" % "10.1.0",
+      libraryDependencies += "io.github.hakky54" % "ayza-for-pem" % "10.1.1",
     )
   )
   .jsPlatform(
@@ -125,7 +125,7 @@ lazy val examples = projectMatrix.in(file("Modules/Examples"))
         Seq(
           "com.github.alexandrnikitin"     % "bloom-filter_2.13"            % "0.13.1",
           "com.google.crypto.tink"         % "tink"                         % "1.24.0",
-          "com.softwaremill.sttp.client4" %% "core"                         % "4.1.1",
+          "com.softwaremill.sttp.client4" %% "core"                         % "4.1.2",
           "io.bullet"                     %% "borer-core"                   % "1.19.0",
           "io.bullet"                     %% "borer-derivation"             % "1.19.0",
           "io.etcd"                        % "jetcd-core"                   % "0.8.8",
