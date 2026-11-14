@@ -250,10 +250,3 @@ object ArdtEventGraph {
   def apply[T: Lattice](genesis: Hash): ArdtEventGraph[T] =
     ArdtEventGraph(genesis, Set.empty, Map.empty, Map.empty, Map.empty, 0, Vector.empty)
 }
-
-enum CausalOrder:
-    case BEFORE
-    case AFTER
-    case CONCURRENT
-    case EQUAL
-    case UNKNOWN
