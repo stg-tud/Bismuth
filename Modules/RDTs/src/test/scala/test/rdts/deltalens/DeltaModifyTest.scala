@@ -5,7 +5,7 @@ import rdts.datatypes.*
 import rdts.syntax.deltalens.*
 import rdts.time.{CausalTime, Dots}
 
-/** Tests for [[com.softwaremill.deltalens.deltaModify]].
+/** Tests for [[rdts.syntax.deltalens.deltaModify]].
   *
   * Unlike plain `modify`, `deltaModify` does not rebuild the whole value: it produces a *delta*, i.e. only the
   * modification, with every field that is not on the modification path replaced by its `Bottom.empty` value (the

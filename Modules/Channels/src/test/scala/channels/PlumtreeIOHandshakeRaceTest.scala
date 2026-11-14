@@ -14,7 +14,7 @@ import rdts.base.{ReplicaId, Uid}
   * exchange `Graft(localContext)` to backfill missing history. A broadcast that races this exchange must
   * still be delivered exactly once and without any repair timers.
   *
-  * Previously [[PlumtreeBroadcast.addPeer]] added the peer as ''eager'', so a payload broadcast while the
+  * Previously [[channels.broadcast.PlumtreeBroadcast.addPeer]] added the peer as ''eager'', so a payload broadcast while the
   * peer's stale `Graft(∅)` was still in flight was delivered twice: once by the eager push and once by the
   * graft replay. The duplicate was misread as a redundant mesh edge, so both sides pruned the only edge to
   * lazy; subsequent broadcasts were announced as `IHave` only and — since nothing drives

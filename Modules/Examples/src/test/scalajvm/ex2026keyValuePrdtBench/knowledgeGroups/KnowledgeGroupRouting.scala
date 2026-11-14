@@ -9,8 +9,8 @@ import rdts.protocols.Participants
 import rdts.protocols.knowledgeGroups.MultiPaxos
 import channels.connection.LocalMessageQueue
 
-/** Characterization tests of the current knowledge group routing ([[PrdtSystem.matches]]) and of
-  * [[MultiPaxosReplica]]. They pin the existing behaviour, so a reimplementation can be checked
+/** Characterization tests of the current knowledge group routing ([[channels.broadcast.PrdtSystem.matches]]) and of
+  * [[ex2026keyValuePrdtBench.MultiPaxosReplica]]. They pin the existing behaviour, so a reimplementation can be checked
   * against it.
   */
 object KnowledgeGroupFixtures {
@@ -214,7 +214,7 @@ class KnowledgeGroupRouting extends munit.FunSuite {
   }
 }
 
-/** End-to-end runs of [[MultiPaxosReplica]] over local queued connections. */
+/** End-to-end runs of [[ex2026keyValuePrdtBench.MultiPaxosReplica]] over local queued connections. */
 class KnowledgeGroupReplicas extends munit.FunSuite {
   import KnowledgeGroupFixtures.*
 
