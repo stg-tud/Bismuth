@@ -1,6 +1,6 @@
 package test.rdts.protocols.knowledgeGroups
 
-import channels.broadcast.PrdtSystem
+import channels.routing.PrdtSystem
 import ex2026keyValuePrdtBench.KnowledgeGroups.*
 import ex2026keyValuePrdtBench.{MultiPaxosReplica, Request}
 import rdts.base.Lattice.syntax.merge
@@ -9,7 +9,7 @@ import rdts.protocols.Participants
 import rdts.protocols.knowledgeGroups.MultiPaxos
 import channels.connection.LocalMessageQueue
 
-/** Characterization tests of the current knowledge group routing ([[channels.broadcast.PrdtSystem.matches]]) and of
+/** Characterization tests of the current knowledge group routing ([[channels.routing.PrdtSystem.matches]]) and of
   * [[ex2026keyValuePrdtBench.MultiPaxosReplica]]. They pin the existing behaviour, so a reimplementation can be checked
   * against it.
   */

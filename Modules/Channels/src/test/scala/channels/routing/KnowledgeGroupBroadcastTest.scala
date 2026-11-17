@@ -1,8 +1,8 @@
-package channels.broadcast
+package channels.routing
 
 import channels.JsoniterCodecs.given
 import channels.MessagingIO
-import channels.broadcast.KnowledgeGroupBroadcast.{Delivery, Message, State, publish}
+import channels.routing.KnowledgeGroupBroadcast.{Delivery, Message, State, publish}
 import channels.broadcast.Routing.{Effect, Step}
 import channels.connection.{LocalMessageQueue, Peer, QueuedLocalConnection}
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}

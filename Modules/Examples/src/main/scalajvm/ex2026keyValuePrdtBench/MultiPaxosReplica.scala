@@ -1,8 +1,8 @@
 package ex2026keyValuePrdtBench
 
 import channels.MessagingIO
-import channels.broadcast.KnowledgeGroupBroadcast.publish
-import channels.broadcast.{KnowledgeGroup, KnowledgeGroupBroadcast, PrdtSystem}
+import channels.routing.KnowledgeGroupBroadcast.publish
+import channels.routing.{KnowledgeGroup, KnowledgeGroupBroadcast, PrdtSystem}
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import ex2026keyValuePrdtBench.KnowledgeGroups.leader
