@@ -107,10 +107,10 @@ object SimpleFugueFactory {
         traverse(null)
 
       private def nodes(): Iterable[N] =
-        nodes(null)
+        nodes(null: ID | Null)
 
       private def nodesWithTombstones(): Iterable[N] =
-        nodesWithTombstones(null)
+        nodesWithTombstones(null: ID | Null)
 
       @tailrec
       private def tryProduce(

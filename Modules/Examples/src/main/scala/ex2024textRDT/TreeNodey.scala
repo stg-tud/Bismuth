@@ -33,7 +33,7 @@ trait TreeNodey[N] {
     final private def tailrecLeftmostDecendant(): N =
       node.firstLeftChild() match {
         case null  => node
-        case value => value.tailrecLeftmostDecendant()
+        case value => value.nn.tailrecLeftmostDecendant()
       }
 
     def treeify(): pprint.Tree = pprint.Tree
