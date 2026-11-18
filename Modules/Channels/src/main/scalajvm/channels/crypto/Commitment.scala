@@ -1,7 +1,7 @@
 package channels.crypto
 
 import java.nio.charset.StandardCharsets
-import java.security.{MessageDigest, SecureRandom}
+import java.security.SecureRandom
 
 object Commitment {
   private val random = SecureRandom()
@@ -18,12 +18,7 @@ object Commitment {
   case class RevealedValue(value: Array[Byte], witness: Array[Byte]) {
 
     /** The commitment is only valid for the same context that was passed to [[commit]] */
-    def commitment(context: Array[Byte]): Hash =
-        val digest = MessageDigest.getInstance("SHA3-256", "SUN")
-        digest.update(context)
-        digest.update(witness)
-        digest.update(value)
-        Hash.unsafeFromArray(digest.digest())
+    def commitment(context: Array[Byte]): Hash = Hash.computeConcatenated(context, witness, value)
 
     def commitment(context: String): Hash = commitment(context.getBytes(StandardCharsets.UTF_8))
   }

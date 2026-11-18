@@ -1,12 +1,12 @@
 package channels.crypto
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonKeyCodec, JsonReader, JsonValueCodec, JsonWriter}
+import pt.kcry.blake3.Blake3
 
-import java.security.MessageDigest
 import java.util
 import java.util.Base64
 
-/** Container for SHA3-256 Hash. */
+/** Container for a 256 bit BLAKE3 hash. */
 class Hash private (private val delegate: Array[Byte]) {
   require(delegate.length == Hash.length)
 
@@ -35,9 +35,14 @@ object Hash {
 
   def fromArray(hash: Array[Byte]): Hash = new Hash(hash.clone())
 
-  def compute(data: Array[Byte]): Hash =
-    // SHA256 via SUN provider is faster on M4 Pro and AMD Ryzen 9 5950X
-    new Hash(MessageDigest.getInstance("SHA3-256", "SUN").digest(data))
+  def compute(data: Array[Byte]): Hash = new Hash(Blake3.hash(data, length))
+
+  /** Hash of the concatenation of `parts`. */
+  def computeConcatenated(parts: Array[Byte]*): Hash = {
+    val hasher = Blake3.newHasher()
+    parts.foreach(part => hasher.update(part): Unit)
+    new Hash(hasher.done(length))
+  }
 
   given hashValueCodec: JsonValueCodec[Hash]:
       override def decodeValue(in: JsonReader, default: Hash): Hash = new Hash(in.readBase64AsBytes(Array.empty))
