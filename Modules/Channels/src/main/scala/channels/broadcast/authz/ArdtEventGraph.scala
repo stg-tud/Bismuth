@@ -66,8 +66,10 @@ case class ArdtEventGraph[T: Lattice](
         throw java.lang.IllegalArgumentException(s"Event with invalid capability: $event")
     }
 
-    // All parents are locally available
-    val missingParents = event.parents.filterNot(events.contains)
+    // All parents, and a revoked capability, are locally available
+    val missingParents = event.parents.filterNot(events.contains) ++ (event.payload match
+        case Revocation(revokedCapability) if !events.contains(revokedCapability) => Some(revokedCapability)
+        case _                                                                    => None)
     if missingParents.nonEmpty then return Left(missingParents)
 
     // Payload dependent validity checks
@@ -157,6 +159,24 @@ case class ArdtEventGraph[T: Lattice](
           if index > cutoff && revokedCapabilities.contains(authorization) && !causalPast.contains(index) =>
         index
     }
+  }
+
+  /** The events not in the causal past of the known part of `hashes`, in the order they were received.
+    * Every event up to the latest cut before `hashes` is in their causal past, so only the later ones are searched.
+    */
+  def notBefore(hashes: Set[Hash]): List[Hash] = {
+    val known      = hashes.filter(events.contains)
+    val cutoff     = latestCutBefore(known)
+    val causalPast = mutable.BitSet()
+    val toVisit    = mutable.Stack.from(known)
+    while toVisit.nonEmpty do {
+      val (event, index) = events(toVisit.pop())
+      if index > cutoff && !causalPast.contains(index) then
+          causalPast += index
+          toVisit.pushAll(event.parents)
+    }
+    events.iterator.collect { case (hash, (_, index)) if index > cutoff && !causalPast.contains(index) => index -> hash }
+      .toList.sortBy(_._1).map(_._2)
   }
 
   /** Whether `event1` is causally before `event2`, searching the causal past of `event2` backwards.

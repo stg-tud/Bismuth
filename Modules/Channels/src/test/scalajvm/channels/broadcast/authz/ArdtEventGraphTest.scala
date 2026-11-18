@@ -606,4 +606,39 @@ class ArdtEventGraphTest extends FunSuite {
     assert(!graph4.causallyBefore(branchBChild.hash, branchCChild.hash))
     assert(!graph4.causallyBefore(branchCChild.hash, branchBChild.hash))
   }
+
+  test("receive returns Left for a revocation of a capability that is not locally available") {
+    val (graph, holder, holderKey, genesis) = freshGraph()
+    val (delegate, _)                       = newIdentity()
+    val delegation                          = buildEvent(
+      Capability(delegate, PermissionTree.fromPath("a"), PermissionTree.empty),
+      holder,
+      holderKey,
+      Set(genesis.hash),
+      genesis.hash
+    )
+    // concurrent to the delegation: only genesis is a parent
+    val revocation = buildEvent(Revocation(delegation.hash), holder, holderKey, Set(genesis.hash), genesis.hash)
+
+    assertEquals(graph.receive(writeToArray(revocation)), Left(Set(delegation.hash)))
+    val revoked = receiveOrFail(receiveOrFail(graph, delegation), revocation)
+    assertEquals(revoked.revocations(delegation.hash), Set(revocation.hash))
+  }
+
+  test("notBefore returns the events not in the causal past, in the order they were received") {
+    val (graph, holder, holderKey, genesis) = freshGraph()
+    def delta(name: String, parents: ArdtEvent*): ArdtEvent =
+      buildEvent(DeltaCommitment(Hash.compute(name.getBytes)), holder, holderKey, parents.map(_.hash).toSet, genesis.hash)
+    val b1 = delta("b1", genesis)
+    val b2 = delta("b2", genesis)
+    val c  = delta("c", b1, b2)
+    val d1 = delta("d1", c)
+    val d2 = delta("d2", c)
+    val g  = List(b1, b2, c, d1, d2).foldLeft(graph)(receiveOrFail)
+
+    assertEquals(g.notBefore(Set(d1.hash)), List(d2.hash))
+    assertEquals(g.notBefore(Set(b1.hash)), List(b2, c, d1, d2).map(_.hash))
+    assertEquals(g.notBefore(Set.empty), List(genesis, b1, b2, c, d1, d2).map(_.hash))
+    assertEquals(g.notBefore(Set(Hash.compute("unknown".getBytes), d2.hash)), List(d1.hash))
+  }
 }
