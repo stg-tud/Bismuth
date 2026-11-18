@@ -54,7 +54,7 @@ case class ArdtEventGraph[T: Lattice](
     // Used capability is locally known (implies validity) and both holder and event author are the same
     val authorizingCapability: Capability = events.get(event.authorization) match {
       case None => // Return missing capability and heads
-        val missingParents = event.parents.filter(events.contains)
+        val missingParents = event.parents.filterNot(events.contains)
         if eventHash != genesis then return Left(missingParents + event.authorization)
         else Capability(event.author, PermissionTree.allow, PermissionTree.allow)
       case Some((ArdtEvent(cap @ Capability(capabilityHolder, _, _), _, _, _, _), _)) =>
