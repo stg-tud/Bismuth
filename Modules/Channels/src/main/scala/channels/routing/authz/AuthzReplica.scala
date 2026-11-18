@@ -128,11 +128,11 @@ final case class AuthzReplica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Dec
     receiveDeltaChecked(eventHash, value)._1
 
   /** The values of `hashes` that `reader` may read. */
-  def readableDeltas(reader: PublicIdentity, hashes: Iterable[Hash]): List[AuthzMessage.DeltaValue] =
+  def readableDeltas(reader: PublicIdentity, hashes: Iterable[Hash]): List[DeltaValue] =
     hashes.iterator.flatMap { hash =>
       eventGraph.events.get(hash).flatMap((_, index) => deltas.get(index)).collect {
         case stored if Authorization.mayReadAssumingCommitmentHolds(reader, hash, stored.delta, eventGraph) =>
-          AuthzMessage.DeltaValue(hash, RevealedValue(writeToArray(stored.delta), stored.witness))
+          DeltaValue(hash, RevealedValue(writeToArray(stored.delta), stored.witness))
       }
     }.toList
 
@@ -148,7 +148,7 @@ final case class AuthzReplica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Dec
   }
 
   /** Accepts delta values from the network: buffered if their event is unknown, dropped if not acceptable. */
-  def receiveDeltas(values: List[AuthzMessage.DeltaValue]): AuthzReplica[RDT] =
+  def receiveDeltas(values: List[DeltaValue]): AuthzReplica[RDT] =
     values.foldLeft(this)((replica, value) => replica.receiveNetworkDelta(value.event, value.value)._1)
 
   // ------------------------------------------------------------------------------------------------

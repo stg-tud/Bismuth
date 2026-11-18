@@ -35,7 +35,7 @@ class AuthzReplicaTest extends FunSuite {
   private def sentEvents(step: Result): List[ArdtEvent] = step.events.map(readFromArray[ArdtEvent](_))
 
   /** The deltas of the events created by a local operation, as readable by the replica itself. */
-  private def sentDeltas(step: Result): List[AuthzMessage.DeltaValue] =
+  private def sentDeltas(step: Result): List[DeltaValue] =
     step.state.readableDeltas(step.state.self, sentEvents(step).map(_.hash))
 
   private def revocationOf(capability: ArdtEvent, identity: Ed25519PrivateIdentity, parents: Set[Hash]): ArdtEvent =
@@ -151,7 +151,7 @@ class AuthzReplicaTest extends FunSuite {
       genesisEvent.hash
     )
 
-    val next = receive(replica, deltaEvent).receiveDeltas(List(AuthzMessage.DeltaValue(deltaEvent.hash, revealed)))
+    val next = receive(replica, deltaEvent).receiveDeltas(List(DeltaValue(deltaEvent.hash, revealed)))
 
     assertEquals(next.state, Set(1, 2))
   }
