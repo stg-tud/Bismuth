@@ -1,8 +1,8 @@
 package channels.authz
 
-import AuthzEvent.Payload.{Capability, DeltaCommitment, Revocation}
+import AuthzEvent.Payload.{Capability, Revocation}
 import channels.crypto.Commitment.RevealedValue
-import channels.crypto.{Commitment, Hash, PrivateIdentity, PublicIdentity, Signature, Verifier}
+import channels.crypto.{Hash, PrivateIdentity, PublicIdentity, Verifier}
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
 import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.filters.{Filter, PermissionTree}
@@ -134,70 +134,28 @@ final case class AuthzReplica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Dec
 
   /** Write `delta` using any active capability of `identity` that allows it. */
   def write(identity: PrivateIdentity, delta: RDT): Local[RDT] =
-    eventGraph.capabilities(identity.getPublic).find { (hash, capability) =>
-      Filter[RDT].isAllowed(delta, capability.write) && eventGraph.revocations(hash).isEmpty
-    } match
-        case Some((hash, _)) => write(identity, delta, hash)
-        case None            => throw IllegalArgumentException(s"Insufficient permissions for mutation: $delta")
+    write(identity, delta, AuthzAuthoring.writeCapability(eventGraph, identity.getPublic, delta))
 
-  /** Write `delta` using the capability `capabilityHash`. Decomposed deltas become a chain of events. */
-  def write(identity: PrivateIdentity, delta: RDT, capabilityHash: Hash): Local[RDT] = {
-    require(eventGraph.revocations(capabilityHash).isEmpty)
-    require(eventGraph.events.get(capabilityHash) match
-        case Some((AuthzEvent(Capability(holder, _, write), _, _, _, _), _)) =>
-          holder == identity.getPublic && Filter[RDT].isAllowed(delta, write)
-        case _ => false)
-
-    val (next, created) = Decompose.decompose(delta).foldLeft((this, List.empty[(Hash, Array[Byte])])) {
-      case ((replica, created), part) =>
-        val revealed = Commitment.commit(identity.getPublic.id, writeToArray(part))
-        val encoded  = writeToArray(replica.createSignedEvent(
-          identity,
-          DeltaCommitment(revealed.commitment(identity.getPublic.id)),
-          capabilityHash,
-          replica.heads
-        ))
-        val (withEvent, outcome) = replica.receiveEventChecked(encoded)
-        require(outcome.added.nonEmpty, s"local event was not accepted: $outcome")
-        val hash = outcome.added.get
-        val stored = withEvent.copy(deltas = withEvent.deltas.put(withEvent.eventGraph, hash, part, revealed.witness))
-        (stored, (hash, encoded) :: created)
+  /** Write `delta` using the capability `capabilityHash`, see [[AuthzAuthoring.write]]. */
+  def write(identity: PrivateIdentity, delta: RDT, capabilityHash: Hash): Local[RDT] =
+    AuthzAuthoring.write(eventGraph, identity, delta, capabilityHash).foldLeft(Local(this, Nil)) { (local, created) =>
+      val added = local.state.receiveCreated(created.event)
+      Local(added.state.receiveDelta(created.event.hash, created.value), local.events ++ added.events)
     }
-    Local(next, created.reverse.map(_._2))
-  }
 
-  /** Delegate a capability derived from `usedCapability` (held by `identity`) to `delegatee`. */
+  /** See [[AuthzAuthoring.delegate]]. */
   def delegate(
       identity: PrivateIdentity,
       usedCapability: Hash,
       delegatee: PublicIdentity,
       read: PermissionTree,
       write: PermissionTree
-  ): Local[RDT] = {
-    require(write <= read)
-    eventGraph.events.get(usedCapability) match
-        case Some((AuthzEvent(Capability(holder, readLimit, writeLimit), _, _, _, _), _)) =>
-          require(holder == identity.getPublic)
-          require(read <= readLimit && write <= writeLimit)
-          localEvent(identity, Capability(delegatee, read, write), usedCapability)
-        case _ => throw IllegalArgumentException("Referenced capability event is not a capability")
-  }
+  ): Local[RDT] =
+    receiveCreated(AuthzAuthoring.delegate(eventGraph, identity, usedCapability, delegatee, read, write))
 
-  /** Revoke `revokedCapability`, authorized by the closest capability held by `identity` in its authorization chain. */
-  def revoke(identity: PrivateIdentity, revokedCapability: Hash): Local[RDT] = {
-    @tailrec
-    def authorizationFor(authEvent: Hash): Option[Hash] =
-      if authEvent == Hash.allZeroHash then None
-      else
-          eventGraph.events(authEvent)._1 match
-              case AuthzEvent(Capability(holder, _, _), _, _, _, _) if holder == identity.getPublic => Some(authEvent)
-              case AuthzEvent(_, _, _, _, parent) => authorizationFor(parent)
-
-    authorizationFor(revokedCapability) match
-        case Some(authorization) => localEvent(identity, Revocation(revokedCapability), authorization)
-        case None                =>
-          throw IllegalStateException("No capability in authorization chain found to perform revocation")
-  }
+  /** See [[AuthzAuthoring.revoke]]. */
+  def revoke(identity: PrivateIdentity, revokedCapability: Hash): Local[RDT] =
+    receiveCreated(AuthzAuthoring.revoke(eventGraph, identity, revokedCapability))
 
   /** Accept a (trusted) event out of band, e.g., the genesis event. */
   def receiveLocally(event: AuthzEvent): Local[RDT] = {
@@ -211,21 +169,11 @@ final case class AuthzReplica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Dec
   // helpers
   // ------------------------------------------------------------------------------------------------
 
-  private def localEvent(identity: PrivateIdentity, payload: AuthzEvent.Payload, authorization: Hash): Local[RDT] = {
-    val encoded         = writeToArray(createSignedEvent(identity, payload, authorization, heads))
-    val (next, outcome) = receiveEventChecked(encoded)
-    require(outcome.added.nonEmpty, s"local event was not accepted: $outcome")
-    Local(next, List(encoded))
-  }
-
-  private def createSignedEvent(
-      identity: PrivateIdentity,
-      payload: AuthzEvent.Payload,
-      capability: Hash,
-      parents: Set[Hash]
-  ): AuthzEvent = {
-    val unsigned = AuthzEvent(payload, identity.getPublic, parents, Signature.allZeroSignature, capability)
-    unsigned.copy(signature = identity.sign(writeToArray(unsigned)))
+  /** Adds an event created by [[AuthzAuthoring]]. */
+  private def receiveCreated(event: AuthzEvent): Local[RDT] = {
+    val local = receiveLocally(event)
+    require(local.events.nonEmpty, s"local event was not accepted: $event")
+    local
   }
 
   /** Adds an event to the graph, dropping invalid ones, as needed for events received from the network. */
