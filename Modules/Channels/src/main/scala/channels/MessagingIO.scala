@@ -96,11 +96,11 @@ object MessagingIO {
   def decodeEnvelope[State: JsonValueCodec](
       messageBuffer: MessageBuffer,
       aead: Aead
-  ): Try[Envelope[PlumtreeMessage[State]]] =
+  ): Try[Envelope[PlumtreeBroadcast.Message[State]]] =
     decodeMessage(messageBuffer, aead)(using PlumtreeBroadcast.messageCodec[State])
 
   def encodeEnvelope[State: JsonValueCodec](
-      envelope: Envelope[PlumtreeMessage[State]],
+      envelope: Envelope[PlumtreeBroadcast.Message[State]],
       aead: Aead
   ): ByteBufferMessageBuffer =
     encodeMessage(envelope, aead)(using PlumtreeBroadcast.messageCodec[State])

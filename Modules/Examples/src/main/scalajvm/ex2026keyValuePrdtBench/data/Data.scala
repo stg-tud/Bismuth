@@ -1,6 +1,6 @@
 package ex2026keyValuePrdtBench.data
 
-import channels.broadcast.PlumtreeMessage
+import channels.broadcast.PlumtreeBroadcast
 import channels.broadcast.PlumtreeMessage.Payload
 import rdts.base.{Lattice, ReplicaId, Uid}
 import rdts.datatypes.LastWriterWins
@@ -50,7 +50,7 @@ object Codecs {
   // codecs
   given JsonValueCodec[ClusterState] =
     JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))
-  given clusterCodec: JsonValueCodec[PlumtreeMessage[ClusterState]] =
+  given clusterCodec: JsonValueCodec[PlumtreeBroadcast.Message[ClusterState]] =
     JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))
   given JsonValueCodec[ClientCommRead]  = JsonCodecMaker.make
   given JsonValueCodec[ClientCommWrite] = JsonCodecMaker.make

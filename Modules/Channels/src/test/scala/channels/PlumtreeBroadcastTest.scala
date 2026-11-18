@@ -41,7 +41,7 @@ class PlumtreeBroadcastTest extends FunSuite {
     assertEquals(
       events.toList,
       List(
-        Send(List(eagerA, eagerB), expectedPayload),
+        Send(List(eagerA, eagerB), Push(expectedPayload)),
         Send(List(lazyA), IHave(expectedPayload.dots))
       )
     )
@@ -58,7 +58,7 @@ class PlumtreeBroadcastTest extends FunSuite {
     )
 
     val msg                                    = payload(Uid.predefined("origin"), 0, "hello")
-    val PlumtreeBroadcast.Result(next, events) = state.handleMessage(sender, msg)
+    val PlumtreeBroadcast.Result(next, events) = state.handleMessage(sender, Push(msg))
 
     assert(next.localContext.contains(msg.dots))
     assertEquals(next.peerRoles(sender), PeerRole.Eager, "")
@@ -66,7 +66,7 @@ class PlumtreeBroadcastTest extends FunSuite {
       events.toList,
       List(
         Event.Deliver(msg),
-        Send(List(eagerA), msg),
+        Send(List(eagerA), Push(msg)),
         Send(List(lazyA), IHave(msg.dots))
       )
     )
@@ -80,7 +80,7 @@ class PlumtreeBroadcastTest extends FunSuite {
       peerRoles = Map(sender -> PeerRole.Eager)
     )
 
-    val PlumtreeBroadcast.Result(next, events) = state.handleMessage(sender, msg)
+    val PlumtreeBroadcast.Result(next, events) = state.handleMessage(sender, Push(msg))
 
     assertEquals(next.peerRoles(sender), PeerRole.Lazy, "")
     assertEquals(events.toList, List(Send(List(sender), Prune)))
@@ -153,7 +153,7 @@ class PlumtreeBroadcastTest extends FunSuite {
 
     assertEquals(next.peerRoles(sender), PeerRole.Eager, "")
     assertEquals(next.remoteContext(sender), p0.dots, "")
-    assertEquals(events.toList, List(Send(List(sender), p1)))
+    assertEquals(events.toList, List(Send(List(sender), Push(p1))))
   }
 
   test("addPeer models NeighborUp by adding the peer as lazy and immediately requesting missing history") {

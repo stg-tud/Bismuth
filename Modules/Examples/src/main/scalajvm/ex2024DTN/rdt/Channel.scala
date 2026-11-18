@@ -2,7 +2,7 @@ package ex2024DTN.rdt
 
 import channels.MessagingIO
 import channels.broadcast.PlumtreeMessage
-import channels.broadcast.PlumtreeMessage.{Graft, IHave, Payload, Prune}
+import channels.broadcast.PlumtreeMessage.{Graft, IHave, Payload, Prune, Push}
 import channels.connection.{Abort, Connection, Connector, MessageBuffer, Peer, Receive}
 import channels.experiments.Aead
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
@@ -35,7 +35,7 @@ class ClientContext[T: JsonValueCodec](
               case ClientOperationMode.PushAll      => Sync { () }
               case ClientOperationMode.RequestLater =>
                 connection.send(RdtMessageType.Request, Array(), dots).toAsync(using executionContext)
-        case Success(MessagingIO.Envelope.Broadcast(_, Payload(dots, data))) =>
+        case Success(MessagingIO.Envelope.Broadcast(_, Push(Payload(dots, data)))) =>
           connection.send(
             RdtMessageType.Payload,
             writeToArray[T](data),
@@ -80,10 +80,10 @@ class Channel[T: JsonValueCodec](
               cb.succeed(MessagingIO.encodeEnvelope(
                 MessagingIO.Envelope.Broadcast(
                   dtnPeer,
-                  PlumtreeMessage.Payload(
+                  PlumtreeMessage.Push(PlumtreeMessage.Payload(
                     dots,
                     readFromArray[T](payload)
-                  )
+                  ))
                 ),
                 Aead.identity
               ))

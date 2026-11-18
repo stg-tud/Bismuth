@@ -14,26 +14,29 @@ import rdts.time.{Dot, Dots}
 
 import scala.util.Random
 
-sealed trait PlumtreeMessage[+T]
-object PlumtreeMessage {
+enum PlumtreeMessage[+K, +P] {
 
   /** `knows` has to be a subset of the dots known at the sender.
     * The sender of the request should then eventually receive all known missing dots.
     */
-  case class Graft(knows: Dots) extends PlumtreeMessage[Nothing]
+  case Graft(knows: K)
 
-  /** Guarantees that for two payloads a and b, that if a.dots <= b.dots,
-    * then a.data <= b.data according to the lattice of T
-    */
-  case class Payload[+T](dots: Dots, data: T) extends PlumtreeMessage[T]
+  case Push(payload: P)
 
   /** Lazy advertisement for Plumtree-style dissemination.
     * `knows` summarizes what the sender already has.
     */
-  case class IHave(knows: Dots) extends PlumtreeMessage[Nothing]
+  case IHave(knows: K)
 
   /** Request sender to move this edge to lazy mode for eager push. */
-  case object Prune extends PlumtreeMessage[Nothing]
+  case Prune
+}
+object PlumtreeMessage {
+
+  /** Guarantees that for two payloads a and b, that if a.dots <= b.dots,
+    * then a.data <= b.data according to the lattice of T
+    */
+  case class Payload[+T](dots: Dots, data: T)
 }
 
 object PlumtreeBroadcast {
@@ -44,18 +47,20 @@ object PlumtreeBroadcast {
   /** Paper: `Deliver` ↔ `Deliver(m)`, `Send` ↔ `Send(...)`.
     * Deliver is to the local system.
     */
-  type Event[+State] = Effect[PlumtreeMessage[State], Payload[State]]
+  type Message[+State] = PlumtreeMessage[Dots, Payload[State]]
+
+  type Event[+State] = Effect[Message[State], Payload[State]]
   val Event: Effect.type = Effect
 
-  type Result[State] = Step[PlumtreeBroadcast[State], PlumtreeMessage[State], Payload[State]]
+  type Result[State] = Step[PlumtreeBroadcast[State], Message[State], Payload[State]]
   val Result: Step.type = Step
 
   /** Wire format. Not a given, as the derivation would find itself. */
-  def messageCodec[State: JsonValueCodec]: JsonValueCodec[PlumtreeMessage[State]] = JsonCodecMaker.make
+  def messageCodec[State: JsonValueCodec]: JsonValueCodec[Message[State]] = JsonCodecMaker.make
 
   final class Protocol[S] extends Routing {
     type State = PlumtreeBroadcast[S]
-    type Msg   = PlumtreeMessage[S]
+    type Msg   = Message[S]
     type Out   = Payload[S]
 
     def addPeer(state: State, peer: Peer): Result[S]                     = state.addPeer(peer)
@@ -171,12 +176,12 @@ final case class PlumtreeBroadcast[State](
   /** Incoming message handler.
     *
     * Paper mapping:
-    * - `Payload`: Algorithm 1 receive/duplicate handling
+    * - `Push`: Algorithm 1 receive/duplicate handling
     * - `Prune`: Algorithm 1 prune handling
     * - `IHave`: Algorithm 2 missing-message detection, without explicit timers
     * - `Graft`: Algorithm 2 repair and replay
     */
-  def handleMessage(from: Peer, message: PlumtreeMessage[State]): Result[State] = message match
+  def handleMessage(from: Peer, message: Message[State]): Result[State] = message match
       case Prune =>
         // Duplicate eager delivery: demote this edge to lazy.
         Result(withRole(from, PeerRole.Lazy), Nil)
@@ -194,10 +199,10 @@ final case class PlumtreeBroadcast[State](
             println(
               s"plumtree graft unsatisfied from=$from local=${next.localContext} knows=$knows storage=${next.deltaStorage.getClass.getSimpleName}"
             )
-        val replayed = relevant.map(payload => Send(from :: Nil, payload))
+        val replayed = relevant.map(payload => Send(from :: Nil, Push(payload)))
         next.scheduleRepairIfNeeded(replayed)
 
-      case payload @ Payload(context, _) =>
+      case Push(payload @ Payload(context, _)) =>
         if context <= localContext then
             // Duplicate eager path: demote this edge and ask the sender to prune too.
             Result(withRole(from, PeerRole.Lazy), List(Send(from :: Nil, Prune)))
@@ -226,9 +231,9 @@ final case class PlumtreeBroadcast[State](
     val eager      = recipients.filter(peer => peerRoles.get(peer).contains(PeerRole.Eager)).toList
     val lazyPeers  = recipients.filter(peer => peerRoles.get(peer).contains(PeerRole.Lazy)).toList
 
-    val eagerSend = Option.when(eager.nonEmpty)(Send(eager, payload: PlumtreeMessage[State]))
+    val eagerSend = Option.when(eager.nonEmpty)(Send(eager, Push(payload): Message[State]))
     val lazySend  =
-      Option.when(lazyPeers.nonEmpty)(Send(lazyPeers, IHave(payload.dots): PlumtreeMessage[State]))
+      Option.when(lazyPeers.nonEmpty)(Send(lazyPeers, IHave(payload.dots): Message[State]))
 
     Result(this, List(eagerSend, lazySend).flatten)
   }

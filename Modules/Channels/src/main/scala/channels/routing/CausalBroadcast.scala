@@ -49,11 +49,11 @@ final case class CausalPlumtree[A](
 
 object CausalPlumtree {
 
-  type Result[A] = Step[CausalPlumtree[A], PlumtreeMessage[Causal[A]], A]
+  type Result[A] = Step[CausalPlumtree[A], PlumtreeBroadcast.Message[Causal[A]], A]
 
   final class Protocol[A] extends Routing {
     type State = CausalPlumtree[A]
-    type Msg   = PlumtreeMessage[Causal[A]]
+    type Msg   = PlumtreeBroadcast.Message[Causal[A]]
     type Out   = A
 
     def addPeer(state: State, peer: Peer): Result[A]                     = state.lift(state.plumtree.addPeer(peer))
