@@ -1,6 +1,7 @@
-package channels.crypto
+package channels.connection.tls
 
-import channels.crypto.X509Util.toPem
+import channels.connection.tls.X509Util.toPem
+import channels.crypto.Ed25519Util
 import munit.FunSuite
 import org.bouncycastle.asn1.x500.style.BCStyle
 import org.bouncycastle.cert.X509CertificateHolder

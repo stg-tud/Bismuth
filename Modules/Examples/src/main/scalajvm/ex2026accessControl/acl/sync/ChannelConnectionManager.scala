@@ -1,6 +1,7 @@
 package ex2026accessControl.acl.sync
 
-import channels.connection.{Abort, Connection, ConnectionDescriptor, MessageBuffer, NioTCP, NioTls, Receive}
+import channels.connection.tls.NioTls
+import channels.connection.{Abort, Connection, ConnectionDescriptor, MessageBuffer, NioTCP, Receive}
 import channels.crypto.{PrivateIdentity, PublicIdentity}
 import de.rmgk.delay.Callback
 import ex2026accessControl.authz.evaluation.ConnectionManager

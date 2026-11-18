@@ -1,7 +1,7 @@
-package channels
-package connection
+package channels.connection.tls
 
-import channels.crypto.{PrivateIdentity, X509Util}
+import channels.connection.tls.X509Util.toPem
+import channels.crypto.{Ed25519Util, PrivateIdentity}
 import nl.altindag.ssl.SSLFactory
 import nl.altindag.ssl.pem.util.PemUtils
 import rdts.base.Uid
@@ -10,16 +10,21 @@ import java.io.ByteArrayInputStream
 import java.security.cert.{CertificateException, X509Certificate}
 import javax.net.ssl.{SSLEngine, SSLSession, X509TrustManager}
 
-/** TLS configuration for [[NioTCP.listenTls]] and [[NioTCP.connectTls]]: mutually authenticated TLS 1.3 between
+/** TLS configuration for [[channels.connection.NioTCP.listenTls]] and [[channels.connection.NioTCP.connectTls]]: mutually authenticated TLS 1.3 between
   * [[channels.crypto.PrivateIdentity]]s. Both sides present a certificate bound to their identity key (see
-  * [[channels.crypto.X509Util.generateCustomP2PX509Certificate]]), the authenticated peer replica id is the id of the remote
+  * [[X509Util.generateCustomP2PX509Certificate]]), the authenticated peer replica id is the id of the remote
   * [[channels.crypto.PublicIdentity]]. Any well-formed identity is accepted; deciding which peers to trust is up to the user.
+  *
+  * Each instance uses a fresh TLS key, certified by the identity key of `privateIdentity`.
   */
 class NioTls(privateIdentity: PrivateIdentity) {
+  private val tlsKey      = Ed25519Util.generateNewKeyPair
+  private val certificate = X509Util.generateCustomP2PX509Certificate(privateIdentity.identityKey, tlsKey)
+
   private val sslFactory = {
     val keyManager = {
-      val certPemFile = new ByteArrayInputStream(privateIdentity.tlsCertPem.getBytes)
-      val keyPemFile  = new ByteArrayInputStream(privateIdentity.tlsKeyPem.getBytes)
+      val certPemFile = new ByteArrayInputStream(certificate.toPem.getBytes)
+      val keyPemFile  = new ByteArrayInputStream(Ed25519Util.privateKeyToPem(tlsKey.getPrivate).getBytes)
       PemUtils.loadIdentityMaterial(certPemFile, keyPemFile)
     }
 
@@ -52,7 +57,7 @@ class NioTls(privateIdentity: PrivateIdentity) {
 
 object NioTls {
 
-  /** Accepts exactly the certificates created by [[channels.crypto.X509Util.generateCustomP2PX509Certificate]]: a single Ed25519
+  /** Accepts exactly the certificates created by [[X509Util.generateCustomP2PX509Certificate]]: a single Ed25519
     * X.509v3 certificate that is signed by the identity key it names.
     */
   private val trustManager: X509TrustManager = new X509TrustManager {

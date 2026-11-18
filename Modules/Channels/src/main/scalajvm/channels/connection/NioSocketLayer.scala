@@ -1,6 +1,7 @@
 package channels
 package connection
 
+import channels.connection.tls.NioTls
 import channels.connection.{ConnectionClosedException, ConnectionDescriptor, ConnectionInfo}
 import rdts.base.Uid
 

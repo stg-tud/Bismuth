@@ -1,5 +1,6 @@
-package channels.crypto
+package channels.connection.tls
 
+import channels.crypto.{Ed25519Util, PublicIdentity}
 import org.bouncycastle.asn1.DERUTF8String
 import org.bouncycastle.asn1.edec.EdECObjectIdentifiers
 import org.bouncycastle.asn1.x500.X500NameBuilder
@@ -24,9 +25,6 @@ object X509Util {
   }
 
   private val algoIdEd25519 = new AlgorithmIdentifier(EdECObjectIdentifiers.id_Ed25519)
-
-  def generateCustomP2PX509Certificate(privateIdentity: PrivateIdentity): X509CertificateHolder =
-    generateCustomP2PX509Certificate(privateIdentity.identityKey, privateIdentity.tlsKey)
 
   /** Generates a new X.509 Certificate using the certificateKeyPair that is signed using the identityKeyPair. For the
     * subject of the generated certificate, the public key of the identityKeyPair is used as the UNIQUE_IDENTIFIER RDN.

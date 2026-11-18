@@ -1,6 +1,7 @@
 package channels
 package connection
 
+import channels.connection.tls.NioTls
 import channels.connection.NioTCP.*
 import channels.connection.WebsocketProtocol.WebsocketHeader
 import channels.connection.{Abort, ByteBufferMessageBuffer, Connection, ConnectionDescriptor, ConnectionInfo, Connector, Listener, MessageBuffer, NoMoreDataException, Receive}

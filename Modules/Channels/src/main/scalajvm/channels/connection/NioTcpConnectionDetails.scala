@@ -1,6 +1,7 @@
 package channels
 package connection
 
+import channels.connection.tls.NioTls
 import channels.connection.{ChannelResolver, ConnectionDescriptor, Connector}
 
 import java.net.{InetSocketAddress, UnixDomainSocketAddress}

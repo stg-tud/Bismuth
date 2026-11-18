@@ -3,7 +3,8 @@ package ex2026accessControl.authz.travelplanner
 import channels.broadcast.authz.ArdtEvent.Payload.Capability
 import channels.broadcast.authz.AuthzProtocol.*
 import channels.broadcast.authz.{ArdtEvent, AuthzProtocol}
-import channels.connection.{Abort, ConnectionDescriptor, NioTCP, NioTcpConnectionDetailsResolver, NioTls}
+import channels.connection.tls.NioTls
+import channels.connection.{Abort, ConnectionDescriptor, NioTCP, NioTcpConnectionDetailsResolver}
 import channels.crypto.{Hash, PrivateIdentity, PublicIdentity}
 import channels.{MessagingIO, Timers}
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec

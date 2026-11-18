@@ -1,5 +1,6 @@
 package channels.crypto
 
+import channels.connection.tls.PrivateKeyPem
 import org.bouncycastle.asn1.edec.EdECObjectIdentifiers
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo
 import org.bouncycastle.asn1.x509.{AlgorithmIdentifier, SubjectPublicKeyInfo}

@@ -1,4 +1,4 @@
-package channels.crypto
+package channels.connection.tls
 
 import java.nio.charset.StandardCharsets
 

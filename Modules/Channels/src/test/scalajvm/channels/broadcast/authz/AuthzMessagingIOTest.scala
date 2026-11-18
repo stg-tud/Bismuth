@@ -2,7 +2,8 @@ package channels.broadcast.authz
 
 import channels.broadcast.authz.AuthzProtocol.*
 import channels.broadcast.authz.AuthzTestSupport.{*, given}
-import channels.connection.{Abort, ConnectionDescriptor, NioTCP, NioTls}
+import channels.connection.tls.NioTls
+import channels.connection.{Abort, ConnectionDescriptor, NioTCP}
 import channels.crypto.PrivateIdentity
 import channels.{MessagingIO, Timers}
 import munit.FunSuite
