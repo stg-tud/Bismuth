@@ -6,6 +6,7 @@ import channels.broadcast.authz.*
 import channels.broadcast.authz.ArdtEvent.Payload.DeltaCommitment
 import channels.connection.Peer
 import channels.crypto.{Hash, PrivateIdentity, PublicIdentity}
+import channels.crypto.Ed25519.given
 import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray
 import ex2026accessControl.authz.evaluation.EvaluationBenchmarks.{encodeTrace, receiveTrace, replayTrace}
 import org.openjdk.jmh.annotations.*

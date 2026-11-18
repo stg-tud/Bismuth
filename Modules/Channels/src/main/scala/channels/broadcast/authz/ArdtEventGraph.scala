@@ -3,8 +3,7 @@ package channels.broadcast.authz
 import channels.JsoniterCodecsJvm.ardtEventCodec
 import channels.broadcast.authz.ArdtEvent.Payload.{Capability, DeltaCommitment, Revocation}
 import channels.broadcast.authz.CausalOrder.*
-import channels.crypto.Ed25519.{publicKey, verify}
-import channels.crypto.{Hash, PublicIdentity, Signature}
+import channels.crypto.{Hash, PublicIdentity, Signature, Verifier}
 import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray}
 import rdts.base.Lattice
 import rdts.filters.PermissionTree
@@ -30,7 +29,7 @@ case class ArdtEventGraph[T: Lattice](
     * @throws IllegalArgumentException If the event is invalid
     * @return If successful, this returns Right(updatedGraph). If parents are missing, then this returns
     */
-  def receive(encodedEvent: Array[Byte]): Either[Set[Hash], ArdtEventGraph[T]] = {
+  def receive(encodedEvent: Array[Byte])(using verifier: Verifier): Either[Set[Hash], ArdtEventGraph[T]] = {
     // Check for duplicates before checking signature
     val eventHash = Hash.compute(encodedEvent)
     if events.contains(eventHash) then return Right(this)
@@ -38,9 +37,10 @@ case class ArdtEventGraph[T: Lattice](
     val event: ArdtEvent = readFromArray(encodedEvent)
     // Ensure that no invalid events are stored
     // Signature verification: (need to blank signature and re-encode for verification)
-    require(event.signature.verify(
-      event.author.publicKey,
-      writeToArray(event.copy(signature = Signature.allZeroSignature))
+    require(verifier.verify(
+      event.author,
+      writeToArray(event.copy(signature = Signature.allZeroSignature)),
+      event.signature
     ))
 
     // All events need predecessors except the genesis event

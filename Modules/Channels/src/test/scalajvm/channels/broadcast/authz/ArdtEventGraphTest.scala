@@ -5,6 +5,7 @@ import channels.broadcast.authz.ArdtEvent.Payload.{Capability, DeltaCommitment, 
 import channels.broadcast.authz.AuthzTestSupport.*
 import channels.broadcast.authz.CausalOrder.*
 import channels.crypto.Hash
+import channels.crypto.Ed25519.given
 import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray
 import munit.FunSuite
 import rdts.filters.PermissionTree

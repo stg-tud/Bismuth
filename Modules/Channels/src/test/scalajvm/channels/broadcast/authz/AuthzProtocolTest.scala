@@ -5,6 +5,7 @@ import channels.broadcast.Routing.{Effect, Step}
 import channels.broadcast.authz.AuthzTestSupport.{*, given}
 import channels.connection.Peer
 import channels.crypto.{Hash, PrivateIdentity}
+import channels.crypto.Ed25519.given
 import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray
 import munit.FunSuite
 import rdts.base.Uid

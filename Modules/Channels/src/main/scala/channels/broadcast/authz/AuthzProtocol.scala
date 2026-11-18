@@ -4,7 +4,7 @@ import channels.MessagingIO
 import channels.broadcast.Routing
 import channels.broadcast.Routing.Timer
 import channels.connection.{Peer, PeerConnectInfo}
-import channels.crypto.{Hash, PrivateIdentity, PublicIdentity}
+import channels.crypto.{Hash, PrivateIdentity, PublicIdentity, Verifier}
 import channels.overlay.FullMeshOverlay
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import rdts.base.{Bottom, Decompose, Lattice, ReplicaId, Uid}
@@ -29,14 +29,14 @@ object AuthzProtocol {
 
   /** A [[channels.MessagingIO]] for an authorization-aware replica of `RDT`, identified by `identity`.
     * Its overlay identifies itself as [[channels.connection.Peer.Authenticated]], so it only talks to peers over authenticated connections
-    * (e.g., [[channels.connection.NioTCP.listenTls]]), whose identity is the one capabilities are granted to.
+    * (e.g., `channels.connection.NioTCP.listenTls`), whose identity is the one capabilities are granted to.
     */
   def messagingIO[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
       identity: PrivateIdentity,
       genesis: Hash,
       onStateChange: RDT => Unit,
       config: MessagingIO.Config = MessagingIO.Config(),
-  ): MessagingIO[AuthzProtocol[RDT]] = {
+  )(using Verifier): MessagingIO[AuthzProtocol[RDT]] = {
     val uid       = Uid(identity.getPublic.id)
     val withOwnId = config.copy(overlay =
       config.overlay.orElse(Some(FullMeshOverlay(PeerConnectInfo(Peer.Authenticated(uid), Set.empty))))

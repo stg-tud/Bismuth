@@ -5,6 +5,7 @@ import channels.broadcast.authz.ArdtEvent.Payload.{Capability, DeltaCommitment, 
 import channels.broadcast.authz.{ArdtEvent, ArdtEventGraph}
 import channels.crypto.Commitment.RevealedValue
 import channels.crypto.{Commitment, Hash, PrivateIdentity, Signature}
+import channels.crypto.Ed25519.given
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
 import rdts.filters.PermissionTree
 

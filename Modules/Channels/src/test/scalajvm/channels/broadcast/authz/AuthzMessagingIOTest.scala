@@ -6,6 +6,7 @@ import channels.connection.tls.NioTls
 import channels.connection.{Abort, ConnectionDescriptor, NioTCP}
 import channels.crypto.PrivateIdentity
 import channels.{MessagingIO, Timers}
+import channels.crypto.Ed25519.given
 import munit.FunSuite
 import rdts.filters.PermissionTree
 

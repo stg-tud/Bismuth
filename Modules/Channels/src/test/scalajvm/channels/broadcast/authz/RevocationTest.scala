@@ -5,6 +5,7 @@ import channels.broadcast.authz.ArdtEvent.Payload.{Capability, Revocation}
 import channels.broadcast.authz.AuthzTestSupport.{*, given}
 import channels.crypto.Commitment.RevealedValue
 import channels.crypto.{Hash, Ed25519PrivateIdentity, PublicIdentity}
+import channels.crypto.Ed25519.given
 import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray}
 import munit.{FunSuite, Location}
 import rdts.filters.PermissionTree

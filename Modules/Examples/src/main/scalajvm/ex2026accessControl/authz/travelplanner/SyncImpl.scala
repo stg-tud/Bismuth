@@ -7,6 +7,7 @@ import channels.connection.tls.NioTls
 import channels.connection.{Abort, ConnectionDescriptor, NioTCP, NioTcpConnectionDetailsResolver}
 import channels.crypto.{Hash, PrivateIdentity, PublicIdentity}
 import channels.{MessagingIO, Timers}
+import channels.crypto.Ed25519.given
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.filters.{Filter, PermissionTree}

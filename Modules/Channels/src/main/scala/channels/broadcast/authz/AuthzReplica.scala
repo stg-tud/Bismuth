@@ -5,7 +5,7 @@ import channels.broadcast.Routing.{Effect, Step, Timer}
 import channels.broadcast.authz.ArdtEvent.Payload.{Capability, DeltaCommitment, Revocation}
 import channels.connection.Peer
 import channels.crypto.Commitment.RevealedValue
-import channels.crypto.{Commitment, Hash, PrivateIdentity, PublicIdentity, Signature}
+import channels.crypto.{Commitment, Hash, PrivateIdentity, PublicIdentity, Signature, Verifier}
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
 import rdts.base.{Bottom, Decompose, Lattice, Uid}
 import rdts.filters.{Filter, PermissionTree}
@@ -19,7 +19,7 @@ object AuthzReplica {
   def initial[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
       self: PublicIdentity,
       genesis: Hash
-  ): AuthzReplica[RDT] =
+  )(using Verifier): AuthzReplica[RDT] =
     AuthzReplica[RDT](
       self,
       ArdtEventGraph[RDT](genesis),
@@ -34,7 +34,7 @@ object AuthzReplica {
       snapshot = None,
     )
 
-  /** Identity of authenticated peers, see [[channels.connection.NioTls.authenticatedPeer]]. */
+  /** Identity of authenticated peers, see `channels.connection.tls.NioTls.authenticatedPeer`. */
   def identityOf(peer: Peer): Option[PublicIdentity] = peer match
       case Peer.Authenticated(uid) => Some(PublicIdentity(Uid.unwrap(uid)))
       case Peer.Claimed(_)         => None
@@ -80,7 +80,7 @@ final case class AuthzReplica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Dec
     repairScheduled: Boolean,
     /** State as of an event index, to rematerialize from after revocations that invalidate only later deltas. */
     snapshot: Option[AuthzReplica.Snapshot[RDT]],
-) {
+)(using Verifier) {
   import AuthzReplica.*
 
   type Result = Step[AuthzReplica[RDT], AuthzMessage, RDT]

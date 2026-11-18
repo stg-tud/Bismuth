@@ -5,6 +5,7 @@ import channels.broadcast.authz.ArdtEvent.Payload.{Capability, DeltaCommitment}
 import channels.crypto.Commitment.RevealedValue
 import channels.crypto.Ed25519.fromPublicKey
 import channels.crypto.{Ed25519Util, IdentityFactory, Ed25519PrivateIdentity, PublicIdentity, *}
+import channels.crypto.Ed25519.given
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import rdts.filters.{Filter, PermissionTree}
