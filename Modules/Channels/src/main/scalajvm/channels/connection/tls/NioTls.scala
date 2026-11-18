@@ -1,6 +1,5 @@
 package channels.connection.tls
 
-import channels.connection.tls.X509Util.toJavaCertificate
 import channels.crypto.{Ed25519Util, PrivateIdentity}
 import rdts.base.Uid
 
@@ -25,7 +24,7 @@ class NioTls(privateIdentity: PrivateIdentity) {
     val password = Array.emptyCharArray
     val keyStore = KeyStore.getInstance("PKCS12")
     keyStore.load(null, null)
-    keyStore.setKeyEntry("tls", tlsKey.getPrivate, password, Array(certificate.toJavaCertificate))
+    keyStore.setKeyEntry("tls", tlsKey.getPrivate, password, Array(certificate))
     val keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm)
     keyManagerFactory.init(keyStore, password)
 

@@ -110,7 +110,7 @@ object Ed25519Util {
     */
   def publicKeyToPemString(publicKey: PublicKey): String = pem("PUBLIC KEY", publicKey.getEncoded)
 
-  private def pem(label: String, der: Array[Byte]): String = {
+  private[channels] def pem(label: String, der: Array[Byte]): String = {
     val newline = System.lineSeparator()
     val base64  = Base64.getMimeEncoder(64, newline.getBytes(StandardCharsets.US_ASCII)).encodeToString(der)
     s"-----BEGIN $label-----$newline$base64$newline-----END $label-----$newline"

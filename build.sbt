@@ -16,6 +16,7 @@ def scalajsDom = "org.scala-js"  %% "scalajs-dom" % "2.8.1"
 def slips      = "de.rmgk.slips" %% "slips"       % "0.20.0"
 def scalafx    = "org.scalafx"   %% "scalafx"     % "27.0.0-R39"
 def upickle    = "com.lihaoyi"   %% "upickle"     % "4.4.3"
+def bouncyCastle = "org.bouncycastle" % "bcpkix-jdk18on" % "1.87"
 
 def jsoniterScala = Seq(
   "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core"   % "2.43.0",
@@ -75,8 +76,8 @@ lazy val channels = projectMatrix.in(file("Modules/Channels"))
     scalaVersions = Seq(s3v),
     settings = Seq(
       Test / fork                               := true,
-      // only for creating X.509 certificates, see channels.connection.tls.X509Util
-      libraryDependencies += "org.bouncycastle" % "bcpkix-jdk18on" % "1.87",
+      // independent implementation to check our Ed25519 and certificate encodings against
+      libraryDependencies += bouncyCastle % Test,
     )
   )
   .jsPlatform(
@@ -131,6 +132,7 @@ lazy val examples = projectMatrix.in(file("Modules/Examples"))
           "io.bullet"                     %% "borer-derivation"             % "1.19.0",
           "io.etcd"                        % "jetcd-core"                   % "0.8.8",
           "site.ycsb"                      % "core"                         % "0.17.0",
+          bouncyCastle,
           "org.conscrypt"                  % "conscrypt-openjdk-uber"       % "2.9.0",
           "org.eclipse.jetty.websocket"    % "jetty-websocket-jetty-api"    % jettyVersion,
           "org.eclipse.jetty.websocket"    % "jetty-websocket-jetty-client" % jettyVersion,
