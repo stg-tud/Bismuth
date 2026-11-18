@@ -1,7 +1,7 @@
 package ex2026accessControl.authz.travelplanner
 
 import channels.crypto.IdentityFactory
-import channels.authz.ArdtEvent
+import channels.authz.AuthzEvent
 import ex2026accessControl.authz.travelplanner.model.{TravelPlanModel, TravelPlanModelFactory}
 import ex2026accessControl.authz.travelplanner.{MainScene, TravelPlan}
 import scalafx.application.{JFXApp3, Platform}
@@ -23,7 +23,7 @@ object TravelPlannerApp extends JFXApp3 {
   private object TpmFactory extends TravelPlanModelFactory {
     def createAsRootOfTrust: TravelPlanModel = {
       val identity     = IdentityFactory.createNewIdentity
-      val genesisEvent = ArdtEvent.createGenesis(identity)
+      val genesisEvent = AuthzEvent.createGenesis(identity)
       val syncProvider = (onStateChange: TravelPlan => Unit) =>
         new SyncImpl[TravelPlan](identity, genesisEvent.hash, Some(genesisEvent), onStateChange)
       TravelPlanModel(identity, syncProvider)

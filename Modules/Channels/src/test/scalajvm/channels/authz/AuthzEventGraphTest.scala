@@ -1,6 +1,6 @@
 package channels.authz
 
-import channels.authz.ArdtEvent.Payload.{Capability, DeltaCommitment, Revocation}
+import channels.authz.AuthzEvent.Payload.{Capability, DeltaCommitment, Revocation}
 import channels.authz.AuthzTestSupport.*
 import channels.authz.CausalOrder.*
 import channels.crypto.Hash
@@ -10,7 +10,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray
 import munit.FunSuite
 import rdts.filters.PermissionTree
 
-class ArdtEventGraphTest extends FunSuite {
+class AuthzEventGraphTest extends FunSuite {
 
   // --- construction ---
 
@@ -29,10 +29,10 @@ class ArdtEventGraphTest extends FunSuite {
 
   test("apply(genesisHash) creates an empty graph awaiting the given genesis hash") {
     val (_, _, _, genesis) = freshGraph()
-    val empty              = ArdtEventGraph(genesis.hash)
+    val empty              = AuthzEventGraph(genesis.hash)
     assertEquals(empty.genesis, genesis.hash)
     assertEquals(empty.heads, Set.empty[Hash])
-    assertEquals(empty.events, Map.empty[Hash, (ArdtEvent, Int)])
+    assertEquals(empty.events, Map.empty[Hash, (AuthzEvent, Int)])
     assertEquals(empty.nextEventIndex, 0)
 
     empty.receive(writeToArray(genesis)) match {
@@ -72,7 +72,7 @@ class ArdtEventGraphTest extends FunSuite {
       parents = Set(Hash.allZeroHash),
       Hash.allZeroHash
     )
-    val emptyGraph = ArdtEventGraph(badGenesis.hash)
+    val emptyGraph = AuthzEventGraph(badGenesis.hash)
     intercept[IllegalArgumentException] {
       emptyGraph.receive(writeToArray(badGenesis))
     }
@@ -87,7 +87,7 @@ class ArdtEventGraphTest extends FunSuite {
       Set.empty,
       Hash.compute("not-zero".getBytes)
     )
-    val emptyGraph = ArdtEventGraph(badGenesis.hash)
+    val emptyGraph = AuthzEventGraph(badGenesis.hash)
     intercept[IllegalArgumentException] {
       emptyGraph.receive(writeToArray(badGenesis))
     }
@@ -102,7 +102,7 @@ class ArdtEventGraphTest extends FunSuite {
       Set.empty,
       Hash.allZeroHash
     )
-    val emptyGraph = ArdtEventGraph(badGenesis.hash)
+    val emptyGraph = AuthzEventGraph(badGenesis.hash)
     intercept[IllegalArgumentException] {
       emptyGraph.receive(writeToArray(badGenesis))
     }
@@ -496,7 +496,7 @@ class ArdtEventGraphTest extends FunSuite {
 
   // --- causal ordering ---
 
-  private def siblingGraph(): (ArdtEventGraph, ArdtEvent, ArdtEvent, ArdtEvent) = {
+  private def siblingGraph(): (AuthzEventGraph, AuthzEvent, AuthzEvent, AuthzEvent) = {
     val (graph, holder, holderKey, genesis) = freshGraph()
     val childA                              =
       buildEvent(DeltaCommitment(Hash.compute("a".getBytes)), holder, holderKey, Set(genesis.hash), genesis.hash)
@@ -642,7 +642,7 @@ class ArdtEventGraphTest extends FunSuite {
 
   test("notBefore returns the events not in the causal past, in the order they were received") {
     val (graph, holder, holderKey, genesis) = freshGraph()
-    def delta(name: String, parents: ArdtEvent*): ArdtEvent =
+    def delta(name: String, parents: AuthzEvent*): AuthzEvent =
       buildEvent(DeltaCommitment(Hash.compute(name.getBytes)), holder, holderKey, parents.map(_.hash).toSet, genesis.hash)
     val b1 = delta("b1", genesis)
     val b2 = delta("b2", genesis)

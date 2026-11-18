@@ -1,6 +1,6 @@
 package channels.authz
 
-import ArdtEvent.Payload.{Capability, DeltaCommitment}
+import AuthzEvent.Payload.{Capability, DeltaCommitment}
 import channels.crypto.Commitment.RevealedValue
 import channels.crypto.{Hash, PublicIdentity}
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray}
@@ -9,13 +9,13 @@ import rdts.filters.Filter
 
 object Authorization {
   def materialize[T: {Lattice, Bottom, Filter}](
-      eventGraph: ArdtEventGraph,
+      eventGraph: AuthzEventGraph,
       deltaValueStore: DeltaValueStore[T]
   ): T =
     // Applying the updates in causal order is sometimes faster for complex RDTs
     // val deltas = Array.ofDim[T](eventGraph.nextEventIndex)
     // eventGraph.events.foreach {
-    //  case (deltaEventHash, (deltaEvent @ ArdtEvent(DeltaCommitment(commitmentHash), _, _, _, _), causalOrderIndex)) =>
+    //  case (deltaEventHash, (deltaEvent @ AuthzEvent(DeltaCommitment(commitmentHash), _, _, _, _), causalOrderIndex)) =>
     //    deltaValueStore.get(commitmentHash) match {
     //      case Some(RevealedValue(encodedDelta, _)) =>
     //        val delta = readFromArray[T](encodedDelta)
@@ -31,7 +31,7 @@ object Authorization {
     // )
 
     eventGraph.events.iterator.foldLeft(Bottom[T].empty) {
-      case (left, (deltaEventHash, (deltaEvent @ ArdtEvent(_: DeltaCommitment, _, _, _, _), eventIndex))) =>
+      case (left, (deltaEventHash, (deltaEvent @ AuthzEvent(_: DeltaCommitment, _, _, _, _), eventIndex))) =>
         deltaValueStore.get(eventIndex)
           .map(commited => commited.delta)
           .filter(rdt => mayWriteAssumingCommitmentHolds(eventGraph, deltaEventHash, deltaEvent, rdt))
@@ -44,10 +44,10 @@ object Authorization {
       replicaId: PublicIdentity,
       deltaEventHash: Hash,
       deltaValue: RevealedValue,
-      eventGraph: ArdtEventGraph
+      eventGraph: AuthzEventGraph
   ): Boolean =
     eventGraph.events.get(deltaEventHash) match {
-      case Some((ArdtEvent(DeltaCommitment(commitment), author, _, _, _), _)) =>
+      case Some((AuthzEvent(DeltaCommitment(commitment), author, _, _, _), _)) =>
         if deltaValue.commitment(author.id) != commitment then false
         else mayReadAssumingCommitmentHolds(replicaId, deltaEventHash, readFromArray[T](deltaValue.value), eventGraph)
       case _ => false
@@ -58,7 +58,7 @@ object Authorization {
       replicaId: PublicIdentity,
       deltaEventHash: Hash,
       delta: T,
-      eventGraph: ArdtEventGraph
+      eventGraph: AuthzEventGraph
   ): Boolean =
     eventGraph.capabilities(replicaId)
       .exists((capabilityEventHash, capability) =>
@@ -69,7 +69,7 @@ object Authorization {
       )
 
   def mayWrite[T: {JsonValueCodec, Filter}](
-      eventGraph: ArdtEventGraph,
+      eventGraph: AuthzEventGraph,
       deltaEventHash: Hash,
       deltaValue: RevealedValue
   ): Boolean = {
@@ -78,9 +78,9 @@ object Authorization {
   }
 
   private def mayWrite[T: {JsonValueCodec, Filter}](
-      eventGraph: ArdtEventGraph,
+      eventGraph: AuthzEventGraph,
       deltaEventHash: Hash,
-      deltaEvent: ArdtEvent,
+      deltaEvent: AuthzEvent,
       revealedValue: RevealedValue
   ): Boolean =
     deltaEvent.payload match {
@@ -92,9 +92,9 @@ object Authorization {
     }
 
   private[authz] def mayWriteAssumingCommitmentHolds[T: {Filter}](
-      eventGraph: ArdtEventGraph,
+      eventGraph: AuthzEventGraph,
       deltaEventHash: Hash,
-      deltaEvent: ArdtEvent,
+      deltaEvent: AuthzEvent,
       delta: T
   ): Boolean =
     // Delegation & revocation validity and validity of capability use are invariants of eventgraph, thus not checked here

@@ -1,6 +1,6 @@
 package channels.authz
 
-import channels.authz.ArdtEvent.Payload.{Capability, Revocation}
+import channels.authz.AuthzEvent.Payload.{Capability, Revocation}
 import channels.authz.AuthzTestSupport.{*, given}
 import channels.crypto.Ed25519.verify
 import channels.crypto.{Commitment, Hash, Signature}
@@ -10,16 +10,16 @@ import munit.FunSuite
 import rdts.filters.PermissionTree
 
 class AuthorizationTest extends FunSuite {
-  // --- ArdtEvent.createGenesis ---
+  // --- AuthzEvent.createGenesis ---
 
   test("createGenesis produces a validly self-signed genesis event") {
     val rootIdentity = newPrivateIdentity()
-    val genesis      = ArdtEvent.createGenesis(rootIdentity)
+    val genesis      = AuthzEvent.createGenesis(rootIdentity)
 
     assertEquals(genesis.author, rootIdentity.getPublic)
     assertEquals(
       genesis.payload,
-      Capability(rootIdentity.getPublic, PermissionTree.allow, PermissionTree.allow): ArdtEvent.Payload
+      Capability(rootIdentity.getPublic, PermissionTree.allow, PermissionTree.allow): AuthzEvent.Payload
     )
     assertEquals(genesis.parents, Set.empty[Hash])
     assertEquals(genesis.authorization, Hash.allZeroHash)
@@ -31,11 +31,11 @@ class AuthorizationTest extends FunSuite {
     )
   }
 
-  test("createGenesis's result is accepted by both ArdtEventGraph.apply and receive") {
+  test("createGenesis's result is accepted by both AuthzEventGraph.apply and receive") {
     val rootIdentity = newPrivateIdentity()
-    val genesis      = ArdtEvent.createGenesis(rootIdentity)
+    val genesis      = AuthzEvent.createGenesis(rootIdentity)
 
-    val graph = ArdtEventGraph(genesis)
+    val graph = AuthzEventGraph(genesis)
     assertEquals(graph.genesis, genesis.hash)
     assertEquals(graph.heads, Set(genesis.hash))
     assertEquals(
@@ -46,7 +46,7 @@ class AuthorizationTest extends FunSuite {
       )]((genesis.hash, Capability(rootIdentity.getPublic, PermissionTree.allow, PermissionTree.allow)))
     )
 
-    val empty    = ArdtEventGraph(genesis.hash)
+    val empty    = AuthzEventGraph(genesis.hash)
     val received = receiveOrFail(empty, genesis)
     assertEquals(received.heads, Set(genesis.hash))
   }

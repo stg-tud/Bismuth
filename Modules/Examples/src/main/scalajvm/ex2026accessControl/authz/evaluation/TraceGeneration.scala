@@ -1,9 +1,9 @@
 package ex2026accessControl.authz.evaluation
 
-import channels.authz.ArdtEvent.Payload.{Capability, DeltaCommitment}
+import channels.authz.AuthzEvent.Payload.{Capability, DeltaCommitment}
 import channels.crypto.{Hash, IdentityFactory, PrivateIdentity, PublicIdentity}
 import channels.authz
-import channels.authz.{ArdtEvent, ArdtEventGraph, Authorization, DeltaValueStore}
+import channels.authz.{AuthzEvent, AuthzEventGraph, Authorization, DeltaValueStore}
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
 import rdts.base.{ReplicaId, Uid}
 import rdts.filters.PermissionTree
@@ -39,7 +39,7 @@ object TraceGeneration {
     */
   @tailrec
   private def walkBackAFewSteps(
-      eventGraph: ArdtEventGraph,
+      eventGraph: AuthzEventGraph,
       start: Hash,
       steps: Int
   )(using random: Random): Hash =
@@ -49,7 +49,7 @@ object TraceGeneration {
         if parents.isEmpty then start
         else walkBackAFewSteps(eventGraph, parents.iterator.drop(random.nextInt(parents.size)).next(), steps - 1)
 
-  /** Builds a random [[authz.ArdtEventGraph]].
+  /** Builds a random [[authz.AuthzEventGraph]].
     * Every non-root replica holds `numCapabilitiesPerReplica` capabilities.
     *
     * @param numReplicas number of participating replicas, the root replica included
@@ -70,8 +70,8 @@ object TraceGeneration {
     val replicaIds   = 0.until(numReplicas).map(_ => IdentityFactory.createNewIdentity).toArray[PrivateIdentity]
     val rootIdentity = replicaIds(0)
 
-    val genesisEvent    = ArdtEvent.createGenesis(rootIdentity)
-    var eventGraph      = ArdtEventGraph(genesisEvent)
+    val genesisEvent    = AuthzEvent.createGenesis(rootIdentity)
+    var eventGraph      = AuthzEventGraph(genesisEvent)
     var deltaValueStore = DeltaValueStore[BenchmarkRdt]()
 
     // The permissions of one capability each, shared by all replicas alike
@@ -143,7 +143,7 @@ object TraceGeneration {
     )
   }
 
-  /** Builds an [[authz.ArdtEventGraph]] with a two-level delegation hierarchy, in four phases:
+  /** Builds an [[authz.AuthzEventGraph]] with a two-level delegation hierarchy, in four phases:
     *
     *   1. The root replica delegates write access to one top-level subtree (`a.*`, `b.*`, `c.*`) each to three
     *      new replicas.
@@ -175,8 +175,8 @@ object TraceGeneration {
     val rootIdentity = IdentityFactory.createNewIdentity
     val replicaIds   = mutable.ArrayBuffer(rootIdentity)
 
-    val genesisEvent    = ArdtEvent.createGenesis(rootIdentity)
-    var eventGraph      = ArdtEventGraph(genesisEvent)
+    val genesisEvent    = AuthzEvent.createGenesis(rootIdentity)
+    var eventGraph      = AuthzEventGraph(genesisEvent)
     var deltaValueStore = DeltaValueStore[BenchmarkRdt]()
     var sharedState     = BenchmarkRdt.empty
 
@@ -301,7 +301,7 @@ object TraceGeneration {
       val capability = capabilityGrantingWrite(eventGraph, subtree)
       val events     = eventGraph.allEventsInCausalOrder
 
-      def usesCapability(event: ArdtEvent): Boolean =
+      def usesCapability(event: AuthzEvent): Boolean =
         event.payload.isInstanceOf[DeltaCommitment] &&
         eventGraph.authorizationChain(event.authorization).contains(capability)
 
@@ -313,7 +313,7 @@ object TraceGeneration {
       // the entire graph each time (see revokeAtHeads). A single search for the revocation's causal past suffices.
       val causalPast = causalPastOf(eventGraph, parents)
       val state      = events.iterator.zipWithIndex.collect {
-        case ((hash, event @ ArdtEvent(_: DeltaCommitment, _, _, _, _)), index)
+        case ((hash, event @ AuthzEvent(_: DeltaCommitment, _, _, _, _)), index)
             if !usesCapability(event) || causalPast.contains(hash) =>
           generated.deltaValueStore.get(index).get.delta
       }.foldLeft(BenchmarkRdt.empty)(_.merge(_))
@@ -321,7 +321,7 @@ object TraceGeneration {
       generated.copy(eventGraph = appendRevocation(generated, capability, parents), state = state)
 
   /** `hashes`, together with every event causally before any of them */
-  private def causalPastOf(eventGraph: ArdtEventGraph, hashes: Set[Hash]): collection.Set[Hash] = {
+  private def causalPastOf(eventGraph: AuthzEventGraph, hashes: Set[Hash]): collection.Set[Hash] = {
     val visited = mutable.Set.empty[Hash]
     val toVisit = mutable.Stack.from(hashes)
     while toVisit.nonEmpty do
@@ -331,10 +331,10 @@ object TraceGeneration {
   }
 
   /** The capability event granting write access to exactly `subtree` */
-  private def capabilityGrantingWrite(eventGraph: ArdtEventGraph, subtree: String): Hash = {
+  private def capabilityGrantingWrite(eventGraph: AuthzEventGraph, subtree: String): Hash = {
     val write      = PermissionTree.fromPath(s"$subtree.*")
     val candidates = eventGraph.events.collect {
-      case (hash, (ArdtEvent(Capability(_, _, `write`), _, _, _, _), _)) => hash
+      case (hash, (AuthzEvent(Capability(_, _, `write`), _, _, _, _), _)) => hash
     }
     require(candidates.size == 1, s"Expected exactly one capability granting write access to $subtree.*")
     candidates.head
@@ -344,7 +344,7 @@ object TraceGeneration {
       generated: GeneratedBenchmarkRdtEventGraph,
       revokedCapability: Hash,
       parents: Set[Hash]
-  ): ArdtEventGraph = {
+  ): AuthzEventGraph = {
     // The genesis is part of every capability's authorization chain, so the root may revoke any of them
     val revocation = EventGraphBuilder.buildRevocationEvent(
       revokedCapability,
@@ -355,10 +355,10 @@ object TraceGeneration {
     EventGraphBuilder.receiveOrThrow(generated.eventGraph, revocation)
   }
 
-  /** Translates an already-built [[GeneratedBenchmarkRdtEventGraph]] (an [[authz.ArdtEventGraph]] of [[BenchmarkRdt]]
+  /** Translates an already-built [[GeneratedBenchmarkRdtEventGraph]] (an [[authz.AuthzEventGraph]] of [[BenchmarkRdt]]
     * edits, together with its delta value store) into a [[HashDag]] of the very same edits, in the same causal
     * order and authored by the same replicas, instead of generating an independent random graph — so that the
-    * [[HashDag]]-based benchmarks exercise the exact same trace of edits as the [[authz.ArdtEventGraph]]-based ones.
+    * [[HashDag]]-based benchmarks exercise the exact same trace of edits as the [[authz.AuthzEventGraph]]-based ones.
     * Since [[HashDag]] has no notion of access control, every capability/delegation event of the source graph is
     * dropped, and each delta event's parents are reconnected to its nearest ancestor delta event (or the dag's
     * genesis) instead.
@@ -382,7 +382,7 @@ object TraceGeneration {
     )
     trace += genesisEncoded
 
-    // Maps every ArdtEvent hash of the source graph to the set of HashDag entry hashes that should stand in
+    // Maps every AuthzEvent hash of the source graph to the set of HashDag entry hashes that should stand in
     // for it as a parent: a singleton of the translated entry, for delta events; for every other event
     // (dropped, since it carries no RDT payload), the resolved parents of that event instead, so that a delta
     // event originally parented on a capability/delegation event ends up parented on that event's nearest
@@ -426,7 +426,7 @@ object TraceGeneration {
 }
 
 case class GeneratedBenchmarkRdtEventGraph(
-    eventGraph: ArdtEventGraph,
+    eventGraph: AuthzEventGraph,
     deltaValueStore: DeltaValueStore[BenchmarkRdt],
     replicaIds: Array[PrivateIdentity],
     capabilityEvent: Map[PublicIdentity, Map[String, Hash]],

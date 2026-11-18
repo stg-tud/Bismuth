@@ -7,7 +7,7 @@ import channels.connection.{Abort, ConnectionDescriptor, NioTCP}
 import channels.crypto.PrivateIdentity
 import channels.{MessagingIO, Timers}
 import channels.crypto.Ed25519.given
-import channels.authz.ArdtEvent
+import channels.authz.AuthzEvent
 import munit.FunSuite
 import rdts.filters.PermissionTree
 
@@ -28,7 +28,7 @@ class AuthzMessagingIOTest extends FunSuite {
     val timer   = java.util.Timer(true)
     val root    = newPrivateIdentity()
     val bob     = newPrivateIdentity()
-    val genesis = ArdtEvent.createGenesis(root)
+    val genesis = AuthzEvent.createGenesis(root)
 
     def node(identity: PrivateIdentity): (MessagingIO[AuthzProtocol[Set[Int]]], NioTCP, NioTls) = {
       val nio    = NioTCP()

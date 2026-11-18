@@ -1,14 +1,14 @@
 package channels.authz
 
-import ArdtEvent.Payload
-import ArdtEvent.Payload.Capability
+import AuthzEvent.Payload
+import AuthzEvent.Payload.Capability
 import channels.crypto.{Hash, PrivateIdentity, PublicIdentity, Signature}
 import channels.JsoniterCodecs.permissionTreeCodec
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import rdts.filters.PermissionTree
 
-case class ArdtEvent(
+case class AuthzEvent(
     payload: Payload,
     author: PublicIdentity,
     parents: Set[Hash],
@@ -17,12 +17,12 @@ case class ArdtEvent(
 ):
     def hash: Hash = Hash.compute(writeToArray(this))
 
-object ArdtEvent:
-    given codec: JsonValueCodec[ArdtEvent] = JsonCodecMaker.make
+object AuthzEvent:
+    given codec: JsonValueCodec[AuthzEvent] = JsonCodecMaker.make
 
     /** The root event: a capability with all permissions for `rootIdentity`, signed by it. */
-    def createGenesis(rootIdentity: PrivateIdentity): ArdtEvent = {
-      val genesisEvent = ArdtEvent(
+    def createGenesis(rootIdentity: PrivateIdentity): AuthzEvent = {
+      val genesisEvent = AuthzEvent(
         Capability(rootIdentity.getPublic, PermissionTree.allow, PermissionTree.allow),
         rootIdentity.getPublic,
         Set.empty,

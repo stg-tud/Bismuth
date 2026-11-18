@@ -1,13 +1,13 @@
 package ex2026accessControl.authz.travelplanner
 
-import channels.authz.ArdtEvent.Payload.Capability
+import channels.authz.AuthzEvent.Payload.Capability
 import channels.routing.authz.AuthzProtocol.*
 import channels.connection.tls.NioTls
 import channels.connection.{Abort, ConnectionDescriptor, NioTCP, NioTcpConnectionDetailsResolver}
 import channels.crypto.{Hash, PrivateIdentity, PublicIdentity}
 import channels.{MessagingIO, Timers}
 import channels.crypto.Ed25519.given
-import channels.authz.ArdtEvent
+import channels.authz.AuthzEvent
 import channels.routing.authz.AuthzProtocol
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import rdts.base.{Bottom, Decompose, Lattice}
@@ -21,7 +21,7 @@ import java.net.{InetAddress, InetSocketAddress}
 class SyncImpl[State: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
     private val localIdentity: PrivateIdentity,
     genesis: Hash,
-    genesisEvent: Option[ArdtEvent] = None,
+    genesisEvent: Option[AuthzEvent] = None,
     onStateChange: State => Unit
 ) extends Sync[State] {
 

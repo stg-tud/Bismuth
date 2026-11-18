@@ -1,6 +1,6 @@
 package channels.authz
 
-import ArdtEvent.Payload.{Capability, DeltaCommitment, Revocation}
+import AuthzEvent.Payload.{Capability, DeltaCommitment, Revocation}
 import CausalOrder.*
 import channels.crypto.{Hash, PublicIdentity, Signature, Verifier}
 import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray}
@@ -9,10 +9,10 @@ import rdts.filters.PermissionTree
 
 import scala.collection.mutable
 
-case class ArdtEventGraph(
+case class AuthzEventGraph(
     genesis: Hash,
     heads: Set[Hash],
-    events: Map[Hash, (ArdtEvent, Int)],
+    events: Map[Hash, (AuthzEvent, Int)],
     private[authz] val revocationCache: Map[Hash, Set[Hash]],
     private[authz] val capabilityCache: Map[PublicIdentity, Set[(Hash, Capability)]],
     nextEventIndex: Int,
@@ -28,12 +28,12 @@ case class ArdtEventGraph(
     * @throws IllegalArgumentException If the event is invalid
     * @return If successful, this returns Right(updatedGraph). If parents are missing, then this returns
     */
-  def receive(encodedEvent: Array[Byte])(using verifier: Verifier): Either[Set[Hash], ArdtEventGraph] = {
+  def receive(encodedEvent: Array[Byte])(using verifier: Verifier): Either[Set[Hash], AuthzEventGraph] = {
     // Check for duplicates before checking signature
     val eventHash = Hash.compute(encodedEvent)
     if events.contains(eventHash) then return Right(this)
 
-    val event: ArdtEvent = readFromArray(encodedEvent)
+    val event: AuthzEvent = readFromArray(encodedEvent)
     // Ensure that no invalid events are stored
     // Signature verification: (need to blank signature and re-encode for verification)
     require(verifier.verify(
@@ -57,7 +57,7 @@ case class ArdtEventGraph(
         val missingParents = event.parents.filterNot(events.contains)
         if eventHash != genesis then return Left(missingParents + event.authorization)
         else Capability(event.author, PermissionTree.allow, PermissionTree.allow)
-      case Some((ArdtEvent(cap @ Capability(capabilityHolder, _, _), _, _, _, _), _)) =>
+      case Some((AuthzEvent(cap @ Capability(capabilityHolder, _, _), _, _, _, _), _)) =>
         // Used capability matches the event author
         require(capabilityHolder == event.author)
         cap
@@ -154,7 +154,7 @@ case class ArdtEventGraph(
     }
 
     events.collect {
-      case (_, (ArdtEvent(_: DeltaCommitment, _, _, _, authorization), index))
+      case (_, (AuthzEvent(_: DeltaCommitment, _, _, _, authorization), index))
           if index > cutoff && revokedCapabilities.contains(authorization) && !causalPast.contains(index) =>
         index
     }
@@ -242,19 +242,19 @@ case class ArdtEventGraph(
   def activeCapabilitiesOf(publicIdentity: PublicIdentity): Set[(Hash, Capability)] =
     capabilityCache.getOrElse(publicIdentity, Set.empty).filter((hash, _) => revocations(hash).isEmpty)
 
-  def allEventsInCausalOrder: Array[(Hash, ArdtEvent)] = {
-    val sortedEvents = Array.ofDim[(Hash, ArdtEvent)](events.size)
+  def allEventsInCausalOrder: Array[(Hash, AuthzEvent)] = {
+    val sortedEvents = Array.ofDim[(Hash, AuthzEvent)](events.size)
     events.foreach { case (hash, (event, i)) => sortedEvents(i) = hash -> event }
     sortedEvents
   }
 }
 
-object ArdtEventGraph {
-  def apply(genesis: ArdtEvent): ArdtEventGraph = {
+object AuthzEventGraph {
+  def apply(genesis: AuthzEvent): AuthzEventGraph = {
     val hash = genesis.hash
     genesis.payload match {
       case cap @ Capability(holder, _, _) =>
-        ArdtEventGraph(
+        AuthzEventGraph(
           hash,
           Set(hash),
           Map(hash -> (genesis, 0)),
@@ -267,6 +267,6 @@ object ArdtEventGraph {
     }
   }
 
-  def apply(genesis: Hash): ArdtEventGraph =
-    ArdtEventGraph(genesis, Set.empty, Map.empty, Map.empty, Map.empty, 0, Vector.empty)
+  def apply(genesis: Hash): AuthzEventGraph =
+    AuthzEventGraph(genesis, Set.empty, Map.empty, Map.empty, Map.empty, 0, Vector.empty)
 }

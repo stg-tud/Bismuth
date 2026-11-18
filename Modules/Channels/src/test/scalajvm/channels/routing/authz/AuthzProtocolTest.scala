@@ -6,7 +6,7 @@ import channels.authz.AuthzTestSupport.{*, given}
 import channels.connection.Peer
 import channels.crypto.Ed25519.given
 import channels.crypto.{Hash, PrivateIdentity}
-import channels.authz.{ArdtEvent, Authorization, AuthzReplica}
+import channels.authz.{AuthzEvent, Authorization, AuthzReplica}
 import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray}
 import munit.FunSuite
 import rdts.base.Uid
@@ -72,10 +72,10 @@ class AuthzProtocolTest extends FunSuite {
       }
   }
 
-  private def setup(): (Node, Node, Network, ArdtEvent) = {
+  private def setup(): (Node, Node, Network, AuthzEvent) = {
     val root    = newPrivateIdentity()
     val bob     = newPrivateIdentity()
-    val genesis = ArdtEvent.createGenesis(root)
+    val genesis = AuthzEvent.createGenesis(root)
     val a       = Node(root, genesis.hash)
     val b       = Node(bob, genesis.hash)
     val net     = Network(a, b)
@@ -85,7 +85,7 @@ class AuthzProtocolTest extends FunSuite {
     (a, b, net, genesis)
   }
 
-  private def delegateAll(net: Network, from: Node, to: Node, genesis: ArdtEvent): Unit =
+  private def delegateAll(net: Network, from: Node, to: Node, genesis: AuthzEvent): Unit =
     net.run(from)(_.delegate(_, genesis.hash, to.identity.getPublic, PermissionTree.allow, PermissionTree.allow))
 
   test("a new replica learns the event graph from its peer") {
@@ -119,7 +119,7 @@ class AuthzProtocolTest extends FunSuite {
 
   test("events and deltas spread through intermediate replicas") {
     val root    = newPrivateIdentity()
-    val genesis = ArdtEvent.createGenesis(root)
+    val genesis = AuthzEvent.createGenesis(root)
     val a       = Node(root, genesis.hash)
     val b       = Node(newPrivateIdentity(), genesis.hash)
     val c       = Node(newPrivateIdentity(), genesis.hash)

@@ -1,6 +1,6 @@
 package channels.authz
 
-import channels.authz.ArdtEvent.Payload.{Capability, DeltaCommitment}
+import channels.authz.AuthzEvent.Payload.{Capability, DeltaCommitment}
 import channels.crypto.Commitment.RevealedValue
 import channels.crypto.Ed25519.fromPublicKey
 import channels.crypto.{Ed25519PrivateIdentity, Ed25519Util, IdentityFactory, PublicIdentity, *}
@@ -22,18 +22,18 @@ object AuthzTestSupport extends munit.Assertions {
   }
 
   def buildEvent(
-      payload: ArdtEvent.Payload,
+      payload: AuthzEvent.Payload,
       author: PublicIdentity,
       authorPrivateKey: PrivateKey,
       parents: Set[Hash],
       authorization: Hash
-  ): ArdtEvent = {
-    val unsigned  = ArdtEvent(payload, author, parents, Signature.allZeroSignature, authorization)
+  ): AuthzEvent = {
+    val unsigned  = AuthzEvent(payload, author, parents, Signature.allZeroSignature, authorization)
     val signature = Ed25519.sign(writeToArray(unsigned), authorPrivateKey)
     unsigned.copy(signature = signature)
   }
 
-  def buildGenesis(holder: PublicIdentity, holderKey: PrivateKey): ArdtEvent =
+  def buildGenesis(holder: PublicIdentity, holderKey: PrivateKey): AuthzEvent =
     buildEvent(
       Capability(holder, PermissionTree.allow, PermissionTree.allow),
       holder,
@@ -42,16 +42,16 @@ object AuthzTestSupport extends munit.Assertions {
       Hash.allZeroHash
     )
 
-  def receiveOrFail(graph: ArdtEventGraph, event: ArdtEvent): ArdtEventGraph =
+  def receiveOrFail(graph: AuthzEventGraph, event: AuthzEvent): AuthzEventGraph =
     graph.receive(writeToArray(event)) match {
       case Right(updated) => updated
       case Left(missing)  => fail(s"expected ${event.hash} to be accepted, but graph reported missing: $missing")
     }
 
-  def freshGraph(): (ArdtEventGraph, PublicIdentity, PrivateKey, ArdtEvent) = {
+  def freshGraph(): (AuthzEventGraph, PublicIdentity, PrivateKey, AuthzEvent) = {
     val (holder, holderKey) = newIdentity()
     val genesis             = buildGenesis(holder, holderKey)
-    (ArdtEventGraph(genesis), holder, holderKey, genesis)
+    (AuthzEventGraph(genesis), holder, holderKey, genesis)
   }
 
   def newPrivateIdentity(): Ed25519PrivateIdentity = IdentityFactory.createNewIdentity
@@ -62,7 +62,7 @@ object AuthzTestSupport extends munit.Assertions {
       authorPrivateKey: PrivateKey,
       parents: Set[Hash],
       authorization: Hash
-  ): (ArdtEvent, RevealedValue) = {
+  ): (AuthzEvent, RevealedValue) = {
     val revealed = Commitment.commit(author.id, writeToArray(delta))
     val event    =
       buildEvent(DeltaCommitment(revealed.commitment(author.id)), author, authorPrivateKey, parents, authorization)

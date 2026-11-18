@@ -3,7 +3,7 @@ package channels.routing.authz
 import channels.MessagingIO
 import AuthzProtocol.identityOf
 import channels.routing.Routing.{Effect, Step, Timer}
-import channels.authz.{ArdtEvent, AuthzReplica}
+import channels.authz.{AuthzEvent, AuthzReplica}
 import channels.routing.{Plumtree, PlumtreeCore, PlumtreeKnowledge, PlumtreeMessage, Routing}
 import channels.connection.{Peer, PeerConnectInfo}
 import channels.crypto.{Hash, PrivateIdentity, PublicIdentity, Verifier}
@@ -18,7 +18,7 @@ import scala.util.Try
 final case class AuthzStore[RDT](replica: AuthzReplica[RDT], remoteMissing: Map[Peer, Set[Hash]] = Map.empty)
 
 /** Plumtree over the events of an [[AuthzReplica]]: payloads are encoded events, knowledge are event hashes, and the
-  * summary are the heads. Replay uses the cuts of the [[ArdtEventGraph]], see [[ArdtEventGraph.notBefore]].
+  * summary are the heads. Replay uses the cuts of the [[AuthzEventGraph]], see [[AuthzEventGraph.notBefore]].
   */
 final class AuthzKnowledge[RDT] extends PlumtreeKnowledge {
   type Store     = AuthzStore[RDT]
@@ -35,7 +35,7 @@ final class AuthzKnowledge[RDT] extends PlumtreeKnowledge {
 
     /** The sender has the event and everything it depends on. */
     override def implied: Set[Hash] =
-      payload.content ++ Try(AuthzReplica.dependencies(readFromArray[ArdtEvent](payload))).getOrElse(Set.empty)
+      payload.content ++ Try(AuthzReplica.dependencies(readFromArray[AuthzEvent](payload))).getOrElse(Set.empty)
   }
 
   extension (store: Store) {
@@ -111,7 +111,7 @@ final class AuthzProtocol[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompo
     local(state, state.store.replica.revoke(identity, revokedCapability))
 
   /** Accept a (trusted) event out of band, e.g., the genesis event. */
-  def receiveLocally(state: State, event: ArdtEvent): Result =
+  def receiveLocally(state: State, event: AuthzEvent): Result =
     local(state, state.store.replica.receiveLocally(event))
 
   // ------------------------------------------------------------------------------------------------
@@ -209,7 +209,7 @@ object AuthzProtocol {
   extension [RDT](io: MessagingIO[AuthzProtocol[RDT]]) {
     def replica: AuthzReplica[RDT] = io.state.store.replica
 
-    def receiveLocally(event: ArdtEvent): Unit = io.update(io.protocol.receiveLocally(_, event))
+    def receiveLocally(event: AuthzEvent): Unit = io.update(io.protocol.receiveLocally(_, event))
 
     def mutate(mutator: RDT => RDT): Unit = io.update(s => io.protocol.write(s, mutator(s.store.replica.state)))
 

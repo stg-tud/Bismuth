@@ -2,11 +2,11 @@ package ex2026accessControl.authz.evaluation
 
 import channels.routing.Routing.{Effect, Step}
 import channels.authz.*
-import channels.authz.ArdtEvent.Payload.DeltaCommitment
+import channels.authz.AuthzEvent.Payload.DeltaCommitment
 import channels.connection.Peer
 import channels.crypto.{Hash, PrivateIdentity, PublicIdentity}
 import channels.crypto.Ed25519.given
-import channels.authz.{ArdtEventGraph, Authorization, AuthzReplica, DeltaValueStore}
+import channels.authz.{AuthzEventGraph, Authorization, AuthzReplica, DeltaValueStore}
 import channels.routing.authz.{AuthzMessage, AuthzProtocol}
 import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray
 import ex2026accessControl.authz.evaluation.EvaluationBenchmarks.{encodeTrace, receiveTrace, replayTrace}
@@ -48,7 +48,7 @@ class EvaluationBenchmarks {
     )
 
   @Benchmark
-  def receiveEventsAndDeltas(state: ArdtEventGraphBenchmarkState): Set[Hash] = receiveTrace(state)
+  def receiveEventsAndDeltas(state: AuthzEventGraphBenchmarkState): Set[Hash] = receiveTrace(state)
 
   /** Receiving only a revocation, into a replica that has already received every other event of the trace */
   @Benchmark
@@ -129,7 +129,7 @@ class EvaluationBenchmarks {
 
   /** Full state materialization, including access control enforcement */
   @Benchmark
-  def materializeWithAuthorization(state: ArdtEventGraphBenchmarkState): BenchmarkRdt =
+  def materializeWithAuthorization(state: AuthzEventGraphBenchmarkState): BenchmarkRdt =
     Authorization.materialize(state.eventGraph, state.deltaValueStore)
 
   /** Full state materialization from a pre-built [[HashDag]] of [[SignedHashDagEntry]]s, without any access
@@ -144,11 +144,11 @@ class EvaluationBenchmarks {
     HashDag.materialize(state.hashDag)
 }
 
-/** Holds an [[ArdtEventGraph]] built by [[TraceGeneration.generateDelegationHierarchyEventGraph]]: a fixed set of
+/** Holds an [[AuthzEventGraph]] built by [[TraceGeneration.generateDelegationHierarchyEventGraph]]: a fixed set of
   * 13 replicas in a two-level delegation hierarchy, writing in two phases.
   */
 @State(Scope.Benchmark)
-class ArdtEventGraphBenchmarkState {
+class AuthzEventGraphBenchmarkState {
 
   // The total number of BenchmarkRdt edits making up the pre-built event graph, half of them before and half of
   // them after the second-level delegations. This controls the size of the graph that createSingleEvent authors
@@ -159,7 +159,7 @@ class ArdtEventGraphBenchmarkState {
   val concurrencyProbability: Double = 0.2
   val seed: Long                     = 42L
 
-  var eventGraph: ArdtEventGraph                                       = scala.compiletime.uninitialized
+  var eventGraph: AuthzEventGraph                                       = scala.compiletime.uninitialized
   var deltaValueStore: DeltaValueStore[BenchmarkRdt]                                 = scala.compiletime.uninitialized
   var genesisHash: Hash                                                              = scala.compiletime.uninitialized
   var rootIdentity: PrivateIdentity                                                  = scala.compiletime.uninitialized
@@ -210,7 +210,7 @@ class ArdtEventGraphBenchmarkState {
 }
 
 @State(Scope.Benchmark)
-class CreateUpdateBenchmarkState extends ArdtEventGraphBenchmarkState {
+class CreateUpdateBenchmarkState extends AuthzEventGraphBenchmarkState {
   var replica: AuthzReplica[BenchmarkRdt] = scala.compiletime.uninitialized
 
   @Setup(Level.Trial)
@@ -220,11 +220,11 @@ class CreateUpdateBenchmarkState extends ArdtEventGraphBenchmarkState {
   }
 }
 
-/** [[ArdtEventGraphBenchmarkState]] whose trace ends in a revocation, authored by the root replica, of the
+/** [[AuthzEventGraphBenchmarkState]] whose trace ends in a revocation, authored by the root replica, of the
   * capability granting write access to either `a.*` or `a.a.*`.
   */
 @State(Scope.Benchmark)
-class RevokedEventGraphBenchmarkState extends ArdtEventGraphBenchmarkState {
+class RevokedEventGraphBenchmarkState extends AuthzEventGraphBenchmarkState {
 
   // <revoked subtree>-<parents of the revocation>
   @Param(Array("a-concurrent", "a-heads", "a-lastUse", "a.a-concurrent", "a.a-lastUse", "a.a-heads"))
@@ -318,7 +318,7 @@ class MergeDeltasAfterRevocationBenchmarkState extends RevokedEventGraphBenchmar
 }
 
 @State(Scope.Benchmark)
-class SignedHashDagBenchmarkState extends ArdtEventGraphBenchmarkState {
+class SignedHashDagBenchmarkState extends AuthzEventGraphBenchmarkState {
 
   var hashDag: HashDag[BenchmarkRdt, SignedHashDagEntry[BenchmarkRdt]] = scala.compiletime.uninitialized
   var hashDagTrace: Array[Array[Byte]]                                 = scala.compiletime.uninitialized
@@ -337,7 +337,7 @@ class SignedHashDagBenchmarkState extends ArdtEventGraphBenchmarkState {
   * signing/verification overhead paid by every [[SignedHashDagEntry]].
   */
 @State(Scope.Benchmark)
-class UnsignedHashDagBenchmarkState extends ArdtEventGraphBenchmarkState {
+class UnsignedHashDagBenchmarkState extends AuthzEventGraphBenchmarkState {
 
   var hashDag: HashDag[BenchmarkRdt, UnsignedHashDagEntry[BenchmarkRdt]] = scala.compiletime.uninitialized
   var hashDagTrace: Array[Array[Byte]]                                   = scala.compiletime.uninitialized
@@ -353,7 +353,7 @@ class UnsignedHashDagBenchmarkState extends ArdtEventGraphBenchmarkState {
 }
 
 @State(Scope.Benchmark)
-class SendEventsWithDeltaBenchmarkState extends ArdtEventGraphBenchmarkState {
+class SendEventsWithDeltaBenchmarkState extends AuthzEventGraphBenchmarkState {
 
   var replica: AuthzReplica[BenchmarkRdt] = scala.compiletime.uninitialized
   var destination: Peer                   = scala.compiletime.uninitialized
@@ -447,7 +447,7 @@ class UnsignedHashDagBenchmarkStateWithReplica extends UnsignedHashDagBenchmarkS
 object EvaluationBenchmarks {
 
   /** Has a fresh replica of the root identity receive every event of `state`'s trace, along with its delta */
-  def receiveTrace(state: ArdtEventGraphBenchmarkState): Set[Hash] =
+  def receiveTrace(state: AuthzEventGraphBenchmarkState): Set[Hash] =
     replayTrace(
       AuthzReplica.initial(state.rootIdentity.getPublic, state.genesisHash),
       state.trace,
@@ -467,7 +467,7 @@ object EvaluationBenchmarks {
     }
 
   /** Encodes every event of `eventGraph` in causal order, along with its event index if it is a delta (if any) */
-  def encodeTrace(eventGraph: ArdtEventGraph)
+  def encodeTrace(eventGraph: AuthzEventGraph)
       : Array[(hash: Hash, encodedEvent: Array[Byte], deltaIndex: Option[Int])] =
     eventGraph.allEventsInCausalOrder.zipWithIndex.map { case ((hash, event), index) =>
       val deltaIndex = event.payload match {

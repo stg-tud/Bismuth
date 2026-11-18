@@ -1,6 +1,6 @@
 package channels.authz
 
-import ArdtEvent.Payload.{Capability, DeltaCommitment, Revocation}
+import AuthzEvent.Payload.{Capability, DeltaCommitment, Revocation}
 import channels.crypto.Commitment.RevealedValue
 import channels.crypto.{Commitment, Hash, PrivateIdentity, PublicIdentity, Signature, Verifier}
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
@@ -19,7 +19,7 @@ object AuthzReplica {
   )(using Verifier): AuthzReplica[RDT] =
     AuthzReplica[RDT](
       self,
-      ArdtEventGraph(genesis),
+      AuthzEventGraph(genesis),
       deltas = DeltaValueStore(),
       state = Bottom[RDT].empty,
       waitingEvents = Map.empty,
@@ -30,7 +30,7 @@ object AuthzReplica {
   final case class Snapshot[RDT](version: Int, state: RDT)
 
   /** The events that must be in the graph before `event` can be added. */
-  def dependencies(event: ArdtEvent): Set[Hash] =
+  def dependencies(event: AuthzEvent): Set[Hash] =
     val authorization = Option.when(event.authorization != Hash.allZeroHash)(event.authorization)
     event.payload match
         case Revocation(revoked) => event.parents ++ authorization + revoked
@@ -46,12 +46,12 @@ object AuthzReplica {
   final case class Local[RDT](state: AuthzReplica[RDT], events: List[Array[Byte]])
 }
 
-/** Immutable state of an authorization-aware replica: the [[ArdtEventGraph]], the events waiting for missing
+/** Immutable state of an authorization-aware replica: the [[AuthzEventGraph]], the events waiting for missing
   * predecessors, and the delta values this replica may read. Disseminated by [[channels.routing.authz.AuthzProtocol]].
   */
 final case class AuthzReplica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
     self: PublicIdentity,
-    eventGraph: ArdtEventGraph,
+    eventGraph: AuthzEventGraph,
     /** The delta values this replica accepted. */
     deltas: DeltaValueStore[RDT],
     state: RDT,
@@ -81,7 +81,7 @@ final case class AuthzReplica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Dec
 
   /** Events we know to exist (as predecessors of waiting events), but do not have. */
   def missing: Set[Hash] =
-    waitingEvents.values.flatMap(encoded => AuthzReplica.dependencies(readFromArray[ArdtEvent](encoded)))
+    waitingEvents.values.flatMap(encoded => AuthzReplica.dependencies(readFromArray[AuthzEvent](encoded)))
       .filterNot(received).toSet
 
   /** The events not in the causal past of `hashes`, encoded, in an order in which they can be received. */
@@ -91,7 +91,7 @@ final case class AuthzReplica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Dec
   /** Known delta commitment events without a (pending) value, e.g., because they were not readable when received. */
   def deltasWithoutValue: Set[Hash] =
     eventGraph.events.iterator.collect {
-      case (hash, (ArdtEvent(DeltaCommitment(_), _, _, _, _), index))
+      case (hash, (AuthzEvent(DeltaCommitment(_), _, _, _, _), index))
           if !deltas.contains(index) && !waitingDeltas.contains(hash) => hash
     }.toSet
 
@@ -166,7 +166,7 @@ final case class AuthzReplica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Dec
   def write(identity: PrivateIdentity, delta: RDT, capabilityHash: Hash): Local[RDT] = {
     require(eventGraph.revocations(capabilityHash).isEmpty)
     require(eventGraph.events.get(capabilityHash) match
-        case Some((ArdtEvent(Capability(holder, _, write), _, _, _, _), _)) =>
+        case Some((AuthzEvent(Capability(holder, _, write), _, _, _, _), _)) =>
           holder == identity.getPublic && Filter[RDT].isAllowed(delta, write)
         case _ => false)
 
@@ -197,7 +197,7 @@ final case class AuthzReplica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Dec
   ): Local[RDT] = {
     require(write <= read)
     eventGraph.events.get(usedCapability) match
-        case Some((ArdtEvent(Capability(holder, readLimit, writeLimit), _, _, _, _), _)) =>
+        case Some((AuthzEvent(Capability(holder, readLimit, writeLimit), _, _, _, _), _)) =>
           require(holder == identity.getPublic)
           require(read <= readLimit && write <= writeLimit)
           localEvent(identity, Capability(delegatee, read, write), usedCapability)
@@ -211,8 +211,8 @@ final case class AuthzReplica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Dec
       if authEvent == Hash.allZeroHash then None
       else
           eventGraph.events(authEvent)._1 match
-              case ArdtEvent(Capability(holder, _, _), _, _, _, _) if holder == identity.getPublic => Some(authEvent)
-              case ArdtEvent(_, _, _, _, parent) => authorizationFor(parent)
+              case AuthzEvent(Capability(holder, _, _), _, _, _, _) if holder == identity.getPublic => Some(authEvent)
+              case AuthzEvent(_, _, _, _, parent) => authorizationFor(parent)
 
     authorizationFor(revokedCapability) match
         case Some(authorization) => localEvent(identity, Revocation(revokedCapability), authorization)
@@ -221,7 +221,7 @@ final case class AuthzReplica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Dec
   }
 
   /** Accept a (trusted) event out of band, e.g., the genesis event. */
-  def receiveLocally(event: ArdtEvent): Local[RDT] = {
+  def receiveLocally(event: AuthzEvent): Local[RDT] = {
     val encoded         = writeToArray(event)
     val (next, outcome) = receiveEventChecked(encoded)
     require(outcome.missing.isEmpty, s"missing predecessors: ${outcome.missing}")
@@ -232,7 +232,7 @@ final case class AuthzReplica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Dec
   // helpers
   // ------------------------------------------------------------------------------------------------
 
-  private def localEvent(identity: PrivateIdentity, payload: ArdtEvent.Payload, authorization: Hash): Local[RDT] = {
+  private def localEvent(identity: PrivateIdentity, payload: AuthzEvent.Payload, authorization: Hash): Local[RDT] = {
     val encoded         = writeToArray(createSignedEvent(identity, payload, authorization, heads))
     val (next, outcome) = receiveEventChecked(encoded)
     require(outcome.added.nonEmpty, s"local event was not accepted: $outcome")
@@ -241,11 +241,11 @@ final case class AuthzReplica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Dec
 
   private def createSignedEvent(
       identity: PrivateIdentity,
-      payload: ArdtEvent.Payload,
+      payload: AuthzEvent.Payload,
       capability: Hash,
       parents: Set[Hash]
-  ): ArdtEvent = {
-    val unsigned = ArdtEvent(payload, identity.getPublic, parents, Signature.allZeroSignature, capability)
+  ): AuthzEvent = {
+    val unsigned = AuthzEvent(payload, identity.getPublic, parents, Signature.allZeroSignature, capability)
     unsigned.copy(signature = identity.sign(writeToArray(unsigned)))
   }
 

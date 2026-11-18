@@ -1,6 +1,6 @@
 package channels.authz
 
-import channels.authz.ArdtEvent.Payload.{Capability, Revocation}
+import channels.authz.AuthzEvent.Payload.{Capability, Revocation}
 import channels.authz.AuthzTestSupport.{*, given}
 import channels.crypto.{Ed25519PrivateIdentity, Hash}
 import channels.crypto.Ed25519.given
@@ -15,29 +15,29 @@ class AuthzReplicaTest extends FunSuite {
   type Replica = AuthzReplica[Set[Int]]
   type Result  = AuthzReplica.Local[Set[Int]]
 
-  private def newReplicaWithGenesis(identity: Ed25519PrivateIdentity, genesisEvent: ArdtEvent): Replica =
+  private def newReplicaWithGenesis(identity: Ed25519PrivateIdentity, genesisEvent: AuthzEvent): Replica =
     AuthzReplica.initial[Set[Int]](identity.getPublic, genesisEvent.hash).receiveLocally(genesisEvent).state
 
-  private def newReplica(): (Replica, Ed25519PrivateIdentity, ArdtEvent) = {
+  private def newReplica(): (Replica, Ed25519PrivateIdentity, AuthzEvent) = {
     val rootIdentity = newPrivateIdentity()
-    val genesisEvent = ArdtEvent.createGenesis(rootIdentity)
+    val genesisEvent = AuthzEvent.createGenesis(rootIdentity)
     (newReplicaWithGenesis(rootIdentity, genesisEvent), rootIdentity, genesisEvent)
   }
 
-  private def receive(replica: Replica, event: ArdtEvent): Replica = {
+  private def receive(replica: Replica, event: AuthzEvent): Replica = {
     val (next, result) = replica.receiveEvent(writeToArray(event))
     assert(result.isRight, s"$event was not accepted: $result")
     next
   }
 
   /** The events created by a local operation. */
-  private def sentEvents(step: Result): List[ArdtEvent] = step.events.map(readFromArray[ArdtEvent](_))
+  private def sentEvents(step: Result): List[AuthzEvent] = step.events.map(readFromArray[AuthzEvent](_))
 
   /** The deltas of the events created by a local operation, as readable by the replica itself. */
   private def sentDeltas(step: Result): List[DeltaValue] =
     step.state.readableDeltas(step.state.self, sentEvents(step).map(_.hash))
 
-  private def revocationOf(capability: ArdtEvent, identity: Ed25519PrivateIdentity, parents: Set[Hash]): ArdtEvent =
+  private def revocationOf(capability: AuthzEvent, identity: Ed25519PrivateIdentity, parents: Set[Hash]): AuthzEvent =
     buildEvent(
       Revocation(capability.hash),
       identity.getPublic,
@@ -157,7 +157,7 @@ class AuthzReplicaTest extends FunSuite {
 
   test("receiveDelta throws when the local replica may not read the delta") {
     val rootIdentity       = newPrivateIdentity()
-    val genesisEvent       = ArdtEvent.createGenesis(rootIdentity)
+    val genesisEvent       = AuthzEvent.createGenesis(rootIdentity)
     val restrictedIdentity = newPrivateIdentity()
 
     val delegation = buildEvent(
@@ -260,7 +260,7 @@ class AuthzReplicaTest extends FunSuite {
     val List(delegationEvent) = sentEvents(step): @unchecked
     assertEquals(
       delegationEvent.payload,
-      Capability(delegateHolder, PermissionTree.fromPath("a"), PermissionTree.empty): ArdtEvent.Payload
+      Capability(delegateHolder, PermissionTree.fromPath("a"), PermissionTree.empty): AuthzEvent.Payload
     )
     assert(step.state.containsEvent(delegationEvent.hash))
   }
@@ -315,7 +315,7 @@ class AuthzReplicaTest extends FunSuite {
 
     val step = replica.revoke(rootIdentity, genesisEvent.hash)
 
-    assertEquals(sentEvents(step).map(_.payload), List(Revocation(genesisEvent.hash): ArdtEvent.Payload))
+    assertEquals(sentEvents(step).map(_.payload), List(Revocation(genesisEvent.hash): AuthzEvent.Payload))
   }
 
   test("revoke revokes a capability delegated by the local replica, using the capability it holds") {
@@ -338,7 +338,7 @@ class AuthzReplicaTest extends FunSuite {
 
   test("revoke throws when no capability held locally is found in the authorization chain") {
     val rootIdentity      = newPrivateIdentity()
-    val genesisEvent      = ArdtEvent.createGenesis(rootIdentity)
+    val genesisEvent      = AuthzEvent.createGenesis(rootIdentity)
     val bystanderIdentity = newPrivateIdentity()
 
     intercept[IllegalStateException](

@@ -7,7 +7,7 @@ import rdts.base.{Bottom, Lattice}
 import scala.collection.immutable.IntMap
 
 /** Stores the delta values (and the witnesses of their commitments) by the index of their event in the
-  * [[ArdtEventGraph]], i.e., [[ArdtEventGraph.events]]'s `Int`. Immutable.
+  * [[AuthzEventGraph]], i.e., [[AuthzEventGraph.events]]'s `Int`. Immutable.
   */
 final case class DeltaValueStore[Delta](
     backingStore: IntMap[(delta: Delta, witness: Array[Byte])] = IntMap.empty[(delta: Delta, witness: Array[Byte])]

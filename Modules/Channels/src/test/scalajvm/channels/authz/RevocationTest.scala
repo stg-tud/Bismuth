@@ -1,6 +1,6 @@
 package channels.authz
 
-import channels.authz.ArdtEvent.Payload.{Capability, Revocation}
+import channels.authz.AuthzEvent.Payload.{Capability, Revocation}
 import channels.authz.AuthzTestSupport.{*, given}
 import channels.crypto.Commitment.RevealedValue
 import channels.crypto.{Ed25519PrivateIdentity, Hash, PublicIdentity}
@@ -29,7 +29,7 @@ class RevocationTest extends FunSuite {
     private val rootIdentity: Ed25519PrivateIdentity = newPrivateIdentity()
 
     val root: Principal    = Principal(rootIdentity.getPublic, rootIdentity.identityKey.getPrivate)
-    val genesis: ArdtEvent = ArdtEvent.createGenesis(rootIdentity)
+    val genesis: AuthzEvent = AuthzEvent.createGenesis(rootIdentity)
 
     private var everyDelta: DeltaValueStore[Set[Int]] = DeltaValueStore[Set[Int]]()
 
@@ -49,7 +49,7 @@ class RevocationTest extends FunSuite {
     }
 
     /** A delegation of full permissions to `delegatee` by `delegator` using `capability` */
-    def grant(delegatee: Principal, delegator: Principal, capability: ArdtEvent, parents: Node*): ArdtEvent =
+    def grant(delegatee: Principal, delegator: Principal, capability: AuthzEvent, parents: Node*): AuthzEvent =
       buildEvent(
         Capability(delegatee.id, PermissionTree.allow, PermissionTree.allow),
         delegator.id,
@@ -59,20 +59,20 @@ class RevocationTest extends FunSuite {
       )
 
     /** A delta event of `author` using `capability`, together with its delta value */
-    def write(value: Set[Int], author: Principal, capability: ArdtEvent, parents: Node*): Write = {
+    def write(value: Set[Int], author: Principal, capability: AuthzEvent, parents: Node*): Write = {
       val (event, revealed) = buildDeltaEvent(value, author.id, author.key, parents.map(hashOf).toSet, capability.hash)
       Write(event, revealed)
     }
 
     /** A revocation of `capability` by the root using the genesis capability */
-    def revoke(capability: ArdtEvent, parents: Node*): ArdtEvent = revokeBy(root, genesis, capability, parents*)
+    def revoke(capability: AuthzEvent, parents: Node*): AuthzEvent = revokeBy(root, genesis, capability, parents*)
 
-    def revokeBy(revoker: Principal, authorization: ArdtEvent, capability: ArdtEvent, parents: Node*): ArdtEvent =
+    def revokeBy(revoker: Principal, authorization: AuthzEvent, capability: AuthzEvent, parents: Node*): AuthzEvent =
       buildEvent(Revocation(capability.hash), revoker.id, revoker.key, parents.map(hashOf).toSet, authorization.hash)
 
     /** Receives the events in order, each delta event directly followed by its delta value */
     def receive(nodes: Node*)(using Location): Unit = nodes.foreach {
-      case event: ArdtEvent => receiveEvent(event)
+      case event: AuthzEvent => receiveEvent(event)
       case write: Write     =>
         receiveEvent(write)
         receiveValue(write)
@@ -81,7 +81,7 @@ class RevocationTest extends FunSuite {
     /** Receives only the event, not the delta value of a delta event */
     def receiveEvent(node: Node)(using Location): Unit = {
       val event = node match {
-        case event: ArdtEvent => event
+        case event: AuthzEvent => event
         case write: Write     => write.event
       }
       val before         = replica
@@ -147,7 +147,7 @@ class RevocationTest extends FunSuite {
       assertEquals(replica.state, expected, "the replica's state differs from the expected state")
     }
 
-    def assertInvalidated(revocation: ArdtEvent, expected: Write*)(using Location): Unit =
+    def assertInvalidated(revocation: AuthzEvent, expected: Write*)(using Location): Unit =
       assertEquals(
         invalidatedBy(revocation.hash),
         expected.map(w => replica.eventGraph.events(w.hash)._2).toSet,
@@ -623,14 +623,14 @@ object RevocationTest {
   final case class Principal(id: PublicIdentity, key: PrivateKey)
 
   /** A delta event together with its delta value */
-  final case class Write(event: ArdtEvent, revealed: RevealedValue) {
+  final case class Write(event: AuthzEvent, revealed: RevealedValue) {
     def hash: Hash = event.hash
   }
 
-  type Node = ArdtEvent | Write
+  type Node = AuthzEvent | Write
 
   def hashOf(node: Node): Hash = node match {
-    case event: ArdtEvent => event.hash
+    case event: AuthzEvent => event.hash
     case write: Write     => write.hash
   }
 }
