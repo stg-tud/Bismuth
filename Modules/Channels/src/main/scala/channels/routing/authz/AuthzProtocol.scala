@@ -3,7 +3,7 @@ package channels.routing.authz
 import channels.MessagingIO
 import channels.broadcast.Routing.{Effect, Step, Timer}
 import AuthzCodecs.ardtEventCodec
-import AuthzReplica.identityOf
+import AuthzProtocol.identityOf
 import channels.broadcast.{Plumtree, PlumtreeCore, PlumtreeKnowledge, PlumtreeMessage, Routing}
 import channels.connection.{Peer, PeerConnectInfo}
 import channels.crypto.{Hash, PrivateIdentity, PublicIdentity, Verifier}
@@ -171,6 +171,11 @@ final class AuthzProtocol[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompo
 }
 
 object AuthzProtocol {
+
+  /** Identity of authenticated peers, see `channels.connection.tls.NioTls.authenticatedPeer`. */
+  def identityOf(peer: Peer): Option[PublicIdentity] = peer match
+      case Peer.Authenticated(uid) => Some(PublicIdentity(Uid.unwrap(uid)))
+      case Peer.Claimed(_)         => None
 
   /** A replica that only knows the hash of the genesis event; it learns the event itself from its peers. */
   def initial[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](self: PublicIdentity, genesis: Hash)(using

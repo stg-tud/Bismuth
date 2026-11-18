@@ -2,7 +2,6 @@ package channels.routing.authz
 
 import AuthzCodecs.ardtEventCodec
 import ArdtEvent.Payload.{Capability, DeltaCommitment, Revocation}
-import channels.connection.Peer
 import channels.crypto.Commitment.RevealedValue
 import channels.crypto.{Commitment, Hash, PrivateIdentity, PublicIdentity, Signature, Verifier}
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
@@ -28,11 +27,6 @@ object AuthzReplica {
       waitingDeltas = Map.empty,
       snapshot = None,
     )
-
-  /** Identity of authenticated peers, see `channels.connection.tls.NioTls.authenticatedPeer`. */
-  def identityOf(peer: Peer): Option[PublicIdentity] = peer match
-      case Peer.Authenticated(uid) => Some(PublicIdentity(Uid.unwrap(uid)))
-      case Peer.Claimed(_)         => None
 
   final case class Snapshot[RDT](version: Int, state: RDT)
 

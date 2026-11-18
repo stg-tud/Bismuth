@@ -7,7 +7,7 @@ import channels.routing.authz.ArdtEvent.Payload.DeltaCommitment
 import channels.connection.Peer
 import channels.crypto.{Hash, PrivateIdentity, PublicIdentity}
 import channels.crypto.Ed25519.given
-import channels.routing.authz.{ArdtEventGraph, Authorization, AuthzMessage, AuthzReplica, DeltaValueStore}
+import channels.routing.authz.{ArdtEventGraph, Authorization, AuthzMessage, AuthzProtocol, AuthzReplica, DeltaValueStore}
 import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray
 import ex2026accessControl.authz.evaluation.EvaluationBenchmarks.{encodeTrace, receiveTrace, replayTrace}
 import org.openjdk.jmh.annotations.*
@@ -103,7 +103,7 @@ class EvaluationBenchmarks {
     */
   @Benchmark
   def sendEventsWithDelta(state: SendEventsWithDeltaBenchmarkState): Long = {
-    val reader = AuthzReplica.identityOf(state.destination).get
+    val reader = AuthzProtocol.identityOf(state.destination).get
     val events = state.replica.notBefore(Set.empty)
     val deltas = state.replica.readableDeltas(reader, state.eventHashes)
     HashDagReplica.encodeEntries(events).asByteBuffer.remaining.toLong +
