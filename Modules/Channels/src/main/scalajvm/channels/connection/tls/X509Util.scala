@@ -133,7 +133,4 @@ object X509Util {
     catch
         case e: IllegalArgumentException =>
           throw CertificateException("Subject does not consist of a single UNIQUE_IDENTIFIER", e)
-
-  extension (certificate: X509Certificate)
-      def toPem: CertificatePem = CertificatePem(Ed25519Util.pem("CERTIFICATE", certificate.getEncoded))
 }

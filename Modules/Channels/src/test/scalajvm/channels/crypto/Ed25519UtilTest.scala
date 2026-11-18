@@ -2,11 +2,9 @@ package channels.crypto
 
 import munit.FunSuite
 import org.bouncycastle.jce.provider.BouncyCastleProvider
-import org.junit.Assert.assertArrayEquals
 
 import java.security.*
-import java.security.spec.{PKCS8EncodedKeySpec, X509EncodedKeySpec}
-import java.util.Base64
+import java.security.spec.PKCS8EncodedKeySpec
 
 class Ed25519UtilTest extends FunSuite {
   if Security.getProvider("BC") == null then {
@@ -94,56 +92,6 @@ class Ed25519UtilTest extends FunSuite {
         )
       }
     }
-  }
-
-  test("privateKeyToPemString should return PEM string that is parseable and results in same key") {
-    cryptoProviders.foreach { providerName =>
-      val keyPair = KeyPairGenerator.getInstance("Ed25519", providerName).generateKeyPair()
-      val pem     = Ed25519Util.privateKeyToPem(keyPair.getPrivate).pemString
-      assert(pem.startsWith("-----BEGIN PRIVATE KEY-----" + System.lineSeparator()))
-      assert(pem.endsWith("-----END PRIVATE KEY-----" + System.lineSeparator()))
-      val pkcs8Bytes = Base64.getMimeDecoder.decode(
-        pem.substring(
-          ("-----BEGIN PRIVATE KEY-----" + System.lineSeparator()).length,
-          pem.length - ("-----END PRIVATE KEY-----" + System.lineSeparator()).length
-        )
-      )
-
-      cryptoProviders.foreach { decodeProviderName =>
-        val spec                  = new PKCS8EncodedKeySpec(pkcs8Bytes, "Ed25519")
-        val parsedKey: PrivateKey = KeyFactory.getInstance("Ed25519", providerName).generatePrivate(spec)
-
-        testKeyEqualityUsingSignature(
-          keyPair.getPublic,
-          parsedKey,
-          signProvider = decodeProviderName,
-          verifyProvider = providerName
-        )
-      }
-    }
-  }
-
-  test("publicKeyToPemString return PEM string that is parseable and results in same public key") {
-    cryptoProviders.foreach { providerName =>
-      val keyPair = KeyPairGenerator.getInstance("Ed25519", providerName).generateKeyPair()
-      val pem     = Ed25519Util.publicKeyToPemString(keyPair.getPublic)
-      assert(pem.startsWith("-----BEGIN PUBLIC KEY-----" + System.lineSeparator()))
-      assert(pem.endsWith("-----END PUBLIC KEY-----" + System.lineSeparator()))
-
-      val x509EncodedBytes = Base64.getMimeDecoder.decode(
-        pem.substring(
-          ("-----BEGIN PUBLIC KEY-----" + System.lineSeparator()).length,
-          pem.length - ("-----END PUBLIC KEY-----" + System.lineSeparator()).length
-        )
-      )
-
-      cryptoProviders.foreach { decodeProviderName =>
-        val spec      = new X509EncodedKeySpec(x509EncodedBytes, "Ed25519")
-        val parsedKey = KeyFactory.getInstance("Ed25519", decodeProviderName).generatePublic(spec)
-        assertArrayEquals(parsedKey.getEncoded, keyPair.getPublic.getEncoded)
-      }
-    }
-
   }
 
   test("testEqualityUsingSignature should work with same key") {

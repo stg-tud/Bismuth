@@ -1,8 +1,5 @@
 package channels.crypto
 
-import channels.connection.tls.PrivateKeyPem
-
-import java.nio.charset.StandardCharsets
 import java.security.*
 import java.security.interfaces.EdECPrivateKey
 import java.security.spec.{NamedParameterSpec, PKCS8EncodedKeySpec, X509EncodedKeySpec}
@@ -87,33 +84,6 @@ object Ed25519Util {
       throw RuntimeException(s"privateKey does not support PKCS#8 encoding, but uses ${ed25519PrivateKey.getFormat}")
     }
     ed25519PrivateKey.getEncoded
-  }
-
-  /** Encodes PrivateKey as PEM string with PKCS#8 encoded private key.
-    *
-    * @param privateKey
-    *   The private key to encode
-    * @return
-    *   the PKCS#8-PEM encoded private key
-    */
-  def privateKeyToPem(privateKey: PrivateKey): PrivateKeyPem = {
-    if "PKCS#8" != privateKey.getFormat then throw RuntimeException("Given private key doesn't use PKCS#8 encoding")
-    PrivateKeyPem(pem("PRIVATE KEY", privateKey.getEncoded))
-  }
-
-  /** Encodes the public key in X.509 PEM format.
-    *
-    * @param publicKey
-    *   The public key to encode
-    * @return
-    *   the X.509-PEM-encoded public key as a string
-    */
-  def publicKeyToPemString(publicKey: PublicKey): String = pem("PUBLIC KEY", publicKey.getEncoded)
-
-  private[channels] def pem(label: String, der: Array[Byte]): String = {
-    val newline = System.lineSeparator()
-    val base64  = Base64.getMimeEncoder(64, newline.getBytes(StandardCharsets.US_ASCII)).encodeToString(der)
-    s"-----BEGIN $label-----$newline$base64$newline-----END $label-----$newline"
   }
 
   def checkEd25519Signature(data: Array[Byte], signature: Array[Byte], signingKey: PublicKey): Boolean = {

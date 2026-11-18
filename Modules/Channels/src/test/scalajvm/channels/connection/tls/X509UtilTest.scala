@@ -1,6 +1,5 @@
 package channels.connection.tls
 
-import channels.connection.tls.X509Util.toPem
 import channels.crypto.{Ed25519PrivateIdentity, Ed25519Util, PrivateIdentity, PublicIdentity, Signature}
 import munit.FunSuite
 import org.bouncycastle.asn1.x500.style.BCStyle
@@ -64,15 +63,14 @@ class X509UtilTest extends FunSuite {
     intercept[CertificateException](X509Util.certificateToPublicIdentity(certificate))
   }
 
-  test("toPem should return parseable certificate in PEM format") {
+  test("certificates are parseable by Bouncy Castle and the JDK") {
     val identityKey = Ed25519Util.generateNewKeyPair
     val certKey     = Ed25519Util.generateNewKeyPair
     val certificate = X509Util.generateCustomP2PX509Certificate(identityKey, certKey)
-    val pemString   = certificate.toPem.pemString
 
     List("BC", "SUN").foreach { providerName =>
       val cf         = CertificateFactory.getInstance("X.509", providerName)
-      val parsedCert = cf.generateCertificate(ByteArrayInputStream(pemString.getBytes()))
+      val parsedCert = cf.generateCertificate(ByteArrayInputStream(certificate.getEncoded))
       assert(parsedCert.isInstanceOf[X509Certificate])
       assertArrayEquals(parsedCert.getEncoded, certificate.getEncoded)
     }
