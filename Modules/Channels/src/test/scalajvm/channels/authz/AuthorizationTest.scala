@@ -1,6 +1,5 @@
 package channels.authz
 
-import channels.authz.AuthzCodecs.ardtEventCodec
 import channels.authz.ArdtEvent.Payload.{Capability, Revocation}
 import channels.authz.AuthzTestSupport.{*, given}
 import channels.crypto.Ed25519.verify

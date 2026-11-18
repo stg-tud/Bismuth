@@ -1,6 +1,5 @@
 package channels.authz
 
-import channels.authz.AuthzCodecs.ardtEventCodec
 import channels.authz.ArdtEvent.Payload.{Capability, DeltaCommitment}
 import channels.crypto.Commitment.RevealedValue
 import channels.crypto.Ed25519.fromPublicKey

@@ -1,6 +1,5 @@
 package channels.authz
 
-import AuthzCodecs.ardtEventCodec
 import ArdtEvent.Payload.{Capability, DeltaCommitment, Revocation}
 import CausalOrder.*
 import channels.crypto.{Hash, PublicIdentity, Signature, Verifier}

@@ -5,6 +5,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core.{JsonKeyCodec, JsonReader, Jso
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import rdts.base.{Bottom, Uid}
 import rdts.datatypes.*
+import rdts.filters.PermissionTree
 import rdts.time.*
 
 object JsoniterCodecs {
@@ -23,6 +24,9 @@ object JsoniterCodecs {
       override inline def nullValue: A = Bottom.empty
 
   /** Causal Context */
+  given permissionTreeCodec: JsonValueCodec[PermissionTree] =
+    JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true).withAllowRecursiveTypes(true))
+
   given arrayOfLongCodec: JsonValueCodec[Array[Time]] = JsonCodecMaker.make
 
   given causalTimeCodec: JsonValueCodec[CausalTime] = JsoniterCodecs.bimapCodec[Array[Long], CausalTime](

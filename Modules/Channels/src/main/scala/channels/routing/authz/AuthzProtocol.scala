@@ -3,7 +3,6 @@ package channels.routing.authz
 import channels.MessagingIO
 import AuthzProtocol.identityOf
 import channels.routing.Routing.{Effect, Step, Timer}
-import channels.authz.AuthzCodecs.ardtEventCodec
 import channels.authz.{ArdtEvent, AuthzReplica}
 import channels.routing.{Plumtree, PlumtreeCore, PlumtreeKnowledge, PlumtreeMessage, Routing}
 import channels.connection.{Peer, PeerConnectInfo}

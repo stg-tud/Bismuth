@@ -1,5 +1,7 @@
 package channels.crypto
 
+import com.github.plokhotnyuk.jsoniter_scala.core.{JsonKeyCodec, JsonReader, JsonWriter}
+
 import java.util.Base64
 
 case class PublicIdentity(id: String) {
@@ -12,6 +14,10 @@ case class PublicIdentity(id: String) {
 
 object PublicIdentity {
   private val base64Encoder = Base64.getEncoder
+
+  given publicIdentityKeyCodec: JsonKeyCodec[PublicIdentity] = new JsonKeyCodec[PublicIdentity]:
+      override def decodeKey(in: JsonReader): PublicIdentity               = PublicIdentity(in.readKeyAsString())
+      override def encodeKey(pubId: PublicIdentity, out: JsonWriter): Unit = out.writeKey(pubId.id)
 
   def fromRawPublicKeyBytes(pubKeyBytes: Array[Byte]): PublicIdentity =
       require(pubKeyBytes.length == 32)

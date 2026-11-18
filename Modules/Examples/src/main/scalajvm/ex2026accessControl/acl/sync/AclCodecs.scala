@@ -1,7 +1,6 @@
 package ex2026accessControl.acl.sync
 
 import channels.JsoniterCodecs.given
-import channels.authz.AuthzCodecs.given
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import ex2026accessControl.acl.sync.AclEnforcingSync.SyncMsg

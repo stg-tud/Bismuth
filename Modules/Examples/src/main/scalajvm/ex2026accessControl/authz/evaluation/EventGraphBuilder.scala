@@ -1,6 +1,5 @@
 package ex2026accessControl.authz.evaluation
 
-import channels.authz.AuthzCodecs.ardtEventCodec
 import channels.authz.ArdtEvent.Payload.{Capability, DeltaCommitment, Revocation}
 import channels.crypto.Commitment.RevealedValue
 import channels.crypto.{Commitment, Hash, PrivateIdentity, Signature}

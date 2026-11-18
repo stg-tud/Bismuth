@@ -1,10 +1,11 @@
 package channels.authz
 
-import AuthzCodecs.ardtEventCodec
 import ArdtEvent.Payload
 import ArdtEvent.Payload.Capability
 import channels.crypto.{Hash, PublicIdentity, Signature}
-import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray
+import channels.JsoniterCodecs.permissionTreeCodec
+import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
+import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import rdts.filters.PermissionTree
 
 case class ArdtEvent(
@@ -17,6 +18,8 @@ case class ArdtEvent(
     def hash: Hash = Hash.compute(writeToArray(this))
 
 object ArdtEvent:
+    given codec: JsonValueCodec[ArdtEvent] = JsonCodecMaker.make
+
     enum Payload:
         case DeltaCommitment(commitment: Hash)
         case Capability(holder: PublicIdentity, read: PermissionTree, write: PermissionTree)

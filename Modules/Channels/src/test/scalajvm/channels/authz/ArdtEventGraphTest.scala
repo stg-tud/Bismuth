@@ -1,6 +1,5 @@
 package channels.authz
 
-import channels.authz.AuthzCodecs.ardtEventCodec
 import channels.authz.ArdtEvent.Payload.{Capability, DeltaCommitment, Revocation}
 import channels.authz.AuthzTestSupport.*
 import channels.authz.CausalOrder.*

@@ -1,7 +1,6 @@
 package channels.routing.authz
 
 import channels.routing.PlumtreeMessage
-import channels.authz.AuthzCodecs.ardtEventCodec
 import channels.routing.Routing.{Effect, Step, Timer}
 import channels.authz.AuthzTestSupport.{*, given}
 import channels.connection.Peer

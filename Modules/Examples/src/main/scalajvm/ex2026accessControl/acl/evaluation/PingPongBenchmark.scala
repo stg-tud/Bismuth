@@ -221,6 +221,5 @@ object CreateAndSaveTrace {
   }
 
   import channels.JsoniterCodecs.given
-  import channels.authz.AuthzCodecs.given
   given JsonValueCodec[SavedTrace] = JsonCodecMaker.make
 }
