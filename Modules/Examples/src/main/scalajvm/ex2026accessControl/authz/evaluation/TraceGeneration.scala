@@ -66,7 +66,7 @@ object TraceGeneration {
     require(numEvents >= 0)
     require(concurrencyProbability >= 0.0 && concurrencyProbability <= 1.0)
 
-    val replicaIds   = 0.until(numReplicas).map(_ => IdentityFactory.createNewIdentity).toArray
+    val replicaIds   = 0.until(numReplicas).map(_ => IdentityFactory.createNewIdentity).toArray[PrivateIdentity]
     val rootIdentity = replicaIds(0)
 
     val genesisEvent    = Authorization.createGenesis(rootIdentity)

@@ -1,21 +1,17 @@
 package channels.crypto
 
-import java.security.PublicKey
 import java.util.Base64
 
 case class PublicIdentity(id: String) {
   require(id.length == 44 && id.endsWith("="))
 
-  def publicKey: PublicKey = Ed25519Util.base64PublicKeyBytesToPublicKey(id)
+  def rawPublicKeyBytes: Array[Byte] = Base64.getDecoder.decode(id)
 
   // def toUid: Uid = Uid(id)
 }
 
 object PublicIdentity {
   private val base64Encoder = Base64.getEncoder
-
-  def fromPublicKey(publicKey: PublicKey): PublicIdentity =
-    PublicIdentity(Ed25519Util.publicKeyToPublicKeyBytesBase64Encoded(publicKey))
 
   def fromRawPublicKeyBytes(pubKeyBytes: Array[Byte]): PublicIdentity =
       require(pubKeyBytes.length == 32)

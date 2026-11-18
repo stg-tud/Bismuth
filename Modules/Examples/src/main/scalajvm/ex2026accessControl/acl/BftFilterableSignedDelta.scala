@@ -1,5 +1,6 @@
 package ex2026accessControl.acl
 
+import channels.crypto.Ed25519.{publicKey, verify}
 import channels.crypto.{Hash, PrivateIdentity, PublicIdentity, Signature}
 import ex2026accessControl.acl.HashDag.{Delta, Encoder, Hashable}
 import rdts.base.Bottom
@@ -29,7 +30,7 @@ object BftFilterableSignedDelta {
       parents,
       Some(rdt)
     )
-    delta.copy(signature = Signature.compute(encoder(delta), authorKey.identityKey.getPrivate))
+    delta.copy(signature = authorKey.sign(encoder(delta)))
   }
 
   given hashable[RDT](using encoder: Encoder[BftFilterableSignedDelta[RDT]]): Hashable[BftFilterableSignedDelta[RDT]]

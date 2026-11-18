@@ -5,7 +5,7 @@ import channels.broadcast.Routing.{Effect, Step}
 import channels.broadcast.authz.ArdtEvent.Payload.{Capability, Revocation}
 import channels.broadcast.authz.AuthzTestSupport.{*, given}
 import channels.connection.Peer
-import channels.crypto.{Hash, PrivateIdentity}
+import channels.crypto.{Hash, Ed25519PrivateIdentity}
 import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray}
 import munit.FunSuite
 import rdts.base.Uid
@@ -17,20 +17,20 @@ class AuthzReplicaTest extends FunSuite {
   type Replica = AuthzReplica[Set[Int]]
   type Result  = Step[Replica, AuthzMessage, Set[Int]]
 
-  private def newReplicaWithGenesis(identity: PrivateIdentity, genesisEvent: ArdtEvent): Replica =
+  private def newReplicaWithGenesis(identity: Ed25519PrivateIdentity, genesisEvent: ArdtEvent): Replica =
     AuthzReplica.initial[Set[Int]](identity.getPublic, genesisEvent.hash).receiveLocally(genesisEvent).state
 
-  private def newReplica(): (Replica, PrivateIdentity, ArdtEvent) = {
+  private def newReplica(): (Replica, Ed25519PrivateIdentity, ArdtEvent) = {
     val rootIdentity = newPrivateIdentity()
     val genesisEvent = Authorization.createGenesis(rootIdentity)
     (newReplicaWithGenesis(rootIdentity, genesisEvent), rootIdentity, genesisEvent)
   }
 
   /** A peer of `identity`, to observe what is disseminated to it. */
-  private def peerOf(identity: PrivateIdentity): Peer = Peer.Authenticated(Uid(identity.getPublic.id))
+  private def peerOf(identity: Ed25519PrivateIdentity): Peer = Peer.Authenticated(Uid(identity.getPublic.id))
 
   /** Connect `replica` to a peer of `identity`, discarding the initial synchronization. */
-  private def withPeer(replica: Replica, identity: PrivateIdentity): Replica = replica.addPeer(peerOf(identity)).state
+  private def withPeer(replica: Replica, identity: Ed25519PrivateIdentity): Replica = replica.addPeer(peerOf(identity)).state
 
   private def receive(replica: Replica, event: ArdtEvent): Replica = {
     val (next, result) = replica.receiveEvent(writeToArray(event))
@@ -45,7 +45,7 @@ class AuthzReplicaTest extends FunSuite {
   private def sentDeltas(step: Result): List[AuthzMessage.DeltaValue] =
     step.events.toList.collect { case Effect.Send(_, AuthzMessage.Deltas(deltas)) => deltas }.flatten
 
-  private def revocationOf(capability: ArdtEvent, identity: PrivateIdentity, parents: Set[Hash]): ArdtEvent =
+  private def revocationOf(capability: ArdtEvent, identity: Ed25519PrivateIdentity, parents: Set[Hash]): ArdtEvent =
     buildEvent(
       Revocation(capability.hash),
       identity.getPublic,

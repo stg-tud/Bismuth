@@ -1,5 +1,6 @@
 package ex2026keyHierarchies
 
+import channels.crypto.Ed25519.fromPublicKey
 import channels.crypto.{Ed25519Util, PublicIdentity}
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker

@@ -130,7 +130,7 @@ object Authorization {
       Hash.allZeroHash
     )
     val encoded   = writeToArray(genesisEvent)
-    val signature = Signature.compute(encoded, rootIdentity.identityKey.getPrivate)
+    val signature = rootIdentity.sign(encoded)
     genesisEvent.copy(signature = signature)
   }
 }

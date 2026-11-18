@@ -168,7 +168,7 @@ object Ed25519Util {
 
   def checkEd25519Signature(data: Array[Byte], signature: Array[Byte], signer: PublicIdentity): Boolean = {
     val verifier = Signature.getInstance("ED25519", "BC")
-    verifier.initVerify(signer.publicKey)
+    verifier.initVerify(base64PublicKeyBytesToPublicKey(signer.id))
     verifier.update(data)
     verifier.verify(signature)
   }

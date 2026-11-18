@@ -1,4 +1,4 @@
-package channels.experiments
+package channels.crypto
 
 import java.io.{FileInputStream, IOException}
 

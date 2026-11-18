@@ -1,9 +1,7 @@
 package channels.crypto
 
-import channels.crypto.Ed25519Util
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonKeyCodec, JsonReader, JsonValueCodec, JsonWriter}
 
-import java.security.{PrivateKey, PublicKey}
 import java.util
 import java.util.Base64
 
@@ -21,9 +19,6 @@ class Signature private (private val delegate: Array[Byte]) {
     case otherSignature: Signature => java.util.Arrays.equals(otherSignature.delegate, delegate)
     case _                         => false
   }
-
-  def verify(signingKey: PublicKey, data: Array[Byte]): Boolean =
-    Ed25519Util.checkEd25519Signature(data, delegate, signingKey)
 }
 
 object Signature {
@@ -32,10 +27,6 @@ object Signature {
   val length: Int = 64
 
   val allZeroSignature: Signature = Signature.unsafeFromArray(Array.ofDim(length))
-
-  def compute(content: Array[Byte], signingKey: PrivateKey): Signature = new Signature(
-    Ed25519Util.sign(content, signingKey)
-  )
 
   def unsafeFromArray(signatureBytes: Array[Byte]): Signature = new Signature(signatureBytes)
 

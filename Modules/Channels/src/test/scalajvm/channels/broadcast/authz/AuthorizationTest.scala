@@ -3,6 +3,7 @@ package channels.broadcast.authz
 import channels.JsoniterCodecsJvm.ardtEventCodec
 import channels.broadcast.authz.ArdtEvent.Payload.{Capability, Revocation}
 import channels.broadcast.authz.AuthzTestSupport.{*, given}
+import channels.crypto.Ed25519.verify
 import channels.crypto.{Commitment, Hash, Signature}
 import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray}
 import munit.FunSuite

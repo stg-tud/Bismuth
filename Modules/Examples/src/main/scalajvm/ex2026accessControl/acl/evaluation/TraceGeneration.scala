@@ -1,6 +1,6 @@
 package ex2026accessControl.acl.evaluation
 
-import channels.crypto.{IdentityFactory, PrivateIdentity, PublicIdentity}
+import channels.crypto.{Ed25519PrivateIdentity, IdentityFactory, PrivateIdentity, PublicIdentity}
 import ex2026accessControl.acl.evaluation.TravelPlanMutatorChoice.*
 import ex2026accessControl.acl.{Acl, AclRdt, BftDelta}
 import ex2026accessControl.authz.travelplanner.TravelPlan
@@ -26,7 +26,7 @@ object TraceGeneration {
       case NonFatal(_) => retryUntilSuccess(action)
     }
 
-  def generateReplicaIds(numReplicas: Int): Array[PrivateIdentity] = {
+  def generateReplicaIds(numReplicas: Int): Array[Ed25519PrivateIdentity] = {
     require(numReplicas >= 1)
     0.until(numReplicas).map(_ => IdentityFactory.createNewIdentity).toArray
   }
@@ -148,7 +148,7 @@ object TraceGeneration {
 }
 
 case class Trace(
-    ids: Array[PrivateIdentity],
+    ids: Array[Ed25519PrivateIdentity],
     genesis: BftDelta[Acl],
     additionalPermissions: Acl,
     deltas: Array[Array[TravelPlan]]

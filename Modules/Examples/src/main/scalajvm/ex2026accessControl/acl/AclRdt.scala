@@ -1,6 +1,6 @@
 package ex2026accessControl.acl
 
-import channels.crypto.{Hash, PrivateIdentity, PublicIdentity, Signature}
+import channels.crypto.{Hash, PrivateIdentity, PublicIdentity}
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import ex2026accessControl.acl.AclRdt.given
@@ -57,7 +57,7 @@ object AclRdt {
       Set.empty
     )
     unsigned.copy(
-      signature = Some(Signature.compute(writeToArray(unsigned), rootIdentity.identityKey.getPrivate))
+      signature = Some(rootIdentity.sign(writeToArray(unsigned)))
     )
   }
 

@@ -5,6 +5,7 @@
 package channels.experiments
 
 import channels.connection.MessageBuffer
+import channels.crypto.SecureRandomBytes
 
 import java.nio.ByteBuffer
 import scala.util.Try

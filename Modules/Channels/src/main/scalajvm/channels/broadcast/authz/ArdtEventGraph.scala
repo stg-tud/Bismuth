@@ -3,6 +3,7 @@ package channels.broadcast.authz
 import channels.JsoniterCodecsJvm.ardtEventCodec
 import channels.broadcast.authz.ArdtEvent.Payload.{Capability, DeltaCommitment, Revocation}
 import channels.broadcast.authz.CausalOrder.*
+import channels.crypto.Ed25519.{publicKey, verify}
 import channels.crypto.{Hash, PublicIdentity, Signature}
 import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray}
 import rdts.base.Lattice

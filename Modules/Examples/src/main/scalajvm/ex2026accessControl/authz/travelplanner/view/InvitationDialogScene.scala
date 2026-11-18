@@ -1,5 +1,6 @@
 package ex2026accessControl.authz.travelplanner.view
 
+import channels.crypto.Ed25519.fromPublicKey
 import channels.crypto.PublicIdentity
 import ex2026accessControl.authz.travelplanner.model.TravelPlanModel
 import ex2026accessControl.authz.travelplanner.{Invitation, TravelPlan}

@@ -21,7 +21,7 @@ object EventGraphBuilder {
       authorization: Hash
   ): ArdtEvent = {
     val unsigned  = ArdtEvent(payload, author.getPublic, parents, Signature.allZeroSignature, authorization)
-    val signature = Signature.compute(writeToArray(unsigned), author.identityKey.getPrivate)
+    val signature = author.sign(writeToArray(unsigned))
     unsigned.copy(signature = signature)
   }
 

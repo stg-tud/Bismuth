@@ -1,15 +1,12 @@
 package channels.crypto
 
 import java.nio.charset.StandardCharsets
-import java.security.SecureRandom
 
 object Commitment {
-  private val random = SecureRandom()
-
   /** @param context bound into the commitment (fed into the digest first), e.g., the author of the event */
   def commit(context: Array[Byte], value: Array[Byte]): RevealedValue =
       val witness = Array.ofDim[Byte](32)
-      random.nextBytes(witness)
+      SecureRandomBytes.fill(witness)
       RevealedValue(value, witness)
 
   def commit(context: String, value: Array[Byte]): RevealedValue =

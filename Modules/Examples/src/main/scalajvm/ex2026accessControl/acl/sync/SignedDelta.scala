@@ -1,5 +1,6 @@
 package ex2026accessControl.acl.sync
 
+import channels.crypto.Ed25519.{publicKey, verify}
 import channels.crypto.{PrivateIdentity, PublicIdentity, Signature}
 import ex2026accessControl.acl.HashDag.Encoder
 import rdts.time.Dot
@@ -19,6 +20,6 @@ object SignedDelta {
   ): SignedDelta[State] = {
     require(authorKey.getPublic.id == dot.place.delegate)
     val delta = SignedDelta(dot, None, state)
-    delta.copy(signature = Some(Signature.compute(encoder(delta), authorKey.identityKey.getPrivate)))
+    delta.copy(signature = Some(authorKey.sign(encoder(delta))))
   }
 }

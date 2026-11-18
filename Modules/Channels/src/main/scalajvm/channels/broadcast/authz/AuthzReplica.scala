@@ -314,7 +314,7 @@ final case class AuthzReplica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Dec
       parents: Set[Hash]
   ): ArdtEvent = {
     val unsigned = ArdtEvent(payload, identity.getPublic, parents, Signature.allZeroSignature, capability)
-    unsigned.copy(signature = Signature.compute(writeToArray(unsigned), identity.identityKey.getPrivate))
+    unsigned.copy(signature = identity.sign(writeToArray(unsigned)))
   }
 
   private def disseminate(events: List[Array[Byte]]): List[Effect[AuthzMessage, Nothing]] =

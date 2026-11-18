@@ -1,6 +1,7 @@
 package ex2026accessControl.acl
 
-import channels.crypto.{Ed25519Util, Hash, PrivateIdentity, Signature}
+import channels.crypto.Ed25519.{publicKey, verify}
+import channels.crypto.{Hash, PrivateIdentity}
 import ex2026accessControl.acl.HashDag
 import ex2026accessControl.acl.HashDag.{Delta, Encoder, Hashable}
 
@@ -9,7 +10,6 @@ class BftSignedDeltaRdt[State](private val privateIdentity: PrivateIdentity)(usi
     val reconstructor: StateReconstructor[BftDelta[State], State]
 ) {
   private val publicId   = privateIdentity.getPublic
-  private val privateKey = privateIdentity.identityKey.getPrivate
 
   // Can be overridden to specify additional invariants
   def invariants(hash: Hash, delta: BftDelta[State], prefixHashDag: HashDag[BftDelta[State], State]): Boolean =
@@ -21,7 +21,7 @@ class BftSignedDeltaRdt[State](private val privateIdentity: PrivateIdentity)(usi
   ): HashDag[BftDelta[State], State] =
       val emptySigDelta = BftDelta(None, publicId, delta, hashDag.heads)
       val encodedDelta  = encoder(emptySigDelta)
-      val signature     = Signature.unsafeFromArray(Ed25519Util.sign(encodedDelta, privateKey))
+      val signature     = privateIdentity.sign(encodedDelta)
       val signedDelta   = emptySigDelta.copy(signature = Some(signature))
 
       require(invariants(Hashable[BftDelta[State]].hash(signedDelta), signedDelta, hashDag))

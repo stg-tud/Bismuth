@@ -19,7 +19,7 @@ import javax.net.ssl.{SSLEngine, SSLSession, X509TrustManager}
   */
 class NioTls(privateIdentity: PrivateIdentity) {
   private val tlsKey      = Ed25519Util.generateNewKeyPair
-  private val certificate = X509Util.generateCustomP2PX509Certificate(privateIdentity.identityKey, tlsKey)
+  private val certificate = X509Util.generateCustomP2PX509Certificate(privateIdentity, tlsKey)
 
   private val sslFactory = {
     val keyManager = {

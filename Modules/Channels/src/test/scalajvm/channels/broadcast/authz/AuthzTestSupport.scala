@@ -3,7 +3,8 @@ package channels.broadcast.authz
 import channels.JsoniterCodecsJvm.ardtEventCodec
 import channels.broadcast.authz.ArdtEvent.Payload.{Capability, DeltaCommitment}
 import channels.crypto.Commitment.RevealedValue
-import channels.crypto.{Ed25519Util, IdentityFactory, PrivateIdentity, PublicIdentity, *}
+import channels.crypto.Ed25519.fromPublicKey
+import channels.crypto.{Ed25519Util, IdentityFactory, Ed25519PrivateIdentity, PublicIdentity, *}
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import rdts.filters.{Filter, PermissionTree}
@@ -27,7 +28,7 @@ object AuthzTestSupport extends munit.Assertions {
       authorization: Hash
   ): ArdtEvent = {
     val unsigned  = ArdtEvent(payload, author, parents, Signature.allZeroSignature, authorization)
-    val signature = Signature.compute(writeToArray(unsigned), authorPrivateKey)
+    val signature = Ed25519.sign(writeToArray(unsigned), authorPrivateKey)
     unsigned.copy(signature = signature)
   }
 
@@ -52,7 +53,7 @@ object AuthzTestSupport extends munit.Assertions {
     (ArdtEventGraph[Set[Int]](genesis), holder, holderKey, genesis)
   }
 
-  def newPrivateIdentity(): PrivateIdentity = IdentityFactory.createNewIdentity
+  def newPrivateIdentity(): Ed25519PrivateIdentity = IdentityFactory.createNewIdentity
 
   def buildDeltaEvent(
       delta: Set[Int],

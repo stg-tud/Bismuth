@@ -1,5 +1,6 @@
 package ex2026accessControl.authz.evaluation
 
+import channels.crypto.Ed25519.{publicKey, verify}
 import channels.crypto.{Hash, PrivateIdentity, PublicIdentity, Signature}
 import com.github.plokhotnyuk.jsoniter_scala.core.*
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
@@ -94,8 +95,7 @@ object HashDagEntry:
         parents,
         Signature.allZeroSignature,
       )
-      val sk        = privateIdentity.identityKey.getPrivate
-      val signature = Signature.compute(writeToArray(unsignedEntry), sk)
+      val signature = privateIdentity.sign(writeToArray(unsignedEntry))
       unsignedEntry.copy(signature = signature)
     }
 

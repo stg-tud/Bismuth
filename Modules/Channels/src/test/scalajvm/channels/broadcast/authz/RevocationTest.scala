@@ -4,7 +4,7 @@ import channels.JsoniterCodecsJvm.ardtEventCodec
 import channels.broadcast.authz.ArdtEvent.Payload.{Capability, Revocation}
 import channels.broadcast.authz.AuthzTestSupport.{*, given}
 import channels.crypto.Commitment.RevealedValue
-import channels.crypto.{Hash, PrivateIdentity, PublicIdentity}
+import channels.crypto.{Hash, Ed25519PrivateIdentity, PublicIdentity}
 import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray}
 import munit.{FunSuite, Location}
 import rdts.filters.PermissionTree
@@ -25,7 +25,7 @@ class RevocationTest extends FunSuite {
 
   /** A root-owned replica that has received the genesis event */
   final private class Fixture {
-    private val rootIdentity: PrivateIdentity = newPrivateIdentity()
+    private val rootIdentity: Ed25519PrivateIdentity = newPrivateIdentity()
 
     val root: Principal    = Principal(rootIdentity.getPublic, rootIdentity.identityKey.getPrivate)
     val genesis: ArdtEvent = Authorization.createGenesis(rootIdentity)

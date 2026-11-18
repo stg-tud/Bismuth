@@ -1,6 +1,6 @@
 package channels.connection.tls
 
-import channels.crypto.{Ed25519Util, PublicIdentity}
+import channels.crypto.{Ed25519PrivateIdentity, Ed25519Util, PrivateIdentity, PublicIdentity}
 import org.bouncycastle.asn1.DERUTF8String
 import org.bouncycastle.asn1.edec.EdECObjectIdentifiers
 import org.bouncycastle.asn1.x500.X500NameBuilder
@@ -10,9 +10,9 @@ import org.bouncycastle.cert.jcajce.{JcaX500NameUtil, JcaX509CertificateConverte
 import org.bouncycastle.cert.{X509CertificateHolder, X509v3CertificateBuilder}
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter
-import org.bouncycastle.operator.bc.BcEdECContentSignerBuilder
+import org.bouncycastle.operator.ContentSigner
 
-import java.io.StringWriter
+import java.io.{ByteArrayOutputStream, OutputStream, StringWriter}
 import java.math.BigInteger
 import java.security.cert.{CertificateException, X509Certificate}
 import java.security.{KeyPair, Security}
@@ -50,7 +50,14 @@ object X509Util {
     if identityBytes.length != 32 then {
       throw IllegalArgumentException("Only Ed25519 keys are accepted as the identityKeyPair")
     }
-    val identityBase64 = Base64.getEncoder.encodeToString(identityBytes)
+    generateCustomP2PX509Certificate(Ed25519PrivateIdentity(identityKeyPair), certificateKeyPair)
+  }
+
+  /** Like [[generateCustomP2PX509Certificate(identityKeyPair:java.security.KeyPair*]], but signs with `identity`, which
+    * must produce Ed25519 signatures.
+    */
+  def generateCustomP2PX509Certificate(identity: PrivateIdentity, certificateKeyPair: KeyPair): X509CertificateHolder = {
+    val identityBase64 = identity.getPublic.id
 
     // We can use UNIQUE_IDENTIFIER to encode an arbitrary UTF-8 string without escaping (in contrast to CN)
     val identityName = X500NameBuilder().addRDN(BCStyle.UNIQUE_IDENTIFIER, identityBase64).build()
@@ -58,8 +65,12 @@ object X509Util {
     val validFrom    = currentTime.minusHours(1)
     val validUntil   = currentTime.plusYears(1)
 
-    val (_, signerPrivateKeyParam) = Ed25519Util.keyPairToKeyParameters(identityKeyPair)
-    val signer                     = new BcEdECContentSignerBuilder(algoIdEd25519).build(signerPrivateKeyParam)
+    val signer = new ContentSigner {
+      private val content                                      = ByteArrayOutputStream()
+      override def getAlgorithmIdentifier: AlgorithmIdentifier = algoIdEd25519
+      override def getOutputStream: OutputStream               = content
+      override def getSignature: Array[Byte]                   = identity.sign(content.toByteArray).toArray
+    }
 
     new X509v3CertificateBuilder(
       identityName,
