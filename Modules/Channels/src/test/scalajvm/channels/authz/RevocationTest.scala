@@ -29,7 +29,7 @@ class RevocationTest extends FunSuite {
     private val rootIdentity: Ed25519PrivateIdentity = newPrivateIdentity()
 
     val root: Principal    = Principal(rootIdentity.getPublic, rootIdentity.identityKey.getPrivate)
-    val genesis: ArdtEvent = Authorization.createGenesis(rootIdentity)
+    val genesis: ArdtEvent = ArdtEvent.createGenesis(rootIdentity)
 
     private var everyDelta: DeltaValueStore[Set[Int]] = DeltaValueStore[Set[Int]]()
 

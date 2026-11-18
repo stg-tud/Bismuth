@@ -75,7 +75,7 @@ class AuthzProtocolTest extends FunSuite {
   private def setup(): (Node, Node, Network, ArdtEvent) = {
     val root    = newPrivateIdentity()
     val bob     = newPrivateIdentity()
-    val genesis = Authorization.createGenesis(root)
+    val genesis = ArdtEvent.createGenesis(root)
     val a       = Node(root, genesis.hash)
     val b       = Node(bob, genesis.hash)
     val net     = Network(a, b)
@@ -119,7 +119,7 @@ class AuthzProtocolTest extends FunSuite {
 
   test("events and deltas spread through intermediate replicas") {
     val root    = newPrivateIdentity()
-    val genesis = Authorization.createGenesis(root)
+    val genesis = ArdtEvent.createGenesis(root)
     val a       = Node(root, genesis.hash)
     val b       = Node(newPrivateIdentity(), genesis.hash)
     val c       = Node(newPrivateIdentity(), genesis.hash)

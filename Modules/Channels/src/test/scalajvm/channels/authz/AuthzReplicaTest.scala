@@ -20,7 +20,7 @@ class AuthzReplicaTest extends FunSuite {
 
   private def newReplica(): (Replica, Ed25519PrivateIdentity, ArdtEvent) = {
     val rootIdentity = newPrivateIdentity()
-    val genesisEvent = Authorization.createGenesis(rootIdentity)
+    val genesisEvent = ArdtEvent.createGenesis(rootIdentity)
     (newReplicaWithGenesis(rootIdentity, genesisEvent), rootIdentity, genesisEvent)
   }
 
@@ -157,7 +157,7 @@ class AuthzReplicaTest extends FunSuite {
 
   test("receiveDelta throws when the local replica may not read the delta") {
     val rootIdentity       = newPrivateIdentity()
-    val genesisEvent       = Authorization.createGenesis(rootIdentity)
+    val genesisEvent       = ArdtEvent.createGenesis(rootIdentity)
     val restrictedIdentity = newPrivateIdentity()
 
     val delegation = buildEvent(
@@ -338,7 +338,7 @@ class AuthzReplicaTest extends FunSuite {
 
   test("revoke throws when no capability held locally is found in the authorization chain") {
     val rootIdentity      = newPrivateIdentity()
-    val genesisEvent      = Authorization.createGenesis(rootIdentity)
+    val genesisEvent      = ArdtEvent.createGenesis(rootIdentity)
     val bystanderIdentity = newPrivateIdentity()
 
     intercept[IllegalStateException](

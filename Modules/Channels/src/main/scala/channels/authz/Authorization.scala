@@ -2,10 +2,10 @@ package channels.authz
 
 import ArdtEvent.Payload.{Capability, DeltaCommitment}
 import channels.crypto.Commitment.RevealedValue
-import channels.crypto.{Hash, PrivateIdentity, PublicIdentity, Signature}
-import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
+import channels.crypto.{Hash, PublicIdentity}
+import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray}
 import rdts.base.{Bottom, Lattice}
-import rdts.filters.{Filter, PermissionTree}
+import rdts.filters.Filter
 
 object Authorization {
   def materialize[T: {Lattice, Bottom, Filter}](
@@ -106,17 +106,4 @@ object Authorization {
           .forall(revocation => eventGraph.causallyBefore(deltaEventHash, revocation))
       case _ => false
     }
-
-  def createGenesis(rootIdentity: PrivateIdentity): ArdtEvent = {
-    val genesisEvent = ArdtEvent(
-      Capability(rootIdentity.getPublic, PermissionTree.allow, PermissionTree.allow),
-      rootIdentity.getPublic,
-      Set.empty,
-      Signature.allZeroSignature,
-      Hash.allZeroHash
-    )
-    val encoded   = writeToArray(genesisEvent)
-    val signature = rootIdentity.sign(encoded)
-    genesisEvent.copy(signature = signature)
-  }
 }

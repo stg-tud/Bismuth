@@ -70,7 +70,7 @@ object TraceGeneration {
     val replicaIds   = 0.until(numReplicas).map(_ => IdentityFactory.createNewIdentity).toArray[PrivateIdentity]
     val rootIdentity = replicaIds(0)
 
-    val genesisEvent    = Authorization.createGenesis(rootIdentity)
+    val genesisEvent    = ArdtEvent.createGenesis(rootIdentity)
     var eventGraph      = ArdtEventGraph(genesisEvent)
     var deltaValueStore = DeltaValueStore[BenchmarkRdt]()
 
@@ -175,7 +175,7 @@ object TraceGeneration {
     val rootIdentity = IdentityFactory.createNewIdentity
     val replicaIds   = mutable.ArrayBuffer(rootIdentity)
 
-    val genesisEvent    = Authorization.createGenesis(rootIdentity)
+    val genesisEvent    = ArdtEvent.createGenesis(rootIdentity)
     var eventGraph      = ArdtEventGraph(genesisEvent)
     var deltaValueStore = DeltaValueStore[BenchmarkRdt]()
     var sharedState     = BenchmarkRdt.empty

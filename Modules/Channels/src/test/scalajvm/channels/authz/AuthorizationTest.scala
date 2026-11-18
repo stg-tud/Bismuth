@@ -10,11 +10,11 @@ import munit.FunSuite
 import rdts.filters.PermissionTree
 
 class AuthorizationTest extends FunSuite {
-  // --- createGenesis ---
+  // --- ArdtEvent.createGenesis ---
 
   test("createGenesis produces a validly self-signed genesis event") {
     val rootIdentity = newPrivateIdentity()
-    val genesis      = Authorization.createGenesis(rootIdentity)
+    val genesis      = ArdtEvent.createGenesis(rootIdentity)
 
     assertEquals(genesis.author, rootIdentity.getPublic)
     assertEquals(
@@ -33,7 +33,7 @@ class AuthorizationTest extends FunSuite {
 
   test("createGenesis's result is accepted by both ArdtEventGraph.apply and receive") {
     val rootIdentity = newPrivateIdentity()
-    val genesis      = Authorization.createGenesis(rootIdentity)
+    val genesis      = ArdtEvent.createGenesis(rootIdentity)
 
     val graph = ArdtEventGraph(genesis)
     assertEquals(graph.genesis, genesis.hash)
