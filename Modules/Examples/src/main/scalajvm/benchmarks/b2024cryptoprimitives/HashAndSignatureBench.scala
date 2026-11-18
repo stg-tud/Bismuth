@@ -1,6 +1,7 @@
 package benchmarks.b2024cryptoprimitives
 
 import channels.crypto.Ed25519Util
+import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.openjdk.jmh.annotations.*
 import org.openjdk.jmh.infra.Blackhole
 
@@ -106,6 +107,7 @@ class HashAndSignatureBench {
 
   @Setup
   def setup(): Unit = {
+    if Security.getProvider("BC") == null then Security.addProvider(BouncyCastleProvider()): Unit
     val keypair = Ed25519Util.generateNewKeyPair
     privateKey = keypair.getPrivate
     publicKey = keypair.getPublic

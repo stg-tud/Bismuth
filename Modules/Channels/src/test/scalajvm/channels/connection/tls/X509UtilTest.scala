@@ -5,21 +5,26 @@ import channels.crypto.Ed25519Util
 import munit.FunSuite
 import org.bouncycastle.asn1.x500.style.BCStyle
 import org.bouncycastle.cert.X509CertificateHolder
+import org.bouncycastle.crypto.params.Ed25519PublicKeyParameters
+import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.operator.bc.BcEdDSAContentVerifierProviderBuilder
 import org.junit.Assert.assertArrayEquals
 
 import java.io.ByteArrayInputStream
+import java.security.Security
 import java.security.cert.{CertificateFactory, X509Certificate}
 import java.util.Base64
 
 class X509UtilTest extends FunSuite {
+  if Security.getProvider("BC") == null then Security.addProvider(BouncyCastleProvider()): Unit
+
   test("generateCustomP2PX509Certificate should have correct content") {
     val identityKey                       = Ed25519Util.generateNewKeyPair
     val certKey                           = Ed25519Util.generateNewKeyPair
     val certHolder: X509CertificateHolder = X509Util.generateCustomP2PX509Certificate(identityKey, certKey)
 
     // Is signed by identity
-    val identityPublicKeyParam = Ed25519Util.keyPairToKeyParameters(identityKey)._1
+    val identityPublicKeyParam = Ed25519PublicKeyParameters(Ed25519Util.publicKeyToRawPublicKeyBytes(identityKey.getPublic))
     val certVerifier           = new BcEdDSAContentVerifierProviderBuilder().build(identityPublicKeyParam)
     assert(certHolder.isSignatureValid(certVerifier))
 

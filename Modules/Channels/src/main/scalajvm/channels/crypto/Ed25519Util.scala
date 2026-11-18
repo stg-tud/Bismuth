@@ -1,37 +1,24 @@
 package channels.crypto
 
 import channels.connection.tls.PrivateKeyPem
-import org.bouncycastle.asn1.edec.EdECObjectIdentifiers
-import org.bouncycastle.asn1.pkcs.PrivateKeyInfo
-import org.bouncycastle.asn1.x509.{AlgorithmIdentifier, SubjectPublicKeyInfo}
-import org.bouncycastle.asn1.{ASN1InputStream, DEROctetString}
-import org.bouncycastle.crypto.generators.Ed25519KeyPairGenerator
-import org.bouncycastle.crypto.params.{Ed25519KeyGenerationParameters, Ed25519PrivateKeyParameters, Ed25519PublicKeyParameters}
-import org.bouncycastle.jcajce.provider.asymmetric.edec.BCEdDSAPrivateKey
-import org.bouncycastle.jce.provider.BouncyCastleProvider
-import org.bouncycastle.util.io.pem.{PemObject, PemWriter}
 
-import java.io.{ByteArrayInputStream, StringWriter}
+import java.nio.charset.StandardCharsets
 import java.security.*
-import java.security.spec.{PKCS8EncodedKeySpec, X509EncodedKeySpec}
+import java.security.interfaces.EdECPrivateKey
+import java.security.spec.{NamedParameterSpec, PKCS8EncodedKeySpec, X509EncodedKeySpec}
 import java.util.Base64
 
+/** Ed25519 keys and signatures using the JDK (SunEC). Keys of other providers are accepted where they use the
+  * standard encodings.
+  */
 object Ed25519Util {
-  if Security.getProvider("BC") == null then {
-    val _ = Security.addProvider(new BouncyCastleProvider())
-  }
 
-  private val ed25519AlgoIdentifier = new AlgorithmIdentifier(EdECObjectIdentifiers.id_Ed25519)
-
-  // The keyParamGenerator is thread safe, since the nextBytes(…) method of the SecureRandom is thread safe.
-  private val keyParamGenerator: Ed25519KeyPairGenerator = {
-    val generator = new Ed25519KeyPairGenerator
-    generator.init(new Ed25519KeyGenerationParameters(new SecureRandom()))
-    generator
-  }
+  /** DER prefix of the X.509 (SubjectPublicKeyInfo) encoding of Ed25519 public keys, followed by the 32 byte key. */
+  private val x509PublicKeyPrefix: Array[Byte] =
+    Array(0x30, 0x2a, 0x30, 0x05, 0x06, 0x03, 0x2b, 0x65, 0x70, 0x03, 0x21, 0x00).map(_.toByte)
 
   // The keyPairGenerator is thread safe, since the nextBytes(…) method of the SecureRandom is thread safe.
-  private val keyPairGenerator: KeyPairGenerator = KeyPairGenerator.getInstance("Ed25519", "BC")
+  private val keyPairGenerator: KeyPairGenerator = KeyPairGenerator.getInstance("Ed25519")
 
   /** Generates a new Ed25519 KeyPair.
     *
@@ -41,32 +28,12 @@ object Ed25519Util {
   def generateNewKeyPair: KeyPair =
     keyPairGenerator.generateKeyPair()
 
-  def generateNewKeyParameters: (Ed25519PublicKeyParameters, Ed25519PrivateKeyParameters) = {
-    val key = keyParamGenerator.generateKeyPair()
-    (key.getPublic.asInstanceOf[Ed25519PublicKeyParameters], key.getPrivate.asInstanceOf[Ed25519PrivateKeyParameters])
-  }
-
-  def keyPairToKeyParameters(
-      keyPair: KeyPair
-  ): (Ed25519PublicKeyParameters, Ed25519PrivateKeyParameters) = {
-    if "Ed25519" != keyPair.getPrivate.getAlgorithm && "EdDSA" != keyPair.getPrivate.getAlgorithm then {
-      throw IllegalArgumentException(s"Not an Ed25519 key, but a ${keyPair.getPrivate.getAlgorithm}")
-    }
-
-    val pubKeyBytes     = publicKeyToRawPublicKeyBytes(keyPair.getPublic)
-    val privKeyInfo     = PrivateKeyInfo.getInstance(keyPair.getPrivate.getEncoded)
-    val privateKeyBytes = privKeyInfo.parsePrivateKey().asInstanceOf[DEROctetString].getOctets
-
-    (new Ed25519PublicKeyParameters(pubKeyBytes), new Ed25519PrivateKeyParameters(privateKeyBytes))
-  }
-
   def base64PublicKeyBytesToPublicKey(publicKeyBytesInBase64: String): PublicKey =
     rawPublicKeyBytesToPublicKey(Base64.getDecoder.decode(publicKeyBytesInBase64))
 
   def rawPublicKeyBytesToPublicKey(ed25519Bytes: Array[Byte]): PublicKey = {
-    val encodedPubKey = new SubjectPublicKeyInfo(ed25519AlgoIdentifier, ed25519Bytes)
-    val publicKeySpec = new X509EncodedKeySpec(encodedPubKey.getEncoded())
-    KeyFactory.getInstance("Ed25519", "BC").generatePublic(publicKeySpec)
+    require(ed25519Bytes.length == 32, s"Ed25519 public keys are 32 bytes long, got ${ed25519Bytes.length}")
+    KeyFactory.getInstance("Ed25519").generatePublic(X509EncodedKeySpec(x509PublicKeyPrefix ++ ed25519Bytes))
   }
 
   def publicKeyToPublicKeyBytesBase64Encoded(publicKey: PublicKey): String =
@@ -76,46 +43,40 @@ object Ed25519Util {
     if "Ed25519" != publicKey.getAlgorithm && "EdDSA" != publicKey.getAlgorithm then {
       throw IllegalArgumentException(s"Expected an Ed25519 key, got ${publicKey.getAlgorithm}")
     }
-    val asn1Primitive = new ASN1InputStream(new ByteArrayInputStream(publicKey.getEncoded)).readObject()
-    val bytes         = SubjectPublicKeyInfo.getInstance(asn1Primitive).getPublicKeyData.getBytes
-    if bytes.length != 32 then
-        throw IllegalArgumentException(s"Ed25519 public keys are 32 bytes long, got ${bytes.length}")
-    bytes
+    val encoded = publicKey.getEncoded
+    // also rejects Ed448 keys, which use the same algorithm name in SunEC
+    if encoded.length != x509PublicKeyPrefix.length + 32 || !encoded.startsWith(x509PublicKeyPrefix) then
+        throw IllegalArgumentException("Not an X.509 encoded Ed25519 public key")
+    encoded.drop(x509PublicKeyPrefix.length)
   }
 
   def privateKeyToRawPrivateKeyBytes(privateKey: PrivateKey): Array[Byte] = {
     if "Ed25519" != privateKey.getAlgorithm && "EdDSA" != privateKey.getAlgorithm then {
       throw IllegalArgumentException(s"Expected an Ed25519 key, got ${privateKey.getAlgorithm}")
     }
-    val asn1Primitive = new ASN1InputStream(new ByteArrayInputStream(privateKey.getEncoded)).readObject()
-    val octets        = PrivateKeyInfo.getInstance(asn1Primitive).getPrivateKey.getOctets
-    require(octets(0) == 4 && octets(1) == 32) // Starts with [4,32] (=> 32 bit long octet string)
-    val bytes = octets.drop(2)
+    // parse with SunEC to accept keys of other providers
+    val parsed = KeyFactory.getInstance("Ed25519").generatePrivate(PKCS8EncodedKeySpec(privateKey.getEncoded))
+    val bytes  = parsed.asInstanceOf[EdECPrivateKey].getBytes.orElseThrow()
     if bytes.length != 32 then
         throw IllegalArgumentException(s"Ed25519 private keys are 32 bytes long, got ${bytes.length}")
     bytes
   }
 
   def rawPrivateKeyBytesToPrivateKey(ed25519Bytes: Array[Byte]): PrivateKey =
-    // Alternative implementation using SunEC Provider:
-    // val keySpec = EdECPrivateKeySpec(NamedParameterSpec.ED25519, ed25519Bytes)
-    // KeyFactory.getInstance("Ed25519", "SunEC").generatePrivate(keySpec)
     rawPrivateKeyBytesToKeyPair(ed25519Bytes).getPrivate
 
   def rawPrivateKeyBytesToKeyPair(ed25519Bytes: Array[Byte]): KeyPair = {
-    val algId                        = new AlgorithmIdentifier(EdECObjectIdentifiers.id_Ed25519)
-    val privateKeyInfo               = new PrivateKeyInfo(algId, DEROctetString(ed25519Bytes))
-    val pkcs8EncodedKey: Array[Byte] = privateKeyInfo.getEncoded()
-
-    val keySpec    = new PKCS8EncodedKeySpec(pkcs8EncodedKey)
-    val keyFactory = KeyFactory.getInstance("Ed25519", "BC")
-    val privateKey = keyFactory.generatePrivate(keySpec).asInstanceOf[BCEdDSAPrivateKey]
-    val publicKey  = privateKey.getPublicKey
-
-    KeyPair(
-      publicKey,
-      privateKey
-    )
+    require(ed25519Bytes.length == 32, s"Ed25519 private keys are 32 bytes long, got ${ed25519Bytes.length}")
+    // The JDK has no API to derive the public key from a private key, but the key pair generator uses the next 32
+    // random bytes as the private key.
+    val fixedRandom = new SecureRandom() {
+      override def nextBytes(bytes: Array[Byte]): Unit =
+        require(bytes.length == ed25519Bytes.length)
+        System.arraycopy(ed25519Bytes, 0, bytes, 0, bytes.length)
+    }
+    val generator = KeyPairGenerator.getInstance("Ed25519")
+    generator.initialize(NamedParameterSpec.ED25519, fixedRandom)
+    generator.generateKeyPair()
   }
 
   def privateKeyToPkcs8EncodedPrivateKeyBytes(ed25519PrivateKey: PrivateKey): Array[Byte] = {
@@ -137,11 +98,7 @@ object Ed25519Util {
     */
   def privateKeyToPem(privateKey: PrivateKey): PrivateKeyPem = {
     if "PKCS#8" != privateKey.getFormat then throw RuntimeException("Given private key doesn't use PKCS#8 encoding")
-    val writer    = new StringWriter()
-    val pemWriter = new PemWriter(writer)
-    pemWriter.writeObject(new PemObject("PRIVATE KEY", privateKey.getEncoded))
-    pemWriter.close()
-    PrivateKeyPem(writer.toString)
+    PrivateKeyPem(pem("PRIVATE KEY", privateKey.getEncoded))
   }
 
   /** Encodes the public key in X.509 PEM format.
@@ -151,30 +108,30 @@ object Ed25519Util {
     * @return
     *   the X.509-PEM-encoded public key as a string
     */
-  def publicKeyToPemString(publicKey: PublicKey): String = {
-    val writer    = new StringWriter()
-    val pemWriter = new PemWriter(writer)
-    pemWriter.writeObject(new PemObject("PUBLIC KEY", publicKey.getEncoded))
-    pemWriter.close()
-    writer.toString
+  def publicKeyToPemString(publicKey: PublicKey): String = pem("PUBLIC KEY", publicKey.getEncoded)
+
+  private def pem(label: String, der: Array[Byte]): String = {
+    val newline = System.lineSeparator()
+    val base64  = Base64.getMimeEncoder(64, newline.getBytes(StandardCharsets.US_ASCII)).encodeToString(der)
+    s"-----BEGIN $label-----$newline$base64$newline-----END $label-----$newline"
   }
 
   def checkEd25519Signature(data: Array[Byte], signature: Array[Byte], signingKey: PublicKey): Boolean = {
-    val verifier = Signature.getInstance("ED25519", "BC")
+    val verifier = Signature.getInstance("Ed25519")
     verifier.initVerify(signingKey)
     verifier.update(data)
     verifier.verify(signature)
   }
 
   def checkEd25519Signature(data: Array[Byte], signature: Array[Byte], signer: PublicIdentity): Boolean = {
-    val verifier = Signature.getInstance("ED25519", "BC")
+    val verifier = Signature.getInstance("Ed25519")
     verifier.initVerify(base64PublicKeyBytesToPublicKey(signer.id))
     verifier.update(data)
     verifier.verify(signature)
   }
 
   def sign(data: Array[Byte], signKey: PrivateKey): Array[Byte] = {
-    val verifier = Signature.getInstance("ED25519", "BC")
+    val verifier = Signature.getInstance("Ed25519")
     verifier.initSign(signKey)
     verifier.update(data)
     verifier.sign()

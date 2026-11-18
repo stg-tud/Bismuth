@@ -8,22 +8,17 @@ import org.bouncycastle.asn1.x500.style.BCStyle
 import org.bouncycastle.asn1.x509.{AlgorithmIdentifier, SubjectPublicKeyInfo}
 import org.bouncycastle.cert.jcajce.{JcaX500NameUtil, JcaX509CertificateConverter}
 import org.bouncycastle.cert.{X509CertificateHolder, X509v3CertificateBuilder}
-import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter
 import org.bouncycastle.operator.ContentSigner
 
 import java.io.{ByteArrayOutputStream, OutputStream, StringWriter}
 import java.math.BigInteger
 import java.security.cert.{CertificateException, X509Certificate}
-import java.security.{KeyPair, Security}
+import java.security.KeyPair
 import java.time.{ZoneId, ZonedDateTime}
 import java.util.{Base64, Date}
 
 object X509Util {
-  if Security.getProvider("BC") == null then {
-    val _ = Security.addProvider(new BouncyCastleProvider())
-  }
-
   private val algoIdEd25519 = new AlgorithmIdentifier(EdECObjectIdentifiers.id_Ed25519)
 
   /** Generates a new X.509 Certificate using the certificateKeyPair that is signed using the identityKeyPair. For the

@@ -1,8 +1,6 @@
 package channels.crypto
 
 import munit.FunSuite
-import org.bouncycastle.crypto.params.{Ed25519PrivateKeyParameters, Ed25519PublicKeyParameters}
-import org.bouncycastle.crypto.signers.Ed25519Signer
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.Assert.assertArrayEquals
 
@@ -20,32 +18,6 @@ class Ed25519UtilTest extends FunSuite {
 
   test("generateNewKeyPair") {
     Ed25519Util.generateNewKeyPair
-  }
-
-  test("generateNewKeyParameters") {
-    Ed25519Util.generateNewKeyParameters
-  }
-
-  test("keyPairToKeyParameters should work with all providers") {
-    cryptoProviders.foreach { providerName =>
-      val keyPair                     = KeyPairGenerator.getInstance("Ed25519", providerName).generateKeyPair()
-      val (pubKeyParam, privKeyParam) = Ed25519Util.keyPairToKeyParameters(keyPair)
-
-      val signer = new Ed25519Signer()
-      signer.init(true, Ed25519PrivateKeyParameters(privKeyParam.getEncoded))
-      signer.update("Test".getBytes, 0, "Test".length)
-      val sig = signer.generateSignature()
-
-      val jcaVerifier = Signature.getInstance("Ed25519")
-      jcaVerifier.initVerify(keyPair.getPublic)
-      jcaVerifier.update("Test".getBytes)
-      assert(jcaVerifier.verify(sig))
-
-      val verifier = new Ed25519Signer()
-      verifier.init(false, Ed25519PublicKeyParameters(pubKeyParam.getEncoded))
-      verifier.update("Test".getBytes, 0, "Test".length)
-      assert(verifier.verifySignature(sig))
-    }
   }
 
   test("publicKeyToRawPublicKeyBytes should work with BC and SunEC providers") {
