@@ -1,14 +1,13 @@
 package webapps
 
 import _root_.ex2026overlaydemo.OverlayStatusProtocol
-import _root_.ex2026overlaydemo.OverlayStatusProtocol.{Status, given}
+import _root_.ex2026overlaydemo.OverlayStatusProtocol.Status
 import channels.broadcast.PlumtreeMessage.Payload
 import channels.{DeltaStorage, MessagingIO}
-import channels.broadcast.PlumtreeBroadcast
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import org.scalajs.dom
-import rdts.base.{Bottom, Lattice, ReplicaId}
+import rdts.base.ReplicaId
 
 import scala.collection.immutable.Queue
 import scala.scalajs.js.Date

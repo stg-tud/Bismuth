@@ -8,10 +8,8 @@ import rdts.datatypes.ReplicatedList
 import rdts.syntax.DeltaBuffer
 import reactives.default.*
 import reactives.extra.Tags.*
-import scalatags.JsDom
 import scalatags.JsDom.all.*
 import scalatags.JsDom.tags2.section
-import webapps.ex2019todo.Codecs.given
 import webapps.ex2019todo.TodoDataManager.TodoRepState
 import webapps.ex2019todo.Todolist.replicaId
 
