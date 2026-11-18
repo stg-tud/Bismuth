@@ -1,15 +1,15 @@
 /* This file is shared between multiple projects
  * and may contain unused dependencies */
 
-addSbtPlugin("org.scala-js"     % "sbt-scalajs"      % "1.22.0")
+addSbtPlugin("org.scala-js"     % "sbt-scalajs"      % "1.23.0")
 addSbtPlugin("org.scala-native" % "sbt-scala-native" % "0.5.12")
 
 // sbt settings
 addSbtPlugin("com.github.sbt" % "sbt-dynver"    % "5.1.1")
-addSbtPlugin("com.eed3si9n"   % "sbt-buildinfo" % "0.13.2")
+addSbtPlugin("com.eed3si9n"   % "sbt-buildinfo" % "0.14.0")
 
 // packaging
-addSbtPlugin("com.github.sbt" % "sbt-pgp" % "2.3.2")
+addSbtPlugin("com.github.sbt" % "sbt-pgp" % "2.4.0")
 
 // tooling
 addSbtPlugin("pl.project13.scala" % "sbt-jmh"      % "0.4.8")
