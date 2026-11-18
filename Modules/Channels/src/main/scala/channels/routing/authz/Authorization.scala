@@ -1,7 +1,7 @@
-package channels.broadcast.authz
+package channels.routing.authz
 
-import channels.broadcast.authz.AuthzCodecs.ardtEventCodec
-import channels.broadcast.authz.ArdtEvent.Payload.{Capability, DeltaCommitment}
+import AuthzCodecs.ardtEventCodec
+import ArdtEvent.Payload.{Capability, DeltaCommitment}
 import channels.crypto.Commitment.RevealedValue
 import channels.crypto.{Hash, PrivateIdentity, PublicIdentity, Signature}
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}

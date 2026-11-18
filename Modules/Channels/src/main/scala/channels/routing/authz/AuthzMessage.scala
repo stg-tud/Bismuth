@@ -1,4 +1,4 @@
-package channels.broadcast.authz
+package channels.routing.authz
 
 import channels.broadcast.PlumtreeMessage
 import channels.crypto.Commitment.RevealedValue

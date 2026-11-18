@@ -1,8 +1,8 @@
-package channels.broadcast.authz
+package channels.routing.authz
 
-import channels.broadcast.authz.AuthzCodecs.ardtEventCodec
-import channels.broadcast.authz.ArdtEvent.Payload
-import channels.broadcast.authz.ArdtEvent.Payload.Capability
+import AuthzCodecs.ardtEventCodec
+import ArdtEvent.Payload
+import ArdtEvent.Payload.Capability
 import channels.crypto.{Hash, PublicIdentity, Signature}
 import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray
 import rdts.filters.PermissionTree

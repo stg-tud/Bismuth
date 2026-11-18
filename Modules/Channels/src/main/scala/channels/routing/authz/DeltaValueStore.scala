@@ -1,4 +1,4 @@
-package channels.broadcast.authz
+package channels.routing.authz
 
 import channels.crypto.Commitment.RevealedValue
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}

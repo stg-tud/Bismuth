@@ -1,7 +1,7 @@
-package channels.broadcast.authz
+package channels.routing.authz
 
-import channels.broadcast.authz.AuthzCodecs.ardtEventCodec
-import channels.broadcast.authz.ArdtEvent.Payload.{Capability, DeltaCommitment, Revocation}
+import AuthzCodecs.ardtEventCodec
+import ArdtEvent.Payload.{Capability, DeltaCommitment, Revocation}
 import channels.connection.Peer
 import channels.crypto.Commitment.RevealedValue
 import channels.crypto.{Commitment, Hash, PrivateIdentity, PublicIdentity, Signature, Verifier}

@@ -1,20 +1,21 @@
 package ex2026accessControl.authz.travelplanner
 
-import channels.broadcast.authz.ArdtEvent.Payload.Capability
-import channels.broadcast.authz.AuthzProtocol.*
-import channels.broadcast.authz.{ArdtEvent, AuthzProtocol}
+import channels.routing.authz.ArdtEvent.Payload.Capability
+import channels.routing.authz.AuthzProtocol.*
 import channels.connection.tls.NioTls
 import channels.connection.{Abort, ConnectionDescriptor, NioTCP, NioTcpConnectionDetailsResolver}
 import channels.crypto.{Hash, PrivateIdentity, PublicIdentity}
 import channels.{MessagingIO, Timers}
 import channels.crypto.Ed25519.given
+import channels.routing.authz
+import channels.routing.authz.{ArdtEvent, AuthzProtocol}
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.filters.{Filter, PermissionTree}
 
 import java.net.{InetAddress, InetSocketAddress}
 
-/** [[Sync]] via the [[channels.broadcast.authz.AuthzProtocol]] over mutually authenticated TLS. Peers learn about each other's addresses
+/** [[Sync]] via the [[authz.AuthzProtocol]] over mutually authenticated TLS. Peers learn about each other's addresses
   * through the full mesh overlay, and connect to all of them.
   */
 class SyncImpl[State: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](

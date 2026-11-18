@@ -1,12 +1,13 @@
 package ex2026accessControl.authz.evaluation
 
-import channels.broadcast.authz.AuthzCodecs.ardtEventCodec
+import channels.routing.authz.AuthzCodecs.ardtEventCodec
 import channels.broadcast.Routing.{Effect, Step}
-import channels.broadcast.authz.*
-import channels.broadcast.authz.ArdtEvent.Payload.DeltaCommitment
+import channels.routing.authz.*
+import channels.routing.authz.ArdtEvent.Payload.DeltaCommitment
 import channels.connection.Peer
 import channels.crypto.{Hash, PrivateIdentity, PublicIdentity}
 import channels.crypto.Ed25519.given
+import channels.routing.authz.{ArdtEventGraph, Authorization, AuthzMessage, AuthzReplica, DeltaValueStore}
 import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray
 import ex2026accessControl.authz.evaluation.EvaluationBenchmarks.{encodeTrace, receiveTrace, replayTrace}
 import org.openjdk.jmh.annotations.*
@@ -143,7 +144,7 @@ class EvaluationBenchmarks {
     HashDag.materialize(state.hashDag)
 }
 
-/** Holds an [[channels.broadcast.authz.ArdtEventGraph]] built by [[TraceGeneration.generateDelegationHierarchyEventGraph]]: a fixed set of
+/** Holds an [[ArdtEventGraph]] built by [[TraceGeneration.generateDelegationHierarchyEventGraph]]: a fixed set of
   * 13 replicas in a two-level delegation hierarchy, writing in two phases.
   */
 @State(Scope.Benchmark)

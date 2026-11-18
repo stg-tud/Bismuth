@@ -62,7 +62,7 @@ object AclRdt {
   }
 
   given JsonValueCodec[BftDelta[Acl]] = {
-    import channels.broadcast.authz.AuthzCodecs.given
+    import channels.routing.authz.AuthzCodecs.given
     JsonCodecMaker.make(
       CodecMakerConfig.withAllowRecursiveTypes(true) // Required for PermissionTree
     )

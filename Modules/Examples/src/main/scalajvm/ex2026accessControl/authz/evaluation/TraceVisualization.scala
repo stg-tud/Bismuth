@@ -1,6 +1,6 @@
 package ex2026accessControl.authz.evaluation
 
-import channels.broadcast.authz.ArdtEvent.Payload.{Capability, DeltaCommitment, Revocation}
+import channels.routing.authz.ArdtEvent.Payload.{Capability, DeltaCommitment, Revocation}
 import channels.crypto.Hash
 import rdts.filters.{Filter, PermissionTree}
 

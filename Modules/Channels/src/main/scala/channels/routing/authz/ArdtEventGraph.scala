@@ -1,8 +1,8 @@
-package channels.broadcast.authz
+package channels.routing.authz
 
-import channels.broadcast.authz.AuthzCodecs.ardtEventCodec
-import channels.broadcast.authz.ArdtEvent.Payload.{Capability, DeltaCommitment, Revocation}
-import channels.broadcast.authz.CausalOrder.*
+import AuthzCodecs.ardtEventCodec
+import ArdtEvent.Payload.{Capability, DeltaCommitment, Revocation}
+import CausalOrder.*
 import channels.crypto.{Hash, PublicIdentity, Signature, Verifier}
 import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray}
 import rdts.base.Lattice

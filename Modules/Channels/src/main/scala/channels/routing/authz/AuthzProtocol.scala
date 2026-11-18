@@ -1,9 +1,9 @@
-package channels.broadcast.authz
+package channels.routing.authz
 
 import channels.MessagingIO
 import channels.broadcast.Routing.{Effect, Step, Timer}
-import channels.broadcast.authz.AuthzCodecs.ardtEventCodec
-import channels.broadcast.authz.AuthzReplica.identityOf
+import AuthzCodecs.ardtEventCodec
+import AuthzReplica.identityOf
 import channels.broadcast.{Plumtree, PlumtreeCore, PlumtreeKnowledge, PlumtreeMessage, Routing}
 import channels.connection.{Peer, PeerConnectInfo}
 import channels.crypto.{Hash, PrivateIdentity, PublicIdentity, Verifier}
