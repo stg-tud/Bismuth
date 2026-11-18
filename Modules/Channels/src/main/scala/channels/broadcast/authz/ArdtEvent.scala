@@ -1,6 +1,6 @@
 package channels.broadcast.authz
 
-import channels.JsoniterCodecsJvm.ardtEventCodec
+import channels.broadcast.authz.AuthzCodecs.ardtEventCodec
 import channels.broadcast.authz.ArdtEvent.Payload
 import channels.broadcast.authz.ArdtEvent.Payload.Capability
 import channels.crypto.{Hash, PublicIdentity, Signature}

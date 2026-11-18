@@ -79,7 +79,7 @@ case class UnsignedHashDagEntry[P](
     override def isValid(using JsonValueCodec[P]): Boolean = true
 
 object HashDagEntry:
-    import channels.JsoniterCodecsJvm.given
+    import channels.broadcast.authz.AuthzCodecs.given
 
     given signedHashDagEntryCodec[P: JsonValueCodec]: JsonValueCodec[SignedHashDagEntry[P]]     = JsonCodecMaker.make
     given unsignedHashDagEntryCodec[P: JsonValueCodec]: JsonValueCodec[UnsignedHashDagEntry[P]] = JsonCodecMaker.make

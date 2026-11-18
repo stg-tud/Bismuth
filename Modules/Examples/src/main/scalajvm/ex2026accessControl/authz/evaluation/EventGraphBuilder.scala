@@ -1,6 +1,6 @@
 package ex2026accessControl.authz.evaluation
 
-import channels.JsoniterCodecsJvm.ardtEventCodec
+import channels.broadcast.authz.AuthzCodecs.ardtEventCodec
 import channels.broadcast.authz.ArdtEvent.Payload.{Capability, DeltaCommitment, Revocation}
 import channels.broadcast.authz.{ArdtEvent, ArdtEventGraph}
 import channels.crypto.Commitment.RevealedValue

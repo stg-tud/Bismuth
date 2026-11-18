@@ -1,6 +1,6 @@
 package channels.broadcast.authz
 
-import channels.JsoniterCodecsJvm.ardtEventCodec
+import channels.broadcast.authz.AuthzCodecs.ardtEventCodec
 import channels.broadcast.Routing.{Effect, Step}
 import channels.broadcast.authz.AuthzTestSupport.{*, given}
 import channels.connection.Peer

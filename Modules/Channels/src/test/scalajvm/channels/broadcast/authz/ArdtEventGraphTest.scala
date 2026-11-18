@@ -1,6 +1,6 @@
 package channels.broadcast.authz
 
-import channels.JsoniterCodecsJvm.ardtEventCodec
+import channels.broadcast.authz.AuthzCodecs.ardtEventCodec
 import channels.broadcast.authz.ArdtEvent.Payload.{Capability, DeltaCommitment, Revocation}
 import channels.broadcast.authz.AuthzTestSupport.*
 import channels.broadcast.authz.CausalOrder.*
