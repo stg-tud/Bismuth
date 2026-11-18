@@ -58,24 +58,14 @@ object PlumtreeBroadcast {
   /** Wire format. Not a given, as the derivation would find itself. */
   def messageCodec[State: JsonValueCodec]: JsonValueCodec[Message[State]] = JsonCodecMaker.make
 
-  final class Protocol[S] extends Routing {
-    type State = PlumtreeBroadcast[S]
-    type Msg   = Message[S]
-    type Out   = Payload[S]
-
-    def addPeer(state: State, peer: Peer): Result[S]                     = state.addPeer(peer)
-    def removePeer(state: State, peer: Peer): Result[S]                  = state.removePeer(peer)
-    def handleMessage(state: State, from: Peer, message: Msg): Result[S] =
-      state.handleMessage(from, message)
-    def timerFired(state: State, timer: Routing.Timer): Result[S] = state.timerFired(timer)
-  }
+  final class Protocol[S] extends Plumtree[S]
 
   given protocol[State]: Protocol[State] = Protocol[State]()
 
   /** Local operation: assign the next dot of `self` to `data` and disseminate it. */
   def broadcastLocal[State](self: Uid, data: State)(state: PlumtreeBroadcast[State]): (res: Result[State], dot: Dot) = {
     val dot = state.localContext.nextDot(self)
-    (state.broadcast(Payload(Dots.single(dot), data)), dot)
+    (protocol[State].broadcast(state, Payload(Dots.single(dot), data)), dot)
   }
 
   /** Application API of a [[MessagingIO]] running plumtree. */
@@ -108,9 +98,24 @@ final case class PlumtreeBroadcast[State](
     peerRoles: Map[Peer, PeerRole] = Map.empty,
     repairScheduled: Boolean = false,
 ) {
+  def eagerPeers: Set[Peer] = peerRoles.collect { case (peer, PeerRole.Eager) => peer }.toSet
+
+  def allPayloads: List[Payload[State]] = deltaStorage.getHistory
+
+  /** roles are only added/removed by the add/remove peer methods, so here we only change it if a role exists */
+  def withRole(peer: Peer, role: PeerRole): PlumtreeBroadcast[State] =
+    copy(peerRoles = peerRoles.updated(peer, role))
+}
+
+/** Transitions of plumtree, the state is [[PlumtreeBroadcast]]. */
+class Plumtree[S] extends Routing {
   import PlumtreeBroadcast.*
 
-  def eagerPeers: Set[Peer] = peerRoles.collect { case (peer, PeerRole.Eager) => peer }.toSet
+  type State = PlumtreeBroadcast[S]
+  type Msg   = Message[S]
+  type Out   = Payload[S]
+
+  type Result = Step[State, Msg, Out]
 
   /** Algorithm 3 `NeighborUp(node)`. Requests missing history with an initial graft.
     *
@@ -124,54 +129,51 @@ final case class PlumtreeBroadcast[State](
     * can arrive before the overlay's connection notification (e.g. with reentrant transports), in which
     * case the graft handler already promoted the edge to eager. Never downgrade such an edge.
     */
-  def addPeer(peer: Peer): Result[State] = {
-    val next: PlumtreeBroadcast[State] =
-      if peerRoles.contains(peer) then this
-      else copy(peerRoles = peerRoles.updated(peer, PeerRole.Lazy))
-    Result(next, List(Send(peer :: Nil, Graft(localContext))))
+  def addPeer(state: State, peer: Peer): Result = {
+    val next = if state.peerRoles.contains(peer) then state else state.withRole(peer, PeerRole.Lazy)
+    Step(next, List(Send(peer :: Nil, Graft(state.localContext))))
   }
 
-  def allPayloads: List[Payload[State]] = deltaStorage.getHistory
-
   /** Algorithm 3 `NeighborDown(node)`. */
-  def removePeer(peer: Peer): Result[State] = Result(
-    copy(
-      peerRoles = peerRoles.removed(peer),
-      remoteContext = remoteContext.removed(peer)
+  def removePeer(state: State, peer: Peer): Result = Step(
+    state.copy(
+      peerRoles = state.peerRoles.removed(peer),
+      remoteContext = state.remoteContext.removed(peer)
     ),
     Nil
   )
 
   /** Local broadcast, corresponding to Algorithm 1 `Broadcast`/`EagerPush`/`LazyPush`. */
-  def broadcast(payload: Payload[State]): Result[State] = {
-    val next: PlumtreeBroadcast[State] = copy(
-      localContext = localContext.merge(payload.dots),
-      deltaStorage = deltaStorage.remember(payload),
+  def broadcast(state: State, payload: Out): Result = {
+    val next = state.copy(
+      localContext = state.localContext.merge(payload.dots),
+      deltaStorage = state.deltaStorage.remember(payload),
     )
-    next.disseminate(payload, Set.empty)
+    disseminate(next, payload, Set.empty)
   }
 
   /** Peers that announced knowledge we do not have yet. */
-  private def peersWithMissing: Iterable[Peer] =
-    remoteContext.collect { case (peer, context) if context.inflates(localContext) => peer }
+  private def peersWithMissing(state: State): Iterable[Peer] =
+    state.remoteContext.collect { case (peer, context) if context.inflates(state.localContext) => peer }
 
   /** The paper starts a timer per missing message after an `IHave`. We keep a single repair timer running while
     * any peer announced knowledge we lack; if the knowledge is still missing when it fires, we graft it.
     */
-  def timerFired(timer: Routing.Timer): Result[State] = timer match
+  def timerFired(state: State, timer: Routing.Timer): Result = timer match
       case Routing.Timer.Repair =>
-        val unscheduled = copy(repairScheduled = false)
+        val unscheduled = state.copy(repairScheduled = false)
         // note, this may very well select already eager peers, which is done to backfill in case of missing state
-        Random.shuffle(peersWithMissing.toList).headOption match
-            case None          => Result(unscheduled, Nil)
+        Random.shuffle(peersWithMissing(unscheduled).toList).headOption match
+            case None          => Step(unscheduled, Nil)
             case Some(missing) =>
-              unscheduled.withRole(missing, PeerRole.Eager).scheduleRepairIfNeeded(
-                List(Send(List(missing), Graft(localContext)))
+              scheduleRepairIfNeeded(
+                unscheduled.withRole(missing, PeerRole.Eager),
+                List(Send(List(missing), Graft(state.localContext)))
               )
 
-  private def scheduleRepairIfNeeded(events: Seq[Event[State]]): Result[State] =
-    if repairScheduled || peersWithMissing.isEmpty then Result(this, events)
-    else Result(copy(repairScheduled = true), events :+ Event.StartTimer(Routing.Timer.Repair))
+  private def scheduleRepairIfNeeded(state: State, events: Seq[Effect[Msg, Out]]): Result =
+    if state.repairScheduled || peersWithMissing(state).isEmpty then Step(state, events)
+    else Step(state.copy(repairScheduled = true), events :+ Event.StartTimer(Routing.Timer.Repair))
 
   /** Incoming message handler.
     *
@@ -181,60 +183,60 @@ final case class PlumtreeBroadcast[State](
     * - `IHave`: Algorithm 2 missing-message detection, without explicit timers
     * - `Graft`: Algorithm 2 repair and replay
     */
-  def handleMessage(from: Peer, message: Message[State]): Result[State] = message match
+  def handleMessage(state: State, from: Peer, message: Msg): Result = message match
       case Prune =>
         // Duplicate eager delivery: demote this edge to lazy.
-        Result(withRole(from, PeerRole.Lazy), Nil)
+        Step(state.withRole(from, PeerRole.Lazy), Nil)
 
       case IHave(knows) =>
         // note, in case we dont know `from` we get into a bit inconsistent state, where its not a peer.
         // this means we wont send it any IHave messages ourselves, thats probably fine?
-        withRemoteKnowledge(from, knows).scheduleRepairIfNeeded(Nil)
+        scheduleRepairIfNeeded(withRemoteKnowledge(state, from, knows), Nil)
 
       case Graft(knows) =>
         // Repair: promote sender back to eager and replay what it is missing.
-        val next     = withRole(from, PeerRole.Eager).withRemoteKnowledge(from, knows)
+        val next     = withRemoteKnowledge(state.withRole(from, PeerRole.Eager), from, knows)
         val relevant = next.deltaStorage.getHistory.filterNot(payload => payload.dots <= knows)
         if relevant.isEmpty && !(next.localContext <= knows) then
             println(
               s"plumtree graft unsatisfied from=$from local=${next.localContext} knows=$knows storage=${next.deltaStorage.getClass.getSimpleName}"
             )
         val replayed = relevant.map(payload => Send(from :: Nil, Push(payload)))
-        next.scheduleRepairIfNeeded(replayed)
+        scheduleRepairIfNeeded(next, replayed)
 
       case Push(payload @ Payload(context, _)) =>
-        if context <= localContext then
+        if context <= state.localContext then
             // Duplicate eager path: demote this edge and ask the sender to prune too.
-            Result(withRole(from, PeerRole.Lazy), List(Send(from :: Nil, Prune)))
+            Step(state.withRole(from, PeerRole.Lazy), List(Send(from :: Nil, Prune)))
         else
             // First delivery: remember, keep sender eager, deliver, and forward.
-            val next: PlumtreeBroadcast[State] = copy(
-              localContext = localContext.merge(context),
-              deltaStorage = deltaStorage.remember(payload),
-            ).withRemoteKnowledge(from, context).withRole(from, PeerRole.Eager)
-            val forwarded = next.disseminate(payload, except = Set(from))
+            val next = withRemoteKnowledge(
+              state.copy(
+                localContext = state.localContext.merge(context),
+                deltaStorage = state.deltaStorage.remember(payload),
+              ),
+              from,
+              context
+            ).withRole(from, PeerRole.Eager)
+            val forwarded = disseminate(next, payload, except = Set(from))
             forwarded.copy(events = Event.Deliver(payload) +: forwarded.events)
 
-  private def withRemoteKnowledge(from: Peer, knows: Dots) =
-    copy(remoteContext = remoteContext.updatedWith(from) {
+  private def withRemoteKnowledge(state: State, from: Peer, knows: Dots): State =
+    state.copy(remoteContext = state.remoteContext.updatedWith(from) {
       case None     => Some(knows)
       case Some(ex) => Some(ex `merge` knows)
     })
 
-  /** roles are only added/removed by the add/remove peer methods, so here we only change it if a role exists */
-  private def withRole(peer: Peer, role: PeerRole): PlumtreeBroadcast[State] =
-    copy(peerRoles = peerRoles.updated(peer, role))
-
   /** Send payload on eager edges and `IHave` on lazy edges. */
-  private def disseminate(payload: Payload[State], except: Set[Peer]): Result[State] = {
-    val recipients = peerRoles.keySet -- except
-    val eager      = recipients.filter(peer => peerRoles.get(peer).contains(PeerRole.Eager)).toList
-    val lazyPeers  = recipients.filter(peer => peerRoles.get(peer).contains(PeerRole.Lazy)).toList
+  private def disseminate(state: State, payload: Out, except: Set[Peer]): Result = {
+    val recipients = state.peerRoles.keySet -- except
+    val eager      = recipients.filter(peer => state.peerRoles.get(peer).contains(PeerRole.Eager)).toList
+    val lazyPeers  = recipients.filter(peer => state.peerRoles.get(peer).contains(PeerRole.Lazy)).toList
 
-    val eagerSend = Option.when(eager.nonEmpty)(Send(eager, Push(payload): Message[State]))
+    val eagerSend = Option.when(eager.nonEmpty)(Send(eager, Push(payload): Msg))
     val lazySend  =
-      Option.when(lazyPeers.nonEmpty)(Send(lazyPeers, IHave(payload.dots): Message[State]))
+      Option.when(lazyPeers.nonEmpty)(Send(lazyPeers, IHave(payload.dots): Msg))
 
-    Result(this, List(eagerSend, lazySend).flatten)
+    Step(state, List(eagerSend, lazySend).flatten)
   }
 }

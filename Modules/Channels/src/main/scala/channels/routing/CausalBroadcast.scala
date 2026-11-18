@@ -56,12 +56,14 @@ object CausalPlumtree {
     type Msg   = PlumtreeBroadcast.Message[Causal[A]]
     type Out   = A
 
-    def addPeer(state: State, peer: Peer): Result[A]                     = state.lift(state.plumtree.addPeer(peer))
-    def removePeer(state: State, peer: Peer): Result[A]                  = state.lift(state.plumtree.removePeer(peer))
+    private val plumtree = PlumtreeBroadcast.Protocol[Causal[A]]()
+
+    def addPeer(state: State, peer: Peer): Result[A]    = state.lift(plumtree.addPeer(state.plumtree, peer))
+    def removePeer(state: State, peer: Peer): Result[A] = state.lift(plumtree.removePeer(state.plumtree, peer))
     def handleMessage(state: State, from: Peer, message: Msg): Result[A] =
-      state.lift(state.plumtree.handleMessage(from, message))
+      state.lift(plumtree.handleMessage(state.plumtree, from, message))
     def timerFired(state: State, timer: Routing.Timer): Result[A] =
-      state.lift(state.plumtree.timerFired(timer))
+      state.lift(plumtree.timerFired(state.plumtree, timer))
   }
 
   given protocol[A]: Protocol[A] = Protocol[A]()
