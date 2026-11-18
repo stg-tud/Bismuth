@@ -20,14 +20,13 @@ import scala.util.Try
 sealed trait NioSocketLayer {
   def channel: SocketChannel
 
-  /** Non-blocking: reads available bytes into `targets`. Returns the number of bytes read, or -1 at the end of stream. */
+/** Non-blocking: reads available bytes into `targets`. Returns the number of bytes read, or -1 at the end of stream.
+    * May hold back already received data if `targets` are full; callers must call again until it returns 0.
+    */
   def read(targets: Array[ByteBuffer]): Long
 
   /** Writes all of `buffers` (busy waiting if the socket is not writable). */
   def write(buffers: Array[ByteBuffer]): Unit
-
-  /** Bytes that were already received, but not yet returned by `read`, because the targets were full. */
-  def hasBufferedInput: Boolean
 
   /** Whether the layer can transport data (i.e., the TLS handshake is done). */
   def ready: Boolean
@@ -60,7 +59,6 @@ object NioSocketLayer {
   class Plain(val channel: SocketChannel) extends NioSocketLayer {
     override def read(targets: Array[ByteBuffer]): Long                                   = channel.read(targets)
     override def write(buffers: Array[ByteBuffer]): Unit                                  = writeFully(channel, buffers)
-    override def hasBufferedInput: Boolean                                                = false
     override def ready: Boolean                                                           = true
     override def authenticatedPeer: Option[Uid]                                           = None
     override protected def describe(address: SocketAddress): Option[ConnectionDescriptor] =
@@ -94,7 +92,6 @@ object NioSocketLayer {
 
     override def ready: Boolean                 = peer.isDefined
     override def authenticatedPeer: Option[Uid] = peer
-    override def hasBufferedInput: Boolean      = appIn.position() > 0
 
     override protected def describe(address: SocketAddress): Option[ConnectionDescriptor] =
       address match

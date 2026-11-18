@@ -358,7 +358,8 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = MessagingIO.executeImmedi
     if read == -1 then throw NoMoreDataException("remaining channel is empty")
     val bufferedAfter = bufferedBytes(next)
     val recurse       =
-      (bufferedAfter > 0 && bufferedAfter < initialBytes) || (read > 0 && attachment.layer.hasBufferedInput)
+      // read > 0: the layer may have more (e.g., decrypted TLS data that did not fit), keep reading until it returns 0
+      (bufferedAfter > 0 && bufferedAfter < initialBytes) || read > 0
     if recurse then handleReadable(key, next)
     ()
   }
