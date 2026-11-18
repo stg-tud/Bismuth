@@ -75,7 +75,8 @@ lazy val channels = projectMatrix.in(file("Modules/Channels"))
     scalaVersions = Seq(s3v),
     settings = Seq(
       Test / fork                               := true,
-      libraryDependencies += "io.github.hakky54" % "ayza-for-pem" % "10.1.2",
+      // only for creating X.509 certificates, see channels.connection.tls.X509Util
+      libraryDependencies += "org.bouncycastle" % "bcpkix-jdk18on" % "1.87",
     )
   )
   .jsPlatform(

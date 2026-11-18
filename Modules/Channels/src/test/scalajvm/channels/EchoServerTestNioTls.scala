@@ -38,6 +38,16 @@ class NioTlsTest extends munit.FunSuite {
   import scala.concurrent.Promise
   import scala.util.Random
 
+  test("engines only allow mutually authenticated TLS 1.3 with ChaCha20-Poly1305") {
+    val tls = NioTls(IdentityFactory.createNewIdentity)
+    List(true, false).foreach { clientMode =>
+      val engine = tls.createEngine(clientMode)
+      assertEquals(engine.getEnabledProtocols.toList, List("TLSv1.3"))
+      assertEquals(engine.getEnabledCipherSuites.toList, List("TLS_CHACHA20_POLY1305_SHA256"))
+      assert(engine.getNeedClientAuth)
+    }
+  }
+
   def echoTest(name: String, sizes: List[Int], useTls: Boolean = true): Unit = test(name) {
     val abort    = Abort()
     val serverId = IdentityFactory.createNewIdentity
