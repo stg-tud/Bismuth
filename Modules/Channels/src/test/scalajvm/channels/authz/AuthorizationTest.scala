@@ -194,47 +194,6 @@ class AuthorizationTest extends FunSuite {
     assert(!Authorization.mayRead[Set[Int]](holder, altDeltaEvent.hash, revealedValue, updated))
   }
 
-  // --- mayRead (graph+store overload) ---
-
-  test(
-    "mayRead (graph+store overload) delegates to the delta overload for a real DeltaCommitment event backed by a matching RevealedValue"
-  ) {
-    val (graph, holder, holderKey, genesis) = freshGraph()
-    val (deltaEvent, revealed) = buildDeltaEvent(Set(1, 2, 3), holder, holderKey, Set(genesis.hash), genesis.hash)
-    val updated                = receiveOrFail(graph, deltaEvent)
-    var store                  = DeltaValueStore[Set[Int]]()
-    store = store.put(updated.events(deltaEvent.hash)._2, readFromArray[Set[Int]](revealed.value), revealed.witness)
-
-    assert(Authorization.mayRead[Set[Int]](holder, deltaEvent.hash, updated, store))
-  }
-
-  test("mayRead (graph+store overload) is false for a hash not present in eventGraph.events") {
-    val (graph, holder, _, genesis) = freshGraph()
-    val store                       = DeltaValueStore[Set[Int]]()
-
-    assert(!Authorization.mayRead[Set[Int]](holder, Hash.compute("unknown".getBytes), graph, store))
-  }
-
-  test("mayRead (graph+store overload) is false when the event at the hash is not a DeltaCommitment") {
-    val (graph, holder, _, genesis) = freshGraph()
-    val store                       = DeltaValueStore[Set[Int]]()
-
-    assert(!Authorization.mayRead[Set[Int]](holder, genesis.hash, graph, store))
-  }
-
-  test(
-    "mayRead (graph+store overload) throws NoSuchElementException when the commitment is absent from the DeltaValueStore"
-  ) {
-    val (graph, holder, holderKey, genesis) = freshGraph()
-    val (deltaEvent, _) = buildDeltaEvent(Set(1), holder, holderKey, Set(genesis.hash), genesis.hash)
-    val updated         = receiveOrFail(graph, deltaEvent)
-    val store           = DeltaValueStore[Set[Int]]() // revealed value never put
-
-    intercept[NoSuchElementException] {
-      Authorization.mayRead[Set[Int]](holder, deltaEvent.hash, updated, store)
-    }
-  }
-
   // --- mayWrite ---
 
   test(

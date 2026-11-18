@@ -40,19 +40,6 @@ object Authorization {
       case (left, _) => left
     }
 
-  def mayRead[T: Filter](
-      replicaId: PublicIdentity,
-      deltaEventHash: Hash,
-      eventGraph: ArdtEventGraph,
-      deltaValueStore: DeltaValueStore[T]
-  ): Boolean =
-    eventGraph.events.get(deltaEventHash) match {
-      case Some(ArdtEvent(_: DeltaCommitment, _, _, _, _), eventIndex) =>
-        val delta = deltaValueStore.get(eventIndex).map((delta, _) => delta).get
-        mayReadAssumingCommitmentHolds(replicaId, deltaEventHash, delta, eventGraph)
-      case _ => false
-    }
-
   private[authz] def mayRead[T: {JsonValueCodec, Filter}](
       replicaId: PublicIdentity,
       deltaEventHash: Hash,
