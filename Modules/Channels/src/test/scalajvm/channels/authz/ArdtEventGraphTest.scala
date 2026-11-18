@@ -1,12 +1,12 @@
-package channels.routing.authz
+package channels.authz
 
-import channels.routing.authz.AuthzCodecs.ardtEventCodec
-import channels.routing.authz.ArdtEvent.Payload.{Capability, DeltaCommitment, Revocation}
-import channels.routing.authz.AuthzTestSupport.*
-import channels.routing.authz.CausalOrder.*
+import channels.authz.AuthzCodecs.ardtEventCodec
+import channels.authz.ArdtEvent.Payload.{Capability, DeltaCommitment, Revocation}
+import channels.authz.AuthzTestSupport.*
+import channels.authz.CausalOrder.*
 import channels.crypto.Hash
 import channels.crypto.Ed25519.given
-import channels.routing.authz.{ArdtEvent, ArdtEventGraph}
+
 import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray
 import munit.FunSuite
 import rdts.filters.PermissionTree

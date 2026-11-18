@@ -1,4 +1,4 @@
-package channels.routing.authz
+package channels.authz
 
 import channels.crypto.Commitment.RevealedValue
 import channels.crypto.Hash

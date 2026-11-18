@@ -3,7 +3,8 @@ package ex2026accessControl.authz.evaluation
 import channels.broadcast.PlumtreeMessage
 import channels.connection.ByteBufferMessageBuffer
 import channels.crypto.{Hash, PrivateIdentity, PublicIdentity}
-import channels.routing.authz.{AuthzMessage, AuthzProtocol, AuthzReplica}
+import channels.authz.AuthzReplica
+import channels.routing.authz.{AuthzMessage, AuthzProtocol}
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
 import ex2026accessControl.authz.evaluation.ConnectionManager
 import rdts.base.{Bottom, Decompose, Lattice}

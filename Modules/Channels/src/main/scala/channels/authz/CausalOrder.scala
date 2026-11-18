@@ -1,4 +1,4 @@
-package channels.routing.authz
+package channels.authz
 
 enum CausalOrder:
     case BEFORE

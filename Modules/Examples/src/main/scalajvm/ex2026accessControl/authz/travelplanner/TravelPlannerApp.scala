@@ -1,7 +1,7 @@
 package ex2026accessControl.authz.travelplanner
 
 import channels.crypto.IdentityFactory
-import channels.routing.authz.Authorization
+import channels.authz.Authorization
 import ex2026accessControl.authz.travelplanner.model.{TravelPlanModel, TravelPlanModelFactory}
 import ex2026accessControl.authz.travelplanner.{MainScene, TravelPlan}
 import scalafx.application.{JFXApp3, Platform}

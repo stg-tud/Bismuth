@@ -1,4 +1,4 @@
-package channels.routing.authz
+package channels.authz
 
 import AuthzCodecs.ardtEventCodec
 import ArdtEvent.Payload.{Capability, DeltaCommitment}

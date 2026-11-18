@@ -1,13 +1,13 @@
 package channels.routing.authz
 
 import channels.broadcast.PlumtreeMessage
-import channels.routing.authz.AuthzCodecs.ardtEventCodec
+import channels.authz.AuthzCodecs.ardtEventCodec
 import channels.broadcast.Routing.{Effect, Step, Timer}
-import channels.routing.authz.AuthzTestSupport.{*, given}
+import channels.authz.AuthzTestSupport.{*, given}
 import channels.connection.Peer
 import channels.crypto.Ed25519.given
 import channels.crypto.{Hash, PrivateIdentity}
-import channels.routing.authz.{ArdtEvent, Authorization, AuthzMessage, AuthzProtocol, AuthzReplica}
+import channels.authz.{ArdtEvent, Authorization, AuthzReplica}
 import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray}
 import munit.FunSuite
 import rdts.base.Uid

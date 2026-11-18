@@ -1,4 +1,4 @@
-package channels.routing.authz
+package channels.authz
 
 import channels.JsoniterCodecs.given
 import channels.crypto.{Hash, PublicIdentity, Signature}

@@ -45,7 +45,7 @@ object HashDag {
     }
 
   /** Full state materialization from every entry's payload, without any access control enforcement (unlike
-    * [[channels.routing.authz.Authorization.materialize]]).
+    * [[channels.authz.Authorization.materialize]]).
     */
   def materialize[R: {Lattice, Bottom}](hashDag: HashDag[R, ?]): R =
     hashDag.events.values.iterator.foldLeft(Bottom[R].empty) { (acc, entry) =>
@@ -79,7 +79,7 @@ case class UnsignedHashDagEntry[P](
     override def isValid(using JsonValueCodec[P]): Boolean = true
 
 object HashDagEntry:
-    import channels.routing.authz.AuthzCodecs.given
+    import channels.authz.AuthzCodecs.given
 
     given signedHashDagEntryCodec[P: JsonValueCodec]: JsonValueCodec[SignedHashDagEntry[P]]     = JsonCodecMaker.make
     given unsignedHashDagEntryCodec[P: JsonValueCodec]: JsonValueCodec[UnsignedHashDagEntry[P]] = JsonCodecMaker.make

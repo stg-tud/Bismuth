@@ -1,12 +1,12 @@
-package channels.routing.authz
+package channels.authz
 
-import channels.routing.authz.AuthzCodecs.ardtEventCodec
-import channels.routing.authz.ArdtEvent.Payload.{Capability, DeltaCommitment}
+import channels.authz.AuthzCodecs.ardtEventCodec
+import channels.authz.ArdtEvent.Payload.{Capability, DeltaCommitment}
 import channels.crypto.Commitment.RevealedValue
 import channels.crypto.Ed25519.fromPublicKey
 import channels.crypto.{Ed25519PrivateIdentity, Ed25519Util, IdentityFactory, PublicIdentity, *}
 import channels.crypto.Ed25519.given
-import channels.routing.authz.{ArdtEvent, ArdtEventGraph}
+
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import rdts.filters.{Filter, PermissionTree}

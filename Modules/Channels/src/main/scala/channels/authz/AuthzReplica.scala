@@ -1,4 +1,4 @@
-package channels.routing.authz
+package channels.authz
 
 import AuthzCodecs.ardtEventCodec
 import ArdtEvent.Payload.{Capability, DeltaCommitment, Revocation}
@@ -48,7 +48,7 @@ object AuthzReplica {
 }
 
 /** Immutable state of an authorization-aware replica: the [[ArdtEventGraph]], the events waiting for missing
-  * predecessors, and the delta values this replica may read. Disseminated by [[AuthzProtocol]].
+  * predecessors, and the delta values this replica may read. Disseminated by [[channels.routing.authz.AuthzProtocol]].
   */
 final case class AuthzReplica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
     self: PublicIdentity,

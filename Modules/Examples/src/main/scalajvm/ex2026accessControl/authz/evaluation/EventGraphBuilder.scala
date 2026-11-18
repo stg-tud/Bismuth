@@ -1,12 +1,12 @@
 package ex2026accessControl.authz.evaluation
 
-import channels.routing.authz.AuthzCodecs.ardtEventCodec
-import channels.routing.authz.ArdtEvent.Payload.{Capability, DeltaCommitment, Revocation}
+import channels.authz.AuthzCodecs.ardtEventCodec
+import channels.authz.ArdtEvent.Payload.{Capability, DeltaCommitment, Revocation}
 import channels.crypto.Commitment.RevealedValue
 import channels.crypto.{Commitment, Hash, PrivateIdentity, Signature}
 import channels.crypto.Ed25519.given
-import channels.routing.authz
-import channels.routing.authz.{ArdtEvent, ArdtEventGraph, AuthzReplica}
+import channels.authz
+import channels.authz.{ArdtEvent, ArdtEventGraph, AuthzReplica}
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
 import rdts.filters.PermissionTree
 

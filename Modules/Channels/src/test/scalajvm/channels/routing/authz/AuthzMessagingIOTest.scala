@@ -1,13 +1,13 @@
 package channels.routing.authz
 
 import channels.routing.authz.AuthzProtocol.*
-import channels.routing.authz.AuthzTestSupport.{*, given}
+import channels.authz.AuthzTestSupport.{*, given}
 import channels.connection.tls.NioTls
 import channels.connection.{Abort, ConnectionDescriptor, NioTCP}
 import channels.crypto.PrivateIdentity
 import channels.{MessagingIO, Timers}
 import channels.crypto.Ed25519.given
-import channels.routing.authz.{Authorization, AuthzProtocol}
+import channels.authz.Authorization
 import munit.FunSuite
 import rdts.filters.PermissionTree
 
