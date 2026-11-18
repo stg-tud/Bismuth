@@ -10,7 +10,7 @@ import rdts.filters.{Filter, PermissionTree}
 
 object Authorization {
   def materialize[T: {Lattice, Bottom, Filter}](
-      eventGraph: ArdtEventGraph[T],
+      eventGraph: ArdtEventGraph,
       deltaValueStore: DeltaValueStore[T]
   ): T =
     // Applying the updates in causal order is sometimes faster for complex RDTs
@@ -44,7 +44,7 @@ object Authorization {
   def mayRead[T: Filter](
       replicaId: PublicIdentity,
       deltaEventHash: Hash,
-      eventGraph: ArdtEventGraph[T],
+      eventGraph: ArdtEventGraph,
       deltaValueStore: DeltaValueStore[T]
   ): Boolean =
     eventGraph.events.get(deltaEventHash) match {
@@ -58,7 +58,7 @@ object Authorization {
       replicaId: PublicIdentity,
       deltaEventHash: Hash,
       deltaValue: RevealedValue,
-      eventGraph: ArdtEventGraph[T]
+      eventGraph: ArdtEventGraph
   ): Boolean =
     eventGraph.events.get(deltaEventHash) match {
       case Some((ArdtEvent(DeltaCommitment(commitment), author, _, _, _), _)) =>
@@ -72,7 +72,7 @@ object Authorization {
       replicaId: PublicIdentity,
       deltaEventHash: Hash,
       delta: T,
-      eventGraph: ArdtEventGraph[T]
+      eventGraph: ArdtEventGraph
   ): Boolean =
     eventGraph.capabilities(replicaId)
       .exists((capabilityEventHash, capability) =>
@@ -83,7 +83,7 @@ object Authorization {
       )
 
   def mayWrite[T: {JsonValueCodec, Filter}](
-      eventGraph: ArdtEventGraph[T],
+      eventGraph: ArdtEventGraph,
       deltaEventHash: Hash,
       deltaValue: RevealedValue
   ): Boolean = {
@@ -92,7 +92,7 @@ object Authorization {
   }
 
   private def mayWrite[T: {JsonValueCodec, Filter}](
-      eventGraph: ArdtEventGraph[T],
+      eventGraph: ArdtEventGraph,
       deltaEventHash: Hash,
       deltaEvent: ArdtEvent,
       revealedValue: RevealedValue
@@ -106,7 +106,7 @@ object Authorization {
     }
 
   private[authz] def mayWriteAssumingCommitmentHolds[T: {Filter}](
-      eventGraph: ArdtEventGraph[T],
+      eventGraph: ArdtEventGraph,
       deltaEventHash: Hash,
       deltaEvent: ArdtEvent,
       delta: T

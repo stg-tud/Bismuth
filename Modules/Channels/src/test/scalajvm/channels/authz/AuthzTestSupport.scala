@@ -43,16 +43,16 @@ object AuthzTestSupport extends munit.Assertions {
       Hash.allZeroHash
     )
 
-  def receiveOrFail(graph: ArdtEventGraph[Set[Int]], event: ArdtEvent): ArdtEventGraph[Set[Int]] =
+  def receiveOrFail(graph: ArdtEventGraph, event: ArdtEvent): ArdtEventGraph =
     graph.receive(writeToArray(event)) match {
       case Right(updated) => updated
       case Left(missing)  => fail(s"expected ${event.hash} to be accepted, but graph reported missing: $missing")
     }
 
-  def freshGraph(): (ArdtEventGraph[Set[Int]], PublicIdentity, PrivateKey, ArdtEvent) = {
+  def freshGraph(): (ArdtEventGraph, PublicIdentity, PrivateKey, ArdtEvent) = {
     val (holder, holderKey) = newIdentity()
     val genesis             = buildGenesis(holder, holderKey)
-    (ArdtEventGraph[Set[Int]](genesis), holder, holderKey, genesis)
+    (ArdtEventGraph(genesis), holder, holderKey, genesis)
   }
 
   def newPrivateIdentity(): Ed25519PrivateIdentity = IdentityFactory.createNewIdentity

@@ -30,7 +30,7 @@ class ArdtEventGraphTest extends FunSuite {
 
   test("apply(genesisHash) creates an empty graph awaiting the given genesis hash") {
     val (_, _, _, genesis) = freshGraph()
-    val empty              = ArdtEventGraph[Set[Int]](genesis.hash)
+    val empty              = ArdtEventGraph(genesis.hash)
     assertEquals(empty.genesis, genesis.hash)
     assertEquals(empty.heads, Set.empty[Hash])
     assertEquals(empty.events, Map.empty[Hash, (ArdtEvent, Int)])
@@ -73,7 +73,7 @@ class ArdtEventGraphTest extends FunSuite {
       parents = Set(Hash.allZeroHash),
       Hash.allZeroHash
     )
-    val emptyGraph = ArdtEventGraph[Set[Int]](badGenesis.hash)
+    val emptyGraph = ArdtEventGraph(badGenesis.hash)
     intercept[IllegalArgumentException] {
       emptyGraph.receive(writeToArray(badGenesis))
     }
@@ -88,7 +88,7 @@ class ArdtEventGraphTest extends FunSuite {
       Set.empty,
       Hash.compute("not-zero".getBytes)
     )
-    val emptyGraph = ArdtEventGraph[Set[Int]](badGenesis.hash)
+    val emptyGraph = ArdtEventGraph(badGenesis.hash)
     intercept[IllegalArgumentException] {
       emptyGraph.receive(writeToArray(badGenesis))
     }
@@ -103,7 +103,7 @@ class ArdtEventGraphTest extends FunSuite {
       Set.empty,
       Hash.allZeroHash
     )
-    val emptyGraph = ArdtEventGraph[Set[Int]](badGenesis.hash)
+    val emptyGraph = ArdtEventGraph(badGenesis.hash)
     intercept[IllegalArgumentException] {
       emptyGraph.receive(writeToArray(badGenesis))
     }
@@ -497,7 +497,7 @@ class ArdtEventGraphTest extends FunSuite {
 
   // --- causal ordering ---
 
-  private def siblingGraph(): (ArdtEventGraph[Set[Int]], ArdtEvent, ArdtEvent, ArdtEvent) = {
+  private def siblingGraph(): (ArdtEventGraph, ArdtEvent, ArdtEvent, ArdtEvent) = {
     val (graph, holder, holderKey, genesis) = freshGraph()
     val childA                              =
       buildEvent(DeltaCommitment(Hash.compute("a".getBytes)), holder, holderKey, Set(genesis.hash), genesis.hash)

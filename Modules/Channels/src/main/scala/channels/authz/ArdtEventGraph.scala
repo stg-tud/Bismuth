@@ -10,7 +10,7 @@ import rdts.filters.PermissionTree
 
 import scala.collection.mutable
 
-case class ArdtEventGraph[T: Lattice](
+case class ArdtEventGraph(
     genesis: Hash,
     heads: Set[Hash],
     events: Map[Hash, (ArdtEvent, Int)],
@@ -29,7 +29,7 @@ case class ArdtEventGraph[T: Lattice](
     * @throws IllegalArgumentException If the event is invalid
     * @return If successful, this returns Right(updatedGraph). If parents are missing, then this returns
     */
-  def receive(encodedEvent: Array[Byte])(using verifier: Verifier): Either[Set[Hash], ArdtEventGraph[T]] = {
+  def receive(encodedEvent: Array[Byte])(using verifier: Verifier): Either[Set[Hash], ArdtEventGraph] = {
     // Check for duplicates before checking signature
     val eventHash = Hash.compute(encodedEvent)
     if events.contains(eventHash) then return Right(this)
@@ -251,7 +251,7 @@ case class ArdtEventGraph[T: Lattice](
 }
 
 object ArdtEventGraph {
-  def apply[T: Lattice](genesis: ArdtEvent): ArdtEventGraph[T] = {
+  def apply(genesis: ArdtEvent): ArdtEventGraph = {
     val hash = genesis.hash
     genesis.payload match {
       case cap @ Capability(holder, _, _) =>
@@ -268,6 +268,6 @@ object ArdtEventGraph {
     }
   }
 
-  def apply[T: Lattice](genesis: Hash): ArdtEventGraph[T] =
+  def apply(genesis: Hash): ArdtEventGraph =
     ArdtEventGraph(genesis, Set.empty, Map.empty, Map.empty, Map.empty, 0, Vector.empty)
 }

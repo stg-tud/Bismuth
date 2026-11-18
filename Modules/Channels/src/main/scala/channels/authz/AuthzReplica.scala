@@ -20,7 +20,7 @@ object AuthzReplica {
   )(using Verifier): AuthzReplica[RDT] =
     AuthzReplica[RDT](
       self,
-      ArdtEventGraph[RDT](genesis),
+      ArdtEventGraph(genesis),
       deltas = DeltaValueStore(),
       state = Bottom[RDT].empty,
       waitingEvents = Map.empty,
@@ -52,7 +52,7 @@ object AuthzReplica {
   */
 final case class AuthzReplica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
     self: PublicIdentity,
-    eventGraph: ArdtEventGraph[RDT],
+    eventGraph: ArdtEventGraph,
     /** The delta values this replica accepted. */
     deltas: DeltaValueStore[RDT],
     state: RDT,

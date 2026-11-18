@@ -38,8 +38,8 @@ object TraceGeneration {
     * parent of an event that should be concurrent to recently written events.
     */
   @tailrec
-  private def walkBackAFewSteps[T](
-      eventGraph: ArdtEventGraph[T],
+  private def walkBackAFewSteps(
+      eventGraph: ArdtEventGraph,
       start: Hash,
       steps: Int
   )(using random: Random): Hash =
@@ -71,7 +71,7 @@ object TraceGeneration {
     val rootIdentity = replicaIds(0)
 
     val genesisEvent    = Authorization.createGenesis(rootIdentity)
-    var eventGraph      = ArdtEventGraph[BenchmarkRdt](genesisEvent)
+    var eventGraph      = ArdtEventGraph(genesisEvent)
     var deltaValueStore = DeltaValueStore[BenchmarkRdt]()
 
     // The permissions of one capability each, shared by all replicas alike
@@ -176,7 +176,7 @@ object TraceGeneration {
     val replicaIds   = mutable.ArrayBuffer(rootIdentity)
 
     val genesisEvent    = Authorization.createGenesis(rootIdentity)
-    var eventGraph      = ArdtEventGraph[BenchmarkRdt](genesisEvent)
+    var eventGraph      = ArdtEventGraph(genesisEvent)
     var deltaValueStore = DeltaValueStore[BenchmarkRdt]()
     var sharedState     = BenchmarkRdt.empty
 
@@ -321,7 +321,7 @@ object TraceGeneration {
       generated.copy(eventGraph = appendRevocation(generated, capability, parents), state = state)
 
   /** `hashes`, together with every event causally before any of them */
-  private def causalPastOf(eventGraph: ArdtEventGraph[BenchmarkRdt], hashes: Set[Hash]): collection.Set[Hash] = {
+  private def causalPastOf(eventGraph: ArdtEventGraph, hashes: Set[Hash]): collection.Set[Hash] = {
     val visited = mutable.Set.empty[Hash]
     val toVisit = mutable.Stack.from(hashes)
     while toVisit.nonEmpty do
@@ -331,7 +331,7 @@ object TraceGeneration {
   }
 
   /** The capability event granting write access to exactly `subtree` */
-  private def capabilityGrantingWrite(eventGraph: ArdtEventGraph[BenchmarkRdt], subtree: String): Hash = {
+  private def capabilityGrantingWrite(eventGraph: ArdtEventGraph, subtree: String): Hash = {
     val write      = PermissionTree.fromPath(s"$subtree.*")
     val candidates = eventGraph.events.collect {
       case (hash, (ArdtEvent(Capability(_, _, `write`), _, _, _, _), _)) => hash
@@ -344,7 +344,7 @@ object TraceGeneration {
       generated: GeneratedBenchmarkRdtEventGraph,
       revokedCapability: Hash,
       parents: Set[Hash]
-  ): ArdtEventGraph[BenchmarkRdt] = {
+  ): ArdtEventGraph = {
     // The genesis is part of every capability's authorization chain, so the root may revoke any of them
     val revocation = EventGraphBuilder.buildRevocationEvent(
       revokedCapability,
@@ -426,7 +426,7 @@ object TraceGeneration {
 }
 
 case class GeneratedBenchmarkRdtEventGraph(
-    eventGraph: ArdtEventGraph[BenchmarkRdt],
+    eventGraph: ArdtEventGraph,
     deltaValueStore: DeltaValueStore[BenchmarkRdt],
     replicaIds: Array[PrivateIdentity],
     capabilityEvent: Map[PublicIdentity, Map[String, Hash]],

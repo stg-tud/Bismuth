@@ -36,7 +36,7 @@ class AuthorizationTest extends FunSuite {
     val rootIdentity = newPrivateIdentity()
     val genesis      = Authorization.createGenesis(rootIdentity)
 
-    val graph = ArdtEventGraph[Set[Int]](genesis)
+    val graph = ArdtEventGraph(genesis)
     assertEquals(graph.genesis, genesis.hash)
     assertEquals(graph.heads, Set(genesis.hash))
     assertEquals(
@@ -47,7 +47,7 @@ class AuthorizationTest extends FunSuite {
       )]((genesis.hash, Capability(rootIdentity.getPublic, PermissionTree.allow, PermissionTree.allow)))
     )
 
-    val empty    = ArdtEventGraph[Set[Int]](genesis.hash)
+    val empty    = ArdtEventGraph(genesis.hash)
     val received = receiveOrFail(empty, genesis)
     assertEquals(received.heads, Set(genesis.hash))
   }
@@ -189,10 +189,10 @@ class AuthorizationTest extends FunSuite {
       buildDeltaEvent(Set(1, 2, 3), holder, holderKey, Set(genesis.hash), genesis.hash)
     val updated = receiveOrFail(receiveOrFail(graph, deltaEvent), altDeltaEvent)
 
-    assert(Authorization.mayRead(holder, deltaEvent.hash, revealedValue, updated))
-    assert(Authorization.mayRead(holder, altDeltaEvent.hash, altRevealedValue, updated))
-    assert(!Authorization.mayRead(holder, deltaEvent.hash, altRevealedValue, updated))
-    assert(!Authorization.mayRead(holder, altDeltaEvent.hash, revealedValue, updated))
+    assert(Authorization.mayRead[Set[Int]](holder, deltaEvent.hash, revealedValue, updated))
+    assert(Authorization.mayRead[Set[Int]](holder, altDeltaEvent.hash, altRevealedValue, updated))
+    assert(!Authorization.mayRead[Set[Int]](holder, deltaEvent.hash, altRevealedValue, updated))
+    assert(!Authorization.mayRead[Set[Int]](holder, altDeltaEvent.hash, revealedValue, updated))
   }
 
   // --- mayRead (graph+store overload) ---
@@ -206,21 +206,21 @@ class AuthorizationTest extends FunSuite {
     var store                  = DeltaValueStore[Set[Int]]()
     store = store.put(updated.events(deltaEvent.hash)._2, readFromArray[Set[Int]](revealed.value), revealed.witness)
 
-    assert(Authorization.mayRead(holder, deltaEvent.hash, updated, store))
+    assert(Authorization.mayRead[Set[Int]](holder, deltaEvent.hash, updated, store))
   }
 
   test("mayRead (graph+store overload) is false for a hash not present in eventGraph.events") {
     val (graph, holder, _, genesis) = freshGraph()
     val store                       = DeltaValueStore[Set[Int]]()
 
-    assert(!Authorization.mayRead(holder, Hash.compute("unknown".getBytes), graph, store))
+    assert(!Authorization.mayRead[Set[Int]](holder, Hash.compute("unknown".getBytes), graph, store))
   }
 
   test("mayRead (graph+store overload) is false when the event at the hash is not a DeltaCommitment") {
     val (graph, holder, _, genesis) = freshGraph()
     val store                       = DeltaValueStore[Set[Int]]()
 
-    assert(!Authorization.mayRead(holder, genesis.hash, graph, store))
+    assert(!Authorization.mayRead[Set[Int]](holder, genesis.hash, graph, store))
   }
 
   test(
@@ -232,7 +232,7 @@ class AuthorizationTest extends FunSuite {
     val store           = DeltaValueStore[Set[Int]]() // revealed value never put
 
     intercept[NoSuchElementException] {
-      Authorization.mayRead(holder, deltaEvent.hash, updated, store)
+      Authorization.mayRead[Set[Int]](holder, deltaEvent.hash, updated, store)
     }
   }
 
@@ -245,7 +245,7 @@ class AuthorizationTest extends FunSuite {
     val (deltaEvent, revealed) = buildDeltaEvent(Set(1, 2, 3), holder, holderKey, Set(genesis.hash), genesis.hash)
     val updated                = receiveOrFail(graph, deltaEvent)
 
-    assert(Authorization.mayWrite(updated, deltaEvent.hash, revealed))
+    assert(Authorization.mayWrite[Set[Int]](updated, deltaEvent.hash, revealed))
   }
 
   test("mayWrite is false when the revealed value's commitment does not match the event's DeltaCommitment") {
@@ -254,7 +254,7 @@ class AuthorizationTest extends FunSuite {
     val updated         = receiveOrFail(graph, deltaEvent)
 
     val unrelated = Commitment.commit(holder.id, writeToArray(Set(9)))
-    assert(!Authorization.mayWrite(updated, deltaEvent.hash, unrelated))
+    assert(!Authorization.mayWrite[Set[Int]](updated, deltaEvent.hash, unrelated))
   }
 
   test("mayWrite throws IllegalArgumentException when the event at deltaEventHash is not a DeltaCommitment") {
@@ -262,7 +262,7 @@ class AuthorizationTest extends FunSuite {
     val revealed                    = Commitment.commit(holder.id, writeToArray(Set(1)))
 
     intercept[IllegalArgumentException] {
-      Authorization.mayWrite(graph, genesis.hash, revealed)
+      Authorization.mayWrite[Set[Int]](graph, genesis.hash, revealed)
     }
   }
 
@@ -281,7 +281,7 @@ class AuthorizationTest extends FunSuite {
     val (deltaEvent, revealed) = buildDeltaEvent(Set(1), delegate, delegateKey, Set(delegation.hash), delegation.hash)
     val graph2                 = receiveOrFail(graph1, deltaEvent)
 
-    assert(!Authorization.mayWrite(graph2, deltaEvent.hash, revealed))
+    assert(!Authorization.mayWrite[Set[Int]](graph2, deltaEvent.hash, revealed))
   }
 
   test("mayWrite is true when every revocation of the authorizing capability is causally-after the delta event") {
@@ -302,7 +302,7 @@ class AuthorizationTest extends FunSuite {
     val revocation = buildEvent(Revocation(delegation.hash), holder, holderKey, Set(deltaEvent.hash), genesis.hash)
     val graph3     = receiveOrFail(graph2, revocation)
 
-    assert(Authorization.mayWrite(graph3, deltaEvent.hash, revealed))
+    assert(Authorization.mayWrite[Set[Int]](graph3, deltaEvent.hash, revealed))
   }
 
   test("mayWrite is false when a revocation of the authorizing capability is causally-before the delta event") {
@@ -323,7 +323,7 @@ class AuthorizationTest extends FunSuite {
     val (deltaEvent, revealed) = buildDeltaEvent(Set(1), delegate, delegateKey, Set(revocation.hash), delegation.hash)
     val graph3                 = receiveOrFail(graph2, deltaEvent)
 
-    assert(!Authorization.mayWrite(graph3, deltaEvent.hash, revealed))
+    assert(!Authorization.mayWrite[Set[Int]](graph3, deltaEvent.hash, revealed))
   }
 
   test("mayWrite throws NoSuchElementException when deltaEventHash is not present in the graph") {
@@ -331,7 +331,7 @@ class AuthorizationTest extends FunSuite {
     val revealed                    = Commitment.commit(holder.id, writeToArray(Set(1)))
 
     intercept[NoSuchElementException] {
-      Authorization.mayWrite(graph, Hash.compute("unknown".getBytes), revealed)
+      Authorization.mayWrite[Set[Int]](graph, Hash.compute("unknown".getBytes), revealed)
     }
   }
 
@@ -344,13 +344,13 @@ class AuthorizationTest extends FunSuite {
     // is only reachable by fabricating the graph directly rather than going through receive().
     val (secondDelta, secondRevealed) =
       buildDeltaEvent(Set(2), holder, holderKey, Set(firstDelta.hash), firstDelta.hash)
-    val fabricatedGraph = graph1.copy[Set[Int]](
+    val fabricatedGraph = graph1.copy(
       heads = Set(secondDelta.hash),
       events = graph1.events + (secondDelta.hash -> (secondDelta, graph1.nextEventIndex)),
       nextEventIndex = graph1.nextEventIndex + 1
     )
 
-    assert(!Authorization.mayWrite(fabricatedGraph, secondDelta.hash, secondRevealed))
+    assert(!Authorization.mayWrite[Set[Int]](fabricatedGraph, secondDelta.hash, secondRevealed))
   }
 
   // --- materialize ---

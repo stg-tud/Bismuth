@@ -57,7 +57,7 @@ object EventGraphBuilder {
   }
 
   /** Inserts an event into the graph, throwing if it is invalid or references unknown dependencies. */
-  def receiveOrThrow[T](graph: ArdtEventGraph[T], event: ArdtEvent): ArdtEventGraph[T] =
+  def receiveOrThrow(graph: ArdtEventGraph, event: ArdtEvent): ArdtEventGraph =
     graph.receive(writeToArray(event)) match {
       case Right(updated) => updated
       case Left(missing)  =>
