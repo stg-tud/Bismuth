@@ -25,7 +25,7 @@ class EvaluationBenchmarks {
 
   /** The replica is immutable, so every invocation writes on top of the same state. */
   @Benchmark
-  def createUpdate(state: CreateUpdateBenchmarkState): Step[AuthzReplica[BenchmarkRdt], AuthzMessage, BenchmarkRdt] =
+  def createUpdate(state: CreateUpdateBenchmarkState): AuthzReplica.Local[BenchmarkRdt] =
     state.replica.write(
       state.selectedIdentity,
       BenchmarkRdt.applyBenchmarkRdtMutator(state.selectedMutatorChoice, state.replica.state)(using
@@ -96,16 +96,18 @@ class EvaluationBenchmarks {
     replica.heads
   }
 
-  /** Sending side of anti-entropy, including access control enforcement: every requested event is looked up
-    * and encoded, and every delta value belonging to one of them is filtered against the destination's read
-    * permissions before being encoded, answering a request for all events.
+  /** Sending side of anti-entropy, including access control enforcement: every event is looked up and encoded,
+    * and every delta value belonging to one of them is filtered against the destination's read permissions before
+    * being encoded, answering a graft of a replica that has nothing.
     */
   @Benchmark
-  def sendEventsWithDelta(state: SendEventsWithDeltaBenchmarkState): Long =
-    state.replica.handleMessage(state.destination, AuthzMessage.Request(state.eventHashes)).events.iterator.map {
-      case Effect.Send(_, message) => writeToArray(message)(using AuthzMessage.codec).length.toLong
-      case _                       => 0L
-    }.sum
+  def sendEventsWithDelta(state: SendEventsWithDeltaBenchmarkState): Long = {
+    val reader = AuthzReplica.identityOf(state.destination).get
+    val events = state.replica.notBefore(Set.empty)
+    val deltas = state.replica.readableDeltas(reader, state.eventHashes)
+    HashDagReplica.encodeEntries(events).asByteBuffer.remaining.toLong +
+    writeToArray[AuthzMessage](AuthzMessage.Deltas(deltas))(using AuthzMessage.codec).length
+  }
 
   /** [[sendEventsWithDelta]] without any access control: every requested entry, payload included, is looked up,
     * encoded and handed to the [[SummingConnectionManager]] unfiltered.

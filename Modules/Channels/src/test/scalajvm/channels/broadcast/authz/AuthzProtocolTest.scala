@@ -1,164 +1,216 @@
 package channels.broadcast.authz
 
+import channels.broadcast.PlumtreeMessage
 import channels.broadcast.authz.AuthzCodecs.ardtEventCodec
-import channels.broadcast.Routing.{Effect, Step}
+import channels.broadcast.Routing.{Effect, Step, Timer}
 import channels.broadcast.authz.AuthzTestSupport.{*, given}
 import channels.connection.Peer
-import channels.crypto.{Hash, PrivateIdentity}
 import channels.crypto.Ed25519.given
-import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray
+import channels.crypto.{Hash, PrivateIdentity}
+import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray}
 import munit.FunSuite
 import rdts.base.Uid
 import rdts.filters.PermissionTree
 
 import scala.collection.mutable
 
-/** Drives [[AuthzReplica]]s directly, routing their `Send` effects between each other. */
+/** Guarantees of [[AuthzProtocol]], on an in-memory network that delivers messages in order and fires timers when
+  * idle. See [[AuthzMessagingIOTest]] for a network of [[channels.MessagingIO]]s.
+  */
 class AuthzProtocolTest extends FunSuite {
 
-  final class Node(val identity: PrivateIdentity, var replica: AuthzReplica[Set[Int]]) {
+  type Protocol = AuthzProtocol[Set[Int]]
+  type State    = Protocol#State
+
+  final class Node(val identity: PrivateIdentity, genesis: Hash) {
+    val protocol: Protocol                  = AuthzProtocol[Set[Int]](identity)
+    var state: State                        = AuthzProtocol.initial[Set[Int]](identity.getPublic, genesis)
     val peer: Peer                          = Peer.Authenticated(Uid(identity.getPublic.id))
     val delivered: mutable.Buffer[Set[Int]] = mutable.Buffer.empty
+    def replica: AuthzReplica[Set[Int]]     = state.store.replica
   }
 
   final class Network(nodes: Node*) {
-    private val inbox = mutable.Queue.empty[(Node, Node, AuthzMessage)]
+    private val inbox  = mutable.Queue.empty[(Node, Node, AuthzMessage)]
+    private val timers = mutable.Set.empty[Node]
 
-    /** Apply a transition of `node`, enqueueing its sends and recording its deliveries. */
-    def run(node: Node)(f: AuthzReplica[Set[Int]] => Step[AuthzReplica[Set[Int]], AuthzMessage, Set[Int]]): Unit = {
-      val step = f(node.replica)
-      node.replica = step.state
+    /** Messages matching this are lost. */
+    var lose: AuthzMessage => Boolean = _ => false
+
+    def run(node: Node)(f: (Protocol, State) => Step[State, AuthzMessage, Set[Int]]): Unit = {
+      val step = f(node.protocol, node.state)
+      node.state = step.state
       step.events.foreach {
         case Effect.Send(peers, message) =>
-          peers.foreach(p => nodes.find(_.peer == p).foreach(to => inbox.enqueue((node, to, message))))
+          if !lose(message) then
+              peers.foreach(p => nodes.find(_.peer == p).foreach(to => inbox.enqueue((node, to, message))))
         case Effect.Deliver(state) => node.delivered += state
-        case Effect.StartTimer(_)  => ()
+        case Effect.StartTimer(_)  => timers += node
       }
     }
 
     def connect(a: Node, b: Node): Unit = {
-      run(a)(_.addPeer(b.peer))
-      run(b)(_.addPeer(a.peer))
+      run(a)(_.addPeer(_, b.peer))
+      run(b)(_.addPeer(_, a.peer))
     }
 
-    /** Drop all queued messages matching `p`, e.g., to simulate a connection failing. */
-    def drop(p: AuthzMessage => Boolean): Unit = inbox.filterInPlace((_, _, message) => !p(message))
+    def disconnect(a: Node, b: Node): Unit = {
+      run(a)(_.removePeer(_, b.peer))
+      run(b)(_.removePeer(_, a.peer))
+    }
 
-    def deliverAll(): Unit =
-      while inbox.nonEmpty do
+    /** Deliver all messages, and fire the timers whenever there are none left, until nothing happens anymore. */
+    def settle(): Unit =
+      while inbox.nonEmpty || timers.nonEmpty do {
+        while inbox.nonEmpty do {
           val (from, to, message) = inbox.dequeue()
-          run(to)(_.handleMessage(from.peer, message))
+          run(to)(_.handleMessage(_, from.peer, message))
+        }
+        val fire = timers.toList
+        timers.clear()
+        fire.foreach(node => run(node)(_.timerFired(_, Timer.Repair)))
+      }
   }
 
   private def setup(): (Node, Node, Network, ArdtEvent) = {
     val root    = newPrivateIdentity()
     val bob     = newPrivateIdentity()
     val genesis = Authorization.createGenesis(root)
-    val a       = Node(root, AuthzReplica.initial[Set[Int]](root.getPublic, genesis.hash))
-    val b       = Node(bob, AuthzReplica.initial[Set[Int]](bob.getPublic, genesis.hash))
+    val a       = Node(root, genesis.hash)
+    val b       = Node(bob, genesis.hash)
     val net     = Network(a, b)
-    net.run(a)(_.receiveLocally(genesis))
+    net.run(a)(_.receiveLocally(_, genesis))
     net.connect(a, b)
-    net.deliverAll()
+    net.settle()
     (a, b, net, genesis)
   }
 
-  test("a new replica bootstraps the event graph from its peer") {
+  private def delegateAll(net: Network, from: Node, to: Node, genesis: ArdtEvent): Unit =
+    net.run(from)(_.delegate(_, genesis.hash, to.identity.getPublic, PermissionTree.allow, PermissionTree.allow))
+
+  test("a new replica learns the event graph from its peer") {
     val (a, b, _, genesis) = setup()
     assertEquals(b.replica.heads, Set(genesis.hash))
-    assertEquals(b.replica.heads, a.replica.heads)
   }
 
-  test("deltas only reach replicas that may read them, delegation and writes are disseminated") {
+  test("deltas only reach replicas that may read them, delegation makes earlier deltas readable") {
     val (a, b, net, genesis) = setup()
 
-    net.run(a)(_.write(a.identity, Set(1)))
-    net.deliverAll()
+    net.run(a)(_.write(_, Set(1)))
+    net.settle()
     assertEquals(a.replica.state, Set(1))
+    assertEquals(a.delivered.lastOption, Some(Set(1)))
     assertEquals(b.replica.heads, a.replica.heads, "the event is disseminated")
     assertEquals(b.replica.state, Set.empty[Int], "but bob may not read the delta")
 
-    net.run(a)(_.delegate(a.identity, genesis.hash, b.identity.getPublic, PermissionTree.allow, PermissionTree.allow))
-    net.deliverAll()
-    assertEquals(b.replica.state, Set(1), "the delegation makes earlier deltas readable")
+    delegateAll(net, a, b, genesis)
+    net.settle()
+    assertEquals(b.replica.state, Set(1))
 
-    net.run(a)(_.write(a.identity, Set(2)))
-    net.deliverAll()
+    net.run(a)(_.write(_, Set(2)))
+    net.settle()
     assertEquals(b.replica.state, Set(1, 2))
     assertEquals(b.delivered.lastOption, Some(Set(1, 2)))
 
-    net.run(b)(_.write(b.identity, Set(3)))
-    net.deliverAll()
+    net.run(b)(_.write(_, Set(3)))
+    net.settle()
     assertEquals(a.replica.state, Set(1, 2, 3))
   }
 
-  test("deltas that were lost in transit are requested again on reconnect") {
-    val (a, b, net, genesis) = setup()
-    net.run(a)(_.delegate(a.identity, genesis.hash, b.identity.getPublic, PermissionTree.allow, PermissionTree.allow))
-    net.deliverAll()
+  test("events and deltas spread through intermediate replicas") {
+    val root    = newPrivateIdentity()
+    val genesis = Authorization.createGenesis(root)
+    val a       = Node(root, genesis.hash)
+    val b       = Node(newPrivateIdentity(), genesis.hash)
+    val c       = Node(newPrivateIdentity(), genesis.hash)
+    val net     = Network(a, b, c)
+    net.run(a)(_.receiveLocally(_, genesis))
+    net.connect(a, b)
+    net.connect(b, c)
+    delegateAll(net, a, b, genesis)
+    delegateAll(net, a, c, genesis)
+    net.settle()
 
-    net.run(a)(_.write(a.identity, Set(1)))
-    net.drop { case AuthzMessage.Deltas(_) => true; case _ => false }
-    net.deliverAll()
+    net.run(a)(_.write(_, Set(5)))
+    net.settle()
+    assertEquals(c.replica.heads, a.replica.heads)
+    assertEquals(c.replica.state, Set(5))
+  }
+
+  test("lost events are repaired") {
+    val (a, b, net, genesis) = setup()
+    delegateAll(net, a, b, genesis)
+    net.settle()
+
+    net.lose = {
+      case AuthzMessage.Events(PlumtreeMessage.Push(_)) => true
+      case _                                            => false
+    }
+    net.run(a)(_.write(_, Set(1)))
+    net.run(a)(_.write(_, Set(2)))
+    net.lose = _ => false
+    net.run(a)(_.write(_, Set(3)))
+    net.settle()
+
+    assertEquals(b.replica.heads, a.replica.heads)
+    assertEquals(b.replica.state, Set(1, 2, 3))
+  }
+
+  test("deltas that were lost are recovered on reconnect") {
+    val (a, b, net, genesis) = setup()
+    delegateAll(net, a, b, genesis)
+    net.settle()
+
+    net.lose = { case AuthzMessage.Deltas(_) => true; case _ => false }
+    net.run(a)(_.write(_, Set(1)))
+    net.settle()
+    net.lose = _ => false
     assertEquals(b.replica.heads, a.replica.heads, "the event arrived")
     assertEquals(b.replica.state, Set.empty[Int], "but its delta was lost")
-    assertEquals(b.replica.deltasWithoutValue.size, 1)
 
-    net.run(b)(_.removePeer(a.peer))
-    net.run(b)(_.addPeer(a.peer))
-    net.deliverAll()
+    net.disconnect(a, b)
+    net.connect(a, b)
+    net.settle()
     assertEquals(b.replica.state, Set(1))
-    assertEquals(b.replica.deltasWithoutValue, Set.empty[Hash])
   }
 
-  test("revoked capabilities can not be used anymore") {
+  test("revoked capabilities can not be used anymore, and their concurrent uses are dropped") {
     val (a, b, net, genesis) = setup()
-    net.run(a)(_.delegate(a.identity, genesis.hash, b.identity.getPublic, PermissionTree.allow, PermissionTree.allow))
-    net.deliverAll()
+    delegateAll(net, a, b, genesis)
+    net.settle()
     val (bobsCapability, _) = b.replica.activeCapabilitiesOf(b.identity.getPublic).head
 
-    net.run(a)(_.revoke(a.identity, bobsCapability))
-    net.deliverAll()
-    intercept[IllegalArgumentException](net.run(b)(_.write(b.identity, Set(4))))
-  }
+    // bob writes while a concurrently revokes
+    net.disconnect(a, b)
+    net.run(b)(_.write(_, Set(4)))
+    net.run(a)(_.revoke(_, bobsCapability))
+    net.connect(a, b)
+    net.settle()
 
-  test("events with missing predecessors wait for them, and deltas for their events") {
-    val (a, b, net, genesis) = setup()
-    net.run(a)(_.delegate(a.identity, genesis.hash, b.identity.getPublic, PermissionTree.allow, PermissionTree.allow))
-    net.deliverAll()
-
-    // create two writes at a without bob being connected
-    val solo   = a.replica.removePeer(b.peer).state
-    val w1     = solo.write(a.identity, Set(10)).state
-    val w2     = w1.write(a.identity, Set(11)).state
-    val e1     = w2.eventGraph.events(w1.heads.head)._1
-    val e2     = w2.eventGraph.events(w2.heads.head)._1
-    val deltas = List(e1, e2).map(e => AuthzMessage.DeltaValue(e.hash, w2.deltaValue(e.hash).get))
-
-    // deltas first, then the second event, then the first
-    net.run(b)(_.handleMessage(a.peer, AuthzMessage.Deltas(deltas)))
-    net.run(b)(_.handleMessage(a.peer, AuthzMessage.Events(List(writeToArray(e2)))))
+    assertEquals(a.replica.heads, b.replica.heads)
+    assertEquals(a.replica.state, Set.empty[Int])
     assertEquals(b.replica.state, Set.empty[Int])
-    assertEquals(b.replica.missing, Set(e1.hash))
-    net.run(b)(_.handleMessage(a.peer, AuthzMessage.Events(List(writeToArray(e1)))))
-    assertEquals(b.replica.state, Set(10, 11))
-    assertEquals(b.replica.missing, Set.empty)
+    intercept[IllegalArgumentException](net.run(b)(_.write(_, Set(5))))
   }
 
   test("unauthenticated peers are ignored") {
     val (a, _, _, _) = setup()
     val claimed      = Peer.Claimed(Uid.gen())
-    assertEquals(a.replica.addPeer(claimed).events, Nil)
-    assertEquals(a.replica.handleMessage(claimed, AuthzMessage.Bootstrap).events, Nil)
+    assertEquals(a.protocol.addPeer(a.state, claimed).events, Nil)
+    assertEquals(
+      a.protocol.handleMessage(a.state, claimed, AuthzMessage.Events(PlumtreeMessage.Graft(Set.empty))).events,
+      Nil
+    )
   }
 
   test("message codec roundtrip") {
-    import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray as write}
+    import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray as write
     val (_, _, _, genesis) = setup()
-    val message            = AuthzMessage.Events(List(writeToArray(genesis)))
-    readFromArray[AuthzMessage](write[AuthzMessage](message)) match
-        case AuthzMessage.Events(List(bytes)) => assertEquals(bytes.toSeq, writeToArray(genesis).toSeq)
-        case other                            => fail(s"unexpected $other")
-    assertEquals(readFromArray[AuthzMessage](write[AuthzMessage](AuthzMessage.Bootstrap)), AuthzMessage.Bootstrap)
+    val encoded            = writeToArray(genesis)
+    readFromArray[AuthzMessage](write[AuthzMessage](AuthzMessage.Events(PlumtreeMessage.Push(encoded)))) match
+        case AuthzMessage.Events(PlumtreeMessage.Push(bytes)) => assertEquals(bytes.toSeq, encoded.toSeq)
+        case other                                            => fail(s"unexpected $other")
+    val graft = AuthzMessage.Events(PlumtreeMessage.Graft(Set(genesis.hash)))
+    assertEquals(readFromArray[AuthzMessage](write[AuthzMessage](graft)), graft)
   }
 }

@@ -1,22 +1,19 @@
 package channels.broadcast.authz
 
 import channels.broadcast.authz.AuthzCodecs.ardtEventCodec
-import channels.broadcast.Routing.{Effect, Step}
 import channels.broadcast.authz.ArdtEvent.Payload.{Capability, Revocation}
 import channels.broadcast.authz.AuthzTestSupport.{*, given}
-import channels.connection.Peer
 import channels.crypto.{Hash, Ed25519PrivateIdentity}
 import channels.crypto.Ed25519.given
 import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray}
 import munit.FunSuite
-import rdts.base.Uid
 import rdts.filters.PermissionTree
 
-/** The local operations and direct inputs of [[AuthzReplica]]. See [[AuthzProtocolTest]] for the network side. */
+/** The local operations and direct inputs of [[AuthzReplica]]. See [[AuthzProtocolTest]] for the dissemination. */
 class AuthzReplicaTest extends FunSuite {
 
   type Replica = AuthzReplica[Set[Int]]
-  type Result  = Step[Replica, AuthzMessage, Set[Int]]
+  type Result  = AuthzReplica.Local[Set[Int]]
 
   private def newReplicaWithGenesis(identity: Ed25519PrivateIdentity, genesisEvent: ArdtEvent): Replica =
     AuthzReplica.initial[Set[Int]](identity.getPublic, genesisEvent.hash).receiveLocally(genesisEvent).state
@@ -27,24 +24,18 @@ class AuthzReplicaTest extends FunSuite {
     (newReplicaWithGenesis(rootIdentity, genesisEvent), rootIdentity, genesisEvent)
   }
 
-  /** A peer of `identity`, to observe what is disseminated to it. */
-  private def peerOf(identity: Ed25519PrivateIdentity): Peer = Peer.Authenticated(Uid(identity.getPublic.id))
-
-  /** Connect `replica` to a peer of `identity`, discarding the initial synchronization. */
-  private def withPeer(replica: Replica, identity: Ed25519PrivateIdentity): Replica = replica.addPeer(peerOf(identity)).state
-
   private def receive(replica: Replica, event: ArdtEvent): Replica = {
     val (next, result) = replica.receiveEvent(writeToArray(event))
     assert(result.isRight, s"$event was not accepted: $result")
     next
   }
 
-  private def sentEvents(step: Result): List[ArdtEvent] =
-    step.events.toList.collect { case Effect.Send(_, AuthzMessage.Events(events)) => events }.flatten
-      .map(readFromArray[ArdtEvent](_))
+  /** The events created by a local operation. */
+  private def sentEvents(step: Result): List[ArdtEvent] = step.events.map(readFromArray[ArdtEvent](_))
 
+  /** The deltas of the events created by a local operation, as readable by the replica itself. */
   private def sentDeltas(step: Result): List[AuthzMessage.DeltaValue] =
-    step.events.toList.collect { case Effect.Send(_, AuthzMessage.Deltas(deltas)) => deltas }.flatten
+    step.state.readableDeltas(step.state.self, sentEvents(step).map(_.hash))
 
   private def revocationOf(capability: ArdtEvent, identity: Ed25519PrivateIdentity, parents: Set[Hash]): ArdtEvent =
     buildEvent(
@@ -149,7 +140,7 @@ class AuthzReplicaTest extends FunSuite {
     assertEquals(next.delta(deltaEvent.hash), Some(Set(1, 2)))
   }
 
-  test("a delta received from a peer is delivered to the application") {
+  test("receiveDeltas accepts delta values from the network") {
     val (replica, rootIdentity, genesisEvent) = newReplica()
     val (deltaEvent, revealed)                = buildDeltaEvent(
       Set(1, 2),
@@ -159,13 +150,9 @@ class AuthzReplicaTest extends FunSuite {
       genesisEvent.hash
     )
 
-    val step = receive(replica, deltaEvent)
-      .handleMessage(
-        peerOf(rootIdentity),
-        AuthzMessage.Deltas(List(AuthzMessage.DeltaValue(deltaEvent.hash, revealed)))
-      )
+    val next = receive(replica, deltaEvent).receiveDeltas(List(AuthzMessage.DeltaValue(deltaEvent.hash, revealed)))
 
-    assertEquals(step.events.toList, List(Effect.Deliver(Set(1, 2))))
+    assertEquals(next.state, Set(1, 2))
   }
 
   test("receiveDelta throws when the local replica may not read the delta") {
@@ -195,21 +182,20 @@ class AuthzReplicaTest extends FunSuite {
 
   // --- write (auto-selected capability) ---
 
-  test("write uses the owned unrevoked capability, updates the state, and disseminates events and deltas") {
+  test("write uses the owned unrevoked capability, updates the state, and creates events and deltas") {
     val (replica, rootIdentity, _) = newReplica()
 
-    val step = withPeer(replica, rootIdentity).write(rootIdentity, Set(42))
+    val step = replica.write(rootIdentity, Set(42))
 
     assertEquals(step.state.state, Set(42))
     assertEquals(sentEvents(step).size, 1)
     assertEquals(sentDeltas(step).map(d => readFromArray[Set[Int]](d.value.value)), List(Set(42)))
-    assertEquals(step.events.last, Effect.Deliver(Set(42)))
   }
 
   test("write stores each decomposed part's own value, which another replica accepts when sent later") {
     val (replica, rootIdentity, genesisEvent) = newReplica()
 
-    val step = withPeer(replica, rootIdentity).write(rootIdentity, Set(1, 2, 3))
+    val step = replica.write(rootIdentity, Set(1, 2, 3))
 
     val events = sentEvents(step)
     assertEquals(events.size, 3)
@@ -234,7 +220,7 @@ class AuthzReplicaTest extends FunSuite {
   test("write with a capability creates an update under the given capability") {
     val (replica, rootIdentity, genesisEvent) = newReplica()
 
-    val step = withPeer(replica, rootIdentity).write(rootIdentity, Set(7), genesisEvent.hash)
+    val step = replica.write(rootIdentity, Set(7), genesisEvent.hash)
 
     assertEquals(step.state.state, Set(7))
     assertEquals(sentEvents(step).map(_.authorization), List(genesisEvent.hash))
@@ -264,11 +250,11 @@ class AuthzReplicaTest extends FunSuite {
 
   // --- delegate ---
 
-  test("delegate creates a narrower delegation, applies it locally, and disseminates it") {
+  test("delegate creates a narrower delegation and applies it locally") {
     val (replica, rootIdentity, genesisEvent) = newReplica()
     val (delegateHolder, _)                   = newIdentity()
 
-    val step = withPeer(replica, rootIdentity)
+    val step = replica
       .delegate(rootIdentity, genesisEvent.hash, delegateHolder, PermissionTree.fromPath("a"), PermissionTree.empty)
 
     val List(delegationEvent) = sentEvents(step): @unchecked
@@ -327,7 +313,7 @@ class AuthzReplicaTest extends FunSuite {
   test("revoke revokes a capability held by the local replica") {
     val (replica, rootIdentity, genesisEvent) = newReplica()
 
-    val step = withPeer(replica, rootIdentity).revoke(rootIdentity, genesisEvent.hash)
+    val step = replica.revoke(rootIdentity, genesisEvent.hash)
 
     assertEquals(sentEvents(step).map(_.payload), List(Revocation(genesisEvent.hash): ArdtEvent.Payload))
   }
@@ -344,7 +330,7 @@ class AuthzReplicaTest extends FunSuite {
     ).state
     val (delegation, _) = delegated.activeCapabilitiesOf(delegateHolder).head
 
-    val step = withPeer(delegated, rootIdentity).revoke(rootIdentity, delegation)
+    val step = delegated.revoke(rootIdentity, delegation)
 
     assertEquals(sentEvents(step).map(_.authorization), List(genesisEvent.hash))
     assertEquals(step.state.activeCapabilitiesOf(delegateHolder), Set.empty)

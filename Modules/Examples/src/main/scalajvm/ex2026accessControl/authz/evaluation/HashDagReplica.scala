@@ -1,5 +1,6 @@
 package ex2026accessControl.authz.evaluation
 
+import channels.broadcast.PlumtreeMessage
 import channels.broadcast.authz.AuthzMessage
 import channels.connection.ByteBufferMessageBuffer
 import channels.crypto.{Hash, PrivateIdentity, PublicIdentity}
@@ -65,7 +66,9 @@ class HashDagReplica[Entry <: HashDagEntry[RDT]: JsonValueCodec, RDT: {Lattice, 
 
 object HashDagReplica {
 
-  /** Entries in the same wire format as the events of [[channels.broadcast.authz.AuthzProtocol]]. */
+  /** Entries in the same wire format as the events of [[channels.broadcast.authz.AuthzProtocol]], one message each. */
   def encodeEntries(entries: Iterable[Array[Byte]]): ByteBufferMessageBuffer =
-    ByteBufferMessageBuffer(writeToArray[AuthzMessage](AuthzMessage.Events(entries.toList))(using AuthzMessage.codec))
+    ByteBufferMessageBuffer(entries.iterator.flatMap(entry =>
+      writeToArray[AuthzMessage](AuthzMessage.Events(PlumtreeMessage.Push(entry)))(using AuthzMessage.codec)
+    ).toArray)
 }

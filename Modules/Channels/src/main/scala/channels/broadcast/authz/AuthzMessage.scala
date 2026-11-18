@@ -1,5 +1,6 @@
 package channels.broadcast.authz
 
+import channels.broadcast.PlumtreeMessage
 import channels.crypto.Commitment.RevealedValue
 import channels.crypto.Hash
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReader, JsonValueCodec, JsonWriter}
@@ -20,18 +21,12 @@ object AuthzMessage {
 /** Messages of the [[AuthzProtocol]]. */
 enum AuthzMessage {
 
-  /** Signed events, encoded exactly as they are hashed, in an order in which they can be received. */
-  case Events(events: List[Array[Byte]])
+  /** Plumtree dissemination of the events, signed and encoded exactly as they are hashed. */
+  case Events(message: PlumtreeMessage[Set[Hash], Array[Byte]])
 
   /** Revealed values of delta commitments, filtered for what the receiver may read. */
   case Deltas(deltas: List[AuthzMessage.DeltaValue])
 
-  /** Ask for the given events (and the deltas the requester may read). */
-  case Request(events: Set[Hash])
-
   /** Ask for the deltas of the given (known) events, answered with those the requester may read. */
   case RequestDeltas(events: Set[Hash])
-
-  /** Ask for everything, sent by replicas that do not even know the genesis event yet. */
-  case Bootstrap
 }
