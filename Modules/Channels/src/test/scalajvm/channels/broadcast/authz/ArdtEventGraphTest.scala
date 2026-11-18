@@ -136,6 +136,21 @@ class ArdtEventGraphTest extends FunSuite {
     }
   }
 
+  test("receive with unknown capability reports exactly the absent parents plus the authorization hash") {
+    val (graph, holder, holderKey, genesis) = freshGraph()
+    val unknownAuthorization                = Hash.compute("unknown-capability".getBytes)
+    val unknownParent                       = Hash.compute("unknown-parent".getBytes)
+    val event                               =
+      buildEvent(
+        DeltaCommitment(Hash.compute("delta".getBytes)),
+        holder,
+        holderKey,
+        Set(genesis.hash, unknownParent),
+        unknownAuthorization
+      )
+    assertEquals(graph.receive(writeToArray(event)), Left(Set(unknownParent, unknownAuthorization)))
+  }
+
   test("receive rejects an event authorized by a capability that was not granted to its author") {
     val (graph, _, _, genesis)  = freshGraph()
     val (impostor, impostorKey) = newIdentity()
