@@ -65,6 +65,9 @@ trait PlumtreeKnowledge {
 
     /** Exact knowledge carried by a payload, used to detect duplicates and announced in `IHave`. */
     def content: Knowledge
+
+    /** Knowledge a sender of the payload has, e.g., its content and everything it depends on. */
+    def implied: Knowledge = payload.content
   }
 
   extension (store: Store) {
@@ -271,10 +274,14 @@ class Plumtree[KN <: PlumtreeKnowledge](val knowledge: KN) extends Routing {
             val next               = withRemoteKnowledge(
               compactRemote(state.copy(store = store)),
               from,
-              payload.content
+              payload.implied
             ).withRole(from, PeerRole.Eager)
-            val forwarded = disseminate(next, payload, except = Set(from))
-            forwarded.copy(events = delivered.map(Event.Deliver(_)) ++ forwarded.events)
+            // payloads the store rejected are not forwarded
+            // the sender may also have announced dependencies we lack
+            if !store.has(payload.content) then scheduleRepairIfNeeded(next, Nil)
+            else
+                val forwarded = disseminate(next, payload, except = Set(from))
+                scheduleRepairIfNeeded(forwarded.state, delivered.map(Event.Deliver(_)) ++ forwarded.events)
 
   private def withRemoteKnowledge(state: State, from: Peer, knows: Knowledge): State =
     state.copy(store = state.store.withRemote(state.store.remote.updatedWith(from) {
