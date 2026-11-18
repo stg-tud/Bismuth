@@ -39,6 +39,59 @@ object PlumtreeMessage {
   case class Payload[+T](dots: Dots, data: T)
 }
 
+/** What plumtree needs to know about its `Payload`s, `Knowledge` summaries, and local `Store`.
+  * Like [[Routing]], the related types are members, fixed by a stable instance.
+  *
+  * Knowledge is used in two roles: the exact content of a payload ([[content]]), and a summary of everything a replica
+  * has ([[summary]], sent in `Graft`). Both only need to be understood by the store: [[missing]] tells which part
+  * of some knowledge the store lacks, and [[replay]] which payloads a replica with some knowledge lacks.
+  *
+  * For [[rdts.time.Dots]] both roles coincide. For hash DAGs, content is the hashes of the events in a payload,
+  * while the summary is the heads, standing for their causal past.
+  */
+trait PlumtreeKnowledge {
+  type Store
+  type Knowledge
+  type Payload
+
+  final type Msg = PlumtreeMessage[Knowledge, Payload]
+
+  extension (knowledge: Knowledge) {
+    def merge(other: Knowledge): Knowledge
+    def isEmpty: Boolean
+  }
+
+  extension (payload: Payload) {
+
+    /** Exact knowledge carried by a payload, used to detect duplicates and announced in `IHave`. */
+    def content: Knowledge
+  }
+
+  extension (store: Store) {
+
+    /** Summary of everything in the store, sent in `Graft`. */
+    def summary: Knowledge
+
+    /** The part of `knowledge` the store does not have. */
+    def missing(knowledge: Knowledge): Knowledge
+
+    /** Add a payload whose content was not fully known. Returns the payloads to deliver because of it. */
+    def remember(payload: Payload): (Store, List[Payload])
+
+    /** Payloads in the store that a replica knowing `knows` may lack, in an order it can receive them. */
+    def replay(knows: Knowledge): List[Payload]
+
+    /** Knowledge announced by peers, kept in the store as it is typed by [[Knowledge]]. */
+    def remote: Map[Peer, Knowledge]
+    def withRemote(remote: Map[Peer, Knowledge]): Store
+
+    /** Remote knowledge to keep for repair; may drop what the store has, which is never needed again. */
+    def compact(knowledge: Knowledge): Knowledge = knowledge
+
+    final def has(knowledge: Knowledge): Boolean = store.missing(knowledge).isEmpty
+  }
+}
+
 object PlumtreeBroadcast {
 
   /** Paper: `Eager` ↔ `eagerPushPeers`, `Lazy` ↔ `lazyPushPeers`. */
@@ -58,7 +111,16 @@ object PlumtreeBroadcast {
   /** Wire format. Not a given, as the derivation would find itself. */
   def messageCodec[State: JsonValueCodec]: JsonValueCodec[Message[State]] = JsonCodecMaker.make
 
-  final class Protocol[S] extends Plumtree[S]
+  def apply[State](
+      localContext: Dots = Dots.empty,
+      remoteContext: Map[Peer, Dots] = Map.empty,
+      deltaStorage: DeltaStorage[State] = NoHistory[State](),
+      peerRoles: Map[Peer, PeerRole] = Map.empty,
+      repairScheduled: Boolean = false,
+  ): PlumtreeBroadcast[State] =
+    PlumtreeCore(DotsStore(localContext, deltaStorage, remoteContext), peerRoles, repairScheduled)
+
+  final class Protocol[S] extends Plumtree(DotsKnowledge[S]())
 
   given protocol[State]: Protocol[State] = Protocol[State]()
 
@@ -91,29 +153,28 @@ object PlumtreeBroadcast {
   * Main adaptation: instead of per-message timers and `(mID, round)`, this version uses dot contexts.
   * `IHave` and `Graft` summarize knowledge with `Dots`, and `Graft` replays all history newer than `knows`.
   */
-final case class PlumtreeBroadcast[State](
-    localContext: Dots = Dots.empty,
-    remoteContext: Map[Peer, Dots] = Map.empty,
-    deltaStorage: DeltaStorage[State] = NoHistory(),
+type PlumtreeBroadcast[State] = PlumtreeCore[DotsStore[State]]
+
+final case class PlumtreeCore[S](
+    store: S,
     peerRoles: Map[Peer, PeerRole] = Map.empty,
     repairScheduled: Boolean = false,
 ) {
   def eagerPeers: Set[Peer] = peerRoles.collect { case (peer, PeerRole.Eager) => peer }.toSet
 
-  def allPayloads: List[Payload[State]] = deltaStorage.getHistory
-
   /** roles are only added/removed by the add/remove peer methods, so here we only change it if a role exists */
-  def withRole(peer: Peer, role: PeerRole): PlumtreeBroadcast[State] =
+  def withRole(peer: Peer, role: PeerRole): PlumtreeCore[S] =
     copy(peerRoles = peerRoles.updated(peer, role))
 }
 
-/** Transitions of plumtree, the state is [[PlumtreeBroadcast]]. */
-class Plumtree[S] extends Routing {
+/** Transitions of plumtree, the state is a [[PlumtreeCore]], generic over the [[PlumtreeKnowledge]]. */
+class Plumtree[KN <: PlumtreeKnowledge](val knowledge: KN) extends Routing {
   import PlumtreeBroadcast.*
+  import knowledge.*
 
-  type State = PlumtreeBroadcast[S]
-  type Msg   = Message[S]
-  type Out   = Payload[S]
+  type State = PlumtreeCore[knowledge.Store]
+  type Msg   = knowledge.Msg
+  type Out   = knowledge.Payload
 
   type Result = Step[State, Msg, Out]
 
@@ -131,30 +192,30 @@ class Plumtree[S] extends Routing {
     */
   def addPeer(state: State, peer: Peer): Result = {
     val next = if state.peerRoles.contains(peer) then state else state.withRole(peer, PeerRole.Lazy)
-    Step(next, List(Send(peer :: Nil, Graft(state.localContext))))
+    Step(next, List(Send(peer :: Nil, Graft(state.store.summary))))
   }
 
   /** Algorithm 3 `NeighborDown(node)`. */
   def removePeer(state: State, peer: Peer): Result = Step(
     state.copy(
       peerRoles = state.peerRoles.removed(peer),
-      remoteContext = state.remoteContext.removed(peer)
+      store = state.store.withRemote(state.store.remote.removed(peer))
     ),
     Nil
   )
 
   /** Local broadcast, corresponding to Algorithm 1 `Broadcast`/`EagerPush`/`LazyPush`. */
   def broadcast(state: State, payload: Out): Result = {
-    val next = state.copy(
-      localContext = state.localContext.merge(payload.dots),
-      deltaStorage = state.deltaStorage.remember(payload),
-    )
-    disseminate(next, payload, Set.empty)
+    val (store, delivered) = state.store.remember(payload)
+    val next               = state.copy(store = store)
+    // local payloads are not delivered, but payloads they released are
+    val sent = disseminate(next, payload, Set.empty)
+    sent.copy(events = delivered.filterNot(_ == payload).map(Event.Deliver(_)) ++ sent.events)
   }
 
   /** Peers that announced knowledge we do not have yet. */
   private def peersWithMissing(state: State): Iterable[Peer] =
-    state.remoteContext.collect { case (peer, context) if context.inflates(state.localContext) => peer }
+    state.store.remote.collect { case (peer, context) if !state.store.has(context) => peer }
 
   /** The paper starts a timer per missing message after an `IHave`. We keep a single repair timer running while
     * any peer announced knowledge we lack; if the knowledge is still missing when it fires, we graft it.
@@ -168,7 +229,7 @@ class Plumtree[S] extends Routing {
             case Some(missing) =>
               scheduleRepairIfNeeded(
                 unscheduled.withRole(missing, PeerRole.Eager),
-                List(Send(List(missing), Graft(state.localContext)))
+                List(Send(List(missing), Graft(state.store.summary)))
               )
 
   private def scheduleRepairIfNeeded(state: State, events: Seq[Effect[Msg, Out]]): Result =
@@ -196,36 +257,33 @@ class Plumtree[S] extends Routing {
       case Graft(knows) =>
         // Repair: promote sender back to eager and replay what it is missing.
         val next     = withRemoteKnowledge(state.withRole(from, PeerRole.Eager), from, knows)
-        val relevant = next.deltaStorage.getHistory.filterNot(payload => payload.dots <= knows)
-        if relevant.isEmpty && !(next.localContext <= knows) then
-            println(
-              s"plumtree graft unsatisfied from=$from local=${next.localContext} knows=$knows storage=${next.deltaStorage.getClass.getSimpleName}"
-            )
+        val relevant = next.store.replay(knows)
         val replayed = relevant.map(payload => Send(from :: Nil, Push(payload)))
         scheduleRepairIfNeeded(next, replayed)
 
-      case Push(payload @ Payload(context, _)) =>
-        if context <= state.localContext then
+      case Push(payload) =>
+        if state.store.has(payload.content) then
             // Duplicate eager path: demote this edge and ask the sender to prune too.
             Step(state.withRole(from, PeerRole.Lazy), List(Send(from :: Nil, Prune)))
         else
             // First delivery: remember, keep sender eager, deliver, and forward.
-            val next = withRemoteKnowledge(
-              state.copy(
-                localContext = state.localContext.merge(context),
-                deltaStorage = state.deltaStorage.remember(payload),
-              ),
+            val (store, delivered) = state.store.remember(payload)
+            val next               = withRemoteKnowledge(
+              compactRemote(state.copy(store = store)),
               from,
-              context
+              payload.content
             ).withRole(from, PeerRole.Eager)
             val forwarded = disseminate(next, payload, except = Set(from))
-            forwarded.copy(events = Event.Deliver(payload) +: forwarded.events)
+            forwarded.copy(events = delivered.map(Event.Deliver(_)) ++ forwarded.events)
 
-  private def withRemoteKnowledge(state: State, from: Peer, knows: Dots): State =
-    state.copy(remoteContext = state.remoteContext.updatedWith(from) {
-      case None     => Some(knows)
-      case Some(ex) => Some(ex `merge` knows)
-    })
+  private def withRemoteKnowledge(state: State, from: Peer, knows: Knowledge): State =
+    state.copy(store = state.store.withRemote(state.store.remote.updatedWith(from) {
+      case None     => Some(state.store.compact(knows))
+      case Some(ex) => Some(state.store.compact(ex `merge` knows))
+    }))
+
+  private def compactRemote(state: State): State =
+    state.copy(store = state.store.withRemote(state.store.remote.view.mapValues(state.store.compact).toMap))
 
   /** Send payload on eager edges and `IHave` on lazy edges. */
   private def disseminate(state: State, payload: Out, except: Set[Peer]): Result = {
@@ -235,8 +293,52 @@ class Plumtree[S] extends Routing {
 
     val eagerSend = Option.when(eager.nonEmpty)(Send(eager, Push(payload): Msg))
     val lazySend  =
-      Option.when(lazyPeers.nonEmpty)(Send(lazyPeers, IHave(payload.dots): Msg))
+      Option.when(lazyPeers.nonEmpty)(Send(lazyPeers, IHave(payload.content): Msg))
 
     Step(state, List(eagerSend, lazySend).flatten)
+  }
+}
+
+/** Dots-based store: the local context with the replay history, and the knowledge of peers. */
+final case class DotsStore[State](
+    localContext: Dots,
+    deltaStorage: DeltaStorage[State],
+    remoteContext: Map[Peer, Dots] = Map.empty,
+)
+
+object DotsStore {
+
+  /** Accessors of [[PlumtreeBroadcast]], here to be in its implicit scope. */
+  extension [State](state: PlumtreeBroadcast[State]) {
+    def localContext: Dots                 = state.store.localContext
+    def deltaStorage: DeltaStorage[State]  = state.store.deltaStorage
+    def remoteContext: Map[Peer, Dots]     = state.store.remoteContext
+    def allPayloads: List[Payload[State]]  = state.store.deltaStorage.getHistory
+  }
+}
+
+final class DotsKnowledge[State] extends PlumtreeKnowledge {
+  type Store     = DotsStore[State]
+  type Knowledge = Dots
+  type Payload   = PlumtreeMessage.Payload[State]
+
+  extension (knowledge: Dots) {
+    def merge(other: Dots): Dots = rdts.base.Lattice.merge(knowledge, other)
+    def isEmpty: Boolean         = knowledge.isEmpty
+  }
+
+  extension (payload: Payload) def content: Dots = payload.dots
+
+  extension (store: Store) {
+    def summary: Dots                      = store.localContext
+    def missing(knowledge: Dots): Dots     = knowledge.subtract(store.localContext)
+    def remember(payload: Payload): (Store, List[Payload]) =
+      (
+        store.copy(localContext = store.localContext.merge(payload.dots), deltaStorage = store.deltaStorage.remember(payload)),
+        List(payload)
+      )
+    def replay(knows: Dots): List[Payload] = store.deltaStorage.getHistory.filterNot(payload => payload.dots <= knows)
+    def remote: Map[Peer, Dots]                    = store.remoteContext
+    def withRemote(remote: Map[Peer, Dots]): Store = store.copy(remoteContext = remote)
   }
 }
