@@ -1,6 +1,5 @@
-package channels
+package channels.routing
 
-import channels.routing.PlumtreeBroadcast
 import channels.routing.PlumtreeBroadcast.Event.Send
 import channels.routing.PlumtreeBroadcast.{Event, PeerRole}
 import channels.routing.PlumtreeMessage.*
