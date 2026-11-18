@@ -313,7 +313,7 @@ class MergeDeltasAfterRevocationBenchmarkState extends RevokedEventGraphBenchmar
   override def setup(): Unit = {
     super.setup()
     deltaValueStoreAfterRevocation =
-      replayTrace(AuthzReplica.initial(rootIdentity.getPublic, genesisHash), trace, deltaValueStore).deltas
+      replayTrace(AuthzReplica.initial(rootIdentity.getPublic, genesisHash), trace, deltaValueStore).deltas.store
   }
 }
 

@@ -4,7 +4,7 @@ import AuthzEvent.Payload.{Capability, DeltaCommitment, Revocation}
 import channels.crypto.Commitment.RevealedValue
 import channels.crypto.{Commitment, Hash, PrivateIdentity, PublicIdentity, Signature, Verifier}
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
-import rdts.base.{Bottom, Decompose, Lattice, Uid}
+import rdts.base.{Bottom, Decompose, Lattice}
 import rdts.filters.{Filter, PermissionTree}
 
 import scala.annotation.tailrec
@@ -20,14 +20,9 @@ object AuthzReplica {
     AuthzReplica[RDT](
       self,
       AuthzEventGraph(genesis),
-      deltas = DeltaValueStore(),
-      state = Bottom[RDT].empty,
+      deltas = AuthzDeltas.empty,
       waitingEvents = Map.empty,
-      waitingDeltas = Map.empty,
-      snapshot = None,
     )
-
-  final case class Snapshot[RDT](version: Int, state: RDT)
 
   /** The events that must be in the graph before `event` can be added. */
   def dependencies(event: AuthzEvent): Set[Hash] =
@@ -47,27 +42,23 @@ object AuthzReplica {
 }
 
 /** Immutable state of an authorization-aware replica: the [[AuthzEventGraph]], the events waiting for missing
-  * predecessors, and the delta values this replica may read. Disseminated by [[channels.routing.authz.AuthzProtocol]].
+  * predecessors, and the delta values this replica may read ([[AuthzDeltas]]). Disseminated by [[channels.routing.authz.AuthzProtocol]].
   */
 final case class AuthzReplica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
     self: PublicIdentity,
     eventGraph: AuthzEventGraph,
-    /** The delta values this replica accepted. */
-    deltas: DeltaValueStore[RDT],
-    state: RDT,
+    deltas: AuthzDeltas[RDT],
     /** Events that are waiting for missing predecessors, by their hash. */
     waitingEvents: Map[Hash, Array[Byte]],
-    /** Delta values whose commitment event is not known yet. */
-    waitingDeltas: Map[Hash, RevealedValue],
-    /** State as of an event index, to rematerialize from after revocations that invalidate only later deltas. */
-    snapshot: Option[AuthzReplica.Snapshot[RDT]],
 )(using Verifier) {
   import AuthzReplica.*
 
   def heads: Set[Hash] = eventGraph.heads
 
-  def delta(eventHash: Hash): Option[RDT] =
-    eventGraph.events.get(eventHash).flatMap((_, index) => deltas.get(index)).map(_.delta)
+  /** The materialized state. */
+  def state: RDT = deltas.state
+
+  def delta(eventHash: Hash): Option[RDT] = deltas.delta(eventGraph, eventHash)
 
   def activeCapabilitiesOf(identity: PublicIdentity): Set[(Hash, Capability)] =
     eventGraph.activeCapabilitiesOf(identity)
@@ -89,20 +80,12 @@ final case class AuthzReplica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Dec
     eventGraph.notBefore(hashes).map(hash => writeToArray(eventGraph.events(hash)._1))
 
   /** Known delta commitment events without a (pending) value, e.g., because they were not readable when received. */
-  def deltasWithoutValue: Set[Hash] =
-    eventGraph.events.iterator.collect {
-      case (hash, (AuthzEvent(DeltaCommitment(_), _, _, _, _), index))
-          if !deltas.contains(index) && !waitingDeltas.contains(hash) => hash
-    }.toSet
+  def deltasWithoutValue: Set[Hash] = deltas.withoutValue(eventGraph)
 
-  def deltaValue(eventHash: Hash): Option[RevealedValue] =
-    eventGraph.events.get(eventHash).flatMap((_, index) => deltas.get(index)).map(stored =>
-      RevealedValue(writeToArray(stored.delta), stored.witness)
-    )
+  def deltaValue(eventHash: Hash): Option[RevealedValue] = deltas.deltaValue(eventGraph, eventHash)
 
-  /** Remember the current state, see [[snapshot]]. */
-  def createSnapshot: AuthzReplica[RDT] =
-    copy(snapshot = Some(AuthzReplica.Snapshot(eventGraph.nextEventIndex - 1, state)))
+  /** Remember the current state, see [[AuthzDeltas.snapshot]]. */
+  def createSnapshot: AuthzReplica[RDT] = copy(deltas = deltas.createSnapshot(eventGraph))
 
   // ------------------------------------------------------------------------------------------------
   // direct input, e.g., for trusted events, replay, and tests
@@ -124,16 +107,11 @@ final case class AuthzReplica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Dec
     * @throws NoSuchElementException if the event is unknown
     */
   def receiveDelta(eventHash: Hash, value: RevealedValue): AuthzReplica[RDT] =
-    receiveDeltaChecked(eventHash, value)._1
+    copy(deltas = deltas.receiveChecked(eventGraph, self, eventHash, value)._1)
 
   /** The values of `hashes` that `reader` may read. */
   def readableDeltas(reader: PublicIdentity, hashes: Iterable[Hash]): List[DeltaValue] =
-    hashes.iterator.flatMap { hash =>
-      eventGraph.events.get(hash).flatMap((_, index) => deltas.get(index)).collect {
-        case stored if Authorization.mayReadAssumingCommitmentHolds(reader, hash, stored.delta, eventGraph) =>
-          DeltaValue(hash, RevealedValue(writeToArray(stored.delta), stored.witness))
-      }
-    }.toList
+    deltas.readableBy(eventGraph, reader, hashes)
 
   /** Adds an event received from the network, keeping it until its predecessors arrive, and dropping it if invalid.
     * @return the events that were added to the graph because of it, encoded, in the order they were added
@@ -148,7 +126,7 @@ final case class AuthzReplica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Dec
 
   /** Accepts delta values from the network: buffered if their event is unknown, dropped if not acceptable. */
   def receiveDeltas(values: List[DeltaValue]): AuthzReplica[RDT] =
-    values.foldLeft(this)((replica, value) => replica.receiveNetworkDelta(value.event, value.value)._1)
+    copy(deltas = values.foldLeft(deltas)((deltas, value) => deltas.receive(eventGraph, self, value.event, value.value)._1))
 
   // ------------------------------------------------------------------------------------------------
   // local operations
@@ -182,7 +160,8 @@ final case class AuthzReplica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Dec
         val (withEvent, outcome) = replica.receiveEventChecked(encoded)
         require(outcome.added.nonEmpty, s"local event was not accepted: $outcome")
         val hash = outcome.added.get
-        (withEvent.storeDelta(hash, part, revealed.witness), (hash, encoded) :: created)
+        val stored = withEvent.copy(deltas = withEvent.deltas.put(withEvent.eventGraph, hash, part, revealed.witness))
+        (stored, (hash, encoded) :: created)
     }
     Local(next, created.reverse.map(_._2))
   }
@@ -267,16 +246,11 @@ final case class AuthzReplica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Dec
           val accepted = copy(eventGraph = graph, waitingEvents = waitingEvents - hash)
           val (afterRevocation, invalidated) = graph.events(hash)._1.payload match
               // if the revocation is the only head, every event is in its causal past
-              case Revocation(_) if graph.heads.size > 1 => accepted.invalidateDeltas(hash)
-              case _                                     => (accepted, false)
+              case Revocation(_) if graph.heads.size > 1 => deltas.invalidate(graph, hash)
+              case _                                     => (deltas, false)
           // the delta of this event may have arrived before it
-          val (afterDelta, deltaApplied) = afterRevocation.waitingDeltas.get(hash) match
-              case Some(value) =>
-                afterRevocation.copy(waitingDeltas =
-                  afterRevocation.waitingDeltas - hash
-                ).receiveNetworkDelta(hash, value)
-              case None => (afterRevocation, false)
-          (afterDelta, EventOutcome(added = Some(hash), changed = invalidated || deltaApplied))
+          val (afterDelta, deltaApplied) = afterRevocation.receiveWaiting(graph, self, hash)
+          (accepted.copy(deltas = afterDelta), EventOutcome(added = Some(hash), changed = invalidated || deltaApplied))
 
   /** Retry events waiting for predecessors until no more can be added.
     * @return the events that were added, encoded, in the order they were added
@@ -289,63 +263,5 @@ final case class AuthzReplica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Dec
         (r, if outcome.added.nonEmpty then encoded :: acc else acc)
     }
     if addedNow.isEmpty then (next, added) else next.retryWaiting(added ++ addedNow.reverse)
-  }
-
-  /** Removes the deltas the revocation invalidates and rematerializes, keeping the snapshot if it is unaffected. */
-  private def invalidateDeltas(revocation: Hash): (AuthzReplica[RDT], Boolean) = {
-    val invalidated = eventGraph.deltasInvalidatedBy(revocation).filter(deltas.contains).toSet
-    if invalidated.isEmpty then (this, false)
-    else
-        val keptSnapshot = snapshot.filterNot(s => invalidated.exists(_ <= s.version))
-        val next         = copy(deltas = deltas.removedAll(invalidated), snapshot = keptSnapshot)
-        (next.copy(state = next.rematerialized), true)
-  }
-
-  /** The state from the snapshot (if any) and the deltas of events after it. */
-  private def rematerialized: RDT = snapshot match
-      case None           => deltas.merged
-      case Some(snapshot) =>
-        // walk back from the heads, through the events after the snapshot
-        val toVisit = scala.collection.mutable.Queue.from(eventGraph.heads)
-        val visited = scala.collection.mutable.Set.from(eventGraph.heads)
-        var result  = snapshot.state
-        while toVisit.nonEmpty do {
-          val (event, index) = eventGraph.events(toVisit.dequeue())
-          if index > snapshot.version then
-              deltas.get(index).foreach(stored => result = result.merge(stored.delta))
-              val parents = event.parents.diff(visited)
-              toVisit.enqueueAll(parents)
-              visited.addAll(parents)
-        }
-        result
-
-  /** Accepts a delta value from the network: buffered if its event is unknown, dropped if it is not acceptable. */
-  private def receiveNetworkDelta(eventHash: Hash, value: RevealedValue): (AuthzReplica[RDT], Boolean) =
-    if !eventGraph.events.contains(eventHash) then
-        (copy(waitingDeltas = waitingDeltas.updated(eventHash, value)), false)
-    else Try(receiveDeltaChecked(eventHash, value)).getOrElse((this, false))
-
-  /** Accepts a delta value of a known event, if its commitment holds, it may be read here and was allowed to be written.
-    * @throws IllegalArgumentException otherwise
-    */
-  private def receiveDeltaChecked(eventHash: Hash, value: RevealedValue): (AuthzReplica[RDT], Boolean) = {
-    val (event, index) = eventGraph.events(eventHash)
-    if deltas.contains(index) then (this, false)
-    else
-        val commitment = value.commitment(event.author.id)
-        require(event.payload == DeltaCommitment(commitment), "commitment does not hold")
-        val delta = readFromArray[RDT](value.value)
-        require(Authorization.mayReadAssumingCommitmentHolds(self, eventHash, delta, eventGraph), "may not read")
-        require(Authorization.mayWriteAssumingCommitmentHolds(eventGraph, eventHash, event, delta), "may not write")
-        (storeDelta(eventHash, delta, value.witness), true)
-  }
-
-  private def storeDelta(eventHash: Hash, delta: RDT, witness: Array[Byte]): AuthzReplica[RDT] = {
-    val index = eventGraph.events(eventHash)._2
-    copy(
-      deltas = deltas.put(index, delta, witness),
-      state = state.merge(delta),
-      snapshot = snapshot.map(s => if index <= s.version then s.copy(state = s.state.merge(delta)) else s),
-    )
   }
 }

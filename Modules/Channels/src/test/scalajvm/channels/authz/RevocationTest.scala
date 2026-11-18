@@ -87,7 +87,7 @@ class RevocationTest extends FunSuite {
       val before         = replica
       val (next, result) = before.receiveEvent(writeToArray(event))
       assertEquals(result, Right(Some(event.hash)))
-      if next.deltas ne before.deltas then invalidations(event.hash) = before.deltas.indices.diff(next.deltas.indices)
+      if next.deltas.store ne before.deltas.store then invalidations(event.hash) = before.deltas.store.indices.diff(next.deltas.store.indices)
       update(next)
     }
 
@@ -110,7 +110,7 @@ class RevocationTest extends FunSuite {
       val before = replica
       replica = replica.write(rootIdentity, value, capability).state
       val created = replica.eventGraph.events.collect {
-        case (hash, (_, index)) if index >= before.eventGraph.nextEventIndex && replica.deltas.contains(index) => hash
+        case (hash, (_, index)) if index >= before.eventGraph.nextEventIndex && replica.deltas.store.contains(index) => hash
       }
       created.foreach(hash => record(hash, replica.deltaValue(hash).get))
       created.map(replica.eventGraph.events(_)._2).toSet
@@ -119,17 +119,17 @@ class RevocationTest extends FunSuite {
     def createSnapshot(): Unit = replica = replica.createSnapshot
 
     /** The event index of the snapshot, -1 if there is none */
-    def snapshotVersion: Int = replica.snapshot.fold(-1)(_.version)
+    def snapshotVersion: Int = replica.deltas.snapshot.fold(-1)(_.version)
 
     /** The deltas `revocation` invalidated when it was received, or, if it did not invalidate any, would invalidate now */
     def invalidatedBy(revocation: Hash): Set[Int] =
       invalidations.getOrElse(
         revocation,
-        replica.eventGraph.deltasInvalidatedBy(revocation).filter(replica.deltas.contains).toSet
+        replica.eventGraph.deltasInvalidatedBy(revocation).filter(replica.deltas.store.contains).toSet
       )
 
     private def update(next: AuthzReplica[Set[Int]]): Unit = {
-      if next.deltas ne replica.deltas then notifications += next.state
+      if next.deltas.store ne replica.deltas.store then notifications += next.state
       replica = next
     }
 
