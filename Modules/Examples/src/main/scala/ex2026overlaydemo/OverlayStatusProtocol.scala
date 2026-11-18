@@ -2,7 +2,7 @@ package ex2026overlaydemo
 
 import channels.JsoniterCodecs.given
 import channels.MessagingIO
-import channels.broadcast.PlumtreeBroadcast.PeerRole
+import channels.routing.PlumtreeBroadcast.PeerRole
 import channels.connection.Peer
 import channels.overlay.{FullMeshOverlay, HyParViewStateMachine}
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec

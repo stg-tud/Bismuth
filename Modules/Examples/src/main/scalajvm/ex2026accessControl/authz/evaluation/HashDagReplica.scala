@@ -1,6 +1,6 @@
 package ex2026accessControl.authz.evaluation
 
-import channels.broadcast.PlumtreeMessage
+import channels.routing.PlumtreeMessage
 import channels.connection.ByteBufferMessageBuffer
 import channels.crypto.{Hash, PrivateIdentity, PublicIdentity}
 import channels.authz.AuthzReplica

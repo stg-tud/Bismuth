@@ -1,7 +1,7 @@
 package channels
 
-import channels.broadcast.PlumtreeMessage.Payload
-import channels.broadcast.Routing.Effect
+import channels.routing.PlumtreeMessage.Payload
+import channels.routing.Routing.Effect
 import channels.connection.{LocalMessageQueue, QueuedLocalConnection}
 import channels.routing.{CausalBroadcast, CausalPlumtree}
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec

@@ -1,8 +1,8 @@
 package channels.routing.authz
 
-import channels.broadcast.PlumtreeMessage
+import channels.routing.PlumtreeMessage
 import channels.authz.AuthzCodecs.ardtEventCodec
-import channels.broadcast.Routing.{Effect, Step, Timer}
+import channels.routing.Routing.{Effect, Step, Timer}
 import channels.authz.AuthzTestSupport.{*, given}
 import channels.connection.Peer
 import channels.crypto.Ed25519.given

@@ -1,7 +1,7 @@
 package ex2026overlaydemo
 
 import channels.*
-import channels.broadcast.PlumtreeMessage.Payload
+import channels.routing.PlumtreeMessage.Payload
 import channels.connection.{Abort, ConnectionDescriptor, Listener, *}
 import rdts.base.Lattice
 

@@ -2,7 +2,7 @@ package ex2024DTN
 
 import channels.JsoniterCodecs.given
 import channels.MessagingIO
-import channels.broadcast.PlumtreeBroadcast
+import channels.routing.PlumtreeBroadcast
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import ex2024DTN.rdt.{Channel, ClientOperationMode}

@@ -2,8 +2,7 @@ package channels.routing
 
 import channels.JsoniterCodecs.given
 import channels.MessagingIO
-import channels.broadcast.Routing
-import channels.broadcast.Routing.{Effect, Step}
+import channels.routing.Routing.{Effect, Step}
 import channels.connection.Peer
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker

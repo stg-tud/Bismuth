@@ -1,8 +1,8 @@
 package ex2026keyValuePrdtBench
 
 import channels.DeltaStorage.Type.*
-import channels.broadcast.PlumtreeMessage.Payload
-import channels.broadcast.{PlumtreeBroadcast, PlumtreeMessage}
+import channels.routing.PlumtreeMessage.Payload
+import channels.routing.{PlumtreeBroadcast, PlumtreeMessage}
 import channels.connection.ConcurrencyHelper
 import channels.{DeltaStorage, MessagingIO}
 import ex2026keyValuePrdtBench.data.*

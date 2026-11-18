@@ -1,6 +1,6 @@
 package channels
 
-import channels.broadcast.PlumtreeMessage.Payload
+import channels.routing.PlumtreeMessage.Payload
 import rdts.base.Lattice
 import rdts.time.Dots
 

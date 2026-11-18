@@ -1,8 +1,8 @@
 package ex2024DTN.rdt
 
 import channels.MessagingIO
-import channels.broadcast.PlumtreeMessage
-import channels.broadcast.PlumtreeMessage.{Graft, IHave, Payload, Prune, Push}
+import channels.routing.PlumtreeMessage
+import channels.routing.PlumtreeMessage.{Graft, IHave, Payload, Prune, Push}
 import channels.connection.{Abort, Connection, Connector, MessageBuffer, Peer, Receive}
 import channels.experiments.Aead
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}

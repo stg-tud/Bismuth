@@ -1,6 +1,6 @@
 package ex2021encfxtodo
 
-import channels.broadcast.PlumtreeMessage
+import channels.routing.PlumtreeMessage
 import channels.connection.{LocalMessageQueue, QueuedLocalConnection}
 import channels.experiments.Aead
 import channels.{MessagingIO, experiments}

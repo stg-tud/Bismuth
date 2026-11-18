@@ -1,7 +1,7 @@
 package ex2026accessControl.authz.evaluation
 
 import channels.authz.AuthzCodecs.ardtEventCodec
-import channels.broadcast.Routing.{Effect, Step}
+import channels.routing.Routing.{Effect, Step}
 import channels.authz.*
 import channels.authz.ArdtEvent.Payload.DeltaCommitment
 import channels.connection.Peer

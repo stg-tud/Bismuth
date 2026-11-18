@@ -1,6 +1,6 @@
 package ex2026keyValuePrdtBench.clients
 
-import channels.broadcast.PlumtreeBroadcast
+import channels.routing.PlumtreeBroadcast
 import channels.{KeepAllHistory, MessagingIO}
 import ex2026keyValuePrdtBench.data
 import ex2026keyValuePrdtBench.data.Codecs.given

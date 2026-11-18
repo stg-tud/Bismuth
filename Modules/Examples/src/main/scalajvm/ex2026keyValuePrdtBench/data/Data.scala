@@ -1,7 +1,7 @@
 package ex2026keyValuePrdtBench.data
 
-import channels.broadcast.PlumtreeBroadcast
-import channels.broadcast.PlumtreeMessage.Payload
+import channels.routing.PlumtreeBroadcast
+import channels.routing.PlumtreeMessage.Payload
 import rdts.base.{Lattice, ReplicaId, Uid}
 import rdts.datatypes.LastWriterWins
 import rdts.protocols.spanner.ParallelMultiPaxos

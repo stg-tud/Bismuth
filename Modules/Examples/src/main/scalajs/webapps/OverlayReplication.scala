@@ -2,7 +2,7 @@ package webapps
 
 import _root_.ex2026overlaydemo.OverlayStatusProtocol
 import _root_.ex2026overlaydemo.OverlayStatusProtocol.Status
-import channels.broadcast.PlumtreeMessage.Payload
+import channels.routing.PlumtreeMessage.Payload
 import channels.{DeltaStorage, MessagingIO}
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker

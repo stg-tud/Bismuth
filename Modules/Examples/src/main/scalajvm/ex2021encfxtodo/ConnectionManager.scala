@@ -1,6 +1,6 @@
 package ex2021encfxtodo
 
-import channels.broadcast.PlumtreeBroadcast
+import channels.routing.PlumtreeBroadcast
 import channels.connection.{Abort, ConnectionDescriptor, NioTCP, NioTcpConnectionDetailsResolver, Peer, PeerConnectInfo}
 import channels.overlay.FullMeshOverlay
 import channels.{MessagingIO, TimerDelays, Timers}

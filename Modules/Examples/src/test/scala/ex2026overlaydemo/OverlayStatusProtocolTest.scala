@@ -1,6 +1,6 @@
 package ex2026overlaydemo
 
-import channels.broadcast.PlumtreeBroadcast
+import channels.routing.PlumtreeBroadcast
 import channels.connection.{ConnectionDescriptor, LocalConnectionRegistry, LocalMessageQueue, Peer, PeerConnectInfo, QueuedLocalConnection}
 import channels.overlay.HyParViewStateMachine.HyParViewConfig
 import channels.overlay.{FullMeshOverlay, HyParViewStateMachine}

@@ -1,6 +1,6 @@
 package channels
 
-import channels.broadcast.Routing
+import channels.routing.Routing
 import channels.overlay.OverlayController.OverlayTimer
 
 import java.util.TimerTask

@@ -1,10 +1,10 @@
 package channels
 
-import channels.broadcast.PlumtreeBroadcast
-import channels.broadcast.PlumtreeBroadcast.Event.Send
-import channels.broadcast.PlumtreeBroadcast.{Event, PeerRole}
-import channels.broadcast.PlumtreeMessage.*
-import channels.broadcast.Routing.Timer
+import channels.routing.PlumtreeBroadcast
+import channels.routing.PlumtreeBroadcast.Event.Send
+import channels.routing.PlumtreeBroadcast.{Event, PeerRole}
+import channels.routing.PlumtreeMessage.*
+import channels.routing.Routing.Timer
 import channels.connection.Peer
 import channels.{KeepAllHistory, NoHistory}
 import munit.FunSuite

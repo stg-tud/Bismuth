@@ -2,7 +2,7 @@ package channels
 
 import channels.JsoniterCodecs.given
 import channels.MessagingIO
-import channels.broadcast.PlumtreeBroadcast
+import channels.routing.PlumtreeBroadcast
 import channels.connection.{ConnectionDescriptor, LocalConnectionRegistry, LocalMessageQueue, Peer, PeerConnectInfo, QueuedLocalConnection}
 import channels.overlay.FullMeshOverlay
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec

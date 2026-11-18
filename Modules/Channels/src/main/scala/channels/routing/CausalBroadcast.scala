@@ -1,8 +1,7 @@
 package channels.routing
 
-import channels.broadcast.PlumtreeMessage.Payload
-import channels.broadcast.Routing.{Effect, Step}
-import channels.broadcast.{PlumtreeBroadcast, PlumtreeMessage, Routing}
+import channels.routing.PlumtreeMessage.Payload
+import channels.routing.Routing.{Effect, Step}
 import channels.connection.Peer
 import channels.{DiscardingHistory, JsoniterCodecs, MessagingIO}
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReader, JsonValueCodec, JsonWriter}

@@ -2,9 +2,9 @@ package channels
 
 import channels.JsoniterCodecs.given
 import channels.MessagingIO.Envelope
-import channels.broadcast.PlumtreeMessage.*
-import channels.broadcast.Routing.{Effect, Step, Timer}
-import channels.broadcast.{PlumtreeBroadcast, PlumtreeMessage, Routing}
+import channels.routing.PlumtreeMessage.*
+import channels.routing.Routing.{Effect, Step, Timer}
+import channels.routing.{PlumtreeBroadcast, PlumtreeMessage, Routing}
 import channels.connection.*
 import channels.experiments.Aead
 import channels.overlay.OverlayController.{OverlayAction, OverlayEvent, OverlayMessage}
@@ -21,7 +21,7 @@ import scala.util.{Failure, Success, Try}
 
 object MessagingIO {
 
-  /** A [[channels.MessagingIO]] running [[channels.broadcast.PlumtreeBroadcast]]. */
+  /** A [[channels.MessagingIO]] running [[channels.routing.PlumtreeBroadcast]]. */
   type Plumtree[State] = MessagingIO[PlumtreeBroadcast.Protocol[State]]
 
   /** Settings shared by all [[channels.MessagingIO]] instances. */
@@ -109,14 +109,14 @@ object MessagingIO {
 /** Driver connecting transports, an overlay state machine, and a broadcast protocol state machine.
   *
   * - the overlay ([[channels.overlay.OverlayController]]) decides which connections exist and which peers are neighbors
-  * - the protocol (an instance of [[channels.broadcast.Routing]]) decides what to send to which
+  * - the protocol (an instance of [[channels.routing.Routing]]) decides what to send to which
   *   neighbor, and what to deliver to the application
   * - this class only translates: transport callbacks become overlay events, actions become transport operations,
   *   timer requests are scheduled on [[channels.Timers]], and the overlay's `NeighborUp`/`NeighborDown` are passed on to the
   *   protocol. It makes no protocol decisions of its own, and keeps no state besides the two state machines.
   *
   * The application interacts with the protocol through [[state]] and [[update]]; protocols typically provide a more
-  * convenient API as extension methods in the companion of their state type (see [[channels.broadcast.PlumtreeBroadcast]], [[channels.routing.CausalPlumtree]]).
+  * convenient API as extension methods in the companion of their state type (see [[channels.routing.PlumtreeBroadcast]], [[channels.routing.CausalPlumtree]]).
   *
   * Concurrency: each input runs the state transitions under `lock` and gets back the resulting [[Output]]s, which are
   * performed on the calling thread after the lock is released. Exceptions therefore reach the caller. Outputs that

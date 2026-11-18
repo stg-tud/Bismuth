@@ -1,6 +1,6 @@
-package channels.broadcast
+package channels.routing
 
-import channels.broadcast.Routing.Step
+import channels.routing.Routing.Step
 import channels.connection.Peer
 
 /** Typeclass for broadcast protocol state machines driven by a [[channels.MessagingIO]].

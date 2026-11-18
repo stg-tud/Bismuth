@@ -1,8 +1,8 @@
 package ex2026overlaydemo
 
 import channels.JsoniterCodecs.given
-import channels.broadcast.PlumtreeBroadcast
-import channels.broadcast.PlumtreeMessage.Payload
+import channels.routing.PlumtreeBroadcast
+import channels.routing.PlumtreeMessage.Payload
 import channels.connection.{Abort, ChannelResolver, ConnectionDescriptor, Connector, Listener, Peer, PeerConnectInfo}
 import channels.overlay.HyParViewStateMachine
 import channels.overlay.HyParViewStateMachine.HyParViewConfig

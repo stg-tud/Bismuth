@@ -1,7 +1,7 @@
 package channels.routing.authz
 
 import channels.authz.DeltaValue
-import channels.broadcast.PlumtreeMessage
+import channels.routing.PlumtreeMessage
 import channels.crypto.Hash
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonReader, JsonValueCodec, JsonWriter}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker

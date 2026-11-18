@@ -1,10 +1,10 @@
-package channels.broadcast
+package channels.routing
 
 import channels.JsoniterCodecs.given
-import channels.broadcast.PlumtreeBroadcast.Event.Send
-import channels.broadcast.PlumtreeBroadcast.PeerRole
-import channels.broadcast.PlumtreeMessage.*
-import channels.broadcast.Routing.{Effect, Step}
+import channels.routing.PlumtreeBroadcast.Event.Send
+import channels.routing.PlumtreeBroadcast.PeerRole
+import channels.routing.PlumtreeMessage.*
+import channels.routing.Routing.{Effect, Step}
 import channels.connection.Peer
 import channels.{DeltaStorage, MessagingIO, NoHistory}
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
@@ -137,7 +137,7 @@ object PlumtreeBroadcast {
   extension [State](io: MessagingIO[Protocol[State]]) {
 
     /** Disseminate a local delta and return the dot assigned to it (`None` if `io` is closed).
-      * Receivers get the same dot as part of the [[channels.broadcast.PlumtreeMessage.Payload]], which allows applications to track causality.
+      * Receivers get the same dot as part of the [[channels.routing.PlumtreeMessage.Payload]], which allows applications to track causality.
       */
     def broadcast(delta: State): Unit = io.update(s => broadcastLocal(io.selfPeer.uid, delta)(s).res)
 
