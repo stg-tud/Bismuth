@@ -3,7 +3,7 @@ package webapps.ex2025tabular.lib
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import rdts.base.{Bottom, Lattice, ReplicaId, Uid}
-import rdts.datatypes.{ObserveRemoveMap, ReplicatedSet}
+import rdts.datatypes.ReplicatedSet
 import rdts.time.{Dot, Dots}
 import webapps.ex2025tabular.lib.ReplicatedUniqueList.MarkerRemovalBehavior
 import webapps.ex2025tabular.lib.Spreadsheet.{Range, SpreadsheetCoordinate}
@@ -11,8 +11,9 @@ import webapps.ex2025tabular.lib.Spreadsheet.{Range, SpreadsheetCoordinate}
 case class Spreadsheet[A](
     private val rowIds: ReplicatedUniqueList[RowId] = ReplicatedUniqueList.empty[RowId],
     private val colIds: ReplicatedUniqueList[ColumnId] = ReplicatedUniqueList.empty[ColumnId],
-    private val rowAndColIdPairToContent: ObserveRemoveMap[(rowId: RowId, colId: ColumnId), ReplicatedSet[A]] =
-      ObserveRemoveMap.empty[(rowId: RowId, colId: ColumnId), ReplicatedSet[A]],
+    /** cells are never removed from the map, emptying a cell clears its set */
+    private val rowAndColIdPairToContent: Map[(rowId: RowId, colId: ColumnId), ReplicatedSet[A]] =
+      Map.empty[(rowId: RowId, colId: ColumnId), ReplicatedSet[A]],
     private val rangeIds: ReplicatedSet[RangeId] = ReplicatedSet.empty[RangeId]
 ) extends SpreadsheetOps[A] {
   lazy val observed: Dots =
@@ -31,10 +32,9 @@ case class Spreadsheet[A](
     )
 
     def removeValueFromConflict(rowId: RowId, colId: ColumnId, value: A)(using ReplicaId): Spreadsheet[A] =
-        val newContent = rowAndColIdPairToContent.transform(rowId, colId) {
-          case None      => None
-          case Some(set) => Some(set.remove(value))
-        }
+        val newContent = rowAndColIdPairToContent.get(rowId, colId) match
+            case None      => Map.empty
+            case Some(set) => Map((rowId = rowId, colId = colId) -> set.remove(value))
         Spreadsheet[A](
           rowAndColIdPairToContent = newContent
         )
@@ -99,19 +99,15 @@ case class Spreadsheet[A](
   ): Spreadsheet[A] = {
     val rowId      = rowIds.readAt(coordinate.rowIdx).get
     val colId      = colIds.readAt(coordinate.colIdx).get
-    val newContent =
-      rowAndColIdPairToContent.transform(rowId, colId) {
-        value match
-            case None =>
-              case None      => None
-              case Some(set) => Some(set.clear())
-            case Some(v) =>
-              case None      => Some(ReplicatedSet.empty.add(v))
-              case Some(set) =>
-                var delta = set.add(v)
-                if solveSeenConflict then delta = set.removeBy(_ != v) `merge` delta
-                Some(delta)
-      }
+    val set        = rowAndColIdPairToContent.getOrElse((rowId, colId), ReplicatedSet.empty[A])
+    val cellDelta  =
+      value match
+          case None    => set.clear()
+          case Some(v) =>
+            var delta = set.add(v)
+            if solveSeenConflict then delta = set.removeBy(_ != v) `merge` delta
+            delta
+    val newContent = Map((rowId = rowId, colId = colId) -> cellDelta)
     Spreadsheet[A](
       rowIds = rowIds.updateAt(coordinate.rowIdx, rowId),
       colIds = colIds.updateAt(coordinate.colIdx, colId),
@@ -122,8 +118,9 @@ case class Spreadsheet[A](
   def purgeTombstones: Spreadsheet[A] = {
     val rows = rowIds.toList
     val cols = colIds.toList
-    Spreadsheet[A](rowAndColIdPairToContent = rowAndColIdPairToContent.removeBy {
-      idCoord => !(rows.contains(idCoord.rowId) && cols.contains(idCoord.colId))
+    // the cells of removed rows and columns are cleared, the (empty) cells themselves remain in the map
+    Spreadsheet[A](rowAndColIdPairToContent = rowAndColIdPairToContent.collect {
+      case (idCoord, set) if !(rows.contains(idCoord.rowId) && cols.contains(idCoord.colId)) => idCoord -> set.clear()
     })
   }
 
@@ -237,7 +234,7 @@ case class Spreadsheet[A](
     val colIdxAndId = colIds.toList.zipWithIndex.map((dot, idx) => (idx, dot.time))
 
     val maxLen =
-      rowAndColIdPairToContent.queryAllEntries.map { rs => rs.elements.mkString("/") }
+      rowAndColIdPairToContent.values.map { rs => rs.elements.mkString("/") }
         .concat(rowIdxAndId.map(_.toString))
         .concat(colIdxAndId.map(_.toString))
         .concat(Array(legend))
