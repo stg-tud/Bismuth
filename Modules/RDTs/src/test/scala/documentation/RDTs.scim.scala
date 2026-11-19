@@ -565,35 +565,24 @@ Needs an identity to create fresh dots for written values.
 
 ## ObserveRemoveMap (OR-Map)
 
-A map from keys to nested RDTs. Each key carries a dot, values are merged
-using the lattice of the value type. Needs an identity for update operations.
-
-* Updating a present key reuses its dot, so a concurrent remove wins over the update.
-* Inserting an absent key creates a fresh dot, so it wins over a concurrent remove
-  (which could not have observed that dot).
-* Concurrent inserts of the same key keep both dots, their values are merged on read.
-  The next update collapses them into a single dot.
+A map with key-value semantics.  Removals are tracked via dots and do not
+override concurrent updates.  Needs an identity for update operations.
 
    */
 
   test("ObserveRemoveMap"):
-      val alice = rdts.base.ReplicaId.predefined("replica-alice")
-      val bob   = rdts.base.ReplicaId.predefined("replica-bob")
+      given Lattice[String] = Lattice.assertEquals
+      val localId           = rdts.base.ReplicaId.predefined("replica-alice")
 
-      val orMap = ObserveRemoveMap.empty[String, LastWriterWins[String]]
+      val orMap = ObserveRemoveMap.empty[String, String]
 
-      val afterM1 = orMap `merge` orMap.update("key1", LastWriterWins.now("value1"))(using alice)
-      assert(afterM1.get("key1").map(_.read) == Some("value1"), "should have key1")
+      val afterM1 = orMap `merge` orMap.update("key1", "value1")(using localId)
+      assert(afterM1.get("key1") == Some("value1"), "should have key1")
 
-      val mRemove = afterM1.remove("key1")
-      val mUpdate = afterM1.update("key1", afterM1.get("key1").get.write("value2"))(using alice)
-      assert((mRemove `merge` mUpdate).get("key1").isEmpty, "remove should win over concurrent update")
-
-      val mInsert = orMap.update("key1", LastWriterWins.now("value3"))(using bob)
-      assert(
-        (afterM1 `merge` mRemove `merge` mInsert).get("key1").map(_.read) == Some("value3"),
-        "insert should win over concurrent remove"
-      )
+      val mRemove          = afterM1.remove("key1")
+      val mAdd             = afterM1.update("key1", "value2")(using localId)
+      val afterConcurrent2 = mRemove `merge` mAdd
+      assert(afterConcurrent2.get("key1") == Some("value2"), "add should win over remove")
 
   /*:scim
 

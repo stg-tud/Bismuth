@@ -5,15 +5,13 @@ import rdts.time.{Dot, Dots}
 
 /** Observed-remove map.
   *
-  * Each key maps to one or more dots, each dot carrying its own value. Values of a key are merged on read.
-  *  - A key normally has a single dot. Multiple dots only exist after concurrent inserts of the same key.
-  *  - Updating a present key reuses its newest dot (by [[Dot.ordering]]). If the key has multiple dots,
-  *    the update collapses them: the merged value is written under the newest dot and the other observed dots are removed.
-  *  - Inserting an absent key generates a fresh dot.
-  *  - Removing a key removes exactly the observed dots of that key.
+  * Each key maps to a set of dots, each dot carrying its own value. Values of a key are merged on read.
+  *  - Every update (including the first insert) stores `v` under a fresh dot, existing dots are kept.
+  *  - Removing a key removes exactly the observed dots of that key, and with them the values written under those dots.
   *
-  * Consequently, a concurrent insert of an absent key wins against a remove (add-wins),
-  * but a concurrent update of a present key loses against a remove (remove-wins), as the update reuses an observed dot.
+  * Consequently, updates win against concurrent removes (add-wins), but only the concurrent updates survive a remove,
+  * not the values that were observed by the remove.
+  * Note that the number of dots of a key grows with every update until the key is removed.
   */
 case class ObserveRemoveMap[K, V](inner: Map[K, Map[Dot, V]], removed: Dots) {
 
@@ -39,16 +37,8 @@ case class ObserveRemoveMap[K, V](inner: Map[K, Map[Dot, V]], removed: Dots) {
   def size: Int = inner.size
 
   /** merges `v` into the current value stored in the map */
-  def update(k: K, v: V)(using replicaId: ReplicaId, lattice: Lattice[V]): Delta =
-    inner.get(k).filter(_.nonEmpty) match
-        case None =>
-          ObserveRemoveMap(Map(k -> Map(observed.nextDot(replicaId.uid) -> v)), Dots.empty)
-        case Some(versions) if versions.sizeIs == 1 =>
-          ObserveRemoveMap(Map(k -> Map(versions.head._1 -> v)), Dots.empty)
-        case Some(versions) =>
-          val newest = versions.keys.max(using Dot.ordering)
-          val value  = versions.values.reduce(_ `merge` _) `merge` v
-          ObserveRemoveMap(Map(k -> Map(newest -> value)), Dots.from(versions.keys.filter(_ != newest)))
+  def update(k: K, v: V)(using replicaId: ReplicaId): Delta =
+    ObserveRemoveMap(Map(k -> Map(observed.nextDot(replicaId.uid) -> v)), Dots.empty)
 
   def transform(k: K)(m: Option[V] => Option[V])(using ReplicaId, Lattice[V]): Delta =
     m(get(k)) match {
@@ -94,11 +84,12 @@ object ObserveRemoveMap {
 
   given decompose[K, V: Decompose]: Decompose[ObserveRemoveMap[K, V]] = Decompose.derived
 
+  /** a buffered value is redundant if its dot is removed, or if the delta has a value for the same key that subsumes it */
   given redundancy[K, V: Redundancy]: Redundancy[ObserveRemoveMap[K, V]] = (delta, bufferedDelta) =>
     bufferedDelta.inner.forall((key, versions) =>
       versions.forall((dot, value) =>
         delta.removed.contains(dot)
-        || delta.inner.get(key).flatMap(_.get(dot)).exists(Redundancy[V].isRedundant(_, value))
+        || delta.inner.get(key).exists(_.values.exists(Redundancy[V].isRedundant(_, value)))
       )
     ) && delta.removed.contains(bufferedDelta.removed)
 
