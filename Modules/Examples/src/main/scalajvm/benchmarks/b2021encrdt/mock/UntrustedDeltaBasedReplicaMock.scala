@@ -7,7 +7,7 @@ import channels.connection.MessageBuffer
 import channels.experiments
 import com.github.plokhotnyuk.jsoniter_scala.core.writeToString
 import com.google.crypto.tink.Aead
-import rdts.syntax.oldCompat.DeltaAWLWWMContainer
+import ex2021encfxtodo.crdt.DeltaAWLWWMContainer
 import rdts.time.Dots
 
 import java.io.PrintWriter

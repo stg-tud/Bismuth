@@ -6,7 +6,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray
 import com.google.crypto.tink.Aead
 import org.openjdk.jmh.annotations.*
 import org.openjdk.jmh.infra.Blackhole
-import rdts.syntax.oldCompat.DeltaAWLWWMContainer
+import ex2021encfxtodo.crdt.DeltaAWLWWMContainer
 import rdts.time.VectorClock
 
 import java.util.concurrent.TimeUnit

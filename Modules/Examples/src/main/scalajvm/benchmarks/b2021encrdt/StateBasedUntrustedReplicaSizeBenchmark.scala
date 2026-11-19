@@ -4,8 +4,8 @@ import benchmarks.b2021encrdt.Codecs.deltaAwlwwmapJsonCodec
 import benchmarks.b2021encrdt.statebased.{DecryptedState, EncryptedState, UntrustedReplica}
 import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray
 import ex2021encfxtodo.TinkAead
-import rdts.syntax.oldCompat.DeltaAWLWWMContainer
-import rdts.syntax.oldCompat.DeltaAWLWWMContainer.State
+import ex2021encfxtodo.crdt.DeltaAWLWWMContainer
+import ex2021encfxtodo.crdt.DeltaAWLWWMContainer.State
 import rdts.time.VectorClock
 
 import java.io.PrintWriter

@@ -3,7 +3,8 @@ package ex2025recipebook
 import org.openjdk.jmh.annotations.*
 import org.openjdk.jmh.infra.Blackhole
 import rdts.base.{Lattice, Redundancy, ReplicaId}
-import rdts.datatypes.{EnableWinsFlag, GrowOnlySet, LastWriterWins, ObserveRemoveMap, ReplicatedSet}
+import ex2021encfxtodo.crdt.ObserveRemoveMap
+import rdts.datatypes.{EnableWinsFlag, GrowOnlySet, LastWriterWins, ReplicatedSet}
 import rdts.time.Dots
 
 import java.util.concurrent.TimeUnit

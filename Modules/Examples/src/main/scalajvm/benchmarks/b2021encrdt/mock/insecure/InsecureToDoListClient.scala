@@ -6,7 +6,7 @@ import benchmarks.b2021encrdt.mock.{SecureToDoListClient, ToDoListIntermediary}
 import benchmarks.b2021encrdt.todolist.ToDoEntry
 import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray
 import rdts.base.ReplicaId
-import rdts.syntax.oldCompat.DeltaAWLWWMContainer
+import ex2021encfxtodo.crdt.DeltaAWLWWMContainer
 
 import java.nio.ByteBuffer
 import java.util.UUID

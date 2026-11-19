@@ -6,9 +6,9 @@ import benchmarks.b2021encrdt.mock.SecureToDoListClient.{ToDoMapLattice, mergeDe
 import benchmarks.b2021encrdt.todolist.ToDoEntry
 import channels.experiments.Aead
 import rdts.base.ReplicaId
-import rdts.datatypes.ObserveRemoveMap
-import rdts.syntax.oldCompat.DeltaAWLWWMContainer
-import rdts.syntax.oldCompat.DeltaAWLWWMContainer.State
+import ex2021encfxtodo.crdt.ObserveRemoveMap
+import ex2021encfxtodo.crdt.DeltaAWLWWMContainer
+import ex2021encfxtodo.crdt.DeltaAWLWWMContainer.State
 import rdts.time.Dots
 
 import java.util.UUID

@@ -1,8 +1,8 @@
-package test.rdts.bespoke
+package ex2021encfxtodo.crdt
 
 import rdts.base.Redundancy.MetaDelta
 import rdts.base.{Bottom, Lattice, ReplicaId}
-import rdts.datatypes.{LastWriterWins, MultiVersionRegister, ObserveRemoveMap}
+import rdts.datatypes.{LastWriterWins, MultiVersionRegister}
 import rdts.time.{Dot, Dots}
 
 class ObserveRemoveMapTest extends munit.FunSuite {

@@ -6,7 +6,7 @@ import benchmarks.b2021encrdt.mock.{DisseminationStats, IntermediarySizeInfo, Se
 import benchmarks.b2021encrdt.todolist.{AddToDoItem, CompleteToDoItem, RemoveToDoItems, ToDoEntry, ToDoListInteraction, ToDoListInteractionGenerator}
 import channels.experiments.Aead
 import ex2021encfxtodo.TinkAead
-import rdts.syntax.oldCompat.DeltaAWLWWMContainer
+import ex2021encfxtodo.crdt.DeltaAWLWWMContainer
 
 import java.io.PrintWriter
 import java.nio.file.{Files, Path, Paths}

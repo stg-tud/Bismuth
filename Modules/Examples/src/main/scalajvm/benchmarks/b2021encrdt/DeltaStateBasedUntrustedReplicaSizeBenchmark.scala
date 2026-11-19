@@ -6,7 +6,7 @@ import benchmarks.b2021encrdt.mock.UntrustedDeltaBasedReplicaMock
 import channels.experiments
 import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray
 import ex2021encfxtodo.TinkAead
-import rdts.syntax.oldCompat.DeltaAWLWWMContainer
+import ex2021encfxtodo.crdt.DeltaAWLWWMContainer
 import rdts.time.{Dot, Dots}
 
 import java.io.PrintWriter

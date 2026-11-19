@@ -4,7 +4,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import ex2021encfxtodo.SyncedTodoListCrdt.{StateType, stateCodec1}
 import rdts.base.ReplicaId
-import rdts.syntax.oldCompat.DeltaAWLWWMContainer
+import ex2021encfxtodo.crdt.DeltaAWLWWMContainer
 
 import java.util.UUID
 import java.util.concurrent.{ExecutorService, Executors}

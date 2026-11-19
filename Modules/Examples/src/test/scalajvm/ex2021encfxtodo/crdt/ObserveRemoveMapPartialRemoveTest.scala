@@ -1,7 +1,7 @@
-package test.rdts.bespoke
+package ex2021encfxtodo.crdt
 
 import rdts.base.{ReplicaId, Uid}
-import rdts.datatypes.{MultiVersionRegister, ObserveRemoveMap}
+import rdts.datatypes.MultiVersionRegister
 
 /** Keys with multiple dots (every update adds a dot), and removes that only observed some of them. */
 class ObserveRemoveMapPartialRemoveTest extends munit.FunSuite {

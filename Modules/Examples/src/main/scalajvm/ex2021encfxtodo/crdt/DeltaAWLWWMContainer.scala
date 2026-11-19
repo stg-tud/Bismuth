@@ -1,8 +1,8 @@
-package rdts.syntax.oldCompat
+package ex2021encfxtodo.crdt
 
+import ex2021encfxtodo.crdt.DeltaAWLWWMContainer.State
 import rdts.base.{Lattice, ReplicaId}
-import rdts.datatypes.{LastWriterWins, ObserveRemoveMap}
-import rdts.syntax.oldCompat.DeltaAWLWWMContainer.State
+import rdts.datatypes.LastWriterWins
 import rdts.time.Dots
 
 /** This is used for the encrypted todolist and associated benchmark */

@@ -1,9 +1,9 @@
-package rdts.datatypes
+package ex2021encfxtodo.crdt
 
 import rdts.base.*
 import rdts.time.{Dot, Dots}
 
-/** Observed-remove map.
+/** Observed-remove map, used by the encrypted todo list ([[DeltaAWLWWMContainer]]) and some evaluations.
   *
   * Each key maps to a set of dots, each dot carrying its own value. Values of a key are merged on read.
   *  - Every update (including the first insert) stores `v` under a fresh dot, existing dots are kept.

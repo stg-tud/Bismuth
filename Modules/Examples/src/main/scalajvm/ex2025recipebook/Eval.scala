@@ -4,7 +4,8 @@ import org.openjdk.jmh.annotations.*
 import org.openjdk.jmh.infra.Blackhole
 import rdts.base.{Bottom, Lattice, Redundancy, ReplicaId}
 import rdts.datatypes
-import rdts.datatypes.{EnableWinsFlag, GrowOnlyCounter, GrowOnlySet, LastWriterWins, ObserveRemoveMap, PosNegCounter, ReplicatedSet}
+import ex2021encfxtodo.crdt.ObserveRemoveMap
+import rdts.datatypes.{EnableWinsFlag, GrowOnlyCounter, GrowOnlySet, LastWriterWins, PosNegCounter, ReplicatedSet}
 
 import java.util.concurrent.TimeUnit
 

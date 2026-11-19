@@ -2,7 +2,8 @@ package benchmarks.b2022lattices.delta.crdt
 
 import org.openjdk.jmh.annotations.*
 import rdts.base.{Decompose, ReplicaId}
-import rdts.datatypes.{EnableWinsFlag, ObserveRemoveMap}
+import ex2021encfxtodo.crdt.ObserveRemoveMap
+import rdts.datatypes.EnableWinsFlag
 
 import java.util.concurrent.TimeUnit
 

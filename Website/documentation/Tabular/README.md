@@ -99,7 +99,7 @@ The `ReplicatedUniqueList` is a wrapper around `ReplicatedList`, in which:
 
 #### Position and content are decoupled using indirection over element IDs
 - The wrapped `ReplicatedList` manages the ordering of element IDs.
-- An `ObserveRemoveMap` maps each element ID to the element value (here a row/column ID).
+- A `DotRemoveMap` maps each element ID (a dot) to the element value (here a row/column ID).
 
 Since the `ReplicatedList` will only merge values per element as identified by a position in the order of the list, a move—implemented as a deletion at one position and an insertion at another—will create multiple elements with the same value.
 We use a pre-merge bidirectional filter step to identify and narrow down to the element with the highest positional precedence and most recent timestamp across both merge operands.
@@ -114,7 +114,8 @@ Consequently, as the user would expect, the concurrent content-wise and position
 In the context of the complete spreadsheet, this enables concurrent cell edits and row/column moves in conjunction with update-wins behavior in the case of concurrent deletion.
 
 Markers use the same criteria to select the winner of a merge.
-Since markers are stored as a map—with unique keys—from marker id to the set of precedences and timestamps of the modifying operations and the competing IDs of the pointed-to element, the winner is selected automatically by the merge without any filtering.
+Markers are stored as a map from marker id to a multi-version register holding the precedences and timestamps of the modifying operations and the pointed-to element ID.
+Concurrent writes are kept by the register, and the winner is selected on read using these criteria, without any filtering.
 
 ## What’s new compared to prior work (summary)
 - The concept and implementation of ranges as replicated objects with marker-based anchoring. See [Ranges](#ranges) and [Design](#design) for details.

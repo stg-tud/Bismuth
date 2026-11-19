@@ -5,7 +5,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import rdts.base.{Lattice, ReplicaId}
-import rdts.datatypes.ObserveRemoveMap
+import ex2021encfxtodo.crdt.ObserveRemoveMap
 
 import scala.annotation.unused
 

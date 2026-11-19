@@ -1,8 +1,8 @@
 package ex2025recipebook
 
+import ex2021encfxtodo.crdt.ObserveRemoveMap
 import ex2025recipebook.RecipeBook.Delta
 import rdts.base.{Bottom, Lattice, Redundancy, ReplicaId}
-import rdts.datatypes.ObserveRemoveMap
 import rdts.syntax.deltalens.*
 
 case class RecipeBook(
