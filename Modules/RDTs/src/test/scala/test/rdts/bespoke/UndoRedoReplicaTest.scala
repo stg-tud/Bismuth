@@ -39,26 +39,26 @@ class UndoRedoReplicaTest extends munit.FunSuite {
   }
 
   test("drawing example") {
-    import rdts.datatypes.{LastWriterWins as LWW, ObserveRemoveMap}
+    import rdts.datatypes.LastWriterWins as LWW
 
     type ID = String
 
-    case class Document(nodes: ObserveRemoveMap[ID, Node] = ObserveRemoveMap.empty):
+    case class Document(nodes: Map[ID, Node] = Map.empty):
         def materialized_nodes: Map[ID, MaterializedNode] =
-          nodes.entries.map((id, post) => id -> MaterializedNode.from(post)).toMap
+          nodes.view.mapValues(MaterializedNode.from).toMap
 
         def add(nodeId: ID, node: Node)(using replicaId: ReplicaId): Document =
-          Document(nodes.update(nodeId, node))
+          Document(Map(nodeId -> node))
 
         def setPosition(nodeId: ID, position: Position)(using replicaId: ReplicaId): Document =
           nodes.get(nodeId) match {
-            case Some(n) => Document(nodes.update(nodeId, n.copy(position = LWW.now(position))))
+            case Some(n) => Document(Map(nodeId -> n.copy(position = LWW.now(position))))
             case None    => Document.bottom.empty
           }
 
         def setColor(nodeId: ID, color: Color)(using replicaId: ReplicaId): Document =
           nodes.get(nodeId) match {
-            case Some(n) => Document(nodes.update(nodeId, n.copy(color = LWW.now(color))))
+            case Some(n) => Document(Map(nodeId -> n.copy(color = LWW.now(color))))
             case None    => Document.bottom.empty
           }
 
