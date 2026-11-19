@@ -11,13 +11,13 @@ class DecompositionTest extends FunSuite {
   private val mutators: Vector[TravelPlan => TravelPlan] = Vector(
     _.setTitle("Test"),
     _.addBucketListEntry("Test"),
-    tp => tp.setBucketListEntryText(tp.bucketList.entries.head._1, "Hello World"),
-    tp => tp.removeBucketListEntry(tp.bucketList.entries.head._1),
+    tp => tp.setBucketListEntryText(tp.bucketList.ids.head, "Hello World"),
+    tp => tp.removeBucketListEntry(tp.bucketList.ids.head),
     _.addExpense("Test", "42.11 €"),
-    tp => tp.setExpenseAmount(tp.expenses.entries.head._1, "11.11 €"),
-    tp => tp.setExpenseDescription(tp.expenses.entries.head._1, "Test"),
-    tp => tp.setExpenseComment(tp.expenses.entries.head._1, "ABC"),
-    tp => tp.removeExpense(tp.expenses.entries.head._1),
+    tp => tp.setExpenseAmount(tp.expenses.ids.head, "11.11 €"),
+    tp => tp.setExpenseDescription(tp.expenses.ids.head, "Test"),
+    tp => tp.setExpenseComment(tp.expenses.ids.head, "ABC"),
+    tp => tp.removeExpense(tp.expenses.ids.head),
   )
 
   test("produces correct amount of decomposed deltas") {

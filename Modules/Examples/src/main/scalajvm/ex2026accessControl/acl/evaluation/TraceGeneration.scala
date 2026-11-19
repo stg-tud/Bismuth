@@ -42,14 +42,14 @@ object TraceGeneration {
         case SET_TITLE                                                            => state.setTitle(dummy)
         case ADD_BUCKET_LIST_ENTRY if state.bucketList.size < maxEntriesPerMap    => state.addBucketListEntry(dummy)
         case REMOVE_BUCKET_LIST_ENTRY if state.bucketList.size > minEntriesPerMap =>
-          state.removeBucketListEntry(pickOne(state.bucketList.keySet))
-        case SET_BUCKET_LIST_ENTRY_TEXT => state.setBucketListEntryText(pickOne(state.bucketList.keySet), dummy)
+          state.removeBucketListEntry(pickOne(state.bucketList.ids))
+        case SET_BUCKET_LIST_ENTRY_TEXT => state.setBucketListEntryText(pickOne(state.bucketList.ids), dummy)
         case ADD_EXPENSE if state.expenses.size < maxEntriesPerMap    => state.addExpense(dummy, dummy)
         case REMOVE_EXPENSE if state.expenses.size > minEntriesPerMap =>
-          state.removeExpense(pickOne(state.expenses.keySet))
-        case SET_EXPENSE_AMOUNT      => state.setExpenseAmount(pickOne(state.expenses.keySet), dummy)
-        case SET_EXPENSE_DESCRIPTION => state.setExpenseDescription(pickOne(state.expenses.keySet), dummy)
-        case SET_EXPENSE_COMMENT     => state.setExpenseComment(pickOne(state.expenses.keySet), dummy)
+          state.removeExpense(pickOne(state.expenses.ids))
+        case SET_EXPENSE_AMOUNT      => state.setExpenseAmount(pickOne(state.expenses.ids), dummy)
+        case SET_EXPENSE_DESCRIPTION => state.setExpenseDescription(pickOne(state.expenses.ids), dummy)
+        case SET_EXPENSE_COMMENT     => state.setExpenseComment(pickOne(state.expenses.ids), dummy)
         case _                       => ???
       }
     }

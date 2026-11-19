@@ -5,89 +5,48 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodec
 import ex2026accessControl.authz.permission_pane.SelectorFactory
 import ex2026accessControl.authz.travelplanner.TravelPlan.{*, given}
 import rdts.base.{Bottom, Decompose, Lattice, ReplicaId}
-import rdts.datatypes.{LastWriterWins, ObserveRemoveMap}
+import rdts.datatypes.{DotRemoveMap, LastWriterWins}
 import rdts.filters.Filter
 import rdts.syntax.deltalens.*
-import rdts.time.Dots
-
-import java.util.Base64
-import scala.util.Random
+import rdts.time.Dot
 
 case class TravelPlan(
     title: LastWriterWins[Title],
-    bucketList: ObserveRemoveMap[UniqueId, LastWriterWins[String]],
-    expenses: ObserveRemoveMap[UniqueId, Expense]
+    bucketList: DotRemoveMap[LastWriterWins[String]],
+    expenses: DotRemoveMap[Expense]
 ) derives Lattice, Bottom, Filter, Decompose {
   def setTitle(newTitle: String): Delta =
     this.deltaModify(_.title).using(_.write(newTitle))
 
-  def addBucketListEntry(text: String)(using localUid: ReplicaId): Delta = {
-    val key = randomIdentifier
-    this.deltaModify(_.bucketList).using { ormap =>
-      ormap.transform(key) {
-        case None => Some(LastWriterWins.now(text))
-        case _    => ???
-      }
-    }
-  }
+  def addBucketListEntry(text: String)(using localUid: ReplicaId): Delta =
+    this.deltaModify(_.bucketList).using(_.insert(LastWriterWins.now(text)))
 
+  /** does nothing if the entry has been removed */
   def setBucketListEntryText(bucketListId: UniqueId, text: String)(using localUid: ReplicaId): Delta =
-    this.deltaModify(_.bucketList).using { ormap =>
-      ormap.transform(bucketListId) {
-        case Some(prior) => Some(prior.write(text))
-        case None        => Some(LastWriterWins.now(text))
-      }
-    }
+    this.deltaModify(_.bucketList).using(_.transform(bucketListId)(_.write(text)))
 
   def removeBucketListEntry(bucketListId: UniqueId): Delta =
-    this.deltaModify(_.bucketList).using { ormap =>
-      ormap.remove(bucketListId)
-    }
+    this.deltaModify(_.bucketList).using(_.remove(bucketListId))
 
-  def addExpense(description: String, amount: String)(using localUid: ReplicaId): Delta = {
-    val key = randomIdentifier
-    this.deltaModify(_.expenses).using { ormap =>
-      val expense =
-        Expense(LastWriterWins.now(Some(description)), LastWriterWins.now(Some(amount)), LastWriterWins.empty)
-      ormap.transform(key) {
-        case None => Some(expense)
-        case _    => ???
-      }
-    }
-  }
+  def addExpense(description: String, amount: String)(using localUid: ReplicaId): Delta =
+    this.deltaModify(_.expenses).using(_.insert(
+      Expense(LastWriterWins.now(Some(description)), LastWriterWins.now(Some(amount)), LastWriterWins.empty)
+    ))
 
-  def removeExpense(key: UniqueId): Delta =
-    this.deltaModify(_.expenses).using { ormap =>
-      ormap.remove(key)
-    }
+  def removeExpense(expenseId: UniqueId): Delta =
+    this.deltaModify(_.expenses).using(_.remove(expenseId))
 
   def setExpenseAmount(expenseId: UniqueId, amount: String)(using localUid: ReplicaId): Delta =
-    this.deltaModify(_.expenses).using { ormap =>
-      ormap.transform(expenseId) {
-        case Some(prior: Expense) =>
-          Some(prior.deltaModify(_.amount).using(_.write(Some(amount))))
-        case None => ???
-      }
-    }
+    this.deltaModify(_.expenses).using(_.transform(expenseId)(_.deltaModify(_.amount).using(_.write(Some(amount)))))
 
   def setExpenseDescription(expenseId: UniqueId, description: String)(using localUid: ReplicaId): Delta =
-    this.deltaModify(_.expenses).using { ormap =>
-      ormap.transform(expenseId) {
-        case Some(prior) =>
-          Some(prior.deltaModify(_.description).using(_.write(Some(description))))
-        case None => ???
-      }
-    }
+    this.deltaModify(_.expenses).using(_.transform(expenseId)(
+      _.deltaModify(_.description).using(_.write(Some(description)))
+    ))
 
   def setExpenseComment(expenseId: UniqueId, comment: String)(using localUid: ReplicaId): Delta = {
     val commentValue = if comment.isEmpty then None else Some(comment)
-    this.deltaModify(_.expenses).using { ormap =>
-      ormap.transform(expenseId) {
-        case Some(prior) =>
-          Some(prior.deltaModify(_.comment).using(_.write(commentValue)))
-        case None => ???
-      }
-    }
+    this.deltaModify(_.expenses).using(_.transform(expenseId)(_.deltaModify(_.comment).using(_.write(commentValue))))
   }
 }
 
@@ -98,16 +57,11 @@ case class Expense(
 ) derives Lattice, Bottom, Filter, Decompose
 
 object TravelPlan {
-  private val base64Encoder            = Base64.getEncoder
-  private val random                   = Random
-  private def randomIdentifier: String =
-    base64Encoder.encodeToString(random.nextBytes(6))
-
   type Title = String
   given Bottom[Title]                                                 = Bottom.provide("")
   given titleFilter: Filter[LastWriterWins[Title]]                    = Filter.terminalLwwFilter
   given lwwOptionStringFilter: Filter[LastWriterWins[Option[String]]] = Filter.terminalLwwFilter
-  type UniqueId = String
+  type UniqueId = Dot
   val empty: TravelPlan = Bottom[TravelPlan].empty
 
   given TravelPlanSelectorFactory: SelectorFactory[TravelPlan] = {

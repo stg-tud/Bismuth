@@ -3,7 +3,8 @@ package ex2026accessControl.authz.travelplanner.view
 import ex2026accessControl.authz.travelplanner.TravelPlan
 import ex2026accessControl.authz.travelplanner.view.PermissionTreePane.{ExpensePermCheckBoxes, ExpensePermEntryCheckBoxes, wiredReadWriteCheckboxes}
 import rdts.filters.Permission.{ALLOW, PARTIAL}
-import rdts.filters.{Filter, PermissionTree}
+import rdts.filters.{Filter, KeyAsString, PermissionTree}
+import rdts.time.Dot
 import scalafx.beans.property.BooleanProperty
 import scalafx.geometry.{Insets, Pos}
 import scalafx.scene.control.{CheckBox, ContentDisplay, Label}
@@ -36,12 +37,14 @@ class PermissionTreePane(
   private val expensesParentCheckBoxes =
     ExpensePermCheckBoxes(globalReadCheckBox.selected, globalWriteCheckBox.selected)
 
-  private val bucketListEntryCheckBoxes = rdt.bucketList.entries.map { (id, description) =>
+  private val bucketListEntryCheckBoxes = rdt.bucketList.elements.map { (dot, description) =>
+    val id            = KeyAsString[Dot].encode(dot)
     val (read, write) = wiredReadWriteCheckboxes(bucketListReadCheckBox.selected, bucketListWriteCheckBox.selected)
     id -> (description.read, read, write)
   }
 
-  private val expenseEntryCheckBoxes = rdt.expenses.entries.map { (id, expense) =>
+  private val expenseEntryCheckBoxes = rdt.expenses.elements.map { (dot, expense) =>
+    val id = KeyAsString[Dot].encode(dot)
     id -> ExpensePermEntryCheckBoxes(
       expense.description.read.getOrElse("N/A"),
       parentRead = expensesParentCheckBoxes.read.selected,
@@ -138,7 +141,7 @@ class PermissionTreePane(
 
     if !(bucketList <= readPerm) then bucketListReadCheckBox.disable = true
     if !(bucketList <= writePerm) then bucketListWriteCheckBox.disable = true
-    if !(PermissionTree.fromPath("bucketList.inner") <= writePerm)
+    if !(PermissionTree.fromPath("bucketList.elements") <= writePerm)
     then
         // Children that are not readable won't be in the list, so no need to disable the permission check boxes for them
         val entryWritePerms = writePerm
@@ -152,23 +155,23 @@ class PermissionTreePane(
     if !(expenses <= readPerm)
     then
         expensesParentCheckBoxes.read.disable = true
-        if !(PermissionTree.fromPath("expenses.inner.*.*.description") <= readPerm)
+        if !(PermissionTree.fromPath("expenses.elements.*.description") <= readPerm)
         then expensesParentCheckBoxes.descriptionRead.disable = true
-        if !(PermissionTree.fromPath("expenses.inner.*.*.amount") <= readPerm)
+        if !(PermissionTree.fromPath("expenses.elements.*.amount") <= readPerm)
         then expensesParentCheckBoxes.amountRead.disable = true
-        if !(PermissionTree.fromPath("expenses.inner.*.*.comment") <= readPerm)
+        if !(PermissionTree.fromPath("expenses.elements.*.comment") <= readPerm)
         then expensesParentCheckBoxes.commentRead.disable = true
     if !(expenses <= writePerm)
     then
         expensesParentCheckBoxes.write.disable = true
-        if !(PermissionTree.fromPath("expenses.inner.*.*.description") <= writePerm)
+        if !(PermissionTree.fromPath("expenses.elements.*.description") <= writePerm)
         then expensesParentCheckBoxes.descriptionWrite.disable = true
-        if !(PermissionTree.fromPath("expenses.inner.*.*.amount") <= writePerm)
+        if !(PermissionTree.fromPath("expenses.elements.*.amount") <= writePerm)
         then expensesParentCheckBoxes.amountWrite.disable = true
-        if !(PermissionTree.fromPath("expenses.inner.*.*.comment") <= writePerm)
+        if !(PermissionTree.fromPath("expenses.elements.*.comment") <= writePerm)
         then expensesParentCheckBoxes.commentWrite.disable = true
 
-    if !(PermissionTree.fromPath("expenses.inner") <= writePerm)
+    if !(PermissionTree.fromPath("expenses.elements") <= writePerm)
     then
         val entryWritePerms = writePerm
           .children.getOrElse("expenses", PermissionTree.empty)
@@ -210,7 +213,7 @@ class PermissionTreePane(
           Map("bucketList" -> PermissionTree(
             PARTIAL,
             Map(
-              "inner"   -> PermissionTree(PARTIAL, bucketListReadEntries),
+              "elements" -> PermissionTree(PARTIAL, bucketListReadEntries),
               "removed" -> PermissionTree.allow,
             )
           ))
@@ -226,7 +229,7 @@ class PermissionTreePane(
             Map("bucketList" -> PermissionTree(
               PARTIAL,
               Map(
-                "inner"   -> PermissionTree(PARTIAL, entries),
+                "elements" -> PermissionTree(PARTIAL, entries),
                 "removed" -> PermissionTree.allow
               )
             ))
@@ -234,7 +237,7 @@ class PermissionTreePane(
         case _ =>
 
     inline def expenseWildcardSubPermissionTree(field: String): IArray[String] =
-      IArray(s"expenses.inner.*.*.$field", "expenses.removed")
+      IArray(s"expenses.elements.*.$field", "expenses.removed")
 
     // Expenses wildcard
     read = read
@@ -252,9 +255,9 @@ class PermissionTreePane(
     // Specific expense entries
     val expenseEntryReadPerms = expenseEntryCheckBoxes.map { case (id, boxes) =>
       id -> PermissionTree.empty
-        .allowIfSelected(boxes.descriptionRead, "*.description")
-        .allowIfSelected(boxes.amountRead, "*.amount")
-        .allowIfSelected(boxes.commentRead, "*.comment")
+        .allowIfSelected(boxes.descriptionRead, "description")
+        .allowIfSelected(boxes.amountRead, "amount")
+        .allowIfSelected(boxes.commentRead, "comment")
     }.filterNot(_._2.isEmpty).toMap
     if expenseEntryReadPerms.nonEmpty then
         read = read.merge(PermissionTree(
@@ -262,7 +265,7 @@ class PermissionTreePane(
           Map("expenses" -> PermissionTree(
             PARTIAL,
             Map(
-              "inner"   -> PermissionTree(PARTIAL, expenseEntryReadPerms),
+              "elements" -> PermissionTree(PARTIAL, expenseEntryReadPerms),
               "removed" -> PermissionTree.allow
             )
           ))
@@ -270,9 +273,9 @@ class PermissionTreePane(
 
     val expenseEntryWritePerms = expenseEntryCheckBoxes.map { case (id, boxes) =>
       id -> PermissionTree.empty
-        .allowIfSelected(boxes.descriptionWrite, "*.description")
-        .allowIfSelected(boxes.amountWrite, "*.amount")
-        .allowIfSelected(boxes.commentWrite, "*.comment")
+        .allowIfSelected(boxes.descriptionWrite, "description")
+        .allowIfSelected(boxes.amountWrite, "amount")
+        .allowIfSelected(boxes.commentWrite, "comment")
     }.filterNot(_._2.isEmpty).toMap
     if expenseEntryWritePerms.nonEmpty then
         write = write.merge(PermissionTree(
@@ -280,7 +283,7 @@ class PermissionTreePane(
           Map("expenses" -> PermissionTree(
             PARTIAL,
             Map(
-              "inner"   -> PermissionTree(PARTIAL, expenseEntryWritePerms),
+              "elements" -> PermissionTree(PARTIAL, expenseEntryWritePerms),
               "removed" -> PermissionTree.allow
             )
           ))

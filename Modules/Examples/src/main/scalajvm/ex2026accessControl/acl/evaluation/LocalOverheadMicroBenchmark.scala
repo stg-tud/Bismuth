@@ -146,8 +146,8 @@ object LocalOverheadMicroBenchmark {
         remote -> PermissionTree.fromPathSet(Set(
           "title",
           "bucketList",
-          "expenses.inner.*.*.description",
-          "expenses.inner.*.*.amount",
+          "expenses.elements.*.description",
+          "expenses.elements.*.amount",
           "expenses.removed"
         ))
       ),
@@ -155,10 +155,10 @@ object LocalOverheadMicroBenchmark {
         author -> PermissionTree.fromPathSet(Set(
           "title",
           "bucketList",
-          "expenses.inner.*.*.description",
-          "expenses.inner.*.*.amount",
+          "expenses.elements.*.description",
+          "expenses.elements.*.amount",
           "expenses.removed",
-          "expenses.inner.*.*.comment"
+          "expenses.elements.*.comment"
         ))
       )
     )
@@ -178,8 +178,8 @@ object LocalOverheadMicroBenchmark {
     val expenseDelta         = state.addExpense(dummy, "42.42€")
     state = state.merge(bucketListEntryDelta).merge(expenseDelta)
 
-    val bucketListId = bucketListEntryDelta.bucketList.inner.keys.head
-    val expenseId    = expenseDelta.expenses.inner.keys.head
+    val bucketListId = bucketListEntryDelta.bucketList.ids.head
+    val expenseId    = expenseDelta.expenses.ids.head
 
     Array(
       state.setTitle(dummy),
