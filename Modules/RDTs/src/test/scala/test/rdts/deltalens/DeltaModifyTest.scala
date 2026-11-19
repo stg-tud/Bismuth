@@ -1,9 +1,9 @@
 package test.rdts.deltalens
 
-import rdts.base.{Bottom, Lattice, ReplicaId}
+import rdts.base.{Bottom, ReplicaId}
 import rdts.datatypes.*
 import rdts.syntax.deltalens.*
-import rdts.time.{CausalTime, Dot, Dots}
+import rdts.time.CausalTime
 
 /** Tests for [[rdts.syntax.deltalens.deltaModify]].
   *
@@ -16,7 +16,6 @@ class DeltaModifyTest extends munit.FunSuite {
   given Bottom[Int]    = Bottom.provide(42)
   given Bottom[String] = Bottom.provide("BOTTOM")
   given ReplicaId      = ReplicaId.predefined("delta-modify-test")
-  given Lattice[Int]   = Lattice.fromOrdering
 
   case class Address(street: String, zip: Int) derives Bottom
   case class Person(name: String, age: Int, address: Address) derives Bottom
@@ -26,7 +25,7 @@ class DeltaModifyTest extends munit.FunSuite {
   case class Registry(people: Map[String, Person]) derives Bottom
 
   case class Doc(title: LastWriterWins[String], body: String) derives Bottom
-  case class RecipeBook(recipes: ObserveRemoveMap[String, Int], version: Int) derives Bottom
+  case class RecipeBook(recipes: ReplicatedSet[String], version: Int) derives Bottom
   case class ListDoc(owner: String, items: ReplicatedList[String]) derives Bottom
   case class MvrDoc(owner: String, reg: MultiVersionRegister[Int]) derives Bottom
   case class FlagDoc(owner: String, flag: EnableWinsFlag) derives Bottom
@@ -165,15 +164,13 @@ class DeltaModifyTest extends munit.FunSuite {
     assertEquals(res.body, "BOTTOM")
   }
 
-  test("modify an ObserveRemoveMap field applying a CRDT operation, neighbouring fields bottom") {
+  test("modify a ReplicatedSet field applying a CRDT operation, neighbouring fields bottom") {
     val recipeBook: RecipeBook =
-      RecipeBook(
-        ObserveRemoveMap(Map("pasta" -> Map(Dot.zero -> 2)), Dots.empty),
-        3
-      )
-    val res = recipeBook.deltaModify(_.recipes).using(_.update("pasta", 3))
+      RecipeBook(ReplicatedSet.empty[String] `merge` ReplicatedSet.empty[String].add("pasta"), 3)
+    val res = recipeBook.deltaModify(_.recipes).using(_.add("pizza"))
 
-    assertEquals(res.recipes.get("pasta"), Some(3))
+    assertEquals(res.recipes.elements, Set("pizza"))
+    assertEquals((recipeBook.recipes `merge` res.recipes).elements, Set("pasta", "pizza"))
     // `version` is untouched, so it becomes the Int bottom (42)
     assertEquals(res.version, 42)
   }
@@ -196,13 +193,10 @@ class DeltaModifyTest extends munit.FunSuite {
 
   test("setTo on an RDT-typed field keeps the set constant and blanks siblings") {
     val recipeBook: RecipeBook =
-      RecipeBook(
-        ObserveRemoveMap(Map("pasta" -> Map(Dot.zero -> 2)), Dots.empty),
-        3
-      )
-    val res = recipeBook.deltaModify(_.recipes).setTo(ObserveRemoveMap.empty)
+      RecipeBook(ReplicatedSet.empty[String] `merge` ReplicatedSet.empty[String].add("pasta"), 3)
+    val res = recipeBook.deltaModify(_.recipes).setTo(ReplicatedSet.empty)
 
-    assertEquals(res.recipes, ObserveRemoveMap.empty)
+    assertEquals(res.recipes, ReplicatedSet.empty)
     assertEquals(res.version, 42)
   }
 
