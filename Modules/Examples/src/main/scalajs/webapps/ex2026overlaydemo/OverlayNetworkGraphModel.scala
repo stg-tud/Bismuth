@@ -61,7 +61,7 @@ object OverlayNetworkGraphModel {
         case None =>
           "local overlay\n  active: -\n  passive: -\n  eager: -"
 
-    val replicated = status.entries.toList.sortBy((uid, _) => Uid.unwrap(uid)).map { (uid, view) =>
+    val replicated = status.toList.sortBy((uid, _) => Uid.unwrap(uid)).map { (uid, view) =>
       val peers  = snapshot(status).getOrElse(uid, Map.empty)
       val active = peers.collect {
         case (peer, OverlayStatusProtocol.PeerState.Eager | OverlayStatusProtocol.PeerState.Lazy) => peer
@@ -93,7 +93,7 @@ object OverlayNetworkGraphModel {
     val edges              = mutable.LinkedHashSet.empty[GraphEdge]
     val detailsByNode      = mutable.LinkedHashMap.empty[Uid, String]
     val snapshots          = snapshot(status)
-    val timestamps         = status.entries.iterator.map((uid, view) => uid -> view.timestamp).toMap
+    val timestamps         = status.iterator.map((uid, view) => uid -> view.timestamp).toMap
     val opacityByNode      = mutable.LinkedHashMap.from(timestamps.iterator.map((uid, ts) => uid -> nodeOpacity(ts)))
     val unknownNodeOpacity = 0.1
 

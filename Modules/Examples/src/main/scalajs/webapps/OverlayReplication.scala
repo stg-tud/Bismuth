@@ -7,6 +7,7 @@ import channels.{DeltaStorage, MessagingIO}
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import org.scalajs.dom
+import rdts.base.Lattice.syntax
 import rdts.base.ReplicaId
 
 import scala.collection.immutable.Queue

@@ -6,10 +6,9 @@ import channels.routing.PlumtreeBroadcast.PeerRole
 import channels.connection.Peer
 import channels.overlay.{FullMeshOverlay, HyParViewStateMachine}
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
-import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
-import rdts.base.Lattice.syntax.merge
+import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import rdts.base.{Bottom, Lattice, ReplicaId, Uid}
-import rdts.datatypes.{LastWriterWins, ObserveRemoveMap}
+import rdts.datatypes.LastWriterWins
 
 object OverlayStatusProtocol {
 
@@ -27,19 +26,20 @@ object OverlayStatusProtocol {
 
   case class LocalView(
       timestamp: Long,
-      peers: ObserveRemoveMap[Uid, LastWriterWins[PeerState]],
+      peers: Map[Uid, LastWriterWins[PeerState]],
   )
   object LocalView {
     given Bottom[LocalView]         = Bottom.derived
     given Lattice[LocalView]        = Lattice.derived
-    given JsonValueCodec[LocalView] = JsonCodecMaker.make
+    given JsonValueCodec[LocalView] = JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))
   }
 
-  type Status = ObserveRemoveMap[Uid, LocalView]
+  /** each replica only ever writes its own entry, and entries are never removed */
+  type Status = Map[Uid, LocalView]
 
-  val empty: Status = ObserveRemoveMap.empty
+  val empty: Status = Map.empty
 
-  given JsonValueCodec[Status] = summon[JsonValueCodec[ObserveRemoveMap[Uid, LocalView]]]
+  given JsonValueCodec[Status] = JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))
 
   def localViewOf[State](io: MessagingIO.Plumtree[State], timestamp: Long)(using ReplicaId): LocalView = {
     val (activePeers, passivePeers) = io.overlayController match
@@ -60,19 +60,16 @@ object OverlayStatusProtocol {
         (passivePeers.iterator.map(_.uid -> PeerState.Passive) ++
         plumtreeRoles.iterator).toList
 
-    val peers = peerStates.foldLeft(ObserveRemoveMap.empty[Uid, LastWriterWins[PeerState]]) {
-      case (acc, (uid, state)) =>
-        acc.merge(acc.update(uid, LastWriterWins.now(state)))
-    }
+    val peers = peerStates.map((uid, state) => uid -> LastWriterWins.now(state)).toMap
 
     LocalView(timestamp, peers)
   }
 
   def statusDelta[State](current: Status, io: MessagingIO.Plumtree[State], timestamp: Long)(using ReplicaId): Status =
-    current.update(io.selfPeer.uid, localViewOf(io, timestamp))
+    Map(io.selfPeer.uid -> localViewOf(io, timestamp))
 
   def snapshot(status: Status): Map[Uid, Map[Uid, PeerState]] =
-    status.entries.iterator.map { case (uid, view) =>
-      uid -> view.peers.entries.iterator.map { case (peer, role) => peer -> role.value }.toMap
+    status.iterator.map { case (uid, view) =>
+      uid -> view.peers.iterator.map { case (peer, role) => peer -> role.value }.toMap
     }.toMap
 }
