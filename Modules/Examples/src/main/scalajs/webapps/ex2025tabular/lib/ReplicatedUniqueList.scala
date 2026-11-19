@@ -1,7 +1,7 @@
 package webapps.ex2025tabular.lib
 
 import rdts.base.*
-import rdts.datatypes.{LastWriterWins, ObserveRemoveMap, ReplicatedList}
+import rdts.datatypes.{DotRemoveMap, LastWriterWins, ObserveRemoveMap, ReplicatedList}
 import rdts.time.{CausalTime, Dot, Dots}
 import webapps.ex2025tabular.lib.ReplicatedUniqueList.OpPrecedence.{Positional, Textual}
 import webapps.ex2025tabular.lib.ReplicatedUniqueList.{ElementId, MarkerId, MarkerRemovalBehavior, MarkerValue, OpPrecedence}
@@ -11,8 +11,7 @@ import scala.util.chaining.scalaUtilChainingOps
 case class ReplicatedUniqueList[E](
     elementIdsAndOperations: ReplicatedList[(elementId: ElementId, opPrecedence: OpPrecedence)] =
       ReplicatedList.empty[(elementId: ElementId, opPrecedence: OpPrecedence)],
-    elementIdToValue: ObserveRemoveMap[ElementId, LastWriterWins[E]] =
-      ObserveRemoveMap.empty[ElementId, LastWriterWins[E]],
+    elementIdToValue: DotRemoveMap[LastWriterWins[E]] = DotRemoveMap.empty[LastWriterWins[E]],
     markerIdToElementIdAndBehavior: ObserveRemoveMap[MarkerId, MarkerValue] =
       ObserveRemoveMap.empty[MarkerId, MarkerValue]
 ) {
@@ -59,7 +58,7 @@ case class ReplicatedUniqueList[E](
         `merge`
         elementIdsAndOperations.insertAt(toIndex, (elementIdToMove.elementId, OpPrecedence.Move)),
       elementIdToValue =
-        elementIdToValue.transform(elementIdToMove.elementId)(_.map(identity)),
+        elementIdToValue.transform(elementIdToMove.elementId)(identity),
       markerIdToElementIdAndBehavior = updatedMarkers
     )
   }
@@ -67,10 +66,10 @@ case class ReplicatedUniqueList[E](
   def insertAt(index: Int, element: E)(using ReplicaId): ReplicatedUniqueList[E] = {
     // println(s"[${LocalUid.replicaId}] inserting at $index\n")
 
-    val elementId = elementIdToValue.observed.nextDot
+    val elementId = elementIdToValue.nextId
     ReplicatedUniqueList[E](
       elementIdsAndOperations = elementIdsAndOperations.insertAt(index, (elementId, OpPrecedence.Generic)),
-      elementIdToValue = elementIdToValue.update(elementId, LastWriterWins(CausalTime.now(), element))
+      elementIdToValue = elementIdToValue.insert(LastWriterWins(CausalTime.now(), element))
     )
   }
 
@@ -135,7 +134,7 @@ case class ReplicatedUniqueList[E](
 
     ReplicatedUniqueList[E](
       elementIdsAndOperations = elementIdsAndOperations.update(index, (elementMetadata.elementId, OpPrecedence.Update)),
-      elementIdToValue = elementIdToValue.transform(elementMetadata.elementId)(_.map(_.write(elementValue))),
+      elementIdToValue = elementIdToValue.transform(elementMetadata.elementId)(_.write(elementValue)),
       markerIdToElementIdAndBehavior = updatedMarkers
     )
   }
@@ -253,8 +252,8 @@ case class ReplicatedUniqueList[E](
     val dotsForLocalDuplicateElementValues = localDots.diff(latestMostPrivilegedDotPerUniqueValue { _.detail.textual })
 
     val deletedElementIds =
-      elementIdToValue.inner.filterNot { (_, mapEntry) =>
-        dotsForLocalDuplicateElementValues.subsumes(Dots.from(mapEntry.keys))
+      elementIdToValue.elements.filterNot { (elementId, _) =>
+        dotsForLocalDuplicateElementValues.contains(elementId)
       }
 
     copy(
@@ -263,12 +262,9 @@ case class ReplicatedUniqueList[E](
           localTrulyRemovedExclUpdated
           `merge` dotsForLocalDuplicateElementIds
       ),
-      elementIdToValue = elementIdToValue.copy(
-        removed =
-          deletedElementIds.keys.foldLeft(ObserveRemoveMap.empty[ElementId, LastWriterWins[E]]) {
-            (accumulator, key) => accumulator `merge` accumulator.remove(key)
-          }.removed
-      ),
+      // This used to compute removes from `deletedElementIds` by removing keys from an *empty* ObserveRemoveMap,
+      // which always resulted in no removed dots. Kept as is, see git history.
+      elementIdToValue = elementIdToValue.copy(removed = Dots.empty),
       markerIdToElementIdAndBehavior = markerIdToElementIdAndBehavior.copy(
         removed =
           markerIdToElementIdAndBehavior.removed
