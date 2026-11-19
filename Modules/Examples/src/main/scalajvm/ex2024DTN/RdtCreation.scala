@@ -6,9 +6,8 @@ import channels.routing.PlumtreeBroadcast
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
 import ex2024DTN.rdt.{Channel, ClientOperationMode}
-import rdts.base.{Lattice, ReplicaId}
-import rdts.datatypes.{LastWriterWins, ObserveRemoveMap}
-import rdts.time.Dot
+import rdts.base.ReplicaId
+import rdts.datatypes.{LastWriterWins, ReplicatedSet}
 
 import scala.annotation.unused
 import scala.util.Random
@@ -72,11 +71,9 @@ class AddWinsSetRDT(number_of_additions: Int, sleep_time_milliseconds: Long) ext
 }
 
 class ObserveRemoveSetRDT(number_of_changes: Int, sleep_time_milliseconds: Long) extends CaseStudyRdt {
-  type RdtType = ObserveRemoveMap[String, Dot]
+  type RdtType = ReplicatedSet[String]
 
   given JsonValueCodec[RdtType] = JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))
-
-  given Lattice[Dot] = Lattice.assertEquals
 
   given replicaId: ReplicaId = ReplicaId.gen()
 
@@ -87,12 +84,9 @@ class ObserveRemoveSetRDT(number_of_changes: Int, sleep_time_milliseconds: Long)
     // we ignore state updates as there will be only one active rdt
   )
 
-  var state: RdtType = ObserveRemoveMap.empty[String, Dot]
+  var state: RdtType = ReplicatedSet.empty[String]
 
-  private def addStringGetDelta(s: String): RdtType = {
-    val nextDot = state.observed.nextDot(dataManager.selfPeer.uid)
-    state.update(s, nextDot)
-  }
+  private def addStringGetDelta(s: String): RdtType = state.add(s)
 
   private def clearGetDelta(): RdtType = state.clear()
 
