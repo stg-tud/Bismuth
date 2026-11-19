@@ -1,7 +1,7 @@
 package ex2026accessControl.authz.permission_pane
 
 import ex2026accessControl.authz.permission_pane.Selector.{FixedSelector, leafSelector}
-import rdts.base.Bottom
+import rdts.base.{Bottom, Lattice}
 import rdts.datatypes.{LastWriterWins, ObserveRemoveMap}
 import rdts.filters.KeyAsString
 
@@ -82,7 +82,7 @@ object SelectorFactory {
   given OptionSelectorFactory[T: {SelectorFactory, Bottom}]: SelectorFactory[Option[T]] =
     BoxedValueSelectorFactory[Option[T], T](opt => opt.getOrElse(Bottom[T].empty))
 
-  given ORMapSelectorFactory[K: KeyAsString, V: {SelectorFactory, Bottom}]: SelectorFactory[ObserveRemoveMap[K, V]] with
+  given ORMapSelectorFactory[K: KeyAsString, V: {SelectorFactory, Bottom, Lattice}]: SelectorFactory[ObserveRemoveMap[K, V]] with
       override def create(ardt: ObserveRemoveMap[K, V]): Selector[ObserveRemoveMap[K, V]] =
         new Selector[ObserveRemoveMap[K, V]]() {
           override def children: Map[String, Selector[V]] = {

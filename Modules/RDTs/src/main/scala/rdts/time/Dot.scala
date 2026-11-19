@@ -19,6 +19,11 @@ object Dot {
 
   def zero: Dot = Dot(Uid.zero, 0)
 
+  /** Arbitrary but deterministic total order on dots: lexicographic on (place, time).
+    * Does not reflect causality, use only for deterministic tie-breaking.
+    */
+  val ordering: Ordering[Dot] = Ordering.by[Dot, (Uid, Time)](d => (d.place, d.time))
+
   /** While this seems plausible, it might, in general, be better to treat all dots as incomparable, we assume them to increase monotonically, but that is for optimization purposes, not because we use it anywhere else */
   @deprecated("probably not a good idea")
   def partialOrdering: PartialOrdering[Dot] = new:

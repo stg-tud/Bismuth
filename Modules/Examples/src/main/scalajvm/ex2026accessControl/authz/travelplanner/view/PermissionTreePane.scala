@@ -36,14 +36,14 @@ class PermissionTreePane(
   private val expensesParentCheckBoxes =
     ExpensePermCheckBoxes(globalReadCheckBox.selected, globalWriteCheckBox.selected)
 
-  private val bucketListEntryCheckBoxes = rdt.bucketList.inner.map { (id, description) =>
+  private val bucketListEntryCheckBoxes = rdt.bucketList.entries.map { (id, description) =>
     val (read, write) = wiredReadWriteCheckboxes(bucketListReadCheckBox.selected, bucketListWriteCheckBox.selected)
-    id -> (description.value.read, read, write)
+    id -> (description.read, read, write)
   }
 
-  private val expenseEntryCheckBoxes = rdt.expenses.inner.map { (id, expense) =>
+  private val expenseEntryCheckBoxes = rdt.expenses.entries.map { (id, expense) =>
     id -> ExpensePermEntryCheckBoxes(
-      expense.value.description.read.getOrElse("N/A"),
+      expense.description.read.getOrElse("N/A"),
       parentRead = expensesParentCheckBoxes.read.selected,
       parentWrite = expensesParentCheckBoxes.write.selected,
       expensesParentCheckBoxes.descriptionRead.selected,
@@ -152,20 +152,20 @@ class PermissionTreePane(
     if !(expenses <= readPerm)
     then
         expensesParentCheckBoxes.read.disable = true
-        if !(PermissionTree.fromPath("expenses.inner.*.value.description") <= readPerm)
+        if !(PermissionTree.fromPath("expenses.inner.*.*.description") <= readPerm)
         then expensesParentCheckBoxes.descriptionRead.disable = true
-        if !(PermissionTree.fromPath("expenses.inner.*.value.amount") <= readPerm)
+        if !(PermissionTree.fromPath("expenses.inner.*.*.amount") <= readPerm)
         then expensesParentCheckBoxes.amountRead.disable = true
-        if !(PermissionTree.fromPath("expenses.inner.*.value.comment") <= readPerm)
+        if !(PermissionTree.fromPath("expenses.inner.*.*.comment") <= readPerm)
         then expensesParentCheckBoxes.commentRead.disable = true
     if !(expenses <= writePerm)
     then
         expensesParentCheckBoxes.write.disable = true
-        if !(PermissionTree.fromPath("expenses.inner.*.value.description") <= writePerm)
+        if !(PermissionTree.fromPath("expenses.inner.*.*.description") <= writePerm)
         then expensesParentCheckBoxes.descriptionWrite.disable = true
-        if !(PermissionTree.fromPath("expenses.inner.*.value.amount") <= writePerm)
+        if !(PermissionTree.fromPath("expenses.inner.*.*.amount") <= writePerm)
         then expensesParentCheckBoxes.amountWrite.disable = true
-        if !(PermissionTree.fromPath("expenses.inner.*.value.comment") <= writePerm)
+        if !(PermissionTree.fromPath("expenses.inner.*.*.comment") <= writePerm)
         then expensesParentCheckBoxes.commentWrite.disable = true
 
     if !(PermissionTree.fromPath("expenses.inner") <= writePerm)
@@ -203,7 +203,7 @@ class PermissionTreePane(
 
     val bucketListReadEntries = bucketListEntryCheckBoxes.flatMap { case (id, (_, entryRead, _)) =>
       if entryRead.isSelected then Some(id -> PermissionTree.allow) else None
-    }
+    }.toMap
     if bucketListReadEntries.nonEmpty then
         read = read.merge(PermissionTree(
           PARTIAL,
@@ -219,7 +219,7 @@ class PermissionTreePane(
     // Bucket list entries
     bucketListEntryCheckBoxes.flatMap { case (id, (_, _, entryWrite)) =>
       if entryWrite.isSelected then Some(id -> PermissionTree.allow) else None
-    } match
+    }.toMap match
         case entries if entries.nonEmpty =>
           write = write.merge(PermissionTree(
             PARTIAL,
@@ -234,7 +234,7 @@ class PermissionTreePane(
         case _ =>
 
     inline def expenseWildcardSubPermissionTree(field: String): IArray[String] =
-      IArray(s"expenses.inner.*.value.$field", "expenses.inner.*.dots", "expenses.removed")
+      IArray(s"expenses.inner.*.*.$field", "expenses.removed")
 
     // Expenses wildcard
     read = read
@@ -252,10 +252,10 @@ class PermissionTreePane(
     // Specific expense entries
     val expenseEntryReadPerms = expenseEntryCheckBoxes.map { case (id, boxes) =>
       id -> PermissionTree.empty
-        .allowIfSelected(boxes.descriptionRead, "value.description", "dots")
-        .allowIfSelected(boxes.amountRead, "value.amount", "dots")
-        .allowIfSelected(boxes.commentRead, "value.comment", "dots")
-    }.filterNot(_._2.isEmpty)
+        .allowIfSelected(boxes.descriptionRead, "*.description")
+        .allowIfSelected(boxes.amountRead, "*.amount")
+        .allowIfSelected(boxes.commentRead, "*.comment")
+    }.filterNot(_._2.isEmpty).toMap
     if expenseEntryReadPerms.nonEmpty then
         read = read.merge(PermissionTree(
           PARTIAL,
@@ -270,10 +270,10 @@ class PermissionTreePane(
 
     val expenseEntryWritePerms = expenseEntryCheckBoxes.map { case (id, boxes) =>
       id -> PermissionTree.empty
-        .allowIfSelected(boxes.descriptionWrite, "value.description", "dots")
-        .allowIfSelected(boxes.amountWrite, "value.amount", "dots")
-        .allowIfSelected(boxes.commentWrite, "value.comment", "dots")
-    }.filterNot(_._2.isEmpty)
+        .allowIfSelected(boxes.descriptionWrite, "*.description")
+        .allowIfSelected(boxes.amountWrite, "*.amount")
+        .allowIfSelected(boxes.commentWrite, "*.comment")
+    }.filterNot(_._2.isEmpty).toMap
     if expenseEntryWritePerms.nonEmpty then
         write = write.merge(PermissionTree(
           PARTIAL,

@@ -148,14 +148,12 @@ case class ReplicatedUniqueList[E](
       ReplicaId
   )
       : ObserveRemoveMap[MarkerId, MarkerValue] = {
-    val updatedMapEntry = base.update(markerId, newMarkerValue).inner(markerId)
-
-    val mergedMapEntry =
-      base.inner.get(markerId) match
-          case Some(oldInternal) => oldInternal `merge` updatedMapEntry
-          case None              => updatedMapEntry
-
-    ObserveRemoveMap.empty[MarkerId, MarkerValue].copy(inner = Map(markerId -> mergedMapEntry))
+    val delta    = base.update(markerId, newMarkerValue)
+    val existing = base.inner.getOrElse(markerId, Map.empty)
+    // include the full current value of the updated dot(s) in the delta
+    delta.copy(inner = delta.inner.map { (key, versions) =>
+      key -> versions.map((dot, value) => dot -> existing.get(dot).fold(value)(_ `merge` value))
+    })
   }
 
   def addMarker(
@@ -168,7 +166,7 @@ case class ReplicatedUniqueList[E](
   )
       : ReplicatedUniqueList[E] = {
     val markedElementId = elementIdsAndOperations.read(index).get.elementId
-    val newCounter      = markerIdToElementIdAndBehavior.inner.get(markerId).map(_.value.counter) match {
+    val newCounter      = markerIdToElementIdAndBehavior.get(markerId).map(_.counter) match {
       case Some(counter) => counter + 1
       case None          => 0
     }
@@ -186,7 +184,7 @@ case class ReplicatedUniqueList[E](
   )
       : ReplicatedUniqueList[E] = {
     val markedElementId = elementIdsAndOperations.read(index).get.elementId
-    val oldMarkerValue  = markerIdToElementIdAndBehavior.inner(markerId).value
+    val oldMarkerValue  = markerIdToElementIdAndBehavior.get(markerId).get
     val newMarkerValue  = (oldMarkerValue.counter, opPrecedence, CausalTime.now(), markedElementId, removalBehavior)
     copy(markerIdToElementIdAndBehavior = updateMarkerEntry(markerIdToElementIdAndBehavior, markerId, newMarkerValue))
   }
@@ -256,7 +254,7 @@ case class ReplicatedUniqueList[E](
 
     val deletedElementIds =
       elementIdToValue.inner.filterNot { (_, mapEntry) =>
-        dotsForLocalDuplicateElementValues.subsumes(mapEntry.dots)
+        dotsForLocalDuplicateElementValues.subsumes(Dots.from(mapEntry.keys))
       }
 
     copy(

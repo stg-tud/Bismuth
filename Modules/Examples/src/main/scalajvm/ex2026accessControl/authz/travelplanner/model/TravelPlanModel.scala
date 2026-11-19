@@ -75,18 +75,17 @@ class TravelPlanModel(
   val bucketListIdList: ObservableBuffer[String] = ObservableBuffer.from(state.bucketList.inner.keySet)
   private var bucketListIdSet: Set[String]       = bucketListIdList.toSet
   val bucketListProperties: AtomicReference[Map[String, StringProperty]] =
-    AtomicReference(state.bucketList.inner.map((id, lww) => id -> StringProperty(lww.value.read)))
+    AtomicReference(state.bucketList.entries.map((id, lww) => id -> StringProperty(lww.read)).toMap)
   val expenseIdList: ObservableBuffer[String] = ObservableBuffer.from(state.bucketList.inner.keySet)
   private var expenseIdSet: Set[String]       = expenseIdList.toSet
   val expenseListProperties: AtomicReference[Map[String, (StringProperty, StringProperty, StringProperty)]] =
-    AtomicReference(state.expenses.inner.map { (id, orMapEntry) =>
-      val expense = orMapEntry.value
+    AtomicReference(state.expenses.entries.map { (id, expense) =>
       id -> (
         StringProperty(expense.description.read.getOrElse("")),
         StringProperty(expense.amount.read.getOrElse("0.00 €")),
         StringProperty(expense.comment.read.getOrElse(""))
       )
-    })
+    }.toMap)
 
   private def stateChanged(delta: TravelPlan): Unit = Platform.runLater {
     val newTravelPlan = state
@@ -101,8 +100,8 @@ class TravelPlanModel(
         val props  = bucketListProperties.updateAndGet(oldProps =>
           oldProps ++ newIds.map(id => id -> StringProperty(""))
         )
-        bucketListEntriesInDelta.foreach { (id, entry) =>
-          props(id).value = entry.value.read
+        delta.bucketList.entries.foreach { (id, entry) =>
+          props(id).value = entry.read
         }
         bucketListIdList.addAll(newIds)
         bucketListIdSet = bucketListIdSet ++ newIds

@@ -67,9 +67,8 @@ object RequestResponseQueue {
   given Ordering[Timestamp] = Orderings.lexicographic
 
   given [T]: Lattice[Res[T]] = Lattice.assertEquals
+  given [S]: Lattice[Req[S]] = Lattice.assertEquals
 
   // lattices
-  given [S, T]: Lattice[RequestResponseQueue[S, T]] =
-      given Lattice[Req[S]] = Lattice.assertEquals
-      Lattice.derived
+  given [S, T]: Lattice[RequestResponseQueue[S, T]] = Lattice.derived
 }

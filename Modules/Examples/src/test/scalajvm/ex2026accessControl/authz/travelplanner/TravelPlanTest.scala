@@ -28,9 +28,8 @@ class TravelPlanTest extends FunSuite {
     assert(filter.isAllowed(
       expense,
       PermissionTree.fromPathSet(Set(
-        "expenses.inner.*.value.description",
-        "expenses.inner.*.value.amount",
-        "expenses.inner.*.dots",
+        "expenses.inner.*.*.description",
+        "expenses.inner.*.*.amount",
       ))
     ))
   }

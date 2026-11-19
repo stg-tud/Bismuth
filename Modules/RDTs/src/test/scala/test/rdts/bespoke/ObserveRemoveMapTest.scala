@@ -130,11 +130,12 @@ class ObserveRemoveMapTest extends munit.FunSuite {
     var redundantDeltas = buffer.getRedundantDeltas(delta7)
     assertEquals(redundantDeltas, Dots.from(List(dot1, dot6)))
 
-    // updating key makes previous adds/updates redundant
+    // after the remove, updating the key inserts it with a fresh dot,
+    // which does not make the previous adds/updates (under the removed dot) redundant
     val delta = produceDeltaAdd("a", "abc")
     redundantDeltas = buffer.getRedundantDeltas(delta)
 
-    assertEquals(redundantDeltas, Dots.from(List(dot1, dot6)))
+    assertEquals(redundantDeltas, Dots.empty)
   }
 
   test("ORMap[MVReg[A]] outer delete implies inner clear") {

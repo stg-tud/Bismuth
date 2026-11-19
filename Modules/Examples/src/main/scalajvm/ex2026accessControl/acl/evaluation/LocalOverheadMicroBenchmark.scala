@@ -146,9 +146,8 @@ object LocalOverheadMicroBenchmark {
         remote -> PermissionTree.fromPathSet(Set(
           "title",
           "bucketList",
-          "expenses.inner.*.value.description",
-          "expenses.inner.*.value.amount",
-          "expenses.inner.*.dots",
+          "expenses.inner.*.*.description",
+          "expenses.inner.*.*.amount",
           "expenses.removed"
         ))
       ),
@@ -156,11 +155,10 @@ object LocalOverheadMicroBenchmark {
         author -> PermissionTree.fromPathSet(Set(
           "title",
           "bucketList",
-          "expenses.inner.*.value.description",
-          "expenses.inner.*.value.amount",
-          "expenses.inner.*.dots",
+          "expenses.inner.*.*.description",
+          "expenses.inner.*.*.amount",
           "expenses.removed",
-          "expenses.inner.*.value.comment"
+          "expenses.inner.*.*.comment"
         ))
       )
     )

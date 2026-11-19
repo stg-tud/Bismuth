@@ -11,7 +11,7 @@ case class RecipeBook(
 
   def keys: Set[String] = recipes.inner.keySet
 
-  def get(recipeKey: String): Option[Recipe] = recipes.inner.get(recipeKey).map(_.value)
+  def get(recipeKey: String): Option[Recipe] = recipes.get(recipeKey)
 
   def addRecipe(key: String, recipe: Recipe)(using localUid: ReplicaId): Delta =
     this.deltaModify(_.recipes).using(_.update(key, recipe))
@@ -92,7 +92,7 @@ case class RecipeBook(
   def nonEmpty: Boolean = !isEmpty
 
   override def toString: String =
-    f"[${this.recipes.inner.map(_._2.value).mkString(", ")}]"
+    f"[${this.recipes.queryAllEntries.mkString(", ")}]"
 
 }
 

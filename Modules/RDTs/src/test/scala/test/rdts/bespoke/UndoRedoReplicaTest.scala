@@ -45,7 +45,7 @@ class UndoRedoReplicaTest extends munit.FunSuite {
 
     case class Document(nodes: ObserveRemoveMap[ID, Node] = ObserveRemoveMap.empty):
         def materialized_nodes: Map[ID, MaterializedNode] =
-          nodes.inner.view.mapValues(post => MaterializedNode.from(post.value)).toMap
+          nodes.entries.map((id, post) => id -> MaterializedNode.from(post)).toMap
 
         def add(nodeId: ID, node: Node)(using replicaId: ReplicaId): Document =
           Document(nodes.update(nodeId, node))

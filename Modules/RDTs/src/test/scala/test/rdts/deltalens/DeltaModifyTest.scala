@@ -1,9 +1,9 @@
 package test.rdts.deltalens
 
-import rdts.base.{Bottom, ReplicaId}
+import rdts.base.{Bottom, Lattice, ReplicaId}
 import rdts.datatypes.*
 import rdts.syntax.deltalens.*
-import rdts.time.{CausalTime, Dots}
+import rdts.time.{CausalTime, Dot, Dots}
 
 /** Tests for [[rdts.syntax.deltalens.deltaModify]].
   *
@@ -16,6 +16,7 @@ class DeltaModifyTest extends munit.FunSuite {
   given Bottom[Int]    = Bottom.provide(42)
   given Bottom[String] = Bottom.provide("BOTTOM")
   given ReplicaId      = ReplicaId.predefined("delta-modify-test")
+  given Lattice[Int]   = Lattice.fromOrdering
 
   case class Address(street: String, zip: Int) derives Bottom
   case class Person(name: String, age: Int, address: Address) derives Bottom
@@ -167,7 +168,7 @@ class DeltaModifyTest extends munit.FunSuite {
   test("modify an ObserveRemoveMap field applying a CRDT operation, neighbouring fields bottom") {
     val recipeBook: RecipeBook =
       RecipeBook(
-        ObserveRemoveMap(Map("pasta" -> ObserveRemoveMap.Entry(Dots.empty, 2)), Dots.empty),
+        ObserveRemoveMap(Map("pasta" -> Map(Dot.zero -> 2)), Dots.empty),
         3
       )
     val res = recipeBook.deltaModify(_.recipes).using(_.update("pasta", 3))
@@ -196,7 +197,7 @@ class DeltaModifyTest extends munit.FunSuite {
   test("setTo on an RDT-typed field keeps the set constant and blanks siblings") {
     val recipeBook: RecipeBook =
       RecipeBook(
-        ObserveRemoveMap(Map("pasta" -> ObserveRemoveMap.Entry(Dots.empty, 2)), Dots.empty),
+        ObserveRemoveMap(Map("pasta" -> Map(Dot.zero -> 2)), Dots.empty),
         3
       )
     val res = recipeBook.deltaModify(_.recipes).setTo(ObserveRemoveMap.empty)

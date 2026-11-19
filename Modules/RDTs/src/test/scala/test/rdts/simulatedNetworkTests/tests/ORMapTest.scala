@@ -2,7 +2,7 @@ package test.rdts.simulatedNetworkTests.tests
 
 import org.scalacheck.Prop.*
 import rdts.base
-import rdts.base.{Decompose, ReplicaId}
+import rdts.base.{Decompose, Lattice, ReplicaId}
 import rdts.datatypes.{ObserveRemoveMap, ReplicatedSet}
 import test.rdts.simulatedNetworkTests.tools.{AntiEntropy, AntiEntropyContainer, Network}
 
@@ -10,6 +10,7 @@ import scala.collection.mutable
 
 class ORMapTest extends munit.ScalaCheckSuite {
   given decompose[K, V]: Decompose[ObserveRemoveMap[K, V]] = Decompose.atomic
+  given Lattice[Int]                                      = Lattice.fromOrdering
 
   property("contains") {
     given ReplicaId = base.ReplicaId.predefined("test")
