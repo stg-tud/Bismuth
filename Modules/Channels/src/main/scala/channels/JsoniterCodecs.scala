@@ -105,6 +105,10 @@ object JsoniterCodecs {
   given MVRegisterEmbeddedCodec[A: JsonValueCodec]: JsonValueCodec[MultiVersionRegister[A]] =
     JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))
 
+  /** DotRemoveMap */
+  given DotRemoveMapStateCodec[V: JsonValueCodec]: JsonValueCodec[DotRemoveMap[V]] =
+    codecBottomFilter(JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true)))
+
   /** ObserveRemoveMap */
   given ORMapStateCodec[K: JsonValueCodec, V: JsonValueCodec]: JsonValueCodec[ObserveRemoveMap[K, V]] =
     codecBottomFilter(JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true)))

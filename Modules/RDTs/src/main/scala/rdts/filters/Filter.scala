@@ -1,7 +1,7 @@
 package rdts.filters
 
 import rdts.base.Bottom
-import rdts.datatypes.{LastWriterWins, ObserveRemoveMap}
+import rdts.datatypes.{DotRemoveMap, LastWriterWins, ObserveRemoveMap}
 import rdts.filters.FilterDerivation.TerminalFilter
 import rdts.filters.Permission.*
 import rdts.time.{ArrayRanges, Dots}
@@ -292,6 +292,11 @@ object Filter {
   }
 
   given observeRemoveMapFilter[K: KeyAsString, V: {Filter, Bottom}]: Filter[ObserveRemoveMap[K, V]] = {
+    given Filter[Dots] = terminalDotsFilter
+    Filter.derived
+  }
+
+  given dotRemoveMapFilter[V: {Filter, Bottom}]: Filter[DotRemoveMap[V]] = {
     given Filter[Dots] = terminalDotsFilter
     Filter.derived
   }
