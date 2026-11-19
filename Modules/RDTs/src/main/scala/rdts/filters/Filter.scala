@@ -1,7 +1,7 @@
 package rdts.filters
 
 import rdts.base.Bottom
-import rdts.datatypes.{DotRemoveMap, LastWriterWins, ObserveRemoveMap}
+import rdts.datatypes.{DotRemoveMap, LastWriterWins}
 import rdts.filters.FilterDerivation.TerminalFilter
 import rdts.filters.Permission.*
 import rdts.time.{ArrayRanges, Dots}
@@ -289,11 +289,6 @@ object Filter {
       if permissionTree.children.nonEmpty then throw InvalidPathException(permissionTree.children.keys.head :: Nil)
 
     override def minimizePermissionTree(permissionTree: PermissionTree): PermissionTree = permissionTree
-  }
-
-  given observeRemoveMapFilter[K: KeyAsString, V: {Filter, Bottom}]: Filter[ObserveRemoveMap[K, V]] = {
-    given Filter[Dots] = terminalDotsFilter
-    Filter.derived
   }
 
   given dotRemoveMapFilter[V: {Filter, Bottom}]: Filter[DotRemoveMap[V]] = {

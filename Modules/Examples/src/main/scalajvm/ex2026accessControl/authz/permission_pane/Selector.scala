@@ -1,8 +1,8 @@
 package ex2026accessControl.authz.permission_pane
 
 import ex2026accessControl.authz.permission_pane.Selector.{FixedSelector, leafSelector}
-import rdts.base.{Bottom, Lattice}
-import rdts.datatypes.{DotRemoveMap, LastWriterWins, ObserveRemoveMap}
+import rdts.base.Bottom
+import rdts.datatypes.{DotRemoveMap, LastWriterWins}
 import rdts.filters.KeyAsString
 
 import scala.compiletime.{constValueTuple, erasedValue, summonAll}
@@ -81,18 +81,6 @@ object SelectorFactory {
 
   given OptionSelectorFactory[T: {SelectorFactory, Bottom}]: SelectorFactory[Option[T]] =
     BoxedValueSelectorFactory[Option[T], T](opt => opt.getOrElse(Bottom[T].empty))
-
-  given ORMapSelectorFactory[K: KeyAsString, V: {SelectorFactory, Bottom, Lattice}]: SelectorFactory[ObserveRemoveMap[K, V]] with
-      override def create(ardt: ObserveRemoveMap[K, V]): Selector[ObserveRemoveMap[K, V]] =
-        new Selector[ObserveRemoveMap[K, V]]() {
-          override def children: Map[String, Selector[V]] = {
-            val wildcard = SelectorFactory[V].create(Bottom[V].empty)
-            ((if wildcard.children.isEmpty then Seq.empty else Seq("*" -> wildcard)) ++ ardt.entries.map((k, v) =>
-                val keyString = KeyAsString[K].encode(k)
-                keyString -> SelectorFactory[V].create(v)
-            )).toMap
-          }
-        }
 
   given DotRemoveMapSelectorFactory[V: {SelectorFactory, Bottom}]: SelectorFactory[DotRemoveMap[V]] with
       override def create(ardt: DotRemoveMap[V]): Selector[DotRemoveMap[V]] =

@@ -109,10 +109,6 @@ object JsoniterCodecs {
   given DotRemoveMapStateCodec[V: JsonValueCodec]: JsonValueCodec[DotRemoveMap[V]] =
     codecBottomFilter(JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true)))
 
-  /** ObserveRemoveMap */
-  given ORMapStateCodec[K: JsonValueCodec, V: JsonValueCodec]: JsonValueCodec[ObserveRemoveMap[K, V]] =
-    codecBottomFilter(JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true)))
-
   /** PNCounter */
 
   given PNCounterStateCodec: JsonValueCodec[PosNegCounter] = JsonCodecMaker.make

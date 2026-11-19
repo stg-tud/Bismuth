@@ -54,7 +54,6 @@ object Debug {
     travelPlan.toString
       .replaceAll("🪪(..).*=", "🪪$1")
       .replaceAll("LastWriterWins", "LWW")
-      .replaceAll("ObserveRemoveMap", "ORMap")
       .replaceAll("CausalTime", "")
 
   def shorten(syncMsg: SyncMsg[?]): String =
