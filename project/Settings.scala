@@ -124,7 +124,7 @@ object Settings {
         "-Wunused:implicits",
         // Warn when catching Throwable or subclasse of Error
         "-Wunreasonable-catch",
-        // 3.10.1 regression: the compiler-generated `fromOrdinal` contains a catch-all,
+        // 3.10.1 limitation: the compiler-generated `fromOrdinal` contains a catch-all,
         // which is reported at the last case of any enum that has only singleton cases.
         // Combined with `msg` so that the `Catching Throwable` variants are still reported.
         // See https://github.com/scala/scala3/issues/27548, fixed after 3.10.1;
