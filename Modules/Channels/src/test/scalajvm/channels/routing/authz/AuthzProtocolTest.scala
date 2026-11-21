@@ -6,7 +6,7 @@ import channels.authz.AuthzTestSupport.{*, given}
 import channels.connection.Peer
 import channels.crypto.Ed25519.given
 import channels.crypto.{Hash, PrivateIdentity}
-import channels.authz.{AuthzEvent, Authorization, AuthzReplica}
+import channels.authz.{AuthzEvent, AuthzReplica}
 import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray}
 import munit.FunSuite
 import rdts.base.Uid

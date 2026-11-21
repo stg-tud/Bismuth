@@ -1,6 +1,5 @@
 package ex2026accessControl.authz.evaluation
 
-import channels.routing.Routing.{Effect, Step}
 import channels.authz.*
 import channels.authz.AuthzEvent.Payload.DeltaCommitment
 import channels.connection.Peer
@@ -144,7 +143,7 @@ class EvaluationBenchmarks {
     HashDag.materialize(state.hashDag)
 }
 
-/** Holds an [[AuthzEventGraph]] built by [[TraceGeneration.generateDelegationHierarchyEventGraph]]: a fixed set of
+/** Holds an [[channels.authz.AuthzEventGraph]] built by [[TraceGeneration.generateDelegationHierarchyEventGraph]]: a fixed set of
   * 13 replicas in a two-level delegation hierarchy, writing in two phases.
   */
 @State(Scope.Benchmark)

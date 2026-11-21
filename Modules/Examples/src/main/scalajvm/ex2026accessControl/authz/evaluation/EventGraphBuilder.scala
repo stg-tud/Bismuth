@@ -4,14 +4,13 @@ import channels.authz.AuthzEvent.Payload.{Capability, DeltaCommitment, Revocatio
 import channels.crypto.Commitment.RevealedValue
 import channels.crypto.{Commitment, Hash, PrivateIdentity, Signature}
 import channels.crypto.Ed25519.given
-import channels.authz
-import channels.authz.{AuthzEvent, AuthzEventGraph, AuthzReplica}
+import channels.authz.{AuthzEvent, AuthzEventGraph}
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
 import rdts.filters.PermissionTree
 
-/** Helpers for directly constructing and inserting signed [[authz.AuthzEvent]]s, without going through
-  * [[AuthzReplica]].
-  * Used to assemble [[authz.AuthzEventGraph]]s for evaluation purposes.
+/** Helpers for directly constructing and inserting signed [[channels.authz.AuthzEvent]]s, without going through
+  * [[channels.authz.AuthzReplica]].
+  * Used to assemble [[channels.authz.AuthzEventGraph]]s for evaluation purposes.
   */
 object EventGraphBuilder {
 

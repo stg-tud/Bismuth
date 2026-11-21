@@ -2,7 +2,6 @@ package ex2026accessControl.authz.evaluation
 
 import channels.authz.AuthzEvent.Payload.{Capability, DeltaCommitment}
 import channels.crypto.{Hash, IdentityFactory, PrivateIdentity, PublicIdentity}
-import channels.authz
 import channels.authz.{AuthzEvent, AuthzEventGraph, Authorization, DeltaValueStore}
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
 import rdts.base.{ReplicaId, Uid}
@@ -49,7 +48,7 @@ object TraceGeneration {
         if parents.isEmpty then start
         else walkBackAFewSteps(eventGraph, parents.iterator.drop(random.nextInt(parents.size)).next(), steps - 1)
 
-  /** Builds a random [[authz.AuthzEventGraph]].
+  /** Builds a random [[channels.authz.AuthzEventGraph]].
     * Every non-root replica holds `numCapabilitiesPerReplica` capabilities.
     *
     * @param numReplicas number of participating replicas, the root replica included
@@ -143,7 +142,7 @@ object TraceGeneration {
     )
   }
 
-  /** Builds an [[authz.AuthzEventGraph]] with a two-level delegation hierarchy, in four phases:
+  /** Builds an [[channels.authz.AuthzEventGraph]] with a two-level delegation hierarchy, in four phases:
     *
     *   1. The root replica delegates write access to one top-level subtree (`a.*`, `b.*`, `c.*`) each to three
     *      new replicas.
@@ -355,10 +354,10 @@ object TraceGeneration {
     EventGraphBuilder.receiveOrThrow(generated.eventGraph, revocation)
   }
 
-  /** Translates an already-built [[GeneratedBenchmarkRdtEventGraph]] (an [[authz.AuthzEventGraph]] of [[BenchmarkRdt]]
+  /** Translates an already-built [[GeneratedBenchmarkRdtEventGraph]] (an [[channels.authz.AuthzEventGraph]] of [[BenchmarkRdt]]
     * edits, together with its delta value store) into a [[HashDag]] of the very same edits, in the same causal
     * order and authored by the same replicas, instead of generating an independent random graph — so that the
-    * [[HashDag]]-based benchmarks exercise the exact same trace of edits as the [[authz.AuthzEventGraph]]-based ones.
+    * [[HashDag]]-based benchmarks exercise the exact same trace of edits as the [[channels.authz.AuthzEventGraph]]-based ones.
     * Since [[HashDag]] has no notion of access control, every capability/delegation event of the source graph is
     * dropped, and each delta event's parents are reconnected to its nearest ancestor delta event (or the dag's
     * genesis) instead.

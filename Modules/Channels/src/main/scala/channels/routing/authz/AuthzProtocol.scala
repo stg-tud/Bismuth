@@ -14,11 +14,11 @@ import rdts.filters.{Filter, PermissionTree}
 
 import scala.util.Try
 
-/** [[Plumtree]] store of an [[AuthzReplica]], with the event hashes peers announced that the replica lacks. */
+/** [[Plumtree]] store of an [[channels.authz.AuthzReplica]], with the event hashes peers announced that the replica lacks. */
 final case class AuthzStore[RDT](replica: AuthzReplica[RDT], remoteMissing: Map[Peer, Set[Hash]] = Map.empty)
 
-/** Plumtree over the events of an [[AuthzReplica]]: payloads are encoded events, knowledge are event hashes, and the
-  * summary are the heads. Replay uses the cuts of the [[AuthzEventGraph]], see [[AuthzEventGraph.notBefore]].
+/** Plumtree over the events of an [[channels.authz.AuthzReplica]]: payloads are encoded events, knowledge are event hashes, and the
+  * summary are the heads. Replay uses the cuts of the [[channels.authz.AuthzEventGraph]], see [[channels.authz.AuthzEventGraph.notBefore]].
   */
 final class AuthzKnowledge[RDT] extends PlumtreeKnowledge {
   type Store     = AuthzStore[RDT]
@@ -51,7 +51,7 @@ final class AuthzKnowledge[RDT] extends PlumtreeKnowledge {
   }
 }
 
-/** Authorization-aware replication: the events of an [[AuthzReplica]] are disseminated by [[Plumtree]], and the delta
+/** Authorization-aware replication: the events of an [[channels.authz.AuthzReplica]] are disseminated by [[Plumtree]], and the delta
   * values follow the events they belong to, filtered for what each receiver may read. Delivers the materialized state
   * whenever it changes. `identity` signs local events.
   *

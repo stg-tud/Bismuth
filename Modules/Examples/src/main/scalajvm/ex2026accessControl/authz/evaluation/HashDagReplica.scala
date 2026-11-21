@@ -3,8 +3,7 @@ package ex2026accessControl.authz.evaluation
 import channels.routing.PlumtreeMessage
 import channels.connection.ByteBufferMessageBuffer
 import channels.crypto.{Hash, PrivateIdentity, PublicIdentity}
-import channels.authz.AuthzReplica
-import channels.routing.authz.{AuthzMessage, AuthzProtocol}
+import channels.routing.authz.{AuthzMessage}
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
 import ex2026accessControl.authz.evaluation.ConnectionManager
 import rdts.base.{Bottom, Decompose, Lattice}
@@ -31,7 +30,7 @@ class HashDagReplica[Entry <: HashDagEntry[RDT]: JsonValueCodec, RDT: {Lattice, 
     }
   }
 
-  /** Like [[AuthzReplica.write]], but without any access control: every decomposed delta
+  /** Like [[channels.authz.AuthzReplica.write]], but without any access control: every decomposed delta
     * becomes its own entry, each one on top of the previous.
     */
   def mutateState(mutator: RDT => RDT): Unit = synchronized {
@@ -67,7 +66,7 @@ class HashDagReplica[Entry <: HashDagEntry[RDT]: JsonValueCodec, RDT: {Lattice, 
 
 object HashDagReplica {
 
-  /** Entries in the same wire format as the events of [[AuthzProtocol]], one message each. */
+  /** Entries in the same wire format as the events of [[channels.routing.authz.AuthzProtocol]], one message each. */
   def encodeEntries(entries: Iterable[Array[Byte]]): ByteBufferMessageBuffer =
     ByteBufferMessageBuffer(entries.iterator.flatMap(entry =>
       writeToArray[AuthzMessage](AuthzMessage.Events(PlumtreeMessage.Push(entry)))(using AuthzMessage.codec)
