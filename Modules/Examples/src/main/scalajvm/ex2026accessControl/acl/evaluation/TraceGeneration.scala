@@ -1,6 +1,6 @@
 package ex2026accessControl.acl.evaluation
 
-import channels.crypto.{Ed25519PrivateIdentity, IdentityFactory, PrivateIdentity, PublicIdentity}
+import channels.crypto.{Ed25519PrivateIdentity, IdentityFactory, PublicIdentity}
 import ex2026accessControl.acl.evaluation.TravelPlanMutatorChoice.*
 import ex2026accessControl.acl.{Acl, AclRdt, BftDelta}
 import ex2026accessControl.authz.travelplanner.TravelPlan

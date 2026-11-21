@@ -31,7 +31,7 @@ case class Spreadsheet[A](
       colIds = colIds.insertAt(index, getColId(index).get)
     )
 
-    def removeValueFromConflict(rowId: RowId, colId: ColumnId, value: A)(using ReplicaId): Spreadsheet[A] =
+    def removeValueFromConflict(rowId: RowId, colId: ColumnId, value: A): Spreadsheet[A] =
         val newContent = rowAndColIdPairToContent.get(rowId, colId) match
             case None      => Map.empty
             case Some(set) => Map((rowId = rowId, colId = colId) -> set.remove(value))

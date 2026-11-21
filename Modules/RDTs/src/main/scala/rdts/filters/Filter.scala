@@ -291,7 +291,7 @@ object Filter {
     override def minimizePermissionTree(permissionTree: PermissionTree): PermissionTree = permissionTree
   }
 
-  given dotRemoveMapFilter[V: {Filter, Bottom}]: Filter[DotRemoveMap[V]] = {
+  given dotRemoveMapFilter[V: Filter]: Filter[DotRemoveMap[V]] = {
     given Filter[Dots] = terminalDotsFilter
     Filter.derived
   }

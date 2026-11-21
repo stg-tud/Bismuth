@@ -47,16 +47,16 @@ class UndoRedoReplicaTest extends munit.FunSuite {
         def materialized_nodes: Map[ID, MaterializedNode] =
           nodes.view.mapValues(MaterializedNode.from).toMap
 
-        def add(nodeId: ID, node: Node)(using replicaId: ReplicaId): Document =
+        def add(nodeId: ID, node: Node): Document =
           Document(Map(nodeId -> node))
 
-        def setPosition(nodeId: ID, position: Position)(using replicaId: ReplicaId): Document =
+        def setPosition(nodeId: ID, position: Position): Document =
           nodes.get(nodeId) match {
             case Some(n) => Document(Map(nodeId -> n.copy(position = LWW.now(position))))
             case None    => Document.bottom.empty
           }
 
-        def setColor(nodeId: ID, color: Color)(using replicaId: ReplicaId): Document =
+        def setColor(nodeId: ID, color: Color): Document =
           nodes.get(nodeId) match {
             case Some(n) => Document(Map(nodeId -> n.copy(color = LWW.now(color))))
             case None    => Document.bottom.empty

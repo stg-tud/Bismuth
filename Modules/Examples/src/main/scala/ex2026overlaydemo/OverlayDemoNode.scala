@@ -1,6 +1,5 @@
 package ex2026overlaydemo
 
-import channels.JsoniterCodecs.given
 import channels.routing.PlumtreeBroadcast
 import channels.routing.PlumtreeMessage.Payload
 import channels.connection.{Abort, ChannelResolver, ConnectionDescriptor, Connector, Listener, Peer, PeerConnectInfo}
@@ -85,7 +84,6 @@ class OverlayDemoNode(
 
   def overlayInfoTick(): Unit =
     broadcastIO.foreach { io =>
-      given ReplicaId = localUid
       publish(OverlayStatusProtocol.statusDelta(state, io, nowMillis()))
     }
 

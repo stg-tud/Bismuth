@@ -25,7 +25,6 @@ class OverlayStatusProtocolTest extends FunSuite {
     )
 
     def publishStatus(round: Long): Unit = {
-      given ReplicaId = uid
       val delta       = OverlayStatusProtocol.statusDelta(status, io, timestamp = round)
       status = status.merge(delta)
       io.broadcast(delta): Unit
@@ -116,7 +115,6 @@ class OverlayStatusProtocolTest extends FunSuite {
         io.bootstrapVia(peer)
 
       def publishStatus(round: Long): Unit = {
-        given ReplicaId = uid
         val delta       = OverlayStatusProtocol.statusDelta(status, io, timestamp = round)
         status = status.merge(delta)
         io.broadcast(delta): Unit

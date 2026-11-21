@@ -22,7 +22,7 @@ case class TravelPlan(
     this.deltaModify(_.bucketList).using(_.insert(LastWriterWins.now(text)))
 
   /** does nothing if the entry has been removed */
-  def setBucketListEntryText(bucketListId: UniqueId, text: String)(using localUid: ReplicaId): Delta =
+  def setBucketListEntryText(bucketListId: UniqueId, text: String): Delta =
     this.deltaModify(_.bucketList).using(_.transform(bucketListId)(_.write(text)))
 
   def removeBucketListEntry(bucketListId: UniqueId): Delta =
@@ -36,15 +36,15 @@ case class TravelPlan(
   def removeExpense(expenseId: UniqueId): Delta =
     this.deltaModify(_.expenses).using(_.remove(expenseId))
 
-  def setExpenseAmount(expenseId: UniqueId, amount: String)(using localUid: ReplicaId): Delta =
+  def setExpenseAmount(expenseId: UniqueId, amount: String): Delta =
     this.deltaModify(_.expenses).using(_.transform(expenseId)(_.deltaModify(_.amount).using(_.write(Some(amount)))))
 
-  def setExpenseDescription(expenseId: UniqueId, description: String)(using localUid: ReplicaId): Delta =
+  def setExpenseDescription(expenseId: UniqueId, description: String): Delta =
     this.deltaModify(_.expenses).using(_.transform(expenseId)(
       _.deltaModify(_.description).using(_.write(Some(description)))
     ))
 
-  def setExpenseComment(expenseId: UniqueId, comment: String)(using localUid: ReplicaId): Delta = {
+  def setExpenseComment(expenseId: UniqueId, comment: String): Delta = {
     val commentValue = if comment.isEmpty then None else Some(comment)
     this.deltaModify(_.expenses).using(_.transform(expenseId)(_.deltaModify(_.comment).using(_.write(commentValue))))
   }

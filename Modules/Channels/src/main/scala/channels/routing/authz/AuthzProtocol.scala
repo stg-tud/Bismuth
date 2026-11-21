@@ -58,9 +58,7 @@ final class AuthzKnowledge[RDT] extends PlumtreeKnowledge {
   * Only authenticated peers ([[channels.connection.Peer.Authenticated]]) take part: their uid is their
   * [[channels.crypto.PublicIdentity]], which is what capabilities are granted to, and what deltas are filtered for.
   */
-final class AuthzProtocol[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](val identity: PrivateIdentity)(
-    using Verifier
-) extends Routing {
+final class AuthzProtocol[RDT](val identity: PrivateIdentity) extends Routing {
   type State = PlumtreeCore[AuthzStore[RDT]]
   type Msg   = AuthzMessage
   type Out   = RDT

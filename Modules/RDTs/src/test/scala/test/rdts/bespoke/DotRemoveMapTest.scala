@@ -1,6 +1,6 @@
 package test.rdts.bespoke
 
-import rdts.base.{Lattice, ReplicaId, Uid}
+import rdts.base.{ReplicaId, Uid}
 import rdts.datatypes.{DotRemoveMap, LastWriterWins}
 import rdts.time.Dots
 

@@ -7,7 +7,7 @@ import channels.connection.Peer
 import channels.overlay.{FullMeshOverlay, HyParViewStateMachine}
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
-import rdts.base.{Bottom, Lattice, ReplicaId, Uid}
+import rdts.base.{Bottom, Lattice, Uid}
 import rdts.datatypes.LastWriterWins
 
 object OverlayStatusProtocol {
@@ -41,7 +41,7 @@ object OverlayStatusProtocol {
 
   given JsonValueCodec[Status] = JsonCodecMaker.make(CodecMakerConfig.withMapAsArray(true))
 
-  def localViewOf[State](io: MessagingIO.Plumtree[State], timestamp: Long)(using ReplicaId): LocalView = {
+  def localViewOf[State](io: MessagingIO.Plumtree[State], timestamp: Long): LocalView = {
     val (activePeers, passivePeers) = io.overlayController match
         case overlay: HyParViewStateMachine => (overlay.activeView, overlay.passiveView)
         case overlay: FullMeshOverlay       => (overlay.active.keySet, Set.empty[Peer])
@@ -65,7 +65,7 @@ object OverlayStatusProtocol {
     LocalView(timestamp, peers)
   }
 
-  def statusDelta[State](current: Status, io: MessagingIO.Plumtree[State], timestamp: Long)(using ReplicaId): Status =
+  def statusDelta[State](current: Status, io: MessagingIO.Plumtree[State], timestamp: Long): Status =
     Map(io.selfPeer.uid -> localViewOf(io, timestamp))
 
   def snapshot(status: Status): Map[Uid, Map[Uid, PeerState]] =

@@ -19,7 +19,7 @@ case class BFTTravelPlan(state: TravelPlan, hashDAG: HashDAG[TravelPlan]):
         val delta = state.addBucketListEntry(text)
         BFTTravelPlan(delta, hashDAG.generateDelta(delta))
 
-    def setBucketListEntryText(bucketListId: UniqueId, text: String)(using localUid: ReplicaId): Delta =
+    def setBucketListEntryText(bucketListId: UniqueId, text: String): Delta =
         val delta = state.setBucketListEntryText(bucketListId, text)
         BFTTravelPlan(delta, hashDAG.empty.generateDelta(delta))
 
@@ -27,15 +27,15 @@ case class BFTTravelPlan(state: TravelPlan, hashDAG: HashDAG[TravelPlan]):
         val delta = state.addExpense(description, amount)
         BFTTravelPlan(delta, hashDAG.empty.generateDelta(delta))
 
-    def setExpenseAmount(expenseId: UniqueId, amount: String)(using localUid: ReplicaId): Delta =
+    def setExpenseAmount(expenseId: UniqueId, amount: String): Delta =
         val delta = state.setExpenseAmount(expenseId, amount)
         BFTTravelPlan(delta, hashDAG.empty.generateDelta(delta))
 
-    def setExpenseDescription(expenseId: UniqueId, description: String)(using localUid: ReplicaId): Delta =
+    def setExpenseDescription(expenseId: UniqueId, description: String): Delta =
         val delta = state.setExpenseDescription(expenseId, description)
         BFTTravelPlan(delta, hashDAG.empty.generateDelta(delta))
 
-    def setExpenseComment(expenseId: UniqueId, comment: String)(using localUid: ReplicaId): Delta =
+    def setExpenseComment(expenseId: UniqueId, comment: String): Delta =
         val delta = state.setExpenseComment(expenseId, comment)
         BFTTravelPlan(delta, hashDAG.empty.generateDelta(delta))
 

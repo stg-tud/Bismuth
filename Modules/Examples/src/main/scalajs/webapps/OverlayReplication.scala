@@ -66,7 +66,6 @@ class OverlayReplication[A: JsonValueCodec](val replicaId: ReplicaId, receive: A
   def appPayloads: List[A] = io.allPayloads.flatMap(_.data.app)
 
   private def publishStatus(): Unit = {
-    given ReplicaId = replicaId
     val delta       = OverlayStatusProtocol.statusDelta(status, io, Date.now().toLong)
     status = status.merge(delta)
     io.broadcast(Replicated(overlay = delta))
