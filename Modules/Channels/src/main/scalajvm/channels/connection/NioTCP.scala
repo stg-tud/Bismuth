@@ -242,11 +242,11 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = MessagingIO.executeImmedi
         }
     }
 
+  /** Unix domain sockets, or TCP over IPv6 and IPv4 (the default protocol family, not only IPv4). */
   def defaultSocketChannel(socketAddress: SocketAddress): () => SocketChannel = () => {
-    val pf = socketAddress match
-        case _: UnixDomainSocketAddress => StandardProtocolFamily.UNIX
-        case _                          => StandardProtocolFamily.INET
-    val channel = SocketChannel.open(pf)
+    val channel = socketAddress match
+        case _: UnixDomainSocketAddress => SocketChannel.open(StandardProtocolFamily.UNIX)
+        case _                          => SocketChannel.open()
     channel.connect(socketAddress)
     configureChannel(channel)
     channel
@@ -260,11 +260,11 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = MessagingIO.executeImmedi
         case _: UnsupportedOperationException => // fine
   }
 
+  /** Unix domain sockets, or TCP over IPv6 and IPv4 (the default protocol family: a wildcard address accepts both). */
   def defaultServerSocketChannel(socketAddress: SocketAddress): () => ServerSocketChannel = () => {
-    val pf = socketAddress match
-        case _: UnixDomainSocketAddress => StandardProtocolFamily.UNIX
-        case _                          => StandardProtocolFamily.INET
-    val socket = ServerSocketChannel.open(pf)
+    val socket = socketAddress match
+        case _: UnixDomainSocketAddress => ServerSocketChannel.open(StandardProtocolFamily.UNIX)
+        case _                          => ServerSocketChannel.open()
     socket.configureBlocking(false)
     socket.bind(socketAddress)
     socket

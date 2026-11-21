@@ -14,7 +14,7 @@ class EchoServerTestJavaWebSocketClient
       },
       (_, _) => {
         case ConnectionDescriptor.TcpWebSocket(host, port) =>
-          Some(JavaWebSocketClient.connect(HttpClient.newHttpClient(), URI.create(s"ws://$host:$port/")))
+          Some(JavaWebSocketClient.connect(HttpClient.newHttpClient(), URI.create(s"ws://${ConnectionDescriptor.urlHost(host)}:$port/")))
         case _ => None
       }
     )

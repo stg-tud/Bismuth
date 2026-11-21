@@ -19,11 +19,11 @@ enum ConnectionDescriptor {
   case Sse(url: String)
 
   def asUrl: String = this match
-      case ConnectionDescriptor.Tcp(host, port)          => s"tcp://$host:$port"
-      case ConnectionDescriptor.Udp(host, port)          => s"udp://$host:$port"
+      case ConnectionDescriptor.Tcp(host, port)          => s"tcp://${ConnectionDescriptor.urlHost(host)}:$port"
+      case ConnectionDescriptor.Udp(host, port)          => s"udp://${ConnectionDescriptor.urlHost(host)}:$port"
       case ConnectionDescriptor.Unix(path)               => s"unix://$path"
-      case ConnectionDescriptor.TcpWebSocket(host, port) => s"tcp-ws://$host:$port"
-      case ConnectionDescriptor.TcpTls(host, port)       => s"tcp-tls://$host:$port"
+      case ConnectionDescriptor.TcpWebSocket(host, port) => s"tcp-ws://${ConnectionDescriptor.urlHost(host)}:$port"
+      case ConnectionDescriptor.TcpTls(host, port)       => s"tcp-tls://${ConnectionDescriptor.urlHost(host)}:$port"
       case ConnectionDescriptor.WebSocket(url)           => url
       case ConnectionDescriptor.WebRtc(peerId)           => s"webrtc://$peerId"
       case ConnectionDescriptor.QueuedLocal(id)          => s"queue://$id"
@@ -33,17 +33,23 @@ enum ConnectionDescriptor {
 }
 
 object ConnectionDescriptor {
+
+  /** The host as written in URLs: IPv6 addresses in brackets. */
+  def urlHost(host: String): String = if host.contains(':') && !host.startsWith("[") then s"[$host]" else host
+
+  /** The host of a URI, without the brackets of an IPv6 address. */
+  private def hostOf(uri: URI): Option[String] = Option(uri.getHost).map(_.stripPrefix("[").stripSuffix("]"))
   def parse(value: String): Option[ConnectionDescriptor] =
     Try(URI.create(value)).toOption.flatMap { uri =>
       uri.getScheme match
           case "tcp" =>
             for
-                host <- Option(uri.getHost)
+                host <- hostOf(uri)
                 port <- Option.when(uri.getPort >= 0)(uri.getPort)
             yield Tcp(host, port)
           case "udp" =>
             for
-                host <- Option(uri.getHost)
+                host <- hostOf(uri)
                 port <- Option.when(uri.getPort >= 0)(uri.getPort)
             yield Udp(host, port)
           case "unix" =>
@@ -52,12 +58,12 @@ object ConnectionDescriptor {
               .map(Unix.apply)
           case "tcp+ws" | "tcp-ws" =>
             for
-                host <- Option(uri.getHost)
+                host <- hostOf(uri)
                 port <- Option.when(uri.getPort >= 0)(uri.getPort)
             yield TcpWebSocket(host, port)
           case "tcp+tls" | "tcp-tls" =>
             for
-                host <- Option(uri.getHost)
+                host <- hostOf(uri)
                 port <- Option.when(uri.getPort >= 0)(uri.getPort)
             yield TcpTls(host, port)
           case "ws" | "wss" => Some(WebSocket(value))

@@ -51,3 +51,17 @@ class EchoServerTestNioTCP extends EchoCommunicationTest(
         NioTcpConnectionDetailsResolver(nioTCP)
       }
     )
+
+/** TCP over IPv6 (the loopback address), with the default channels of [[NioTCP]]. */
+class EchoServerTestNioTCPv6 extends EchoCommunicationTest(
+      { (ec, abort) =>
+        val nioTCP = new NioTCP(ConcurrencyHelper.makeExecutionContext(false))
+        ec.execute(() => nioTCP.loopSelection(abort))
+        nioTCP.listen(nioTCP.defaultServerSocketChannel(InetSocketAddress(java.net.InetAddress.getByName("::1"), 0)))
+      },
+      (ec, abort) => {
+        val nioTCP = new NioTCP(ConcurrencyHelper.makeExecutionContext(false))
+        ec.execute(() => nioTCP.loopSelection(abort))
+        NioTcpConnectionDetailsResolver(nioTCP)
+      }
+    )
