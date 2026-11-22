@@ -12,13 +12,16 @@ import java.net.{DatagramSocket, InetSocketAddress}
 import java.util.Timer
 import java.util.concurrent.{ExecutorService, Executors}
 import scala.annotation.unused
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, ExecutionContextExecutorService}
 import scala.util.matching.Regex
 
 object cli {
 
   private val executor: ExecutorService = Executors.newCachedThreadPool()
   private val ec: ExecutionContext      = ExecutionContext.fromExecutor(executor)
+
+  def makePooledExecutor(): ExecutionContextExecutorService =
+    ExecutionContext.fromExecutorService(Executors.newCachedThreadPool())
 
   def addRetryingConnection(
       dataManager: MessagingIO[?],
@@ -182,7 +185,7 @@ object cli {
             )
 
           // setup connections
-          val nioTCP = NioTCP(ConcurrencyHelper.makePooledExecutor())
+          val nioTCP = NioTCP(makePooledExecutor())
           ec.execute(() => nioTCP.loopSelection(Abort()))
 
           val peerPortVal = peerPort.value
@@ -373,7 +376,7 @@ object cli {
               commitReads = commitReads.value
             )
 
-          val nioTCP = NioTCP(ConcurrencyHelper.makePooledExecutor())
+          val nioTCP = NioTCP(makePooledExecutor())
           ec.execute(() => nioTCP.loopSelection(Abort()))
 
           val clientPortVal = clientPort.value
@@ -467,7 +470,7 @@ object cli {
 
           val (ip, port) = clientNode.value
 
-          val nioTCP = NioTCP(ConcurrencyHelper.makePooledExecutor())
+          val nioTCP = NioTCP(makePooledExecutor())
           val abort  = Abort()
           ec.execute(() => nioTCP.loopSelection(abort))
 

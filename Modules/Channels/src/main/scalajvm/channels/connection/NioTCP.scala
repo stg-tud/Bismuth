@@ -9,7 +9,7 @@ import java.net.{InetSocketAddress, SocketAddress, StandardProtocolFamily, Stand
 import java.nio.ByteBuffer
 import java.nio.channels.{SelectionKey, Selector, ServerSocketChannel, SocketChannel}
 import java.util.concurrent.{ExecutorService, Executors}
-import scala.concurrent.{ExecutionContext, ExecutionContextExecutorService}
+import scala.concurrent.ExecutionContext
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
@@ -83,9 +83,6 @@ object ConcurrencyHelper {
         ExecutionContext.fromExecutorService(singleThreadExecutor)
     else
         MessagingIO.executeImmediately
-
-  def makePooledExecutor(): ExecutionContextExecutorService =
-    ExecutionContext.fromExecutorService(Executors.newCachedThreadPool())
 }
 
 /** Selector-based TCP transport.
