@@ -1,6 +1,6 @@
 package channels
 
-import channels.connection.{ConnectionDescriptor, TCP}
+import channels.connection.{ConnectionDescriptor, TCP, TcpConnectionDetailsResolver}
 
 import java.net.{InetAddress, InetSocketAddress, ServerSocket, SocketException}
 
@@ -18,9 +18,32 @@ class EchoServerTestTCP extends EchoCommunicationTest(
 
         TCP.listen(() => socket, ec)
       },
+      (ec, _) => TcpConnectionDetailsResolver(ec)
+    )
+
+/** Native websocket client and server, connecting via a `ws://` URL of the [[TCP]] listener. */
+class EchoServerTestTCPWebSocketClient extends EchoCommunicationTest(
+      { (ec, _) =>
+        TCP.listen(TCP.defaultServerSocket(new InetSocketAddress(InetAddress.getLoopbackAddress, 0)), ec)
+      },
       (ec, _) => {
-        case ConnectionDescriptor.TcpWebSocket(host, port) =>
-          Some(TCP.connect(TCP.defaultSocket(new InetSocketAddress(host, port)), ec))
-        case _ => None
+        val resolver = TcpConnectionDetailsResolver(ec)
+        {
+          case ConnectionDescriptor.TcpWebSocket(host, port) =>
+            resolver.connect(ConnectionDescriptor.WebSocket(s"ws://${ConnectionDescriptor.urlHost(host)}:$port/path?q"))
+          case _ => None
+        }
       }
     )
+
+class TcpConnectionDetailsResolverTest extends munit.FunSuite {
+  val resolver = TcpConnectionDetailsResolver(scala.concurrent.ExecutionContext.global)
+
+  test("resolves ws, but not wss or other urls") {
+    assert(resolver.connect(ConnectionDescriptor.WebSocket("ws://localhost:1234/path")).isDefined)
+    assert(resolver.connect(ConnectionDescriptor.WebSocket("ws://localhost")).isDefined)
+    assert(resolver.connect(ConnectionDescriptor.WebSocket("wss://localhost:1234/path")).isEmpty)
+    assert(resolver.connect(ConnectionDescriptor.WebSocket("http://localhost:1234/path")).isEmpty)
+    assert(resolver.connect(ConnectionDescriptor.WebSocket("not a url")).isEmpty)
+  }
+}
