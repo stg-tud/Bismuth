@@ -8,6 +8,30 @@ import scala.concurrent.ExecutionContext
 import scala.util.Try
 import scala.util.control.NonFatal
 
+object MultiplexedConnection {
+
+  /** Connects as the websocket client of a server at `host`, for `path`: `create` makes the connection (with the given
+    * [[Receive]]), `start` starts receiving. Completes once the server accepted and the connection is established, or
+    * fails if that does not happen.
+    */
+  def connectWebsocketClient[C <: MultiplexedConnection](incoming: Receive, host: String, path: String)(
+      create: Receive => C,
+      start: C => Unit,
+  ): Async[Any, Connection] = Async.fromCallback {
+    val handler = Async.handler[Connection]
+    try {
+      val established: Receive = conn => {
+        val callback = incoming.connectionEstablished(conn)
+        handler.succeed(conn)
+        callback
+      }
+      val conn = create(established)
+      conn.startWebsocketClient(host, path, handler.fail)
+      start(conn)
+    } catch case NonFatal(ex) => handler.fail(ex)
+  }
+}
+
 /** A connection running [[WebsocketMultiplexing]] on a byte stream: plain length-prefixed messages, or a websocket,
   * as the remote side chooses. Transports provide writing and closing, and how to read, see [[receive]].
   * Received messages are delivered using `deliverExecutor`.
@@ -28,6 +52,9 @@ abstract class MultiplexedConnection(incoming: Receive, deliverExecutor: Executi
   private var state: State                                    = State.Init
   private val buffer: ReceiveBuffer                           = ReceiveBuffer()
 
+  /** Told if receiving fails before the connection is established, see [[startWebsocketClient]]. */
+  private var establishFailed: (Throwable => Unit) | Null = null
+
   /** How messages are framed when sending. */
   final protected def framing: Framing = currentFraming
 
@@ -45,11 +72,10 @@ abstract class MultiplexedConnection(incoming: Receive, deliverExecutor: Executi
 
   /** Completes once the transport took the message: senders waiting for that before sending more get backpressure. */
   final override def send(message: MessageBuffer): Async[Any, Unit] = {
-    val payload = message.asByteBuffer
-    val header  = WebsocketMultiplexing.header(framing, payload.remaining())
+    val buffers = WebsocketMultiplexing.frame(framing, message.asByteBuffer)
     Async.fromCallback {
       val handler = Async.handler[Unit]
-      try write(Array(header, payload), handler.complete)
+      try write(buffers, handler.complete)
       catch case NonFatal(ex) => handler.fail(ex)
     }
   }
@@ -75,6 +101,16 @@ abstract class MultiplexedConnection(incoming: Receive, deliverExecutor: Executi
     if messageCallback == null then
         currentFraming = framing
         messageCallback = incoming.connectionEstablished(this)
+
+  /** Starts the handshake as the websocket client of a server at `host`, for `path`. Call before receiving. The
+    * connection is established once the server accepted. If receiving fails before that, `failed` is told instead.
+    */
+  final def startWebsocketClient(host: String, path: String, failed: Throwable => Unit): Unit = {
+    val (initial, request) = WebsocketMultiplexing.client(host, path)
+    state = initial
+    establishFailed = failed
+    write(Array(ByteBuffer.wrap(request)), null)
+  }
 
   /** Reads using `read` and handles all complete messages, until `read` returns 0 (nothing more available without
     * waiting), or the remote side closed. `read` gets free space to read into, and returns the number of bytes read
@@ -111,7 +147,12 @@ abstract class MultiplexedConnection(incoming: Receive, deliverExecutor: Executi
 
   /** Receiving failed with `ex`: fails the message callback (with a [[ConnectionClosedException]] if we closed). */
   final protected def receiveFailed(ex: Throwable): Unit = {
+    val failure  = if closedLocally then ConnectionClosedException("requested close") else ex
     val callback = messageCallback
-    if callback != null then callback.fail(if closedLocally then ConnectionClosedException("requested close") else ex)
+    if callback != null then callback.fail(failure)
+    else {
+      val failed = establishFailed
+      if failed != null then failed(failure)
+    }
   }
 }

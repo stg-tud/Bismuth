@@ -39,6 +39,25 @@ object TCP {
         }
     }
 
+  /** Connects as the websocket client of a server at `host` (for the `Host` header), for `path`. */
+  def connectWebSocket(
+      bindsocket: () => Socket,
+      host: String,
+      path: String,
+      executionContext: ExecutionContext
+  ): Connector =
+    new Connector {
+      override def connect(incoming: Receive): Async[Any, Connection] =
+        MultiplexedConnection.connectWebsocketClient(incoming, host, path)(
+          create = established => {
+            val socket = bindsocket()
+            socket.setTcpNoDelay(true)
+            JIOStreamConnection(socket.getInputStream, socket.getOutputStream, () => socket.close(), established)
+          },
+          start = conn => executionContext.execute(() => conn.loopReceive())
+        )
+    }
+
   def defaultServerSocket(socketAddress: InetSocketAddress): () => ServerSocket = () => {
     val socket = new ServerSocket
 

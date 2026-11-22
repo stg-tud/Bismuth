@@ -60,6 +60,80 @@ class WebsocketMultiplexingTest extends munit.FunSuite {
     }
   }
 
+  /** One side of a connection: its state and receive buffer. */
+  class Side(var state: State) {
+    val buffer = ReceiveBuffer()
+
+    /** Receives `bytes`, returns the outputs. */
+    def receive(bytes: Array[Byte]): List[Output] = {
+      buffer.reserve(buffer.available + bytes.length)
+      buffer.fill { bb =>
+        bb.put(bytes); bytes.length
+      }: Unit
+      val (next, outputs) = WebsocketMultiplexing.receive(state, buffer)
+      state = next
+      outputs
+    }
+  }
+
+  def send(framing: Framing, payload: Array[Byte]): Array[Byte] =
+    WebsocketMultiplexing.frame(framing, ByteBuffer.wrap(payload)).flatMap(MessageBuffer.convertByteBufferToArray)
+
+  /** Whether `frame` is marked as going from the client to the server (the mask bit). */
+  def fromClient(frame: Array[Byte]): Boolean = (frame(1) & 0x80) != 0
+
+  test("websocket client and server") {
+    val (initial, request) = WebsocketMultiplexing.client("example", "/path")
+    val client             = Side(initial)
+    val server             = Side(State.Init)
+
+    val (response, serverFrame) = server.receive(request) match
+        case List(Output.Reply(response), Output.Detected(Framing.WebSocket)) =>
+          (response, send(Framing.WebSocket, Array(1, 2)))
+        case other => fail(s"unexpected server outputs: $other")
+    assert(!fromClient(serverFrame))
+
+    // response and first message arrive together
+    client.receive(response ++ serverFrame) match
+        case List(Output.Detected(Framing.WebSocketClient), Output.Message(m)) => assertEquals(m.toSeq, Seq[Byte](1, 2))
+        case other => fail(s"unexpected client outputs: $other")
+
+    val clientFrame = send(Framing.WebSocketClient, Array.tabulate[Byte](300)(_.toByte))
+    assert(fromClient(clientFrame))
+    assertEquals(messages(server.receive(clientFrame)), List(Seq.tabulate[Byte](300)(_.toByte)))
+
+    // the client answers a ping with a pong from the client
+    client.receive(WebsocketProtocol.encodeFrame(0x9, ByteBuffer.wrap(Array[Byte](7)), fromClient = false)) match
+        case List(Output.Reply(pong)) =>
+          assert(fromClient(pong))
+          assertEquals(server.receive(pong), Nil)
+        case other => fail(s"unexpected client outputs: $other")
+
+    // closing from the client side
+    val goodbye = WebsocketMultiplexing.goodbye(Framing.WebSocketClient).get
+    assert(fromClient(goodbye))
+    server.receive(goodbye) match
+        case List(Output.Reply(close), Output.Closed) =>
+          assertEquals(client.receive(close).last, Output.Closed)
+        case other => fail(s"unexpected server outputs: $other")
+    assertEquals(server.state, State.Closed)
+    assertEquals(client.state, State.Closed)
+  }
+
+  test("websocket client rejects a wrong accept") {
+    val (initial, _) = WebsocketMultiplexing.client("example", "/")
+    val response     =
+      "HTTP/1.1 101 Switching Protocols\r\nSec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=\r\n\r\n"
+    intercept[IllegalStateException](Side(initial).receive(response.getBytes(StandardCharsets.US_ASCII)))
+  }
+
+  test("websocket client rejects a refused handshake") {
+    val (initial, _) = WebsocketMultiplexing.client("example", "/")
+    intercept[IllegalStateException](
+      Side(initial).receive("HTTP/1.1 404 Not Found\r\n\r\n".getBytes(StandardCharsets.US_ASCII))
+    )
+  }
+
   test("too large messages are rejected") {
     intercept[IllegalArgumentException](run(ByteBuffer.allocate(4).putInt(MessageBuffer.maxPayloadSize).array()))
   }

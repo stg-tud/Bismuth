@@ -12,7 +12,9 @@ import scala.util.{Failure, Success, Try}
 
 object NioConnection {
 
-  /** A connection on a socket accepted by a listener. Established once the protocol of the remote side is known. */
+  /** A connection on a socket accepted by a listener, or for a websocket client (see
+    * [[MultiplexedConnection.startWebsocketClient]]). Established once the protocol of the remote side is known.
+    */
   def accepted(channel: SocketChannel, incoming: Receive, deliverExecutor: ExecutionContext): NioConnection =
     NioConnection(channel, incoming, deliverExecutor)
 
@@ -63,8 +65,8 @@ final class NioConnection private (
     local = Try(describe(channel.getLocalAddress)).getOrElse(None),
     remote = Try(describe(channel.getRemoteAddress)).getOrElse(None),
     details = Map("type" -> (framing match
-        case Framing.Plain     => "niotcp"
-        case Framing.WebSocket => "websocket"))
+        case Framing.Plain                               => "niotcp"
+        case Framing.WebSocket | Framing.WebSocketClient => "websocket"))
   )
 
   // ------------------------------------------------------------------------------------------------

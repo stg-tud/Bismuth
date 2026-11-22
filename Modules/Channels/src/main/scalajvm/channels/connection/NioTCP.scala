@@ -80,6 +80,18 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = MessagingIO.executeImmedi
         }
     }
 
+  /** Connects as the websocket client of a server at `host` (for the `Host` header), for `path`, using the channel of
+    * `bindsocket`, which must be non-blocking.
+    */
+  def connectWebSocket(bindsocket: () => SocketChannel, host: String, path: String = "/"): Connector =
+    new Connector {
+      override def connect(incoming: Receive): Async[Any, Connection] =
+        MultiplexedConnection.connectWebsocketClient(incoming, host, path)(
+          create = established => NioConnection.accepted(bindsocket(), established, accepCallbackExecutor),
+          start = conn => conn.register(selector)
+        )
+    }
+
   def handleConnectTo(
       clientChannel: SocketChannel,
       incoming: Receive,

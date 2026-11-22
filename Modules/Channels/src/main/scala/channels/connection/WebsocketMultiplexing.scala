@@ -6,6 +6,7 @@ import java.nio.charset.StandardCharsets
 
 /** Messages on a byte stream, either length-prefixed ("plain"), or as a websocket (handshake, then frames).
   * The remote side decides: a stream starting with a websocket handshake is a websocket, anything else is plain.
+  * Alternatively, we are the websocket client, see [[client]].
   *
   * A state machine, independent of where the bytes come from: [[receive]] parses what is buffered, and returns what
   * to do about it as [[WebsocketMultiplexing.Output]]s.
@@ -14,7 +15,13 @@ object WebsocketMultiplexing {
 
   /** How messages are framed on the byte stream. */
   enum Framing {
-    case Plain, WebSocket
+    case Plain
+
+    /** Websocket frames, as the server. */
+    case WebSocket
+
+    /** Websocket frames, as the client (marked as going from the client to the server). */
+    case WebSocketClient
   }
 
   enum State {
@@ -24,8 +31,11 @@ object WebsocketMultiplexing {
     case Plain
     case WebSocketHandshake
 
-    /** `fragments` of a message whose last frame did not arrive yet. */
-    case WebSocket(fragments: Vector[Array[Byte]])
+    /** We are the websocket client, waiting for the server to accept our handshake. */
+    case ClientHandshake
+
+    /** `fragments` of a message whose last frame did not arrive yet. `client` if we are the websocket client. */
+    case WebSocket(fragments: Vector[Array[Byte]], client: Boolean = false)
 
     /** The remote side closed the stream, nothing more is parsed. */
     case Closed
@@ -60,15 +70,24 @@ object WebsocketMultiplexing {
     (current, outputs.result())
   }
 
-  /** The header to send before a message of `length` bytes. */
-  def header(framing: Framing, length: Int): ByteBuffer = framing match
-      case Framing.Plain     => ByteBuffer.allocate(4).putInt(0, length)
-      case Framing.WebSocket => ByteBuffer.wrap(WebsocketProtocol.frameHeader(0x2, length))
+  /** Starts as the websocket client of a server at `host`, for `path`: the initial state, and the handshake request
+    * to send.
+    */
+  def client(host: String, path: String): (State, Array[Byte]) =
+    (State.ClientHandshake, WebsocketProtocol.handshakeRequest(host, path))
+
+  /** What to send for the message `payload` (the remaining bytes, which must not change afterwards). */
+  def frame(framing: Framing, payload: ByteBuffer): Array[ByteBuffer] = framing match
+      case Framing.Plain     => Array(ByteBuffer.allocate(4).putInt(0, payload.remaining()), payload)
+      case Framing.WebSocket => Array(ByteBuffer.wrap(WebsocketProtocol.frameHeader(0x2, payload.remaining())), payload)
+      case Framing.WebSocketClient =>
+        Array(ByteBuffer.wrap(WebsocketProtocol.frameHeader(0x2, payload.remaining(), fromClient = true)), payload)
 
   /** What to send before closing the stream. */
   def goodbye(framing: Framing): Option[Array[Byte]] = framing match
-      case Framing.Plain     => None
-      case Framing.WebSocket => Some(WebsocketProtocol.encodeCloseFrame())
+      case Framing.Plain           => None
+      case Framing.WebSocket       => Some(WebsocketProtocol.encodeCloseFrame())
+      case Framing.WebSocketClient => Some(WebsocketProtocol.encodeCloseFrame(fromClient = true))
 
   /** Parses the next complete unit, if there is one. */
   private def step(state: State, buffer: ReceiveBuffer): Option[(State, List[Output])] = state match {
@@ -100,7 +119,14 @@ object WebsocketMultiplexing {
         )
       }
 
-    case State.WebSocket(fragments) =>
+    case State.ClientHandshake =>
+      val view = buffer.view
+      Option.when(WebsocketProtocol.tryParseHandshakeResponse(view)) {
+        buffer.consume(view.position())
+        (State.WebSocket(Vector.empty, client = true), List(Output.Detected(Framing.WebSocketClient)))
+      }
+
+    case State.WebSocket(fragments, client) =>
       val view = buffer.view
       WebsocketProtocol.tryParseHeader(view).flatMap { header =>
         require(header.len < MessageBuffer.maxPayloadSize, "message too large")
@@ -111,7 +137,7 @@ object WebsocketMultiplexing {
         else
             buffer.consume(headerLength)
             val frame = WebsocketProtocol.tryParsePayload(header, buffer.take(header.len))
-            Some(websocketFrame(header.fin, frame, fragments))
+            Some(websocketFrame(header.fin, frame, fragments, client))
       }
 
     case State.Closed => None
@@ -120,24 +146,28 @@ object WebsocketMultiplexing {
   private def websocketFrame(
       fin: Boolean,
       frame: WebsocketFrame,
-      fragments: Vector[Array[Byte]]
+      fragments: Vector[Array[Byte]],
+      client: Boolean,
   ): (State, List[Output]) = {
 
     def data(bytes: Array[Byte]): (State, List[Output]) =
       if fin then
           val message = if fragments.isEmpty then bytes else (fragments :+ bytes).toArray.flatten
-          (State.WebSocket(Vector.empty), List(Output.Message(message)))
-      else (State.WebSocket(fragments :+ bytes), Nil)
+          (State.WebSocket(Vector.empty, client), List(Output.Message(message)))
+      else (State.WebSocket(fragments :+ bytes, client), Nil)
 
     frame match {
       case BinaryFrame(bytes)        => data(bytes)
       case TextFrame(text)           => data(text.getBytes(StandardCharsets.UTF_8))
       case ReservedFrame(0x0, bytes) => data(bytes)
       case PingFrame(bytes)          =>
-        (State.WebSocket(fragments), List(Output.Reply(WebsocketProtocol.encodePongFrame(bytes))))
-      case PongFrame(_) | ReservedFrame(_, _) => (State.WebSocket(fragments), Nil)
+        (
+          State.WebSocket(fragments, client),
+          List(Output.Reply(WebsocketProtocol.encodePongFrame(bytes, fromClient = client)))
+        )
+      case PongFrame(_) | ReservedFrame(_, _) => (State.WebSocket(fragments, client), Nil)
       case CloseFrame(_, _)                   =>
-        (State.Closed, List(Output.Reply(WebsocketProtocol.encodeCloseFrame()), Output.Closed))
+        (State.Closed, List(Output.Reply(WebsocketProtocol.encodeCloseFrame(fromClient = client)), Output.Closed))
     }
   }
 }
