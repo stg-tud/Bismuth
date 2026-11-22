@@ -4,9 +4,10 @@
 .idea/
 .ipynb_checkpoints
 .metals/
+.sbt/
 .scala-build/
 .vscode/
-.zed
+.zed/
 /website-deploy/
 bun.lock
 deno.lock
