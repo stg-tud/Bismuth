@@ -8,7 +8,6 @@ import de.rmgk.delay.{Async, Callback}
 import java.net.{InetSocketAddress, SocketAddress, StandardProtocolFamily, StandardSocketOptions, UnixDomainSocketAddress}
 import java.nio.ByteBuffer
 import java.nio.channels.{SelectionKey, Selector, ServerSocketChannel, SocketChannel}
-import java.util.concurrent.{ExecutorService, Executors}
 import scala.concurrent.ExecutionContext
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
@@ -69,20 +68,6 @@ object NioTCP {
         niotcp.loopSelection(broadcast.globalAbort)
       }
 
-}
-
-object ConcurrencyHelper {
-  def makeExecutionContext(singleThreadExecutor: Boolean): ExecutionContext =
-    if singleThreadExecutor then
-        val singleThreadExecutor: ExecutorService = Executors.newSingleThreadExecutor { r =>
-          val thread = new Thread(r)
-          thread.setDaemon(true)
-          thread
-        }
-
-        ExecutionContext.fromExecutorService(singleThreadExecutor)
-    else
-        MessagingIO.executeImmediately
 }
 
 /** Selector-based TCP transport.
