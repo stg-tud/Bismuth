@@ -2,7 +2,7 @@ package channels.crypto
 
 import java.security.{KeyPair, PublicKey}
 
-/** A local Ed25519 identity. TLS material for this identity is derived by [[channels.connection.tls.NioTls]]. */
+/** A local Ed25519 identity. TLS material for this identity is derived by [[channels.connection.tls.Tls]]. */
 case class Ed25519PrivateIdentity(identityKey: KeyPair) extends PrivateIdentity {
 
   val getPublic: PublicIdentity = PublicIdentity(

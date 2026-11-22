@@ -2,7 +2,7 @@ package ex2026accessControl.authz.travelplanner
 
 import channels.authz.AuthzEvent.Payload.Capability
 import channels.routing.authz.AuthzProtocol.*
-import channels.connection.tls.NioTls
+import channels.connection.tls.Tls
 import channels.connection.{Abort, ConnectionDescriptor, NioTCP, NioTcpConnectionDetailsResolver}
 import channels.crypto.{Hash, PrivateIdentity, PublicIdentity}
 import channels.{MessagingIO, Timers}
@@ -28,7 +28,7 @@ class SyncImpl[State: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
   private val abort = Abort()
   private val timer = java.util.Timer(true)
   private val nio   = NioTCP()
-  private val tls   = NioTls(localIdentity)
+  private val tls   = Tls(localIdentity)
 
   private val io: MessagingIO[AuthzProtocol[State]] = AuthzProtocol.messagingIO[State](
     localIdentity,
@@ -53,7 +53,7 @@ class SyncImpl[State: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
     val addrParts = connectionString.split(":")
     require(addrParts.length == 2)
     io.addClientConnection(
-      nio.connectTls(nio.defaultSocketChannel(InetSocketAddress(addrParts(0), addrParts(1).toInt)), tls)
+      tls.connect(nio.connect(nio.defaultSocketChannel(InetSocketAddress(addrParts(0), addrParts(1).toInt))))
     )
   }
 
@@ -90,7 +90,7 @@ class SyncImpl[State: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
     selector.setDaemon(true)
     selector.start()
     io.addServerConnection(
-      nio.listenTls(nio.defaultServerSocketChannel(InetSocketAddress(InetAddress.getLoopbackAddress, 0)), tls)
+      tls.listen(nio.listen(nio.defaultServerSocketChannel(InetSocketAddress(InetAddress.getLoopbackAddress, 0))))
     )
   }
 

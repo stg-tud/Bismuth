@@ -2,7 +2,7 @@ package channels.routing.authz
 
 import channels.routing.authz.AuthzProtocol.*
 import channels.authz.AuthzTestSupport.{*, given}
-import channels.connection.tls.NioTls
+import channels.connection.tls.Tls
 import channels.connection.{Abort, ConnectionDescriptor, NioTCP}
 import channels.crypto.PrivateIdentity
 import channels.{MessagingIO, Timers}
@@ -30,7 +30,7 @@ class AuthzMessagingIOTest extends FunSuite {
     val bob     = newPrivateIdentity()
     val genesis = AuthzEvent.createGenesis(root)
 
-    def node(identity: PrivateIdentity): (MessagingIO[AuthzProtocol[Set[Int]]], NioTCP, NioTls) = {
+    def node(identity: PrivateIdentity): (MessagingIO[AuthzProtocol[Set[Int]]], NioTCP, Tls) = {
       val nio    = NioTCP()
       val thread = Thread(() => nio.loopSelection(abort))
       thread.setDaemon(true)
@@ -41,7 +41,7 @@ class AuthzMessagingIOTest extends FunSuite {
         _ => (),
         MessagingIO.Config(globalAbort = abort, timers = Timers.OnJavaTimer(timer))
       )
-      (io, nio, NioTls(identity))
+      (io, nio, Tls(identity))
     }
 
     try {
@@ -49,13 +49,12 @@ class AuthzMessagingIOTest extends FunSuite {
       val (b, bNio, bTls) = node(bob)
       a.receiveLocally(genesis)
 
-      a.addServerConnection(aNio.listenTls(
-        aNio.defaultServerSocketChannel(InetSocketAddress(InetAddress.getLoopbackAddress, 0)),
-        aTls
-      ))
+      a.addServerConnection(aTls.listen(aNio.listen(
+        aNio.defaultServerSocketChannel(InetSocketAddress(InetAddress.getLoopbackAddress, 0))
+      )))
       eventually(a.selfConnectionDescriptors.nonEmpty, "a listens")
       val ConnectionDescriptor.TcpTls(host, port) = a.selfConnectionDescriptors.head: @unchecked
-      b.addClientConnection(bNio.connectTls(bNio.defaultSocketChannel(InetSocketAddress(host, port)), bTls))
+      b.addClientConnection(bTls.connect(bNio.connect(bNio.defaultSocketChannel(InetSocketAddress(host, port)))))
 
       eventually(b.replica.heads == Set(genesis.hash), s"b bootstraps: ${b.replica.heads}")
 

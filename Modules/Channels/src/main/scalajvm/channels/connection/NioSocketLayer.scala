@@ -2,14 +2,13 @@ package channels
 package connection
 
 import channels.connection.{ConnectionClosedException, ConnectionDescriptor, ConnectionInfo}
-import rdts.base.Uid
 
 import java.net.{InetSocketAddress, SocketAddress, UnixDomainSocketAddress}
 import java.nio.ByteBuffer
 import java.nio.channels.{CancelledKeyException, SelectionKey, SocketChannel}
 import scala.util.{Failure, Success, Try}
 
-/** The byte stream of one [[NioTCP]] socket: either the raw channel, or a TLS session on top of it ([[tls.TlsSession]]).
+/** The byte stream of one [[NioTCP]] socket.
   * [[NioTCP]] parses its protocols (plain length-prefixed messages, websockets) on top of this, and writes through it.
   *
   * `read` is only called from the selector thread. `write` may be called from any thread.
@@ -20,7 +19,7 @@ import scala.util.{Failure, Success, Try}
   * Each write reports when the socket took all of it (or failed): senders that wait for that before sending more get
   * backpressure from slow peers. The queue itself is unbounded.
   */
-trait NioSocketLayer {
+sealed trait NioSocketLayer {
   def channel: SocketChannel
 
   /** A buffer to write, and what to tell once it is written (an empty buffer after those of a write). */
@@ -132,20 +131,13 @@ trait NioSocketLayer {
   /** [[write]], without caring when it is written. */
   def write(buffers: Array[ByteBuffer]): Unit = write(buffers, null)
 
-  /** Whether the layer can transport data (i.e., the TLS handshake is done). */
-  def ready: Boolean
-
-  /** Identity of the remote side, as established by this layer. Becomes [[ConnectionInfo.authenticatedPeer]]. */
-  def authenticatedPeer: Option[Uid]
-
   /** Describes an address of this socket (as a descriptor of the kind of connection this layer provides). */
   protected def describe(address: SocketAddress): Option[ConnectionDescriptor]
 
-  /** Local and remote addresses and the authenticated peer of this socket, plus the given details. */
+  /** Local and remote addresses of this socket, plus the given details. */
   def connectionInfo(details: (String, String)*): ConnectionInfo = ConnectionInfo(
     local = Try(describe(channel.getLocalAddress)).getOrElse(None),
     remote = Try(describe(channel.getRemoteAddress)).getOrElse(None),
-    authenticatedPeer = authenticatedPeer,
     details = details.toMap
   )
 
@@ -159,8 +151,6 @@ object NioSocketLayer {
     override def read(targets: Array[ByteBuffer]): Long                                       = channel.read(targets)
     override def write(buffers: Array[ByteBuffer], written: (Try[Unit] => Unit) | Null): Unit =
       enqueue(buffers, written)
-    override def ready: Boolean                                                           = true
-    override def authenticatedPeer: Option[Uid]                                           = None
     override protected def describe(address: SocketAddress): Option[ConnectionDescriptor] =
       address match
           case isa: InetSocketAddress       => Some(ConnectionDescriptor.TcpWebSocket(isa.getHostString, isa.getPort))

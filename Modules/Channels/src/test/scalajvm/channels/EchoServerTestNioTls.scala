@@ -1,7 +1,7 @@
 package channels
 
 import channels.connection.*
-import channels.connection.tls.NioTls
+import channels.connection.tls.Tls
 import channels.crypto.{IdentityFactory, PrivateIdentity}
 
 import java.net.{InetAddress, InetSocketAddress}
@@ -10,10 +10,9 @@ class EchoServerTestNioTls extends EchoCommunicationTest(
       (ec, abort) => {
         val nioTCP = new NioTCP(ConcurrencyHelper.makeExecutionContext(false))
         ec.execute(() => nioTCP.loopSelection(abort))
-        nioTCP.listenTls(
-          nioTCP.defaultServerSocketChannel(InetSocketAddress(InetAddress.getLoopbackAddress, 0)),
-          EchoServerTestNioTls.tls1
-        )
+        EchoServerTestNioTls.tls1.listen(nioTCP.listen(
+          nioTCP.defaultServerSocketChannel(InetSocketAddress(InetAddress.getLoopbackAddress, 0))
+        ))
       },
       (ec, abort) => {
         val nioTCP = new NioTCP(ConcurrencyHelper.makeExecutionContext(false))
@@ -25,8 +24,8 @@ class EchoServerTestNioTls extends EchoCommunicationTest(
 object EchoServerTestNioTls {
   val id1: PrivateIdentity = IdentityFactory.createNewIdentity
   val id2: PrivateIdentity = IdentityFactory.createNewIdentity
-  val tls1: NioTls         = NioTls(id1)
-  val tls2: NioTls         = NioTls(id2)
+  val tls1: Tls            = Tls(id1)
+  val tls2: Tls            = Tls(id2)
 }
 
 class NioTlsTest extends munit.FunSuite {
@@ -39,7 +38,7 @@ class NioTlsTest extends munit.FunSuite {
   import scala.util.Random
 
   test("engines only allow mutually authenticated TLS 1.3 with ChaCha20-Poly1305") {
-    val tls = NioTls(IdentityFactory.createNewIdentity)
+    val tls = Tls(IdentityFactory.createNewIdentity)
     List(true, false).foreach { clientMode =>
       val engine = tls.createEngine(clientMode)
       assertEquals(engine.getEnabledProtocols.toList, List("TLSv1.3"))
@@ -64,7 +63,7 @@ class NioTlsTest extends munit.FunSuite {
     try {
       val serverSide   = Promise[Connection]()
       val serverSocket = nio.defaultServerSocketChannel(InetSocketAddress(InetAddress.getLoopbackAddress, 0))
-      val listener     = if useTls then nio.listenTls(serverSocket, NioTls(serverId)) else nio.listen(serverSocket)
+      val listener     = if useTls then Tls(serverId).listen(nio.listen(serverSocket)) else nio.listen(serverSocket)
       var descriptor: Option[channels.connection.ConnectionDescriptor] = None
       listener.listen { conn =>
         serverSide.success(conn)
@@ -73,7 +72,7 @@ class NioTlsTest extends munit.FunSuite {
 
       val received = LinkedBlockingQueue[Array[Byte]]()
       val client   = Promise[Connection]()
-      NioTcpConnectionDetailsResolver(clientNio, Some(NioTls(clientId))).connect(descriptor.get).get.connect { _ =>
+      NioTcpConnectionDetailsResolver(clientNio, Some(Tls(clientId))).connect(descriptor.get).get.connect { _ =>
         (result => result.foreach(mb => received.put(mb.convertToArray()))): Callback[MessageBuffer]
       }.runIn(abort)(result => client.complete(result))
 

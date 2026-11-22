@@ -11,7 +11,7 @@ enum ConnectionDescriptor {
   case Unix(path: String)
   case TcpWebSocket(host: String, port: Int)
 
-  /** Length-prefixed messages over TLS over TCP, see `channels.connection.NioTCP.listenTls`. */
+  /** TLS over length-prefixed messages over TCP (or over a websocket), see `channels.connection.tls.Tls`. */
   case TcpTls(host: String, port: Int)
   case WebSocket(url: String)
   case WebRtc(peerId: String)
@@ -38,7 +38,7 @@ object ConnectionDescriptor {
   def urlHost(host: String): String = if host.contains(':') && !host.startsWith("[") then s"[$host]" else host
 
   /** The host of a URI, without the brackets of an IPv6 address. */
-  private def hostOf(uri: URI): Option[String] = Option(uri.getHost).map(_.stripPrefix("[").stripSuffix("]"))
+  private def hostOf(uri: URI): Option[String]           = Option(uri.getHost).map(_.stripPrefix("[").stripSuffix("]"))
   def parse(value: String): Option[ConnectionDescriptor] =
     Try(URI.create(value)).toOption.flatMap { uri =>
       uri.getScheme match

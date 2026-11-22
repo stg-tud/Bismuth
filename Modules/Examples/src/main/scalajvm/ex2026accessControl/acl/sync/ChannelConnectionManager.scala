@@ -1,6 +1,6 @@
 package ex2026accessControl.acl.sync
 
-import channels.connection.tls.NioTls
+import channels.connection.tls.Tls
 import channels.connection.{Abort, Connection, ConnectionDescriptor, MessageBuffer, NioTCP, Receive}
 import channels.crypto.{PrivateIdentity, PublicIdentity}
 import de.rmgk.delay.Callback
@@ -28,7 +28,7 @@ class ChannelConnectionManager(
     if disableLogging
     then ExecutionContext.fromExecutor(executor, _ => ())
     else ExecutionContext.fromExecutor(executor)
-  private val tls           = NioTls(privateIdentity)
+  private val tls           = Tls(privateIdentity)
   private val nio           = NioTCP(executionContext(deliveryExecutor))
   private val localPublicId = privateIdentity.getPublic
   @volatile private var listener: Option[(ServerSocketChannel, ConnectionDescriptor.TcpTls)] = None
@@ -90,7 +90,7 @@ class ChannelConnectionManager(
     require(listener.isEmpty) // unsafe singleton, should be fine though™
     val serverChannel = nio.defaultServerSocketChannel(InetSocketAddress(ifAddress, requestedListenPort))()
     // binding and registering happen synchronously, so the listener is set when this returns
-    nio.listenTls(() => serverChannel, tls).listen { conn =>
+    tls.listen(nio.listen(() => serverChannel)).listen { conn =>
       receiveMessageHandler(conn)
     }.runIn(abort) {
       case Success(descriptor: ConnectionDescriptor.TcpTls) =>
@@ -106,7 +106,7 @@ class ChannelConnectionManager(
 
   override def connectTo(host: String, port: Int): Unit = {
     if !disableLogging then println(s"Attempting to connect to $host:$port")
-    nio.connectTls(nio.defaultSocketChannel(InetSocketAddress(host, port)), tls).connect(
+    tls.connect(nio.connect(nio.defaultSocketChannel(InetSocketAddress(host, port)))).connect(
       receiveMessageHandler(_)
     ).runIn(abort) {
       case Success(_)         => ()

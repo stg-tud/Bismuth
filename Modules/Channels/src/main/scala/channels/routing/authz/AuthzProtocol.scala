@@ -170,7 +170,7 @@ final class AuthzProtocol[RDT](val identity: PrivateIdentity) extends Routing {
 
 object AuthzProtocol {
 
-  /** Identity of authenticated peers, see `channels.connection.tls.NioTls.authenticatedPeer`. */
+  /** Identity of authenticated peers, see `channels.connection.tls.Tls.authenticatedPeer`. */
   def identityOf(peer: Peer): Option[PublicIdentity] = peer match
       case Peer.Authenticated(uid) => Some(PublicIdentity(Uid.unwrap(uid)))
       case Peer.Claimed(_)         => None
@@ -183,7 +183,7 @@ object AuthzProtocol {
 
   /** A [[channels.MessagingIO]] for an authorization-aware replica of `RDT`, identified by `identity`.
     * Its overlay identifies itself as [[channels.connection.Peer.Authenticated]], so it only talks to peers over authenticated connections
-    * (e.g., `channels.connection.NioTCP.listenTls`), whose identity is the one capabilities are granted to.
+    * (e.g., `channels.connection.tls.Tls`), whose identity is the one capabilities are granted to.
     */
   def messagingIO[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
       identity: PrivateIdentity,

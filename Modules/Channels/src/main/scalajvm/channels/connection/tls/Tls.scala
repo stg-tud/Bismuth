@@ -1,21 +1,24 @@
 package channels.connection.tls
 
+import channels.connection.{Abort, Connection, ConnectionDescriptor, Connector, Listener, Receive}
 import channels.crypto.{Ed25519Util, PrivateIdentity}
+import de.rmgk.delay.Async
 import rdts.base.Uid
 
 import java.net.Socket
 import java.security.KeyStore
 import java.security.cert.{CertificateException, X509Certificate}
 import javax.net.ssl.{KeyManagerFactory, SSLContext, SSLEngine, SSLSession, X509ExtendedTrustManager}
+import scala.util.{Failure, Success}
 
-/** TLS configuration for [[channels.connection.NioTCP.listenTls]] and [[channels.connection.NioTCP.connectTls]]: mutually authenticated TLS 1.3 between
+/** TLS on top of any reliable, ordered connection ([[connect]], [[listen]]): mutually authenticated TLS 1.3 between
   * [[channels.crypto.PrivateIdentity]]s. Both sides present a certificate bound to their identity key (see
   * [[X509Util.generateCustomP2PX509Certificate]]), the authenticated peer replica id is the id of the remote
   * [[channels.crypto.PublicIdentity]]. Any well-formed identity is accepted; deciding which peers to trust is up to the user.
   *
   * Each instance uses a fresh TLS key, certified by the identity key of `privateIdentity`.
   */
-class NioTls(privateIdentity: PrivateIdentity) {
+class Tls(privateIdentity: PrivateIdentity) {
   private val tlsKey      = Ed25519Util.generateNewKeyPair
   private val certificate = X509Util.generateCustomP2PX509Certificate(privateIdentity, tlsKey)
 
@@ -29,8 +32,27 @@ class NioTls(privateIdentity: PrivateIdentity) {
     keyManagerFactory.init(keyStore, password)
 
     val context = SSLContext.getInstance("TLSv1.3")
-    context.init(keyManagerFactory.getKeyManagers, Array(NioTls.trustManager), null)
+    context.init(keyManagerFactory.getKeyManagers, Array(Tls.trustManager), null)
     context
+  }
+
+  /** Runs TLS (as client) on the connections of `inner`. They are reported once the handshake is done. */
+  def connect(inner: Connector): Connector = new Connector {
+    override def connect(receive: Receive): Async[Abort, Connection] = Async.fromCallback { abort ?=>
+      val handler = Async.handler[Connection]
+      val session = TlsSession(createEngine(clientMode = true), Tls.this, receive, handler.complete)
+      inner.connect(conn => session.start(conn)).runIn(abort) {
+        case Failure(ex) => handler.fail(ex)
+        case Success(_)  => ()
+      }
+    }
+  }
+
+  /** Runs TLS (as server) on the connections accepted by `inner`. They are reported once the handshake is done. */
+  def listen(inner: Listener): Listener = new Listener {
+    override def listen(receive: Receive): Async[Abort, ConnectionDescriptor] =
+      inner.listen(conn => TlsSession(createEngine(clientMode = false), Tls.this, receive, _ => ()).start(conn))
+        .map(Tls.describe)
   }
 
   /** A fresh engine for one connection, configured for client or server mode. */
@@ -51,7 +73,13 @@ class NioTls(privateIdentity: PrivateIdentity) {
       Uid(X509Util.certificateToPublicIdentity(certificate).id)
 }
 
-object NioTls {
+object Tls {
+
+  /** How a connection described by `descriptor` is described with TLS on top. */
+  def describe(descriptor: ConnectionDescriptor): ConnectionDescriptor = descriptor match
+      case ConnectionDescriptor.Tcp(host, port)          => ConnectionDescriptor.TcpTls(host, port)
+      case ConnectionDescriptor.TcpWebSocket(host, port) => ConnectionDescriptor.TcpTls(host, port)
+      case other                                         => other
 
   /** Accepts exactly the certificates created by [[X509Util.generateCustomP2PX509Certificate]]: a single Ed25519
     * X.509v3 certificate that is signed by the identity key it names.

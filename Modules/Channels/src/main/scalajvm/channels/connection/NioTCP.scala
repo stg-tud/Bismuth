@@ -1,7 +1,6 @@
 package channels
 package connection
 
-import channels.connection.tls.{NioTls, TlsSession}
 import channels.connection.NioTCP.*
 import channels.connection.WebsocketProtocol.WebsocketHeader
 import channels.connection.{Abort, ByteBufferMessageBuffer, Connection, ConnectionDescriptor, ConnectionInfo, Connector, Listener, MessageBuffer, NoMoreDataException, Receive}
@@ -17,10 +16,8 @@ import scala.util.{Failure, Success, Try}
 
 object NioTCP {
 
-  /** `tls` configures TLS for all accepted connections, if defined. */
   case class AcceptAttachment(
       incoming: Receive,
-      tls: Option[NioTls] = None,
   )
 
   case class WebSocketState(
@@ -53,16 +50,13 @@ object NioTCP {
     *   - `messageCallback` is populated once the connection has been initialized
     *   - `buffered` stores unread bytes across selector turns for either protocol
     *   - `WebSocketState` in the protocol holds `fragments` and `fragmentOpcode` for fragmented websocket messages
-    *   - `layer` is the byte stream all protocols read from and write to (the raw socket, or TLS on top of it)
-    *   - `onConnected` is set for outgoing connections whose layer is not yet ready (TLS handshake), it completes the
-    *     connector once the layer is ready, or failed
+    *   - `layer` is the byte stream all protocols read from and write to
     */
   case class ReceiveAttachment(
       incoming: Receive,
       layer: NioSocketLayer,
       protocol: ProtocolState = ProtocolState.Init,
       messageCallback: Callback[MessageBuffer] | Null = null,
-      onConnected: (Try[Connection] => Unit) | Null = null,
       primary: ByteBuffer = ByteBuffer.allocate(1024),
       secondary: ByteBuffer | Null = null,
   )
@@ -129,10 +123,7 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = MessagingIO.executeImmedi
             val clientChannel = serverChannel.accept()
             if clientChannel != null then {
               configureChannel(clientChannel)
-              val layer = attachment.tls match
-                  case None      => NioSocketLayer.Plain(clientChannel)
-                  case Some(tls) => TlsSession(clientChannel, tls.createEngine(clientMode = false), tls)
-              register(ReceiveAttachment(attachment.incoming, layer))
+              register(ReceiveAttachment(attachment.incoming, NioSocketLayer.Plain(clientChannel)))
             }
       } catch {
         case ex: Exception =>
@@ -228,27 +219,6 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = MessagingIO.executeImmedi
     conn
   }
 
-  /** Like [[connect]], but runs TLS configured by `tls` on the socket.
-    * Completes (and reports the connection to the receiver) once the handshake is done.
-    */
-  def connectTls(bindsocket: () => SocketChannel, tls: NioTls): Connector =
-    new Connector {
-      override def connect(incoming: Receive): Async[Any, Connection] =
-        Async.fromCallback {
-          val handler = Async.handler
-          try
-              val clientChannel = bindsocket()
-              configureChannel(clientChannel)
-              val layer = TlsSession(clientChannel, tls.createEngine(clientMode = true), tls)
-              val onConnected: Try[Connection] => Unit = {
-                case Success(conn) => handler.succeed(conn)
-                case Failure(ex)   => handler.fail(ex)
-              }
-              register(ReceiveAttachment(incoming, layer, onConnected = onConnected))
-          catch case NonFatal(exception) => handler.fail(exception)
-        }
-    }
-
   /** Unix domain sockets, or TCP over IPv6 and IPv4 (the default protocol family, not only IPv4). */
   def defaultSocketChannel(socketAddress: SocketAddress): () => SocketChannel = () => {
     val channel = socketAddress match
@@ -284,14 +254,6 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = MessagingIO.executeImmedi
 
   def listen(
       bindsocket: () => ServerSocketChannel,
-  ): Listener = listen(bindsocket, None)
-
-  /** Like [[listen]], but runs TLS configured by `tls` on every accepted socket. Only IP sockets are supported. */
-  def listenTls(bindsocket: () => ServerSocketChannel, tls: NioTls): Listener = listen(bindsocket, Some(tls))
-
-  private def listen(
-      bindsocket: () => ServerSocketChannel,
-      tls: Option[NioTls],
   ): Listener =
     new Listener {
       override def listen(incoming: Receive): Async[Abort, ConnectionDescriptor] =
@@ -299,23 +261,21 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = MessagingIO.executeImmedi
           try {
             val serverChannel: ServerSocketChannel = bindsocket()
 
-            val descriptor = (serverChannel.getLocalAddress, tls) match {
-              case (isa: InetSocketAddress, None) =>
-                Some(ConnectionDescriptor.TcpWebSocket(isa.getHostString, isa.getPort))
-              case (isa: InetSocketAddress, Some(_)) =>
-                Some(ConnectionDescriptor.TcpTls(isa.getHostString, isa.getPort))
-              case (uda: UnixDomainSocketAddress, None) =>
-                Some(ConnectionDescriptor.Unix(uda.getPath.toString))
-              case _ => None
+            val descriptor = serverChannel.getLocalAddress match {
+              case isa: InetSocketAddress => Some(ConnectionDescriptor.TcpWebSocket(isa.getHostString, isa.getPort))
+              case uda: UnixDomainSocketAddress => Some(ConnectionDescriptor.Unix(uda.getPath.toString))
+              case _                            => None
             }
 
             descriptor match
                 case Some(descriptor) =>
-                  serverChannel.register(selector, SelectionKey.OP_ACCEPT, AcceptAttachment(incoming, tls))
+                  serverChannel.register(selector, SelectionKey.OP_ACCEPT, AcceptAttachment(incoming))
                   selector.wakeup()
                   Async.handler.succeed(descriptor)
                 case None =>
-                  Async.handler.fail(IllegalStateException(s"unsupported socket address for $tls"))
+                  Async.handler.fail(
+                    IllegalStateException(s"unsupported socket address ${serverChannel.getLocalAddress}")
+                  )
 
             ()
           } catch
@@ -326,21 +286,13 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = MessagingIO.executeImmedi
 
   private def handleReadable(
       key: SelectionKey,
-      readAttachment: ReceiveAttachment
+      attachment: ReceiveAttachment
   ): Unit = {
     val target =
-      if readAttachment.secondary == null
-      then Array(readAttachment.primary)
-      else Array(readAttachment.primary, readAttachment.secondary)
-    val read = readAttachment.layer.read(target)
-
-    val attachment =
-      if readAttachment.onConnected != null && readAttachment.layer.ready then
-          val conn     = NioTCPConnection(readAttachment.layer)
-          val callback = readAttachment.incoming.connectionEstablished(conn)
-          readAttachment.onConnected(Success(conn))
-          readAttachment.copy(messageCallback = callback, onConnected = null)
-      else readAttachment
+      if attachment.secondary == null
+      then Array(attachment.primary)
+      else Array(attachment.primary, attachment.secondary)
+    val read = attachment.layer.read(target)
 
     attachment.primary.flip()
     attachment.protocol match {
@@ -365,7 +317,7 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = MessagingIO.executeImmedi
     if read == -1 then throw NoMoreDataException("remaining channel is empty")
     val bufferedAfter = bufferedBytes(next)
     val recurse       =
-      // read > 0: the layer may have more (e.g., decrypted TLS data that did not fit), keep reading until it returns 0
+      // read > 0: the socket may have more than fit into the buffers, keep reading until it returns 0
       (bufferedAfter > 0 && bufferedAfter < initialBytes) || read > 0
     if recurse then handleReadable(key, next)
     ()
@@ -595,8 +547,6 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = MessagingIO.executeImmedi
       case attachment: ReceiveAttachment =>
         attachment.layer.failed(ex)
         if attachment.messageCallback != null then attachment.messageCallback.fail(ex)
-        else if attachment.onConnected != null then attachment.onConnected(Failure(ex))
-        else ()
       case _ => ()
     }
   }
