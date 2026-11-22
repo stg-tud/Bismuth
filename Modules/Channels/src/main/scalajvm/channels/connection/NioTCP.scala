@@ -1,7 +1,7 @@
 package channels
 package connection
 
-import channels.connection.tls.NioTls
+import channels.connection.tls.{NioTls, TlsSession}
 import channels.connection.NioTCP.*
 import channels.connection.WebsocketProtocol.WebsocketHeader
 import channels.connection.{Abort, ByteBufferMessageBuffer, Connection, ConnectionDescriptor, ConnectionInfo, Connector, Listener, MessageBuffer, NoMoreDataException, Receive}
@@ -131,7 +131,7 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = MessagingIO.executeImmedi
               configureChannel(clientChannel)
               val layer = attachment.tls match
                   case None      => NioSocketLayer.Plain(clientChannel)
-                  case Some(tls) => NioSocketLayer.Tls(clientChannel, tls.createEngine(clientMode = false), tls)
+                  case Some(tls) => TlsSession(clientChannel, tls.createEngine(clientMode = false), tls)
               register(ReceiveAttachment(attachment.incoming, layer))
             }
       } catch {
@@ -239,7 +239,7 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = MessagingIO.executeImmedi
           try
               val clientChannel = bindsocket()
               configureChannel(clientChannel)
-              val layer = NioSocketLayer.Tls(clientChannel, tls.createEngine(clientMode = true), tls)
+              val layer = TlsSession(clientChannel, tls.createEngine(clientMode = true), tls)
               val onConnected: Try[Connection] => Unit = {
                 case Success(conn) => handler.succeed(conn)
                 case Failure(ex)   => handler.fail(ex)
