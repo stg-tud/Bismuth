@@ -31,10 +31,13 @@ object WebsocketProtocol {
     def header(name: String): Option[String] = headers.get(name.toLowerCase)
   }
 
+  /** Parses a complete handshake request (starting with `GET `) from `buffer`, advancing it past the request. */
   def tryParseHandshake(buffer: ByteBuffer): Option[HandshakeRequest] = {
     val start = buffer.position()
-    val end   = buffer.array().indexOfSlice(headerEnd, start)
-    if end < 0 then None
+    val last  = buffer.limit() - headerEnd.length
+    var end   = start
+    while end <= last && !headerEnd.indices.forall(i => buffer.get(end + i) == headerEnd(i)) do end += 1
+    if end > last then None
     else {
       val headerBytes = new Array[Byte](end - start)
       buffer.get(headerBytes)
@@ -145,11 +148,15 @@ object WebsocketProtocol {
     encodeFrame(opcode = 0x8, payload = payload.array())
   }
 
-  private def encodeFrame(opcode: Int, payload: Array[Byte]): Array[Byte] = {
+  private def encodeFrame(opcode: Int, payload: Array[Byte]): Array[Byte] =
+    frameHeader(opcode, payload.length) ++ payload
+
+  /** Header of a final, unmasked frame (as servers send) with a payload of `length` bytes. */
+  def frameHeader(opcode: Int, length: Int): Array[Byte] = {
     val out = ByteArrayOutputStream()
     out.write(0x80 | (opcode & 0x0f))
 
-    payload.length match {
+    length match {
       case len if len < 126 =>
         out.write(len)
       case len if len <= 0xffff =>
@@ -163,7 +170,6 @@ object WebsocketProtocol {
         out.write(header.array())
     }
 
-    out.write(payload)
     out.toByteArray
   }
 
