@@ -123,7 +123,7 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = MessagingIO.executeImmedi
             val clientChannel = serverChannel.accept()
             if clientChannel != null then {
               configureChannel(clientChannel)
-              register(ReceiveAttachment(attachment.incoming, NioSocketLayer.Plain(clientChannel)))
+              register(ReceiveAttachment(attachment.incoming, NioSocketLayer(clientChannel)))
             }
       } catch {
         case ex: Exception =>
@@ -211,7 +211,7 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = MessagingIO.executeImmedi
 
     configureChannel(clientChannel)
 
-    val layer    = NioSocketLayer.Plain(clientChannel)
+    val layer    = NioSocketLayer(clientChannel)
     val conn     = NioTCPConnection(layer)
     val callback = incoming.connectionEstablished(conn)
     register(ReceiveAttachment(incoming, layer, ProtocolState.Init, callback))

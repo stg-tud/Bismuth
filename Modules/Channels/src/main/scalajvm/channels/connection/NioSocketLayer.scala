@@ -19,8 +19,7 @@ import scala.util.{Failure, Success, Try}
   * Each write reports when the socket took all of it (or failed): senders that wait for that before sending more get
   * backpressure from slow peers. The queue itself is unbounded.
   */
-sealed trait NioSocketLayer {
-  def channel: SocketChannel
+final class NioSocketLayer(val channel: SocketChannel) {
 
   /** A buffer to write, and what to tell once it is written (an empty buffer after those of a write). */
   final private class Pending(val buffer: ByteBuffer, val written: (Try[Unit] => Unit) | Null)
@@ -31,10 +30,10 @@ sealed trait NioSocketLayer {
   private var key: SelectionKey | Null  = null
   private var closeWhenFlushed: Boolean = false
 
-  /** Queues `buffers` (which must not be changed afterwards) for sending, and writes what the socket takes now.
-    * `written` is called once all of them are written, or writing failed.
+  /** Sends all of `buffers`, which must not be changed afterwards. Does not wait: what the socket does not take now is
+    * written by the selector thread later. `written` is called once the socket took all of it, or writing failed.
     */
-  protected def enqueue(buffers: Array[ByteBuffer], written: (Try[Unit] => Unit) | Null): Unit = {
+  def write(buffers: Array[ByteBuffer], written: (Try[Unit] => Unit) | Null): Unit = {
     val done = outLock.synchronized {
       if closeWhenFlushed then throw ConnectionClosedException("connection is closed")
       buffers.foreach(b => outgoing.add(Pending(b, null)): Unit)
@@ -80,8 +79,8 @@ sealed trait NioSocketLayer {
     updateInterest()
   }
 
-  /** Closes the channel once everything queued is written. */
-  protected def closeAfterFlush(): Unit = outLock.synchronized {
+  /** Closes the socket, once what was sent before is written. */
+  def close(): Unit = outLock.synchronized {
     closeWhenFlushed = true
     if outgoing.isEmpty then channel.close()
   }
@@ -118,21 +117,18 @@ sealed trait NioSocketLayer {
         } catch case _: CancelledKeyException => ()
   }
 
-  /** Non-blocking: reads available bytes into `targets`. Returns the number of bytes read, or -1 at the end of stream.
-    * May hold back already received data if `targets` are full; callers must call again until it returns 0.
-    */
-  def read(targets: Array[ByteBuffer]): Long
-
-  /** Sends all of `buffers`, which must not be changed afterwards. Does not wait: what the socket does not take now is
-    * written by the selector thread later. `written` is called once the socket took all of it, or writing failed.
-    */
-  def write(buffers: Array[ByteBuffer], written: (Try[Unit] => Unit) | Null): Unit
+  /** Non-blocking: reads available bytes into `targets`. Returns the number of bytes read, or -1 at the end of stream. */
+  def read(targets: Array[ByteBuffer]): Long = channel.read(targets)
 
   /** [[write]], without caring when it is written. */
   def write(buffers: Array[ByteBuffer]): Unit = write(buffers, null)
 
-  /** Describes an address of this socket (as a descriptor of the kind of connection this layer provides). */
-  protected def describe(address: SocketAddress): Option[ConnectionDescriptor]
+  /** Describes an address of this socket. */
+  private def describe(address: SocketAddress): Option[ConnectionDescriptor] =
+    address match
+        case isa: InetSocketAddress       => Some(ConnectionDescriptor.TcpWebSocket(isa.getHostString, isa.getPort))
+        case uda: UnixDomainSocketAddress => Some(ConnectionDescriptor.Unix(uda.getPath.toString))
+        case _                            => None
 
   /** Local and remote addresses of this socket, plus the given details. */
   def connectionInfo(details: (String, String)*): ConnectionInfo = ConnectionInfo(
@@ -141,21 +137,4 @@ sealed trait NioSocketLayer {
     details = details.toMap
   )
 
-  /** Closes the socket, once what was sent before is written. */
-  def close(): Unit
-}
-
-object NioSocketLayer {
-
-  class Plain(val channel: SocketChannel) extends NioSocketLayer {
-    override def read(targets: Array[ByteBuffer]): Long                                       = channel.read(targets)
-    override def write(buffers: Array[ByteBuffer], written: (Try[Unit] => Unit) | Null): Unit =
-      enqueue(buffers, written)
-    override protected def describe(address: SocketAddress): Option[ConnectionDescriptor] =
-      address match
-          case isa: InetSocketAddress       => Some(ConnectionDescriptor.TcpWebSocket(isa.getHostString, isa.getPort))
-          case uda: UnixDomainSocketAddress => Some(ConnectionDescriptor.Unix(uda.getPath.toString))
-          case _                            => None
-    override def close(): Unit = closeAfterFlush()
-  }
 }
