@@ -8,6 +8,10 @@ import java.nio.ByteBuffer
 class NoMoreDataException(msg: String) extends Exception(msg)
 
 trait MessageBuffer {
+
+  /** Returns the message bytes as an array. May return the underlying array without copying, so callers must not
+    * mutate the result.
+    */
   def convertToArray(): Array[Byte] = convertByteBufferToArray(asByteBuffer)
 
   def show: String = convertToArray().mkString("[", ", ", "]")
