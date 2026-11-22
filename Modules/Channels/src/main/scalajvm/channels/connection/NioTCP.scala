@@ -155,6 +155,7 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = MessagingIO.executeImmedi
     }
   }
 
+  /** Connects using the channel of `bindsocket`, which must be non-blocking. */
   def connect(
       bindsocket: () => SocketChannel,
   ): Connector =
@@ -172,8 +173,6 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = MessagingIO.executeImmedi
       clientChannel: SocketChannel,
       incoming: Receive,
   ): NioConnection = {
-
-    configureChannel(clientChannel)
 
     val layer    = NioSocketLayer(clientChannel)
     val conn     = NioConnection(layer, Framing.Plain)

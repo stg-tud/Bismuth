@@ -3,7 +3,7 @@ package channels
 import channels.connection.{Abort, ByteBufferMessageBuffer, Connection, MessageBuffer, NioTCP}
 
 import java.net.StandardProtocolFamily
-import java.nio.channels.{ServerSocketChannel, SocketChannel}
+import java.nio.channels.ServerSocketChannel
 import java.nio.ByteBuffer
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 import scala.concurrent.duration.DurationInt
@@ -60,11 +60,7 @@ class LargeMessageExchangeTest extends munit.FunSuite {
     }.runIn(Abort())(_.failed.foreach(failOnError))
 
     // the client answers the ping of the server with a large message
-    clientNio.connect { () =>
-      val channel = SocketChannel.open(StandardProtocolFamily.UNIX)
-      channel.connect(socketPath)
-      channel
-    }.connect { conn =>
+    clientNio.connect(clientNio.defaultSocketChannel(socketPath)).connect { conn =>
       {
         case Success(mb) if mb.asByteBuffer.remaining() == largeSize => clientGotLarge.countDown()
         case Success(_) => conn.send(large()).run(_.failed.foreach(failOnError))
@@ -97,11 +93,7 @@ class LargeMessageExchangeTest extends munit.FunSuite {
     loop(clientNio, abort, "client-selector")
 
     val conn = Promise[Connection]()
-    clientNio.connect { () =>
-      val channel = SocketChannel.open(StandardProtocolFamily.UNIX)
-      channel.connect(socketPath)
-      channel
-    }.connect(_ => _ => ()).runIn(Abort())(conn.complete)
+    clientNio.connect(clientNio.defaultSocketChannel(socketPath)).connect(_ => _ => ()).runIn(Abort())(conn.complete)
     // a peer that does not read until told to
     val peer = server.accept()
 
