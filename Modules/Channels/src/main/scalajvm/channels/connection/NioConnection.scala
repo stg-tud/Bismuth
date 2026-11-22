@@ -1,8 +1,7 @@
 package channels
 package connection
 
-import channels.connection.WebsocketMultiplexing.{Framing, Output, State}
-import de.rmgk.delay.{Async, Callback}
+import channels.connection.WebsocketMultiplexing.Framing
 
 import java.net.{InetSocketAddress, SocketAddress, UnixDomainSocketAddress}
 import java.nio.ByteBuffer
@@ -25,8 +24,8 @@ object NioConnection {
   }
 }
 
-/** One non-blocking [[NioTCP]] socket. Runs the [[WebsocketMultiplexing]] on it: pushes what the
-  * socket received into the protocol, and performs its outputs. Is the attachment of the selector key of the socket.
+/** A [[MultiplexedConnection]] on one non-blocking [[NioTCP]] socket. Is the attachment of the selector key of the
+  * socket.
   *
   * Threads: receiving ([[receiveAvailable]]), as well as [[continueWriting]] and [[closeWithFailure]], happen on the
   * selector thread only. Sending may happen from any thread, once the connection is established: the send side is
@@ -42,17 +41,9 @@ final class NioConnection private (
     channel: SocketChannel,
     incoming: Receive,
     deliverExecutor: ExecutionContext,
-) extends Connection {
+) extends MultiplexedConnection(incoming, deliverExecutor) {
 
   require(!channel.isBlocking, "the channel must be non-blocking")
-
-  /** Set once, before the connection is handed out. */
-  @volatile private var framing: Framing = Framing.Plain
-
-  // receive side, only accessed by the selector thread
-  private var messageCallback: Callback[MessageBuffer] | Null = null
-  private var state: State                                    = State.Init
-  private val received: ReceiveBuffer                         = ReceiveBuffer()
 
   /** A buffer to write, and what to tell once it is written (an empty buffer after those of a write). */
   final private class Pending(val buffer: ByteBuffer, val written: (Try[Unit] => Unit) | Null)
@@ -76,25 +67,6 @@ final class NioConnection private (
         case Framing.WebSocket => "websocket"))
   )
 
-  override def send(message: MessageBuffer): Async[Any, Unit] = {
-    val payload = message.asByteBuffer
-    val header  = WebsocketMultiplexing.header(framing, payload.remaining())
-    Async.fromCallback {
-      val handler = Async.handler[Unit]
-      try write(Array(header, payload), handler.complete)
-      catch case NonFatal(ex) => handler.fail(ex)
-    }
-  }
-
-  /** Closes the socket, once what was sent before is written. */
-  override def close(): Unit = {
-    WebsocketMultiplexing.goodbye(framing).foreach { bytes =>
-      try write(Array(ByteBuffer.wrap(bytes)), null)
-      catch case NonFatal(_) => ()
-    }
-    closeAfterWrites()
-  }
-
   // ------------------------------------------------------------------------------------------------
   // selector events
   // ------------------------------------------------------------------------------------------------
@@ -112,18 +84,7 @@ final class NioConnection private (
   }
 
   /** Reads what the socket has, and handles all complete messages. */
-  def receiveAvailable(): Unit = {
-    var read = 0
-    // read > 0: the socket may have more than fit into the buffer, keep reading until it returns 0
-    while
-        read = received.fill(channel.read)
-        val (next, outputs) = WebsocketMultiplexing.receive(state, received)
-        state = next
-        outputs.foreach(perform)
-        read > 0 && state != State.Closed
-    do ()
-    if read == -1 && state != State.Closed then throw NoMoreDataException("remaining channel is empty")
-  }
+  def receiveAvailable(): Unit = receive(channel.read)
 
   /** The socket is writable again: writes more of the queue, as much as the socket takes without waiting. */
   def continueWriting(): Unit = {
@@ -136,8 +97,7 @@ final class NioConnection private (
   /** Closes the socket right away, failing queued writes and the message callback with `ex`. */
   def closeWithFailure(ex: Throwable): Unit = {
     closeSocket(ex)
-    val callback = messageCallback
-    if callback != null then callback.fail(ex)
+    receiveFailed(ex)
   }
 
   /** Closes the socket right away, failing queued writes with `ex`. */
@@ -157,34 +117,13 @@ final class NioConnection private (
   }
 
   // ------------------------------------------------------------------------------------------------
-  // receiving
-  // ------------------------------------------------------------------------------------------------
-
-  /** Publishes the connection, once its protocol is known. */
-  private def establish(framing: Framing): Unit =
-    if messageCallback == null then
-        this.framing = framing
-        messageCallback = incoming.connectionEstablished(this)
-
-  private def perform(output: Output): Unit = output match
-      case Output.Detected(framing) => establish(framing)
-      case Output.Message(bytes)    =>
-        val callback = messageCallback.nn
-        deliverExecutor.execute(() => callback.succeed(ByteBufferMessageBuffer(bytes)))
-      case Output.Reply(bytes) => write(Array(ByteBuffer.wrap(bytes)), null)
-      case Output.Closed       =>
-        messageCallback.nn.fail(NoMoreDataException("websocket closed"))
-        outLock.synchronized { reading = false }
-        closeAfterWrites()
-
-  // ------------------------------------------------------------------------------------------------
   // sending
   // ------------------------------------------------------------------------------------------------
 
   /** Sends all of `buffers`, which must not be changed afterwards. Does not wait: what the socket does not take now is
     * written by the selector thread later. `written` is called once the socket took all of it, or writing failed.
     */
-  private def write(buffers: Array[ByteBuffer], written: (Try[Unit] => Unit) | Null): Unit = {
+  override protected def write(buffers: Array[ByteBuffer], written: (Try[Unit] => Unit) | Null): Unit = {
     val done = outLock.synchronized {
       if closeWhenFlushed then throw ConnectionClosedException("connection is closed")
       buffers.foreach(b => outgoing.add(Pending(b, null)): Unit)
@@ -196,8 +135,9 @@ final class NioConnection private (
         case Failure(ex)   => closeSocket(ex)
   }
 
-  /** Closes the socket once the queue is written. */
-  private def closeAfterWrites(): Unit = outLock.synchronized {
+  /** Stops reading, and closes the socket once the queue is written. */
+  override protected def closeAfterWrites(): Unit = outLock.synchronized {
+    reading = false
     closeWhenFlushed = true
     if outgoing.isEmpty then channel.close()
     else updateInterest()

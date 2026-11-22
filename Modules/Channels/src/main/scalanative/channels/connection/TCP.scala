@@ -20,11 +20,11 @@ object TCP {
       dialed: Boolean,
   ): JIOStreamConnection = {
     socket.setTcpNoDelay(true)
-    val conn = new JIOStreamConnection(socket.getInputStream, socket.getOutputStream, () => socket.close())
+    val conn = new JIOStreamConnection(socket.getInputStream, socket.getOutputStream, () => socket.close(), incoming)
     // we speak plain when dialing, accepted connections are established once the remote side chose
-    if dialed then conn.establish(incoming, WebsocketMultiplexing.Framing.Plain)
+    if dialed then conn.establish(WebsocketMultiplexing.Framing.Plain)
     executionContext.execute: () =>
-        conn.loopReceive(incoming)
+        conn.loopReceive()
     conn
   }
 
