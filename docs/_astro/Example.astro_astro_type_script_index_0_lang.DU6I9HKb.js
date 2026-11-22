@@ -1,1 +1,0 @@
-import{t as e}from"./main.CubNw5BW.js";e(document.body.dataset.app);

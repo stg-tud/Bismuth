@@ -563,29 +563,6 @@ Needs an identity to create fresh dots for written values.
 
   /*:scim
 
-## ObserveRemoveMap (OR-Map)
-
-A map with key-value semantics.  Removals are tracked via dots and do not
-override concurrent updates.  Needs an identity for update operations.
-
-   */
-
-  test("ObserveRemoveMap"):
-      given Lattice[String] = Lattice.assertEquals
-      val localId           = rdts.base.ReplicaId.predefined("replica-alice")
-
-      val orMap = ObserveRemoveMap.empty[String, String]
-
-      val afterM1 = orMap `merge` orMap.update("key1", "value1")(using localId)
-      assert(afterM1.get("key1") == Some("value1"), "should have key1")
-
-      val mRemove          = afterM1.remove("key1")
-      val mAdd             = afterM1.update("key1", "value2")(using localId)
-      val afterConcurrent2 = mRemove `merge` mAdd
-      assert(afterConcurrent2.get("key1") == Some("value2"), "add should win over remove")
-
-  /*:scim
-
 ## ReplicatedList (RGA)
 
 A replicated list with insert, update, and delete.
