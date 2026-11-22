@@ -60,14 +60,6 @@ object NioTCP {
   }
 
   class EndOfChannelException(msg: String) extends Exception(msg)
-
-  extension (broadcast: MessagingIO[?])
-      def serveNioLoop(): Unit = {
-        val niotcp = new NioTCP()
-        broadcast.addServerConnection(niotcp.listen(niotcp.defaultServerSocketChannel(new InetSocketAddress(0))))
-        niotcp.loopSelection(broadcast.globalAbort)
-      }
-
 }
 
 /** Selector-based TCP transport.
