@@ -19,7 +19,7 @@ class EchoServerTestTCP extends EchoCommunicationTest(
         TCP.listen(() => socket, ec)
       },
       (ec, _) => {
-        case ConnectionDescriptor.Tcp(host, port) =>
+        case ConnectionDescriptor.TcpWebSocket(host, port) =>
           Some(TCP.connect(TCP.defaultSocket(new InetSocketAddress(host, port)), ec))
         case _ => None
       }

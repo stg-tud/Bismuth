@@ -16,13 +16,15 @@ object TCP {
   def handleConnection(
       socket: Socket,
       incoming: Receive,
-      executionContext: ExecutionContext
+      executionContext: ExecutionContext,
+      dialed: Boolean,
   ): JIOStreamConnection = {
     socket.setTcpNoDelay(true)
-    val conn     = new JIOStreamConnection(socket.getInputStream, socket.getOutputStream, () => socket.close())
-    val callback = incoming.connectionEstablished(conn)
+    val conn = new JIOStreamConnection(socket.getInputStream, socket.getOutputStream, () => socket.close())
+    // we speak plain when dialing, accepted connections are established once the remote side chose
+    if dialed then conn.establish(incoming, WebsocketMultiplexing.Framing.Plain)
     executionContext.execute: () =>
-        conn.loopReceive(callback)
+        conn.loopReceive(incoming)
     conn
   }
 
@@ -33,7 +35,7 @@ object TCP {
     new Connector {
       override def connect(incoming: Receive): Async[Any, Connection] =
         TCP.syncAttempt {
-          TCP.handleConnection(bindsocket(), incoming, executionContext)
+          TCP.handleConnection(bindsocket(), incoming, executionContext, dialed = true)
         }
     }
 
@@ -56,12 +58,14 @@ object TCP {
       executionContext: ExecutionContext
   ): Listener =
     new Listener {
-      override def listen(incoming: Receive): Async[Abort, ConnectionDescriptor.Tcp] =
+      override def listen(incoming: Receive): Async[Abort, ConnectionDescriptor.TcpWebSocket] =
         Async.fromCallback { abort ?=>
           try
 
               val socket = bindsocket()
-              Async.handler.succeed(ConnectionDescriptor.Tcp(socket.getInetAddress.getHostAddress, socket.getLocalPort))
+              Async.handler.succeed(
+                ConnectionDescriptor.TcpWebSocket(socket.getInetAddress.getHostAddress, socket.getLocalPort)
+              )
 
               executionContext.execute { () =>
                 try
@@ -71,7 +75,7 @@ object TCP {
                             val connection = socket.accept()
                             if connection != null
                             then
-                                TCP.handleConnection(connection, incoming, executionContext)
+                                TCP.handleConnection(connection, incoming, executionContext, dialed = false)
                                 ()
                         catch case _: SocketTimeoutException => ()
                 catch {
