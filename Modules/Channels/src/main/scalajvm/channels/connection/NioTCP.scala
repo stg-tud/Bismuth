@@ -39,6 +39,11 @@ object NioTCP {
     case WebSocket(state: WebSocketState)
   }
 
+  /** How messages are framed on the byte stream. */
+  enum Framing {
+    case Plain, WebSocket
+  }
+
   /** Per-connection attachment stored on the selector key.
     *
     * A single attachment type is used for both plain NioTCP and websocket traffic, so the event loop can keep one
@@ -151,36 +156,25 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = MessagingIO.executeImmedi
       catch case NonFatal(ex) => handler.fail(ex)
     }
 
-  class NioTCPConnection(layer: NioSocketLayer) extends Connection {
+  /** A connection on `layer`, sending messages framed by `framing`. */
+  class NioConnection(layer: NioSocketLayer, framing: Framing) extends Connection {
 
-    override val info: ConnectionInfo = layer.connectionInfo("type" -> "niotcp")
-
-    override def send(message: MessageBuffer): Async[Any, Unit] = {
-      val bytes         = message.asByteBuffer
-      val messageLength = bytes.remaining()
-
-      val sizeBuffer = ByteBuffer.allocate(4)
-      sizeBuffer.putInt(messageLength)
-      sizeBuffer.flip()
-
-      writeAsync(layer, Array(sizeBuffer, bytes))
-    }
-
-    override def close(): Unit = layer.close()
-  }
-
-  class WebSocketConnection(layer: NioSocketLayer) extends Connection {
-
-    override val info: ConnectionInfo = layer.connectionInfo("type" -> "websocket")
+    override val info: ConnectionInfo = layer.connectionInfo("type" -> (framing match
+        case Framing.Plain     => "niotcp"
+        case Framing.WebSocket => "websocket"))
 
     override def send(message: MessageBuffer): Async[Any, Unit] = {
-      val frame = WebsocketProtocol.encodeBinaryFrame(message.convertToArray())
-      writeAsync(layer, Array(ByteBuffer.wrap(frame)))
+      val payload = message.asByteBuffer
+      val header  = framing match
+          case Framing.Plain     => ByteBuffer.allocate(4).putInt(0, payload.remaining())
+          case Framing.WebSocket => ByteBuffer.wrap(WebsocketProtocol.frameHeader(0x2, payload.remaining()))
+      writeAsync(layer, Array(header, payload))
     }
 
     override def close(): Unit = {
-      try layer.write(Array(ByteBuffer.wrap(WebsocketProtocol.encodeCloseFrame())))
-      catch case NonFatal(_) => ()
+      if framing == Framing.WebSocket then
+          try layer.write(Array(ByteBuffer.wrap(WebsocketProtocol.encodeCloseFrame())))
+          catch case NonFatal(_) => ()
       layer.close()
     }
   }
@@ -201,12 +195,12 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = MessagingIO.executeImmedi
   def handleConnectTo(
       clientChannel: SocketChannel,
       incoming: Receive,
-  ): NioTCPConnection = {
+  ): NioConnection = {
 
     configureChannel(clientChannel)
 
     val layer    = NioSocketLayer(clientChannel)
-    val conn     = NioTCPConnection(layer)
+    val conn     = NioConnection(layer, Framing.Plain)
     val callback = incoming.connectionEstablished(conn)
     register(ReceiveAttachment(incoming, layer, ProtocolState.Init, callback))
 
@@ -336,7 +330,7 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = MessagingIO.executeImmedi
             val withCallback =
               if upat.messageCallback != null then upat
               else
-                  val conn     = NioTCPConnection(attachment.layer)
+                  val conn     = NioConnection(attachment.layer, Framing.Plain)
                   val callback = upat.incoming.connectionEstablished(conn)
                   upat.copy(messageCallback = callback)
             // handlePlain expects buffers in read mode
@@ -405,7 +399,7 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = MessagingIO.executeImmedi
         val connected =
           if attachment.messageCallback != null then attachment
           else
-              val conn     = WebSocketConnection(attachment.layer)
+              val conn     = NioConnection(attachment.layer, Framing.WebSocket)
               val callback = attachment.incoming.connectionEstablished(conn)
               attachment.copy(messageCallback = callback)
 
