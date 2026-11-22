@@ -4,8 +4,8 @@ package connection
 import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
-import java.security.MessageDigest
 import java.util.Base64
+import channels.crypto.Sha1
 
 sealed trait WebsocketFrame
 
@@ -52,7 +52,7 @@ object WebsocketProtocol {
     }
 
     val accept = Base64.getEncoder.encodeToString(
-      MessageDigest.getInstance("SHA-1").digest((key + websocketGuid).getBytes(StandardCharsets.UTF_8))
+      Sha1.hash((key + websocketGuid).getBytes(StandardCharsets.UTF_8))
     )
 
     val response =
