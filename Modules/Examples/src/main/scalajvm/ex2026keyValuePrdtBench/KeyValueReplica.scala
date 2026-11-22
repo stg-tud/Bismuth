@@ -30,7 +30,6 @@ import scala.concurrent.{ExecutionContext, Future}
 class KeyValueReplica(
     val uid: Uid,
     val votingReplicas: Set[Uid],
-    offloadSending: Boolean = true,
     offloadReplica: Boolean = true,
     deltaStorageType: DeltaStorage.Type = KeepAll,
     timeoutThreshold: Long = 1000,
@@ -40,7 +39,6 @@ class KeyValueReplica(
   inline def log(inline msg: String): Unit =
     if false then println(s"[$uid] $msg")
 
-  val sendingActor: ExecutionContext   = ConcurrencyHelper.makeExecutionContext(offloadSending)
   val replicaActor: ExecutionContext   = ConcurrencyHelper.makeExecutionContext(offloadReplica)
   val readReplyActor: ExecutionContext = ConcurrencyHelper.makeExecutionContext(false)
 
@@ -73,7 +71,6 @@ class KeyValueReplica(
       localUid,
       payload => replicaActor.execute(() => handleIncoming(payload.data)),
       history = DeltaStorage.getStorage(deltaStorageType, () => state),
-      config = MessagingIO.Config(sendingActor = sendingActor),
     )
 
     def handleIncoming(delta: ClusterState): Unit = currentStateLock.synchronized {
@@ -229,13 +226,11 @@ class KeyValueReplica(
       localUid,
       payload => replicaActor.execute(() => handleIncomingWrite(payload.data)),
       history = DeltaStorage.getStorage(deltaStorageType, () => ???),
-      config = MessagingIO.Config(sendingActor = sendingActor),
     )
     lazy val dataManagerRead: MessagingIO.Plumtree[ClientCommRead] = MessagingIO.usingPlumtree(
       localUid,
       payload => replicaActor.execute(() => handleIncomingRead(payload.data)),
       history = DeltaStorage.getStorage(deltaStorageType, () => ???),
-      config = MessagingIO.Config(sendingActor = sendingActor),
     )
 
     def handleIncomingWrite(delta: ClientCommWrite): Unit =
@@ -289,7 +284,6 @@ class KeyValueReplica(
       localUid,
       payload => replicaActor.execute(() => handleIncoming(payload.data)),
       history = DeltaStorage.getStorage(deltaStorageType, () => currentStateLock.synchronized(state)),
-      config = MessagingIO.Config(sendingActor = sendingActor),
     )
 
     def handleIncoming(delta: ConnInformation): Unit = {

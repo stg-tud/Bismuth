@@ -20,7 +20,7 @@ class ClusterConsensus extends munit.FunSuite {
     given Participants(ids)
     val nodes @ primary :: secondaries =
       ids.map { id =>
-        KeyValueReplica(id, ids, offloadSending = false, offloadReplica = false, commitReads = true)
+        KeyValueReplica(id, ids, offloadReplica = false, commitReads = true)
       }.toList: @unchecked
     val connection = QueuedLocalConnection("cluster-main", queue)
     primary.cluster.dataManager.addServerConnection(connection.server)
@@ -122,7 +122,7 @@ class ClusterConsensus extends munit.FunSuite {
     given Participants(ids)
     val nodes @ primary :: x =
       ids.map { id =>
-        KeyValueReplica(id, ids, offloadSending = false, offloadReplica = false, commitReads = true)
+        KeyValueReplica(id, ids, offloadReplica = false, commitReads = true)
       }.toList: @unchecked
     val connection = QueuedLocalConnection("single-cluster", queue)
     primary.cluster.dataManager.addServerConnection(connection.server)

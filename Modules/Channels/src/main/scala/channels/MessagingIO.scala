@@ -28,7 +28,6 @@ object MessagingIO {
   final case class Config(
       overlay: Option[OverlayController] = None,
       resolver: ChannelResolver = ChannelResolver.disconnected,
-      sendingActor: ExecutionContext = MessagingIO.executeImmediately,
       globalAbort: Abort = Abort(),
       aead: Aead = Aead.identity,
       timers: Timers = Timers.Manual(),
@@ -136,12 +135,11 @@ class MessagingIO[P <: Routing](
   @volatile private var overlay: OverlayController    = config.overlayController(replicaId)
   @volatile private var protocolState: protocol.State = initial
 
-  val globalAbort: Abort                     = config.globalAbort
-  val aead: Aead                             = config.aead
-  val timers: Timers                         = config.timers
-  private val resolver: ChannelResolver      = config.resolver
-  private val sendingActor: ExecutionContext = config.sendingActor
-  private val timerDelays: TimerDelays       = config.timerDelays
+  val globalAbort: Abort                = config.globalAbort
+  val aead: Aead                        = config.aead
+  val timers: Timers                    = config.timers
+  private val resolver: ChannelResolver = config.resolver
+  private val timerDelays: TimerDelays  = config.timerDelays
 
   /** A protocol message to send on `connection`, resolved from the overlay during the transition. */
   final private case class Transmit(connection: Connection, envelope: Envelope[protocol.Msg])
@@ -271,13 +269,11 @@ class MessagingIO[P <: Routing](
 
   private def send(connection: Connection, envelope: Envelope[protocol.Msg]): Unit =
     if !globalAbort.closeRequest then
-        sendingActor.execute { () =>
-          connection.send(MessagingIO.encodeMessage(envelope, aead)).run {
-            case Success(_) => ()
-            case Failure(_) =>
-              connection.close()
-              transition(overlayStep(OverlayEvent.Closed(connection)))
-          }
+        connection.send(MessagingIO.encodeMessage(envelope, aead)).run {
+          case Success(_) => ()
+          case Failure(_) =>
+            connection.close()
+            transition(overlayStep(OverlayEvent.Closed(connection)))
         }
 
   /** Establish a connection requested by the overlay; reports `Established` or `DialFailed`. */
