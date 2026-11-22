@@ -1,13 +1,13 @@
 package ex2021encfxtodo
 
 import channels.connection.MessageBuffer
-import channels.experiments
+import channels.crypto.Aead
 
 import java.nio.ByteBuffer
 import scala.util.Try
 
-/** Adapts a Tink [[com.google.crypto.tink.Aead]] to the channels [[channels.experiments.Aead]] interface. */
-class TinkAead(aead: com.google.crypto.tink.Aead) extends experiments.Aead {
+/** Adapts a Tink [[com.google.crypto.tink.Aead]] to the channels [[Aead]] interface. */
+class TinkAead(aead: com.google.crypto.tink.Aead) extends Aead {
   override def encrypt(data: ByteBuffer, associated: ByteBuffer): ByteBuffer =
     ByteBuffer.wrap(aead.encrypt(
       MessageBuffer.convertByteBufferToArray(data),

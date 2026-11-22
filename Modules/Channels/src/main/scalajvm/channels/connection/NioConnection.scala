@@ -7,7 +7,6 @@ import java.net.{InetSocketAddress, SocketAddress, UnixDomainSocketAddress}
 import java.nio.ByteBuffer
 import java.nio.channels.{CancelledKeyException, SelectionKey, Selector, SocketChannel}
 import scala.concurrent.ExecutionContext
-import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
 object NioConnection {

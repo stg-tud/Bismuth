@@ -4,7 +4,7 @@ import benchmarks.b2021encrdt.Codecs.given
 import benchmarks.b2021encrdt.deltabased.{DecryptedDeltaGroup, EncryptedDeltaGroup, TrustedReplica, UntrustedReplica}
 import benchmarks.b2021encrdt.mock.SecureToDoListClient.{ToDoMapLattice, mergeDecryptedDeltas}
 import benchmarks.b2021encrdt.todolist.ToDoEntry
-import channels.experiments.Aead
+import channels.crypto.Aead
 import rdts.base.ReplicaId
 import ex2021encfxtodo.crdt.ObserveRemoveMap
 import ex2021encfxtodo.crdt.DeltaAWLWWMContainer

@@ -1,6 +1,6 @@
 package benchmarks.b2021encrdt.deltabased
 
-import channels.experiments.Aead
+import channels.crypto.Aead
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import rdts.base.ReplicaId
 import rdts.time.{Dot, Dots}

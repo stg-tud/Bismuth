@@ -1,6 +1,6 @@
-package channels.experiments
+package channels.crypto
 
-import channels.experiments.WycheproofVectors.V
+import WycheproofVectors.V
 import munit.FunSuite
 
 import scala.util.Try

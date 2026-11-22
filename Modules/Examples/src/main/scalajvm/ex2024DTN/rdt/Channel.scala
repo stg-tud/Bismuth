@@ -4,7 +4,7 @@ import channels.MessagingIO
 import channels.routing.PlumtreeMessage
 import channels.routing.PlumtreeMessage.{Graft, IHave, Payload, Prune, Push}
 import channels.connection.{Abort, Connection, Connector, MessageBuffer, Peer, Receive}
-import channels.experiments.Aead
+import channels.crypto.Aead
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
 import de.rmgk.delay.{Async, Callback, Sync, toAsync}
 import ex2024DTN.{MonitoringClientInterface, NoMonitoringClient, RdtMessageType}

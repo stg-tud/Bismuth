@@ -1,4 +1,4 @@
-package channels.experiments
+package channels.crypto
 
 import java.nio.ByteBuffer
 import scala.util.Try

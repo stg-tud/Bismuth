@@ -2,8 +2,8 @@ package ex2021encfxtodo
 
 import channels.routing.PlumtreeMessage
 import channels.connection.{LocalMessageQueue, QueuedLocalConnection}
-import channels.experiments.Aead
-import channels.{MessagingIO, experiments}
+import channels.crypto.Aead
+import channels.{MessagingIO, crypto}
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import com.google.crypto.tink.aead.AeadConfig
@@ -65,7 +65,7 @@ class PlumtreeIOAeadTest extends FunSuite {
       aead
     )
 
-    assert(MessagingIO.decodeEnvelope[Set[String]](encoded, experiments.Aead.identity).isFailure)
+    assert(MessagingIO.decodeEnvelope[Set[String]](encoded, crypto.Aead.identity).isFailure)
     assert(MessagingIO.decodeEnvelope[Set[String]](encoded, aead).isSuccess)
   }
 }

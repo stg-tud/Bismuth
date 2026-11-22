@@ -2,7 +2,7 @@ package channels
 
 import channels.MessagingIO
 import channels.connection.{ConnectionDescriptor, LocalConnectionRegistry, LocalMessageQueue, Peer, PeerConnectInfo, QueuedLocalConnection}
-import channels.experiments.Aead
+import channels.crypto.Aead
 import channels.overlay.FullMeshOverlay
 import channels.overlay.OverlayController.OverlayMessage
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec

@@ -4,7 +4,7 @@ import benchmarks.b2021encrdt.Codecs.given
 import benchmarks.b2021encrdt.mock.insecure.{AlternativeInsecureToDoListClient, AlternativeInsecureToDoListIntermediary}
 import benchmarks.b2021encrdt.mock.{DisseminationStats, IntermediarySizeInfo, SecureToDoListClient, ToDoListClient, ToDoListIntermediary}
 import benchmarks.b2021encrdt.todolist.{AddToDoItem, CompleteToDoItem, RemoveToDoItems, ToDoEntry, ToDoListInteraction, ToDoListInteractionGenerator}
-import channels.experiments.Aead
+import channels.crypto.Aead
 import ex2021encfxtodo.TinkAead
 import ex2021encfxtodo.crdt.DeltaAWLWWMContainer
 

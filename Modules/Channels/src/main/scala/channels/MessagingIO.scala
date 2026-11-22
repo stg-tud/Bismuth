@@ -6,7 +6,7 @@ import channels.routing.PlumtreeMessage.*
 import channels.routing.Routing.{Effect, Step, Timer}
 import channels.routing.{PlumtreeBroadcast, Routing}
 import channels.connection.*
-import channels.experiments.Aead
+import channels.crypto.Aead
 import channels.overlay.OverlayController.{OverlayAction, OverlayEvent, OverlayMessage}
 import channels.overlay.{AttemptId, FullMeshOverlay, OverlayController}
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromByteBuffer, writeToArray}

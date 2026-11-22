@@ -3,7 +3,7 @@ package benchmarks.b2021encrdt
 import benchmarks.b2021encrdt.Codecs.given
 import benchmarks.b2021encrdt.deltabased.DecryptedDeltaGroup
 import benchmarks.b2021encrdt.mock.UntrustedDeltaBasedReplicaMock
-import channels.experiments
+import channels.crypto.Aead
 import com.github.plokhotnyuk.jsoniter_scala.core.writeToArray
 import ex2021encfxtodo.TinkAead
 import ex2021encfxtodo.crdt.DeltaAWLWWMContainer
@@ -135,6 +135,6 @@ trait DeltaStateUntrustedReplicaSizeBenchEnvironment {
   if !outDir.toFile.exists() then
       outDir.toFile.mkdirs()
       ()
-  val aead: experiments.Aead                      = TinkAead(Helper.setupAead("AES128_GCM"))
+  val aead: Aead                      = TinkAead(Helper.setupAead("AES128_GCM"))
   val dummyKeyValuePairs: Array[(String, String)] = Helper.dummyKeyValuePairs(10_000)
 }
