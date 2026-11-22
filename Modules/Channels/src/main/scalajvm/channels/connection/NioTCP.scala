@@ -174,13 +174,7 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = MessagingIO.executeImmedi
     override val info: ConnectionInfo = layer.connectionInfo("type" -> "websocket")
 
     override def send(message: MessageBuffer): Async[Any, Unit] = {
-      val payload =
-          val bb = message.asByteBuffer
-          bb.array()
-          val arr = new Array[Byte](bb.remaining())
-          bb.get(arr)
-          arr
-      val frame = WebsocketProtocol.encodeBinaryFrame(payload)
+      val frame = WebsocketProtocol.encodeBinaryFrame(message.convertToArray())
       writeAsync(layer, Array(ByteBuffer.wrap(frame)))
     }
 
