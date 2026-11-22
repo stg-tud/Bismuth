@@ -5,7 +5,7 @@ import channels.connection.tls.NioTls
 import channels.connection.NioTCP.*
 import channels.connection.WebsocketProtocol.WebsocketHeader
 import channels.connection.{Abort, ByteBufferMessageBuffer, Connection, ConnectionDescriptor, ConnectionInfo, Connector, Listener, MessageBuffer, NoMoreDataException, Receive}
-import de.rmgk.delay.{Async, Callback, Sync}
+import de.rmgk.delay.{Async, Callback}
 
 import java.net.{InetSocketAddress, SocketAddress, StandardProtocolFamily, StandardSocketOptions, UnixDomainSocketAddress}
 import java.nio.ByteBuffer
@@ -150,11 +150,21 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = MessagingIO.executeImmedi
     selector.wakeup(): Unit
   }
 
+  /** Writes `buffers` on `layer`, completes once the socket took all of them: senders waiting for that before sending
+    * more get backpressure.
+    */
+  private def writeAsync(layer: NioSocketLayer, buffers: Array[ByteBuffer]): Async[Any, Unit] =
+    Async.fromCallback {
+      val handler = Async.handler[Unit]
+      try layer.write(buffers, handler.complete)
+      catch case NonFatal(ex) => handler.fail(ex)
+    }
+
   class NioTCPConnection(layer: NioSocketLayer) extends Connection {
 
     override val info: ConnectionInfo = layer.connectionInfo("type" -> "niotcp")
 
-    override def send(message: MessageBuffer): Async[Any, Unit] = Sync {
+    override def send(message: MessageBuffer): Async[Any, Unit] = {
       val bytes         = message.asByteBuffer
       val messageLength = bytes.remaining()
 
@@ -162,7 +172,7 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = MessagingIO.executeImmedi
       sizeBuffer.putInt(messageLength)
       sizeBuffer.flip()
 
-      layer.write(Array(sizeBuffer, bytes))
+      writeAsync(layer, Array(sizeBuffer, bytes))
     }
 
     override def close(): Unit = layer.close()
@@ -172,7 +182,7 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = MessagingIO.executeImmedi
 
     override val info: ConnectionInfo = layer.connectionInfo("type" -> "websocket")
 
-    override def send(message: MessageBuffer): Async[Any, Unit] = Sync {
+    override def send(message: MessageBuffer): Async[Any, Unit] = {
       val payload =
           val bb = message.asByteBuffer
           bb.array()
@@ -180,7 +190,7 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = MessagingIO.executeImmedi
           bb.get(arr)
           arr
       val frame = WebsocketProtocol.encodeBinaryFrame(payload)
-      layer.write(Array(ByteBuffer.wrap(frame)))
+      writeAsync(layer, Array(ByteBuffer.wrap(frame)))
     }
 
     override def close(): Unit = {
@@ -583,6 +593,7 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = MessagingIO.executeImmedi
     key.cancel()
     key.attachment() match {
       case attachment: ReceiveAttachment =>
+        attachment.layer.failed(ex)
         if attachment.messageCallback != null then attachment.messageCallback.fail(ex)
         else if attachment.onConnected != null then attachment.onConnected(Failure(ex))
         else ()

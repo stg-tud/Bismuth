@@ -1,10 +1,13 @@
 package channels
 
-import channels.connection.{Abort, ByteBufferMessageBuffer, MessageBuffer, NioTCP}
+import channels.connection.{Abort, ByteBufferMessageBuffer, Connection, MessageBuffer, NioTCP}
 
 import java.net.StandardProtocolFamily
 import java.nio.channels.{ServerSocketChannel, SocketChannel}
+import java.nio.ByteBuffer
 import java.util.concurrent.{CountDownLatch, TimeUnit}
+import scala.concurrent.duration.DurationInt
+import scala.concurrent.{Await, Promise}
 import scala.util.{Failure, Success}
 
 /** Two peers that answer a message they receive with a large one, on the selector thread (as [[MessagingIO]] does).
@@ -84,4 +87,45 @@ class LargeMessageExchangeTest extends munit.FunSuite {
     }
   }
 
+  test("sending completes only once the peer took the message") {
+    val socketPath = domainSocketHelperNonensese("large-message-backpressure")
+    val server     = ServerSocketChannel.open(StandardProtocolFamily.UNIX)
+    server.bind(socketPath)
+
+    val clientNio = NioTCP()
+    val abort     = Abort()
+    loop(clientNio, abort, "client-selector")
+
+    val conn = Promise[Connection]()
+    clientNio.connect { () =>
+      val channel = SocketChannel.open(StandardProtocolFamily.UNIX)
+      channel.connect(socketPath)
+      channel
+    }.connect(_ => _ => ()).runIn(Abort())(conn.complete)
+    // a peer that does not read until told to
+    val peer = server.accept()
+
+    try {
+      val connection = Await.result(conn.future, 10.seconds)
+
+      val smallSent = CountDownLatch(1)
+      connection.send(ping()).run(r => if r.isSuccess then smallSent.countDown())
+      assert(smallSent.await(10, TimeUnit.SECONDS), "a small message fits into the socket buffers")
+
+      val largeSent = CountDownLatch(1)
+      connection.send(large()).run(r => if r.isSuccess then largeSent.countDown())
+      assert(!largeSent.await(500, TimeUnit.MILLISECONDS), "large message reported sent while the peer does not read")
+
+      // the peer reads everything: ping and the large message, each with its length
+      val expected = (4 + 4) + (4 + largeSize)
+      val buffer   = ByteBuffer.allocate(expected)
+      while buffer.hasRemaining && peer.read(buffer) >= 0 do ()
+      assertEquals(buffer.position(), expected)
+      assert(largeSent.await(10, TimeUnit.SECONDS), "large message not reported sent once the peer read it")
+    } finally {
+      abort.closeRequest = true
+      peer.close()
+      clientNio.selector.keys().forEach(_.channel().close())
+    }
+  }
 }

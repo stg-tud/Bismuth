@@ -10,7 +10,7 @@ import java.nio.ByteBuffer
 import java.nio.channels.{CancelledKeyException, SelectionKey, SocketChannel}
 import javax.net.ssl.SSLEngine
 import javax.net.ssl.SSLEngineResult.{HandshakeStatus, Status}
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 /** The byte stream of one [[NioTCP]] socket: either the raw channel, or a TLS session on top of it.
   * [[NioTCP]] parses its protocols (plain length-prefixed messages, websockets) on top of this, and writes through it.
@@ -20,28 +20,61 @@ import scala.util.Try
   * Writing never waits for the socket: what it does not take right away is queued, and written by the selector thread
   * (via [[flush]]) once the socket is writable again. Waiting instead would stop the selector thread from reading,
   * and two peers writing more than the socket buffers hold to each other at once would wait for each other forever.
-  * The queue is unbounded: senders get no backpressure from slow peers.
+  * Each write reports when the socket took all of it (or failed): senders that wait for that before sending more get
+  * backpressure from slow peers. The queue itself is unbounded.
   */
 sealed trait NioSocketLayer {
   def channel: SocketChannel
 
+  /** A buffer to write, and what to tell once it is written (an empty buffer after those of a write). */
+  final private class Pending(val buffer: ByteBuffer, val written: (Try[Unit] => Unit) | Null)
+
   // send side, guarded by outLock
   private val outLock: AnyRef           = new {}
-  private val outgoing                  = java.util.ArrayDeque[ByteBuffer]()
+  private val outgoing                  = java.util.ArrayDeque[Pending]()
   private var key: SelectionKey | Null  = null
   private var closeWhenFlushed: Boolean = false
 
-  /** Queues `buffers` (which must not be changed afterwards) for sending, and writes what the socket takes now. */
-  protected def enqueue(buffers: Array[ByteBuffer]): Unit = outLock.synchronized {
-    if closeWhenFlushed then throw ConnectionClosedException("connection is closed")
-    buffers.foreach(b => outgoing.add(b): Unit)
-    flushQueue()
+  /** Queues `buffers` (which must not be changed afterwards) for sending, and writes what the socket takes now.
+    * `written` is called once all of them are written, or writing failed.
+    */
+  protected def enqueue(buffers: Array[ByteBuffer], written: (Try[Unit] => Unit) | Null): Unit = {
+    val done = outLock.synchronized {
+      if closeWhenFlushed then throw ConnectionClosedException("connection is closed")
+      buffers.foreach(b => outgoing.add(Pending(b, null)): Unit)
+      if written != null then outgoing.add(Pending(ByteBuffer.allocate(0), written)): Unit
+      Try(flushQueue())
+    }
+    done match
+        case Success(done) => done.foreach(_(Success(())))
+        case Failure(ex)   => failed(ex)
   }
 
   /** Writes what is queued as far as the socket takes it without waiting. Called by the selector thread once the socket
     * is writable.
     */
-  def flush(): Unit = outLock.synchronized(flushQueue())
+  def flush(): Unit = {
+    val done = outLock.synchronized(Try(flushQueue()))
+    done.failed.foreach(failed)
+    // rethrows a failure, for the selector to drop the key
+    done.get.foreach(_(Success(())))
+  }
+
+  /** The channel failed: closes it, writes still queued fail with `ex`. */
+  def failed(ex: Throwable): Unit = {
+    val pending = outLock.synchronized {
+      closeWhenFlushed = true
+      try channel.close()
+      catch case _: java.io.IOException => ()
+      val all = List.newBuilder[Try[Unit] => Unit]
+      while !outgoing.isEmpty do {
+        val p = outgoing.poll().nn
+        if p.written != null then all += p.written
+      }
+      all.result()
+    }
+    pending.foreach(_(Failure(ex)))
+  }
 
   /** Called once the channel is registered with the selector as `key`: from then on, the selector is asked to call
     * [[flush]] while data is queued.
@@ -57,17 +90,22 @@ sealed trait NioSocketLayer {
     if outgoing.isEmpty then channel.close()
   }
 
-  /** Must hold `outLock`. */
-  private def flushQueue(): Unit = {
+  /** Must hold `outLock`. Returns the callbacks of the writes completed, to be called without holding the lock. */
+  private def flushQueue(): List[Try[Unit] => Unit] = {
+    val done = List.newBuilder[Try[Unit] => Unit]
     var full = false
     while !full && !outgoing.isEmpty do {
       val head = outgoing.peek().nn
-      channel.write(head): Unit
-      if head.hasRemaining then full = true
-      else outgoing.poll(): Unit
+      channel.write(head.buffer): Unit
+      if head.buffer.hasRemaining then full = true
+      else {
+        outgoing.poll(): Unit
+        if head.written != null then done += head.written
+      }
     }
     if outgoing.isEmpty && closeWhenFlushed then channel.close()
     else updateInterest()
+    done.result()
   }
 
   /** Interested in writability exactly while data is queued. Must hold `outLock`. */
@@ -90,9 +128,12 @@ sealed trait NioSocketLayer {
   def read(targets: Array[ByteBuffer]): Long
 
   /** Sends all of `buffers`, which must not be changed afterwards. Does not wait: what the socket does not take now is
-    * written by the selector thread later.
+    * written by the selector thread later. `written` is called once the socket took all of it, or writing failed.
     */
-  def write(buffers: Array[ByteBuffer]): Unit
+  def write(buffers: Array[ByteBuffer], written: (Try[Unit] => Unit) | Null): Unit
+
+  /** [[write]], without caring when it is written. */
+  def write(buffers: Array[ByteBuffer]): Unit = write(buffers, null)
 
   /** Whether the layer can transport data (i.e., the TLS handshake is done). */
   def ready: Boolean
@@ -118,8 +159,9 @@ sealed trait NioSocketLayer {
 object NioSocketLayer {
 
   class Plain(val channel: SocketChannel) extends NioSocketLayer {
-    override def read(targets: Array[ByteBuffer]): Long                                   = channel.read(targets)
-    override def write(buffers: Array[ByteBuffer]): Unit                                  = enqueue(buffers)
+    override def read(targets: Array[ByteBuffer]): Long                                       = channel.read(targets)
+    override def write(buffers: Array[ByteBuffer], written: (Try[Unit] => Unit) | Null): Unit =
+      enqueue(buffers, written)
     override def ready: Boolean                                                           = true
     override def authenticatedPeer: Option[Uid]                                           = None
     override protected def describe(address: SocketAddress): Option[ConnectionDescriptor] =
@@ -170,7 +212,11 @@ object NioSocketLayer {
       if copied == 0 && endOfStream then -1 else copied
     }
 
-    override def write(buffers: Array[ByteBuffer]): Unit = writeLock.synchronized(wrap(buffers))
+    override def write(buffers: Array[ByteBuffer], written: (Try[Unit] => Unit) | Null): Unit =
+      writeLock.synchronized {
+        wrap(buffers)
+        enqueue(Array.empty, written)
+      }
 
     override def close(): Unit = {
       try
@@ -262,7 +308,7 @@ object NioSocketLayer {
         if result.getHandshakeStatus == HandshakeStatus.NEED_TASK then runDelegatedTasks()
         netOut.flip()
         // netOut is reused: queue a copy
-        if netOut.hasRemaining then enqueue(Array(ByteBuffer.allocate(netOut.remaining()).put(netOut).flip()))
+        if netOut.hasRemaining then enqueue(Array(ByteBuffer.allocate(netOut.remaining()).put(netOut).flip()), null)
       }
     }
 
