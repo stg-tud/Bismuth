@@ -102,7 +102,9 @@ object ConcurrencyHelper {
   * websocket traffic. Different connections may use different protocols concurrently.
   *
   * [[loopSelection]] and [[runSelection]] should not be called from multiple threads at the same time.
-  * Only one thread should send on a single connection at the same time.
+  * Connections may be sent on from any thread (including the selector thread, e.g., from receive callbacks): sending
+  * does not wait for the socket, what it does not take right away is written by the selector thread later
+  * (see [[NioSocketLayer]]).
   */
 class NioTCP(accepCallbackExecutor: ExecutionContext = MessagingIO.executeImmediately) {
   inline val compression: false = false
@@ -117,7 +119,8 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = MessagingIO.executeImmedi
   def runSelection(): Unit = {
 
     selector.selectedKeys().forEach { key =>
-      try
+      try {
+        if key.isValid && key.isWritable then key.attachment().asInstanceOf[ReceiveAttachment].layer.flush()
         if key.isValid && key.isReadable then
             handleReadable(key, key.attachment().asInstanceOf[ReceiveAttachment])
         else if key.isValid && key.isAcceptable then
@@ -129,17 +132,22 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = MessagingIO.executeImmedi
               val layer = attachment.tls match
                   case None      => NioSocketLayer.Plain(clientChannel)
                   case Some(tls) => NioSocketLayer.Tls(clientChannel, tls.createEngine(clientMode = false), tls)
-              clientChannel.register(selector, SelectionKey.OP_READ, ReceiveAttachment(attachment.incoming, layer))
-              selector.wakeup()
-              ()
+              register(ReceiveAttachment(attachment.incoming, layer))
             }
-      catch {
+      } catch {
         case ex: Exception =>
           failKey(key, ex)
       }
     }
 
     selector.selectedKeys().clear()
+  }
+
+  /** Registers the socket of `attachment` with the selector (for reading, and writing what its layer has queued). */
+  private def register(attachment: ReceiveAttachment): Unit = {
+    val key = attachment.layer.channel.register(selector, SelectionKey.OP_READ, attachment)
+    attachment.layer.registered(key)
+    selector.wakeup(): Unit
   }
 
   class NioTCPConnection(layer: NioSocketLayer) extends Connection {
@@ -205,12 +213,7 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = MessagingIO.executeImmedi
     val layer    = NioSocketLayer.Plain(clientChannel)
     val conn     = NioTCPConnection(layer)
     val callback = incoming.connectionEstablished(conn)
-    clientChannel.register(
-      selector,
-      SelectionKey.OP_READ,
-      ReceiveAttachment(incoming, layer, ProtocolState.Init, callback)
-    )
-    selector.wakeup()
+    register(ReceiveAttachment(incoming, layer, ProtocolState.Init, callback))
 
     conn
   }
@@ -231,13 +234,7 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = MessagingIO.executeImmedi
                 case Success(conn) => handler.succeed(conn)
                 case Failure(ex)   => handler.fail(ex)
               }
-              clientChannel.register(
-                selector,
-                SelectionKey.OP_READ,
-                ReceiveAttachment(incoming, layer, onConnected = onConnected)
-              )
-              selector.wakeup()
-              ()
+              register(ReceiveAttachment(incoming, layer, onConnected = onConnected))
           catch case NonFatal(exception) => handler.fail(exception)
         }
     }
