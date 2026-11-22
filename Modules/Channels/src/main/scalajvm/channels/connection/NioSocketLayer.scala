@@ -117,8 +117,8 @@ final class NioSocketLayer(val channel: SocketChannel) {
         } catch case _: CancelledKeyException => ()
   }
 
-  /** Non-blocking: reads available bytes into `targets`. Returns the number of bytes read, or -1 at the end of stream. */
-  def read(targets: Array[ByteBuffer]): Long = channel.read(targets)
+  /** Non-blocking: reads available bytes into `target`. Returns the number of bytes read, or -1 at the end of stream. */
+  def read(target: ByteBuffer): Int = channel.read(target)
 
   /** [[write]], without caring when it is written. */
   def write(buffers: Array[ByteBuffer]): Unit = write(buffers, null)

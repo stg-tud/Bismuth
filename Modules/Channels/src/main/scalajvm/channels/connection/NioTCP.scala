@@ -2,8 +2,7 @@ package channels
 package connection
 
 import channels.connection.NioTCP.*
-import channels.connection.WebsocketProtocol.WebsocketHeader
-import channels.connection.{Abort, ByteBufferMessageBuffer, Connection, ConnectionDescriptor, ConnectionInfo, Connector, Listener, MessageBuffer, NoMoreDataException, Receive}
+import channels.connection.{Abort, ByteBufferMessageBuffer, Connection, ConnectionDescriptor, ConnectionInfo, Connector, Listener, MessageBuffer, NoMoreDataException, ReceiveBuffer, Receive}
 import de.rmgk.delay.{Async, Callback}
 
 import java.net.{InetSocketAddress, SocketAddress, StandardProtocolFamily, StandardSocketOptions, UnixDomainSocketAddress}
@@ -20,12 +19,6 @@ object NioTCP {
       incoming: Receive,
   )
 
-  case class WebSocketState(
-      fragments: Vector[Array[Byte]] = Vector.empty,
-      fragmentOpcode: Option[Int] = None,
-      pendingHeader: Option[WebsocketHeader] = None,
-  )
-
   /** Per-socket protocol mode.
     *
     * New inbound sockets start in `Init` so we can sniff the first bytes.
@@ -34,9 +27,14 @@ object NioTCP {
     */
   enum ProtocolState {
     case Init
-    case Plain(len: Int)
+    case Plain
     case WebSocketHandshake
-    case WebSocket(state: WebSocketState)
+
+    /** `fragments` of a message whose last frame did not arrive yet. */
+    case WebSocket(fragments: Vector[Array[Byte]])
+
+    /** No more data is processed. */
+    case Closed
   }
 
   /** How messages are framed on the byte stream. */
@@ -44,27 +42,23 @@ object NioTCP {
     case Plain, WebSocket
   }
 
-  /** Per-connection attachment stored on the selector key.
+  /** Per-connection state stored on the selector key, used by plain NioTCP and websocket traffic alike.
     *
-    * A single attachment type is used for both plain NioTCP and websocket traffic, so the event loop can keep one
-    * readable-path and only switch behavior based on [[protocol]].
-    *
-    * Different fields matter in different phases:
-    *   - `connectCallback` is used only for inbound accepted sockets, to publish the established connection once the
-    *     protocol is known
-    *   - `messageCallback` is populated once the connection has been initialized
-    *   - `buffered` stores unread bytes across selector turns for either protocol
-    *   - `WebSocketState` in the protocol holds `fragments` and `fragmentOpcode` for fragmented websocket messages
+    *   - `buffer` stores received bytes not yet parsed, across selector turns
+    *   - `messageCallback` is populated once the connection is established. For inbound accepted sockets, this
+    *     is only once the protocol is known
     *   - `layer` is the byte stream all protocols read from and write to
+    *
+    * Only accessed by the selector thread.
     */
-  case class ReceiveAttachment(
-      incoming: Receive,
-      layer: NioSocketLayer,
-      protocol: ProtocolState = ProtocolState.Init,
-      messageCallback: Callback[MessageBuffer] | Null = null,
-      primary: ByteBuffer = ByteBuffer.allocate(1024),
-      secondary: ByteBuffer | Null = null,
-  )
+  final class ReceiveAttachment(
+      val incoming: Receive,
+      val layer: NioSocketLayer,
+      var messageCallback: Callback[MessageBuffer] | Null = null,
+  ) {
+    val buffer: ReceiveBuffer   = ReceiveBuffer()
+    var protocol: ProtocolState = ProtocolState.Init
+  }
 
   class EndOfChannelException(msg: String) extends Exception(msg)
 
@@ -202,7 +196,7 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = MessagingIO.executeImmedi
     val layer    = NioSocketLayer(clientChannel)
     val conn     = NioConnection(layer, Framing.Plain)
     val callback = incoming.connectionEstablished(conn)
-    register(ReceiveAttachment(incoming, layer, ProtocolState.Init, callback))
+    register(ReceiveAttachment(incoming, layer, callback))
 
     conn
   }
@@ -272,258 +266,125 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = MessagingIO.executeImmedi
         }
     }
 
-  private def handleReadable(
-      key: SelectionKey,
-      attachment: ReceiveAttachment
-  ): Unit = {
-    val target =
-      if attachment.secondary == null
-      then Array(attachment.primary)
-      else Array(attachment.primary, attachment.secondary)
-    val read = attachment.layer.read(target)
-
-    attachment.primary.flip()
-    attachment.protocol match {
-      case ProtocolState.WebSocket(ws) if ws.pendingHeader.isDefined && attachment.secondary != null =>
-        attachment.secondary.flip()
-      case ProtocolState.Plain(_) if attachment.secondary != null =>
-        attachment.secondary.flip()
-      case _ => ()
-    }
-    val initialBytes = totalAvailable(attachment)
-
-    val next = attachment.protocol match {
-      case ProtocolState.Init               => handleInitial(attachment)
-      case ProtocolState.Plain(len)         => handlePlain(len, attachment)
-      case ProtocolState.WebSocketHandshake => handleWebSocketHandshake(attachment)
-      case ProtocolState.WebSocket(ws)      => ws.pendingHeader match {
-          case None    => handleWebsocketHeader(attachment)
-          case Some(_) => handleWebsocketBody(attachment, key, ws)
-        }
-    }
-    key.attach(next)
+  /** Reads what the socket has, and handles all complete messages. */
+  private def handleReadable(key: SelectionKey, attachment: ReceiveAttachment): Unit = {
+    var read = 0
+    // read > 0: the socket may have more than fit into the buffer, keep reading until it returns 0
+    while
+        read = attachment.buffer.fill(attachment.layer.read)
+        while attachment.protocol != ProtocolState.Closed && handleBuffered(key, attachment) do ()
+        read > 0 && attachment.protocol != ProtocolState.Closed
+    do ()
     if read == -1 then throw NoMoreDataException("remaining channel is empty")
-    val bufferedAfter = bufferedBytes(next)
-    val recurse       =
-      // read > 0: the socket may have more than fit into the buffers, keep reading until it returns 0
-      (bufferedAfter > 0 && bufferedAfter < initialBytes) || read > 0
-    if recurse then handleReadable(key, next)
-    ()
   }
 
-  private def handleInitial(attachment: ReceiveAttachment) =
-    if attachment.primary.remaining() < 4 then
-        attachment.primary.compact()
-        attachment
-    else
-        val len = attachment.primary.getInt
-        if len == WebsocketProtocol.handshakePrefix then
-            handleWebSocketHandshake(attachment.copy(protocol = ProtocolState.WebSocketHandshake))
-        else
-            require(len < MessageBuffer.maxPayloadSize, "message too large")
-            attachment.primary.compact()
-            val upat =
-              if len > 1024
-              then attachment.copy(secondary = ByteBuffer.allocate(len - 1024), protocol = ProtocolState.Plain(len))
-              else attachment.copy(protocol = ProtocolState.Plain(len))
-
-            val withCallback =
-              if upat.messageCallback != null then upat
-              else
-                  val conn     = NioConnection(attachment.layer, Framing.Plain)
-                  val callback = upat.incoming.connectionEstablished(conn)
-                  upat.copy(messageCallback = callback)
-            // handlePlain expects buffers in read mode
-            withCallback.primary.flip()
-            if withCallback.secondary != null then withCallback.secondary.flip(): Unit
-            handlePlain(
-              len,
-              withCallback
-            )
-
-  def totalAvailable(attachment: ReceiveAttachment): Int =
-    if attachment.secondary == null then attachment.primary.remaining()
-    else attachment.primary.remaining() + attachment.secondary.remaining()
-
-  def bufferedBytes(attachment: ReceiveAttachment): Int =
-    if attachment.secondary == null then attachment.primary.position()
-    else attachment.primary.position() + attachment.secondary.position()
-
-  /** Expects the buffers in read mode, leaves them in write mode. */
-  private def handlePlain(len: Int, attachment: ReceiveAttachment): ReceiveAttachment = {
-    val callback = attachment.messageCallback.nn
-
-    grabPayload(len, attachment) match {
-      case Some(buffer) =>
-
-        accepCallbackExecutor.execute { () =>
-          callback.succeed(ByteBufferMessageBuffer(buffer))
+  /** Handles the next complete unit (message, frame, handshake) in the buffer.
+    * Returns false if the buffer does not contain one yet.
+    */
+  private def handleBuffered(key: SelectionKey, attachment: ReceiveAttachment): Boolean = {
+    val buffer = attachment.buffer
+    attachment.protocol match {
+      case ProtocolState.Init =>
+        if buffer.available < 4 then false
+        else {
+          attachment.protocol =
+            if buffer.peekInt() == WebsocketProtocol.handshakePrefix
+            then ProtocolState.WebSocketHandshake
+            else
+                establish(attachment, Framing.Plain)
+                ProtocolState.Plain
+          true
         }
 
-        attachment.primary.compact()
-        attachment.copy(secondary = null, protocol = ProtocolState.Init)
-      case None =>
-        attachment.primary.compact()
-        if attachment.secondary != null then attachment.secondary.compact(): Unit
-        attachment
-    }
-  }
-
-  private def grabPayload(len: Int, attachment: ReceiveAttachment): Option[Array[Byte]] = {
-    val available = totalAvailable(attachment)
-
-    if available >= len then
-        val buffer      = new Array[Byte](len)
-        val fromPrimary = math.min(len, attachment.primary.remaining())
-        attachment.primary.get(buffer, 0, fromPrimary)
-        if attachment.secondary != null && fromPrimary < len then
-            attachment.secondary.get(buffer, fromPrimary, len - fromPrimary)
-            assert(attachment.secondary.remaining() == 0, "secondary buffer should be empty")
-            ()
-        Some(buffer)
-    else None
-  }
-
-  private def handleWebSocketHandshake(
-      attachment: ReceiveAttachment
-  ): ReceiveAttachment = {
-    attachment.primary.mark()
-
-    WebsocketProtocol.tryParseHandshake(attachment.primary) match {
-      case None =>
-        attachment.primary.reset()
-        attachment.primary.compact()
-        attachment
-      case Some(request) =>
-        attachment.layer.write(Array(ByteBuffer.wrap(WebsocketProtocol.handshakeResponse(request))))
-        val connected =
-          if attachment.messageCallback != null then attachment
+      case ProtocolState.Plain =>
+        if buffer.available < 4 then false
+        else {
+          val len = buffer.peekInt()
+          require(len < MessageBuffer.maxPayloadSize, "message too large")
+          if buffer.available < 4 + len then
+              buffer.reserve(4 + len)
+              false
           else
-              val conn     = NioConnection(attachment.layer, Framing.WebSocket)
-              val callback = attachment.incoming.connectionEstablished(conn)
-              attachment.copy(messageCallback = callback)
-
-        attachment.primary.compact()
-
-        connected.copy(
-          protocol = ProtocolState.WebSocket(WebSocketState()),
-        )
-    }
-  }
-
-  private def handleWebsocketBody(
-      attachment: ReceiveAttachment,
-      key: SelectionKey | Null,
-      ws: WebSocketState
-  ) = {
-    val header = ws.pendingHeader.get
-    attachment.primary.mark()
-    grabPayload(header.len, attachment) match {
-      case Some(value) =>
-        val frame = WebsocketProtocol.tryParsePayload(header, value)
-        assert(
-          attachment.secondary == null || !attachment.secondary.hasRemaining,
-          "secondary buffer should be fully consumed"
-        )
-        attachment.primary.compact()
-        handleWebsocketMessage(header, frame, attachment, key, ws).copy(
-          secondary = null
-        )
-      case None =>
-        attachment.primary.reset()
-        attachment.primary.compact()
-        if attachment.secondary != null then
-            attachment.secondary.compact()
-            ()
-        attachment
-    }
-  }
-
-  private def handleWebsocketHeader(attachment: ReceiveAttachment) = {
-    attachment.primary.mark()
-    WebsocketProtocol.tryParseHeader(attachment.primary) match {
-      case None =>
-        attachment.primary.reset()
-        attachment.primary.compact()
-        attachment
-      case Some(value) =>
-        attachment.primary.compact()
-        require(value.len < MessageBuffer.maxPayloadSize, "message too large")
-        val ws = attachment.protocol match {
-          case ProtocolState.WebSocket(ws) => ws.copy(pendingHeader = Some(value))
-          case _                           => WebSocketState(pendingHeader = Some(value))
+              buffer.consume(4)
+              deliver(attachment, buffer.take(len))
+              true
         }
-        if value.len > 1024
-        then
-            attachment.copy(
-              protocol = ProtocolState.WebSocket(ws),
-              secondary = ByteBuffer.allocate(value.len - 1024)
-            )
-        else attachment.copy(protocol = ProtocolState.WebSocket(ws))
+
+      case ProtocolState.WebSocketHandshake =>
+        val view = buffer.view
+        WebsocketProtocol.tryParseHandshake(view) match {
+          case None          => false
+          case Some(request) =>
+            buffer.consume(view.position())
+            attachment.layer.write(Array(ByteBuffer.wrap(WebsocketProtocol.handshakeResponse(request))))
+            establish(attachment, Framing.WebSocket)
+            attachment.protocol = ProtocolState.WebSocket(Vector.empty)
+            true
+        }
+
+      case ProtocolState.WebSocket(fragments) =>
+        val view = buffer.view
+        WebsocketProtocol.tryParseHeader(view) match {
+          case None         => false
+          case Some(header) =>
+            require(header.len < MessageBuffer.maxPayloadSize, "message too large")
+            val headerLength = view.position()
+            if buffer.available < headerLength + header.len then
+                buffer.reserve(headerLength + header.len)
+                false
+            else
+                buffer.consume(headerLength)
+                val frame = WebsocketProtocol.tryParsePayload(header, buffer.take(header.len))
+                attachment.protocol = handleWebsocketFrame(header.fin, frame, attachment, key, fragments)
+                true
+        }
+
+      case ProtocolState.Closed => false
     }
   }
 
-  def handleWebsocketMessage(
-      header: WebsocketHeader,
+  /** Publishes the connection of an accepted socket, once its protocol is known. */
+  private def establish(attachment: ReceiveAttachment, framing: Framing): Unit =
+    if attachment.messageCallback == null then
+        attachment.messageCallback = attachment.incoming.connectionEstablished(NioConnection(attachment.layer, framing))
+
+  private def deliver(attachment: ReceiveAttachment, message: Array[Byte]): Unit = {
+    val callback = attachment.messageCallback.nn
+    accepCallbackExecutor.execute(() => callback.succeed(ByteBufferMessageBuffer(message)))
+  }
+
+  /** Returns the next protocol state. */
+  private def handleWebsocketFrame(
+      fin: Boolean,
       websocketFrame: WebsocketFrame,
       attachment: ReceiveAttachment,
-      key: SelectionKey | Null,
-      ws: WebSocketState
-  ): ReceiveAttachment = {
+      key: SelectionKey,
+      fragments: Vector[Array[Byte]]
+  ): ProtocolState = {
 
-    val callback       = attachment.messageCallback.nn
-    var fragments      = ws.fragments
-    var fragmentOpcode = ws.fragmentOpcode
-
-    val fin = header.fin
+    def data(bytes: Array[Byte]): ProtocolState =
+      if fin then
+          deliver(attachment, if fragments.isEmpty then bytes else (fragments :+ bytes).toArray.flatten)
+          ProtocolState.WebSocket(Vector.empty)
+      else ProtocolState.WebSocket(fragments :+ bytes)
 
     websocketFrame match {
-      case BinaryFrame(data) =>
-        if fin then accepCallbackExecutor.execute(() => callback.succeed(ByteBufferMessageBuffer(data)))
-        else {
-          fragments = fragments :+ data
-          fragmentOpcode = Some(0x2)
-        }
-
-      case TextFrame(text) =>
-        val data = text.getBytes(java.nio.charset.StandardCharsets.UTF_8)
-        if fin then accepCallbackExecutor.execute(() => callback.succeed(ByteBufferMessageBuffer(data)))
-        else {
-          fragments = fragments :+ data
-          fragmentOpcode = Some(0x1)
-        }
-
-      case ReservedFrame(0x0, data) =>
-        fragments = fragments :+ data
-        if fin then {
-          val complete = fragments.foldLeft(Array.emptyByteArray)(_ ++ _)
-          fragments = Vector.empty
-          fragmentOpcode = None
-          accepCallbackExecutor.execute(() => callback.succeed(ByteBufferMessageBuffer(complete)))
-        }
-
-      case PingFrame(data) =>
-        attachment.layer.write(Array(ByteBuffer.wrap(WebsocketProtocol.encodePongFrame(data))))
-
-      case PongFrame(_) =>
-        ()
-
+      case BinaryFrame(bytes)        => data(bytes)
+      case TextFrame(text)           => data(text.getBytes(java.nio.charset.StandardCharsets.UTF_8))
+      case ReservedFrame(0x0, bytes) => data(bytes)
+      case PingFrame(bytes)          =>
+        attachment.layer.write(Array(ByteBuffer.wrap(WebsocketProtocol.encodePongFrame(bytes))))
+        ProtocolState.WebSocket(fragments)
+      case PongFrame(_) | ReservedFrame(_, _) =>
+        ProtocolState.WebSocket(fragments)
       case CloseFrame(_, _) =>
         try attachment.layer.write(Array(ByteBuffer.wrap(WebsocketProtocol.encodeCloseFrame())))
         catch case NonFatal(_) => ()
-        callback.fail(NoMoreDataException("websocket closed"))
+        attachment.messageCallback.nn.fail(NoMoreDataException("websocket closed"))
         attachment.layer.close()
-        if key != null then {
-          key.cancel()
-          ()
-        }
-
-      case ReservedFrame(_, _) =>
-        ()
+        key.cancel()
+        ProtocolState.Closed
     }
-
-    val updatedWs = ws.copy(fragments = fragments, fragmentOpcode = fragmentOpcode, pendingHeader = None)
-    attachment.copy(protocol = ProtocolState.WebSocket(updatedWs))
   }
 
   private def failKey(key: SelectionKey, ex: Exception): Unit = {
@@ -534,7 +395,8 @@ class NioTCP(accepCallbackExecutor: ExecutionContext = MessagingIO.executeImmedi
     key.attachment() match {
       case attachment: ReceiveAttachment =>
         attachment.layer.failed(ex)
-        if attachment.messageCallback != null then attachment.messageCallback.fail(ex)
+        val callback = attachment.messageCallback
+        if callback != null then callback.fail(ex)
       case _ => ()
     }
   }
