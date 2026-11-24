@@ -51,13 +51,13 @@ object Counters {
   */
 object CounterDemo {
 
-  type Protocol = PolicyBroadcast.Protocol[Counters]
+  type Protocol = PolicyBroadcast[Counters]
 
   final class Replica(val name: String, val identity: PrivateIdentity, policy: BroadcastPolicy[Counters]) {
     val replicaId: ReplicaId = ReplicaId(Uid(identity.getPublic.id))
     val tls: Tls             = Tls(identity)
     val io: MessagingIO[Protocol] =
-      new MessagingIO[Protocol](using PolicyBroadcast.Protocol(identity, policy), PolicyBroadcast.messageCodec[Counters])(
+      new MessagingIO[Protocol](using PolicyBroadcast(identity, policy), PolicyBroadcast.messageCodec[Counters])(
         replicaId,
         PolicyBroadcast.State(Counters()),
         state => println(s"  $name sees $state"),
