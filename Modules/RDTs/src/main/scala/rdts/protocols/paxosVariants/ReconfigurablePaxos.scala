@@ -14,17 +14,17 @@ case class ConfigurationRound[A](
 case class ReconfigurablePaxos[A](
     inner: Epoch[ConfigurationRound[A]] = Epoch(0, ConfigurationRound[A]())
 ):
-    def nextDecision(using Participants): ReconfigurablePaxos[Nothing] =
+    def nextDecision(using Participants): ReconfigurablePaxos[A] =
       precondition(
-        inner.value.nextMembers.decision != Agreement.Undecided &&
+        inner.value.nextMembers.result.isDefined &&
         inner.value.innerConsensus.decision != Agreement.Undecided
       ) {
         ReconfigurablePaxos(Epoch(
           inner.counter + 1,
           ConfigurationRound(
             inner.value.nextMembers.result.get,
-            Paxos(),
-            Paxos()
+            Paxos[Set[Uid]](),
+            Paxos[A]()
           )
         ))
       }

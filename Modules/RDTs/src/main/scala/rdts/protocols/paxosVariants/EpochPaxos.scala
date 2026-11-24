@@ -6,9 +6,9 @@ import rdts.protocols.Util.{Agreement, precondition}
 import rdts.protocols.{Participants, Paxos}
 
 case class EpochPaxos[A](inner: Epoch[Paxos[A]] = Epoch(0, Paxos[A]())):
-    def nextDecision(using Participants): EpochPaxos[Nothing] =
+    def nextDecision(using Participants): EpochPaxos[A] =
       precondition(inner.value.decision != Agreement.Undecided) {
-        EpochPaxos(Epoch(inner.counter + 1, Paxos()))
+        EpochPaxos(Epoch(inner.counter + 1, Paxos[A]()))
       }
 
 object EpochPaxos:
