@@ -3,7 +3,7 @@ package channels.routing.authz
 import channels.MessagingIO
 import AuthzProtocol.identityOf
 import channels.routing.Routing.{Effect, Step, Timer}
-import channels.authz.{AuthzEvent, AuthzReplica}
+import channels.authz.{AuthzEvent, AuthzEventGraph, AuthzReplica}
 import channels.routing.{Plumtree, PlumtreeCore, PlumtreeKnowledge, PlumtreeMessage, Routing}
 import channels.connection.{Peer, PeerConnectInfo}
 import channels.crypto.{Hash, PrivateIdentity, PublicIdentity, Verifier}
@@ -35,7 +35,7 @@ final class AuthzKnowledge[RDT] extends PlumtreeKnowledge {
 
     /** The sender has the event and everything it depends on. */
     override def implied: Set[Hash] =
-      payload.content ++ Try(AuthzReplica.dependencies(readFromArray[AuthzEvent](payload))).getOrElse(Set.empty)
+      payload.content ++ Try(AuthzEventGraph.dependencies(readFromArray[AuthzEvent](payload))).getOrElse(Set.empty)
   }
 
   extension (store: Store) {
