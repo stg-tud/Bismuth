@@ -1,10 +1,11 @@
 package channels.authz
 
 import AuthzEvent.Payload.{Capability, DeltaCommitment, Revocation}
-import channels.crypto.{Hash, PublicIdentity}
+import channels.crypto.{Hash, PrivateIdentity, PublicIdentity}
 import rdts.base.Lattice
 import rdts.filters.PermissionTree
 
+import scala.annotation.tailrec
 import scala.collection.mutable
 
 /** The capabilities and revocations of an [[AuthzDag]]: validates capability use, delegations, and revocations of new
@@ -150,6 +151,44 @@ case class CapabilityPolicy(
       case (capabilityEventHash, capability) if revocations(capabilityEventHash).isEmpty =>
         capabilityEventHash -> capability.write
     }
+
+  /** Delegate a capability derived from `usedCapability` (held by `identity`) to `delegatee`, on top of `dag`.
+    * Only creates the event, adding it is up to the caller.
+    */
+  def delegate(
+      dag: AuthzDag,
+      identity: PrivateIdentity,
+      usedCapability: Hash,
+      delegatee: PublicIdentity,
+      read: PermissionTree,
+      write: PermissionTree
+  ): AuthzEvent = {
+    require(write <= read)
+    dag.events.get(usedCapability) match
+        case Some((AuthzEvent(Capability(holder, readLimit, writeLimit), _, _, _, _), _)) =>
+          require(holder == identity.getPublic)
+          require(read <= readLimit && write <= writeLimit)
+          AuthzEvent.signed(identity, Capability(delegatee, read, write), usedCapability, dag.heads)
+        case _ => throw IllegalArgumentException("Referenced capability event is not a capability")
+  }
+
+  /** Revoke `revokedCapability`, authorized by the closest capability held by `identity` in its authorization chain,
+    * on top of `dag`. Only creates the event, adding it is up to the caller.
+    */
+  def revoke(dag: AuthzDag, identity: PrivateIdentity, revokedCapability: Hash): AuthzEvent = {
+    @tailrec
+    def authorizationFor(authEvent: Hash): Option[Hash] =
+      if authEvent == Hash.allZeroHash then None
+      else
+          dag.events(authEvent)._1 match
+              case AuthzEvent(Capability(holder, _, _), _, _, _, _) if holder == identity.getPublic => Some(authEvent)
+              case AuthzEvent(_, _, _, _, parent) => authorizationFor(parent)
+
+    authorizationFor(revokedCapability) match
+        case Some(authorization) => AuthzEvent.signed(identity, Revocation(revokedCapability), authorization, dag.heads)
+        case None                =>
+          throw IllegalStateException("No capability in authorization chain found to perform revocation")
+  }
 
   def authorizationChain(dag: AuthzDag, capHash: Hash): Seq[Hash] =
     if capHash == dag.genesis then Seq(dag.genesis)

@@ -143,7 +143,7 @@ final case class AuthzReplica[RDT: {Lattice, Bottom, JsonValueCodec, Permits, De
       Local(added.state.receiveDelta(created.event.hash, created.value), local.events ++ added.events)
     }
 
-  /** See [[AuthzAuthoring.delegate]]. */
+  /** See [[CapabilityPolicy.delegate]]. */
   def delegate(
       identity: PrivateIdentity,
       usedCapability: Hash,
@@ -151,11 +151,11 @@ final case class AuthzReplica[RDT: {Lattice, Bottom, JsonValueCodec, Permits, De
       read: PermissionTree,
       write: PermissionTree
   ): Local[RDT] =
-    receiveCreated(AuthzAuthoring.delegate(eventGraph, identity, usedCapability, delegatee, read, write))
+    receiveCreated(eventGraph.policy.delegate(eventGraph.dag, identity, usedCapability, delegatee, read, write))
 
-  /** See [[AuthzAuthoring.revoke]]. */
+  /** See [[CapabilityPolicy.revoke]]. */
   def revoke(identity: PrivateIdentity, revokedCapability: Hash): Local[RDT] =
-    receiveCreated(AuthzAuthoring.revoke(eventGraph, identity, revokedCapability))
+    receiveCreated(eventGraph.policy.revoke(eventGraph.dag, identity, revokedCapability))
 
   /** Accept a (trusted) event out of band, e.g., the genesis event. */
   def receiveLocally(event: AuthzEvent): Local[RDT] = {

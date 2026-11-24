@@ -34,6 +34,17 @@ object AuthzEvent:
       genesisEvent.copy(signature = signature)
     }
 
+    /** An event by `identity`, using `capability`, on top of `parents`, signed by `identity`. */
+    def signed(
+        identity: PrivateIdentity,
+        payload: Payload,
+        capability: Hash,
+        parents: Set[Hash]
+    ): AuthzEvent = {
+      val unsigned = AuthzEvent(payload, identity.getPublic, parents, Signature.allZeroSignature, capability)
+      unsigned.copy(signature = identity.sign(writeToArray(unsigned)))
+    }
+
     enum Payload:
         case DeltaCommitment(commitment: Hash)
         case Capability(holder: PublicIdentity, read: PermissionTree, write: PermissionTree)
