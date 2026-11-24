@@ -1,6 +1,6 @@
 package channels.authz
 
-import AuthzEvent.Payload.{Capability, DeltaCommitment}
+import AuthzEvent.Payload.DeltaCommitment
 import channels.crypto.Commitment.RevealedValue
 import channels.crypto.{Hash, PublicIdentity}
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray}
@@ -60,13 +60,7 @@ object Authorization {
       delta: T,
       eventGraph: AuthzEventGraph
   ): Boolean =
-    eventGraph.capabilities(replicaId)
-      .exists((capabilityEventHash, capability) =>
-        Permits[T].isAllowed(delta, capability.read) &&
-        eventGraph
-          .revocations(capabilityEventHash)
-          .forall(revocation => !eventGraph.causallyBefore(revocation, deltaEventHash))
-      )
+    eventGraph.policy.readTrees(eventGraph.dag, replicaId, deltaEventHash).exists(Permits[T].isAllowed(delta, _))
 
   def mayWrite[T: {JsonValueCodec, Permits}](
       eventGraph: AuthzEventGraph,
@@ -97,13 +91,5 @@ object Authorization {
       deltaEvent: AuthzEvent,
       delta: T
   ): Boolean =
-    // Delegation & revocation validity and validity of capability use are invariants of eventgraph, thus not checked here
-    eventGraph.events(deltaEvent.authorization)._1.payload match {
-      case Capability(_, _, write) =>
-        Permits[T].isAllowed(delta, write)
-        && eventGraph // All revocations for cap must be causally after deltaEvent
-          .revocations(deltaEvent.authorization)
-          .forall(revocation => eventGraph.causallyBefore(deltaEventHash, revocation))
-      case _ => false
-    }
+    eventGraph.policy.writeTree(eventGraph.dag, deltaEventHash, deltaEvent).exists(Permits[T].isAllowed(delta, _))
 }

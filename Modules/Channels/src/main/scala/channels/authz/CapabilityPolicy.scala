@@ -122,6 +122,35 @@ case class CapabilityPolicy(
     }
   }
 
+  /** The write permissions of the capability `deltaEvent` uses, unless a revocation of it is not causally after
+    * `deltaEvent`. None if the authorization is not a capability.
+    */
+  def writeTree(dag: AuthzDag, deltaEventHash: Hash, deltaEvent: AuthzEvent): Option[PermissionTree] =
+    // Delegation & revocation validity and validity of capability use are invariants of the graph, thus not checked here
+    dag.events(deltaEvent.authorization)._1.payload match {
+      case Capability(_, _, write)
+          if revocations(deltaEvent.authorization).forall(revocation =>
+            dag.causallyBefore(deltaEventHash, revocation)
+          ) => Some(write)
+      case _ => None
+    }
+
+  /** The read permissions of the capabilities of `reader` that are not revoked causally before `deltaEventHash`. */
+  def readTrees(dag: AuthzDag, reader: PublicIdentity, deltaEventHash: Hash): Iterator[PermissionTree] =
+    capabilities(reader).iterator.collect {
+      case (capabilityEventHash, capability)
+          if revocations(capabilityEventHash).forall(revocation =>
+            !dag.causallyBefore(revocation, deltaEventHash)
+          ) => capability.read
+    }
+
+  /** The write permissions of the unrevoked capabilities of `writer`, by capability event. */
+  def writeTrees(writer: PublicIdentity): Iterator[(Hash, PermissionTree)] =
+    capabilities(writer).iterator.collect {
+      case (capabilityEventHash, capability) if revocations(capabilityEventHash).isEmpty =>
+        capabilityEventHash -> capability.write
+    }
+
   def authorizationChain(dag: AuthzDag, capHash: Hash): Seq[Hash] =
     if capHash == dag.genesis then Seq(dag.genesis)
     else capHash +: authorizationChain(dag, dag.events(capHash)._1.authorization) // assumes that chain is in local event graph

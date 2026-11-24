@@ -18,9 +18,7 @@ object AuthzAuthoring {
 
   /** An active capability of `identity` that allows writing `delta`. */
   def writeCapability[RDT: Permits](graph: AuthzEventGraph, identity: PublicIdentity, delta: RDT): Hash =
-    graph.capabilities(identity).find { (hash, capability) =>
-      Permits[RDT].isAllowed(delta, capability.write) && graph.revocations(hash).isEmpty
-    } match
+    graph.policy.writeTrees(identity).find((_, write) => Permits[RDT].isAllowed(delta, write)) match
         case Some((hash, _)) => hash
         case None            => throw IllegalArgumentException(s"Insufficient permissions for mutation: $delta")
 
