@@ -1,6 +1,6 @@
 package test.rdts.protocols
 
-import rdts.base.{Lattice, LocalUid, Uid}
+import rdts.base.{Lattice, ReplicaId, Uid}
 import rdts.protocols.{BallotNum, MultiPaxos, Participants, Paxos}
 
 import scala.collection.mutable
@@ -19,14 +19,14 @@ class MultiPaxosAgreementTest extends munit.FunSuite {
   type S = MultiPaxos[Boolean]
   val names: List[String]     = List("A", "B", "C", "D", "E")
   given Participants          = Participants(names.map(Uid.predefined).toSet)
-  def lid(n: String): LocalUid = LocalUid.predefined(n)
+  def lid(n: String): ReplicaId = ReplicaId.predefined(n)
 
   /** Runs the trace and returns the final state of every replica. */
   def runTrace(): Map[String, S] = {
     val st: mutable.Map[String, S] = mutable.LinkedHashMap.from(names.map(_ -> MultiPaxos[Boolean]()))
     def merge(x: String, y: String): Unit = st(x) = Lattice.merge(st(x), st(y))
-    def doOp(x: String)(op: LocalUid ?=> S => S): Unit =
-      given LocalUid = lid(x)
+    def doOp(x: String)(op: ReplicaId ?=> S => S): Unit =
+      given ReplicaId = lid(x)
       st(x) = Lattice.merge(st(x), op(st(x)))
     def startLE(x: String): Unit             = doOp(x)(_.startLeaderElection)
     def propose(x: String, v: Boolean): Unit = doOp(x)(_.proposeIfLeader(v))

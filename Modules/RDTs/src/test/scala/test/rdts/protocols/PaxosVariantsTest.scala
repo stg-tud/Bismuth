@@ -2,7 +2,7 @@ package test.rdts.protocols
 
 import rdts.base.{Lattice, Uid}
 import rdts.datatypes.Epoch
-import rdts.protocols.paxosVariants.{ConfigurationRound, EpochPaxos, GenPaxos, ReconfigurablePaxos}
+import rdts.protocols.paxosVariants.{ConfigurationRound, GenPaxos, ReconfigurablePaxos}
 import rdts.protocols.{BallotNum, Participants, Paxos, PaxosRound, Vote, Voting}
 import rdts.protocols.Util.Agreement
 
@@ -25,7 +25,7 @@ class PaxosVariantsTest extends munit.FunSuite {
   // `Paxos()` in `nextDecision` is inferred as `Paxos[Nothing]` and the case classes are
   // invariant, so the result of nextDecision cannot be merged into the state it came from.
   test("nextDecision has the type of its state") {
-    assertNoDiff(compileErrors("(EpochPaxos[Boolean]().nextDecision: EpochPaxos[Boolean])"), "")
+    assertNoDiff(compileErrors("(rdts.protocols.paxosVariants.EpochPaxos[Boolean]().nextDecision: rdts.protocols.paxosVariants.EpochPaxos[Boolean])"), "")
     assertNoDiff(compileErrors("(GenPaxos[Boolean]().nextDecision(Set.empty): GenPaxos[Boolean])"), "")
     assertNoDiff(compileErrors("(ReconfigurablePaxos[Boolean]().nextDecision: ReconfigurablePaxos[Boolean])"), "")
   }

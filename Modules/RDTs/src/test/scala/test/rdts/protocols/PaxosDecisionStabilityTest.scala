@@ -1,10 +1,9 @@
 package test.rdts.protocols
 
-import rdts.base.{Lattice, LocalUid, Uid}
+import rdts.base.{Lattice, ReplicaId, Uid}
 import rdts.protocols.{Participants, Paxos}
 import rdts.protocols.Util.Agreement
 
-import scala.collection.immutable.ListMap
 import scala.collection.mutable
 
 /** Stability of the single-decree Paxos decision: once a replica has decided, its decision
@@ -22,13 +21,13 @@ class PaxosDecisionStabilityTest extends munit.FunSuite {
   type S = Paxos[Boolean]
   val names: List[String]      = List("A", "B", "C")
   given Participants           = Participants(names.map(Uid.predefined).toSet)
-  def lid(n: String): LocalUid = LocalUid.predefined(n)
+  def lid(n: String): ReplicaId = ReplicaId.predefined(n)
 
   class Run {
     val st: mutable.Map[String, S] = mutable.LinkedHashMap.from(names.map(_ -> Paxos[Boolean]()))
     def merge(x: String, y: String): Unit = st(x) = Lattice.merge(st(x), st(y))
-    def doOp(x: String)(op: LocalUid ?=> S => S): Unit =
-      given LocalUid = lid(x)
+    def doOp(x: String)(op: ReplicaId ?=> S => S): Unit =
+      given ReplicaId = lid(x)
       st(x) = Lattice.merge(st(x), op(st(x)))
   }
 
