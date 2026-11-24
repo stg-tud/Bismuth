@@ -1,8 +1,11 @@
 package ex2026policyBroadcast
 
-import channels.JsoniterCodecs.given
 import channels.MessagingIO
-import channels.connection.{LocalMessageQueue, Peer, QueuedLocalConnection}
+import channels.connection.tls.Tls
+import channels.connection.{LocalMessageQueue, Peer, PeerConnectInfo, QueuedLocalConnection}
+import channels.overlay.FullMeshOverlay
+import channels.crypto.Ed25519.given
+import channels.crypto.{IdentityFactory, PrivateIdentity, PublicIdentity}
 import PolicyBroadcast.mutate
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
@@ -16,93 +19,116 @@ case class Counters(a: GrowOnlyCounter = GrowOnlyCounter.zero, b: GrowOnlyCounte
 }
 
 object Counters {
-  given JsonValueCodec[Counters] = JsonCodecMaker.make
+  given JsonValueCodec[Counters] = {
+    import channels.JsoniterCodecs.given
+    JsonCodecMaker.make
+  }
 
-  val A: Uid = Uid.predefined("A")
-  val B: Uid = Uid.predefined("B")
-  val C: Uid = Uid.predefined("C")
+  private def untouched(counter: GrowOnlyCounter) = Bottom[GrowOnlyCounter].isEmpty(counter)
 
-  /** A may only read and write counter a, B only counter b. C may read both, but write neither. */
-  val policy: BroadcastPolicy[Counters] = new BroadcastPolicy[Counters] {
-    private def untouched(counter: GrowOnlyCounter) = Bottom[GrowOnlyCounter].isEmpty(counter)
-
+  /** `a` may only read and write counter a, `b` only counter b. Everyone else may read both, but write neither.
+    * Only authenticated peers may read anything.
+    */
+  def policy(a: PublicIdentity, b: PublicIdentity): BroadcastPolicy[Counters] = new BroadcastPolicy[Counters] {
     def mayRead(state: Counters, reader: Peer, delta: Counters): Boolean =
-      reader.uid match
-          case A => untouched(delta.b)
-          case B => untouched(delta.a)
-          case _ => true
+      reader.isAuthenticated && (Uid.unwrap(reader.uid) match
+          case a.id => untouched(delta.b)
+          case b.id => untouched(delta.a)
+          case _    => true
+      )
 
-    def mayWrite(state: Counters, writer: Peer, delta: Counters): Boolean =
-      writer.uid match
-          case A => untouched(delta.b)
-          case B => untouched(delta.a)
-          case _ => untouched(delta.a) && untouched(delta.b)
+    def mayWrite(state: Counters, author: PublicIdentity, delta: Counters): Boolean =
+      author match
+          case `a` => untouched(delta.b)
+          case `b` => untouched(delta.a)
+          case _   => untouched(delta.a) && untouched(delta.b)
   }
 }
 
-/** Three replicas A, B, C in a full mesh over local connections, replicating [[Counters]] with [[PolicyBroadcast]]. */
+/** Replicas A and B write their own counter, C and D read both, with [[PolicyBroadcast]] over mutually
+  * authenticated TLS on top of local connections. Replicas are identified by their public keys, which TLS
+  * authenticates, deltas are signed by their author.
+  */
 object CounterDemo {
-  import Counters.*
 
   type Protocol = PolicyBroadcast.Protocol[Counters]
+
+  final class Replica(val name: String, val identity: PrivateIdentity, policy: BroadcastPolicy[Counters]) {
+    val replicaId: ReplicaId = ReplicaId(Uid(identity.getPublic.id))
+    val tls: Tls             = Tls(identity)
+    val io: MessagingIO[Protocol] =
+      new MessagingIO[Protocol](using PolicyBroadcast.Protocol(identity, policy), PolicyBroadcast.messageCodec[Counters])(
+        replicaId,
+        PolicyBroadcast.State(Counters()),
+        state => println(s"  $name sees $state"),
+        // identify as authenticated, so only authenticated connections are used
+        MessagingIO.Config(overlay =
+          Some(FullMeshOverlay(PeerConnectInfo(Peer.Authenticated(replicaId.uid), Set.empty)))
+        )
+      )
+    def state: Counters = io.state.value
+
+    /** Accept TLS connections. */
+    def listen(queue: LocalMessageQueue): QueuedLocalConnection =
+        val link = QueuedLocalConnection(name, queue)
+        io.addServerConnection(tls.listen(link.server))
+        link
+
+    def connect(server: QueuedLocalConnection): Unit = io.addClientConnection(tls.connect(server.client(name)))
+  }
 
   def main(args: Array[String]): Unit = {
     val queue = LocalMessageQueue()
 
-    def replica(id: Uid): MessagingIO[Protocol] =
-      new MessagingIO[Protocol](using PolicyBroadcast.Protocol(policy), PolicyBroadcast.messageCodec[Counters])(
-        ReplicaId(id),
-        PolicyBroadcast.State(Counters()),
-        state => println(s"  ${Uid.unwrap(id)} sees $state")
-      )
+    val idA    = IdentityFactory.createNewIdentity
+    val idB    = IdentityFactory.createNewIdentity
+    val policy = Counters.policy(idA.getPublic, idB.getPublic)
 
-    val a = replica(A)
-    val b = replica(B)
-    val c = replica(C)
+    val a = Replica("A", idA, policy)
+    val b = Replica("B", idB, policy)
+    val c = Replica("C", IdentityFactory.createNewIdentity, policy)
+    val d = Replica("D", IdentityFactory.createNewIdentity, policy)
 
     def settle(): Unit = while queue.nonEmpty do { queue.deliverAll(); () }
 
-    def show(): Unit =
-      List("A" -> a, "B" -> b, "C" -> c).foreach((name, io) => println(s"  $name: ${io.state.value}"))
+    def show(): Unit = List(a, b, c, d).foreach(r => println(s"  ${r.name}: ${r.state}"))
 
-    def write(name: String, io: MessagingIO[Protocol], mutator: Counters => Counters): Unit =
-        println(s"$name writes")
-        try io.mutate(mutator)
+    def write(replica: Replica)(mutator: ReplicaId ?=> Counters => Counters): Unit =
+        println(s"${replica.name} writes")
+        try replica.io.mutate(mutator(using replica.replicaId))
         catch case e: IllegalArgumentException => println(s"  rejected: ${e.getMessage}")
         settle()
 
-    // A writes before anyone is connected, the others get it on connect
-    given ReplicaId = ReplicaId(A)
-    write("A", a, s => Counters(a = s.a.inc()))
+    def connect(client: Replica, server: QueuedLocalConnection): Unit =
+        client.connect(server)
+        settle()
 
-    val linkA = QueuedLocalConnection("A", queue)
-    val linkC = QueuedLocalConnection("C", queue)
-    a.addServerConnection(linkA.server)
-    c.addServerConnection(linkC.server)
+    val linkA = a.listen(queue)
+    val linkB = b.listen(queue)
+    val linkC = c.listen(queue)
 
-    println("connecting C to A")
-    c.addClientConnection(linkA.client("C"))
-    settle()
-    println("connecting B to C, B does not learn A's write from C")
-    b.addClientConnection(linkC.client("B"))
-    settle()
-    show()
+    write(a)(s => Counters(a = s.a.inc()))
+    write(b)(s => Counters(b = s.b.inc()))
 
-    write("B", b, s => Counters(b = s.b.inc()(using ReplicaId(B))))
-    println("no forwarding: C knows B's write, but A does not")
-    show()
-
+    println("connecting C to A and B")
+    connect(c, linkA)
+    connect(c, linkB)
+    println("connecting D to C only, D gets the signed writes of A and B through C")
+    connect(d, linkC)
     println("connecting B to A, neither may read the other")
-    b.addClientConnection(linkA.client("B"))
-    settle()
-    write("A", a, s => Counters(a = s.a.add(2)))
+    connect(b, linkA)
+    show()
+
+    write(a)(s => Counters(a = s.a.add(2)))
+    println("no forwarding: D does not get A's new write")
     show()
 
     println("B tries to write counter a")
-    write("B", b, s => Counters(a = s.a.inc()(using ReplicaId(B))))
+    write(b)(s => Counters(a = s.a.inc()))
     println("C tries to write counter b")
-    write("C", c, s => Counters(b = s.b.inc()(using ReplicaId(C))))
+    write(c)(s => Counters(b = s.b.inc()))
     show()
-    List(a, b, c).foreach(_.globalAbort.closeRequest = true)
+
+    List(a, b, c, d).foreach(_.io.globalAbort.closeRequest = true)
   }
 }
