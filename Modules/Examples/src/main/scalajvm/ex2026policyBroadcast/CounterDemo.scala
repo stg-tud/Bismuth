@@ -30,14 +30,14 @@ object Counters {
     * Only authenticated peers may read anything.
     */
   def policy(a: PublicIdentity, b: PublicIdentity): BroadcastPolicy[Counters] = new BroadcastPolicy[Counters] {
-    def mayRead(state: Counters, reader: Peer, delta: Counters): Boolean =
+    def mayRead(reader: Peer, delta: Counters): Boolean =
       reader.isAuthenticated && (Uid.unwrap(reader.uid) match
           case a.id => untouched(delta.b)
           case b.id => untouched(delta.a)
           case _    => true
       )
 
-    def mayWrite(state: Counters, author: PublicIdentity, delta: Counters): Boolean =
+    def mayWrite(author: PublicIdentity, delta: Counters): Boolean =
       author match
           case `a` => untouched(delta.b)
           case `b` => untouched(delta.a)
