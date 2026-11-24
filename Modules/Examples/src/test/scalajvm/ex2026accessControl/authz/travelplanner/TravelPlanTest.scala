@@ -3,7 +3,8 @@ package ex2026accessControl.authz.travelplanner
 import ex2026accessControl.authz.travelplanner.TravelPlan
 import munit.FunSuite
 import rdts.base.{ReplicaId, Uid}
-import rdts.filters.{Filter, PermissionTree}
+import ex2026filtering.Filter
+import rdts.filters.PermissionTree
 
 class TravelPlanTest extends FunSuite {
   given uid: ReplicaId             = ReplicaId(Uid.gen())

@@ -1,13 +1,14 @@
-package rdts.filters
+package ex2026filtering
 
 import rdts.base.Bottom
 import rdts.filters.Permission.{ALLOW, PARTIAL}
+import rdts.filters.PermissionTree
 import rdts.filters.PermitsDerivation.{ProductTypePermits, SumTypePermits, TerminalPermits}
 
 import scala.annotation.unused
 import scala.deriving.Mirror
 
-/** Extends the derived [[Permits]] instances from [[PermitsDerivation]] with [[Filter.filter]]. */
+/** Extends the derived [[rdts.filters.Permits]] instances from [[rdts.filters.PermitsDerivation]] with [[Filter.filter]]. */
 object FilterDerivation {
 
   class ProductTypeFilter[T](

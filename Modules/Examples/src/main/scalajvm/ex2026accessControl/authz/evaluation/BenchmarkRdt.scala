@@ -5,7 +5,7 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import ex2026accessControl.authz.evaluation.BenchmarkRdt.given
 import rdts.base.{Bottom, Decompose, Lattice, ReplicaId}
 import rdts.datatypes.{GrowOnlyCounter, PosNegCounter}
-import rdts.filters.Filter
+import ex2026filtering.Filter
 
 case class BenchmarkRdt(
     a: NestedCounters = Bottom.empty,

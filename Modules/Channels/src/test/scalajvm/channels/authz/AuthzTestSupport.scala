@@ -8,13 +8,13 @@ import channels.crypto.Ed25519.given
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
-import rdts.filters.{Filter, PermissionTree}
+import rdts.filters.{Permits, PermissionTree}
 
 import java.security.{KeyPair, PrivateKey}
 
 object AuthzTestSupport extends munit.Assertions {
   given JsonValueCodec[Set[Int]] = JsonCodecMaker.make
-  given Filter[Set[Int]]         = Filter.terminalSetFilter[Int]
+  given Permits[Set[Int]]        = Permits.terminalSetPermits[Int]
 
   def newIdentity(): (PublicIdentity, PrivateKey) = {
     val keyPair: KeyPair = Ed25519Util.generateNewKeyPair

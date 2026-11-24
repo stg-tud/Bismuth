@@ -6,7 +6,7 @@ import ex2026accessControl.authz.permission_pane.SelectorFactory
 import ex2026accessControl.authz.travelplanner.TravelPlan.{*, given}
 import rdts.base.{Bottom, Decompose, Lattice, ReplicaId}
 import rdts.datatypes.{DotRemoveMap, LastWriterWins}
-import rdts.filters.Filter
+import ex2026filtering.Filter
 import rdts.syntax.deltalens.*
 import rdts.time.Dot
 

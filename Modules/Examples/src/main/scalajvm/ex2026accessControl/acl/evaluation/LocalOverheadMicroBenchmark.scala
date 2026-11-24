@@ -9,7 +9,8 @@ import ex2026accessControl.authz.travelplanner.TravelPlan
 import org.openjdk.jmh.annotations.*
 import rdts.base.Lattice.syntax.merge
 import rdts.base.{ReplicaId, Uid}
-import rdts.filters.{Filter, PermissionTree}
+import ex2026filtering.Filter
+import rdts.filters.PermissionTree
 import rdts.time.Dot
 
 import java.util.concurrent.TimeUnit
