@@ -10,7 +10,7 @@ import channels.crypto.{Hash, PrivateIdentity, PublicIdentity, Verifier}
 import channels.overlay.FullMeshOverlay
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray}
 import rdts.base.{Bottom, Decompose, Lattice, ReplicaId, Uid}
-import rdts.filters.{Filter, PermissionTree}
+import rdts.filters.{Permits, PermissionTree}
 
 import scala.util.Try
 
@@ -176,7 +176,7 @@ object AuthzProtocol {
       case Peer.Claimed(_)         => None
 
   /** A replica that only knows the hash of the genesis event; it learns the event itself from its peers. */
-  def initial[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](self: PublicIdentity, genesis: Hash)(using
+  def initial[RDT: {Lattice, Bottom, JsonValueCodec, Permits, Decompose}](self: PublicIdentity, genesis: Hash)(using
       Verifier
   ): PlumtreeCore[AuthzStore[RDT]] =
     PlumtreeCore(AuthzStore(AuthzReplica.initial[RDT](self, genesis)))
@@ -185,7 +185,7 @@ object AuthzProtocol {
     * Its overlay identifies itself as [[channels.connection.Peer.Authenticated]], so it only talks to peers over authenticated connections
     * (e.g., `channels.connection.tls.Tls`), whose identity is the one capabilities are granted to.
     */
-  def messagingIO[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
+  def messagingIO[RDT: {Lattice, Bottom, JsonValueCodec, Permits, Decompose}](
       identity: PrivateIdentity,
       genesis: Hash,
       onStateChange: RDT => Unit,

@@ -11,13 +11,13 @@ import ex2026accessControl.acl.sync.AclEnforcingSync.{SyncMsg, encoder}
 import ex2026accessControl.acl.{Acl, BftDelta}
 import ex2026accessControl.authz.evaluation.ConnectionManager
 import rdts.base.{Bottom, Decompose, Lattice}
-import rdts.filters.{Filter, PermissionTree}
+import rdts.filters.{Permits, PermissionTree}
 import rdts.time.Dots
 
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicReference
 
-class AclEnforcingSync[State: {JsonValueCodec, Bottom, Decompose, Lattice, Filter}](
+class AclEnforcingSync[State: {JsonValueCodec, Bottom, Decompose, Lattice, Permits}](
     localIdentity: PrivateIdentity,
     connectionManagerProvider: (PrivateIdentity, MessageReceiver[MessageBuffer]) => ConnectionManager =
       (id, receiver) => ChannelConnectionManager(id, receiver),

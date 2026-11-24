@@ -2,56 +2,13 @@ package rdts.filters
 
 import rdts.base.Bottom
 import rdts.filters.Permission.{ALLOW, PARTIAL}
-import rdts.filters.PermissionTree.allow
+import rdts.filters.PermitsDerivation.{ProductTypePermits, SumTypePermits, TerminalPermits}
 
 import scala.annotation.unused
 import scala.deriving.Mirror
 
+/** Extends the derived [[Permits]] instances from [[PermitsDerivation]] with [[Filter.filter]]. */
 object FilterDerivation {
-
-  abstract protected class AlgebraicFilter[T](
-      elementLabels: Map[String, Int],
-      elementFilters: IArray[Filter[Any]],
-  ) extends Filter[T] {
-
-    /** Checks whether all children labels are the field/type names of this product and validates the filters for the children.
-      *
-      * @param permissionTree The tree to check
-      */
-    override def validatePermissionTree(permissionTree: PermissionTree): Unit =
-      permissionTree.children.foreach { case (factorLabel, childPermissionTree) =>
-        elementLabels.get(factorLabel) match
-            case Some(factorIdx) =>
-              try
-                elementFilters(factorIdx).validatePermissionTree(childPermissionTree)
-              catch {
-                case InvalidPathException(path) => throw InvalidPathException(factorLabel :: path)
-              }
-            case None if factorLabel == "*" =>
-              try
-                elementFilters.foreach(_.validatePermissionTree(childPermissionTree))
-              catch {
-                case InvalidPathException(labels) => throw InvalidPathException("*" :: labels)
-              }
-            case None => throw InvalidPathException(List(factorLabel))
-      }
-
-    // Assumes a valid permission tree
-    override def minimizePermissionTree(permissionTree: PermissionTree): PermissionTree = {
-      if permissionTree.permission == ALLOW then return allow
-
-      val minimizedChildren = permissionTree.children.map { (label, subtree) =>
-        val idx                            = elementLabels(label)
-        val filter                         = elementFilters(idx)
-        val minimizedChild: PermissionTree = filter.minimizePermissionTree(subtree)
-        label -> minimizedChild
-      }
-
-      if minimizedChildren.size == elementFilters.size && minimizedChildren.forall(_._2.permission == ALLOW)
-      then allow
-      else PermissionTree(PARTIAL, minimizedChildren)
-    }
-  }
 
   class ProductTypeFilter[T](
       pm: Mirror.ProductOf[T],
@@ -59,7 +16,7 @@ object FilterDerivation {
       factorLabels: Array[String],
       factorBottoms: IArray[Bottom[Any]], // The Bottom TypeClass instance for each factor
       factorFilters: IArray[Filter[Any]]  // The Filter TypeClass instance for each factor
-  ) extends AlgebraicFilter[T](factorLabels.zipWithIndex.toMap, factorFilters):
+  ) extends ProductTypePermits[T](productBottom, factorLabels, factorBottoms, factorFilters), Filter[T]:
       override def filter(delta: T, permissionTree: PermissionTree): T =
         permissionTree match
             case PermissionTree(ALLOW, _)                              => delta
@@ -94,37 +51,13 @@ object FilterDerivation {
                       val permissions = permissionTree.children.getOrElse(label, wildcard)
                       factorFilters(factorIndex).filter(factor, permissions)
 
-      override def isAllowed(delta: T, permissionTree: PermissionTree): Boolean = {
-        if permissionTree.permission == ALLOW then return true
-        if permissionTree.children.isEmpty then return productBottom.isEmpty(delta)
-        val product = delta.asInstanceOf[Product]
-        permissionTree.children.get("*") match {
-          case None => factorFilters.indices.forall(idx =>
-                val element = product.productElement(idx)
-                factorBottoms(idx).isEmpty(element) || (permissionTree.children.get(factorLabels(idx)) match {
-                  case Some(childPermission) => factorFilters(idx).isAllowed(element, childPermission)
-                  case None                  => false
-                })
-            )
-          // Need to merge wildcard permission into specific permission
-          case Some(wildcard) => factorLabels.indices.forall(idx =>
-                val element = product.productElement(idx)
-                factorBottoms(idx).isEmpty(element) || (permissionTree.children.get(factorLabels(idx)) match {
-                  case Some(child) => factorFilters(idx).isAllowed(element, child.merge(wildcard))
-                  case None        => factorFilters(idx).isAllowed(element, wildcard)
-                })
-            )
-
-        }
-      }
-
   class SumTypeFilter[T](
       sm: Mirror.SumOf[T],
       bottom: Bottom[T],                           // The bottom of the sum
       elementNames: Array[String],                 // The names of the types
       @unused elementBottoms: IArray[Bottom[Any]], // The Bottom TypeClass instance for each element
       elementFilters: IArray[Filter[Any]]          // The Filter TypeClass instance for each element
-  ) extends AlgebraicFilter[T](elementNames.zipWithIndex.toMap, elementFilters):
+  ) extends SumTypePermits[T](sm, bottom, elementNames, elementFilters), Filter[T]:
       override def filter(delta: T, permission: PermissionTree): T =
         permission match
             case PermissionTree(ALLOW, _)                              => delta
@@ -138,32 +71,9 @@ object FilterDerivation {
                   case childPerm @ PermissionTree(PARTIAL, children)         =>
                     elementFilters(ordinal).filter(delta, childPerm).asInstanceOf[T]
 
-      override def isAllowed(delta: T, permissionTree: PermissionTree): Boolean = permissionTree match {
-        case PermissionTree(ALLOW, _)                              => true
-        case PermissionTree(PARTIAL, children) if children.isEmpty => bottom.isEmpty(delta)
-        case PermissionTree(PARTIAL, children)                     =>
-          val ordinal     = sm.ordinal(delta)
-          val elementName = elementNames(ordinal)
-          val wildcard    = children.getOrElse("*", PermissionTree.empty)
-          children.getOrElse(elementName, PermissionTree.empty).merge(wildcard) match
-              case PermissionTree(ALLOW, _)                              => true
-              case PermissionTree(PARTIAL, children) if children.isEmpty => bottom.isEmpty(delta)
-              case childPerm @ PermissionTree(PARTIAL, children)         =>
-                elementFilters(ordinal).isAllowed(delta, childPerm)
-      }
-
-  class TerminalFilter[T: Bottom] extends Filter[T]:
+  class TerminalFilter[T: Bottom] extends TerminalPermits[T], Filter[T]:
       override def filter(delta: T, permission: PermissionTree): T =
         permission match
             case PermissionTree(ALLOW, _)   => delta
             case PermissionTree(PARTIAL, _) => Bottom[T].empty
-      override def isAllowed(delta: T, permissionTree: PermissionTree): Boolean =
-        permissionTree.permission == ALLOW || Bottom[T].isEmpty(delta)
-      override def validatePermissionTree(permissionTree: PermissionTree): Unit =
-        require(permissionTree.children.isEmpty)
-      override def minimizePermissionTree(permissionTree: PermissionTree): PermissionTree =
-        permissionTree match
-            case PermissionTree(ALLOW, _)   => PermissionTree.allow
-            case PermissionTree(PARTIAL, _) => PermissionTree.empty
-
 }

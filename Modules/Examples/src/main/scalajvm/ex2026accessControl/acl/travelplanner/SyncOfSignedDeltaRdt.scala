@@ -8,7 +8,7 @@ import ex2026accessControl.acl.{Acl, BftDelta}
 import ex2026accessControl.authz.evaluation.ConnectionManager
 import ex2026accessControl.authz.travelplanner.{Invitation, Sync}
 import rdts.base.{Bottom, Decompose, Lattice}
-import rdts.filters.{Filter, PermissionTree}
+import rdts.filters.{Permits, PermissionTree}
 import rdts.time.Dots
 
 class SyncOfSignedDeltaRdt[State](
@@ -20,7 +20,7 @@ class SyncOfSignedDeltaRdt[State](
     Lattice[State],
     Bottom[State],
     JsonValueCodec[State],
-    Filter[State],
+    Permits[State],
     Decompose[State]
 ) extends Sync[State] {
 

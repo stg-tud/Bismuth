@@ -5,13 +5,13 @@ import ex2026accessControl.acl.Acl
 import ex2026accessControl.acl.HashDag.Encoder
 import ex2026accessControl.acl.sync.SynchronizedMutableArrayDeltaStore
 import rdts.base.{Bottom, Decompose, Lattice, Uid}
-import rdts.filters.{Filter, PermissionTree}
+import rdts.filters.{Permits, PermissionTree}
 import rdts.time.{Dot, Dots}
 
 import java.util.concurrent.atomic.{AtomicInteger, AtomicLong, AtomicReference}
 import scala.annotation.unused
 
-class FilteredRdtAntiEntropy[State: {Decompose, Lattice, Bottom, Filter}](
+class FilteredRdtAntiEntropy[State: {Decompose, Lattice, Bottom, Permits}](
     private val localIdentity: PrivateIdentity,
     onRdtChange: (Dots, State) => Unit,
     private val network: AntiEntropyCommunicator[State],
@@ -34,7 +34,7 @@ class FilteredRdtAntiEntropy[State: {Decompose, Lattice, Bottom, Filter}](
     val (aclVersion, acl)        = aclAntiEntropy.currentAcl
     val localWritePermission     = acl.write.getOrElse(localIdentity.getPublic, PermissionTree.empty)
     val decomposedVerifiedDeltas = delta.decomposed
-      .filter(delta => Filter[State].isAllowed(delta, localWritePermission)) // Enforce local write permissions
+      .filter(delta => Permits[State].isAllowed(delta, localWritePermission)) // Enforce local write permissions
       .map(d => SignedDelta.fromDelta(localIdentity, Dot(localUid, dotCounter.getAndIncrement()), d))
       .toSeq
 
@@ -68,7 +68,7 @@ class FilteredRdtAntiEntropy[State: {Decompose, Lattice, Bottom, Filter}](
     val (aclVersion, acl)         = aclAntiEntropy.currentAcl
     val receiverReadPermission    = acl.read.getOrElse(remote, PermissionTree.empty)
     val (allowedDeltas, filtered) =
-      deltas.partition(delta => Filter[State].isAllowed(delta.payload, receiverReadPermission))
+      deltas.partition(delta => Permits[State].isAllowed(delta.payload, receiverReadPermission))
     network.sendDeltas(allowedDeltas.toSeq, Dots.from(filtered.map(_.dot)), aclVersion, remote)
   }
 
@@ -104,7 +104,7 @@ class FilteredRdtAntiEntropy[State: {Decompose, Lattice, Bottom, Filter}](
       .filterNot(delta => deltaStore.dots.contains(delta.dot)) // Ignore known deltas
       .filter(delta =>
         delta.isSignatureValid
-        && Filter[State].isAllowed(
+        && Permits[State].isAllowed(
           delta.payload,
           localAcl.write.getOrElse(PublicIdentity(delta.dot.place.delegate), PermissionTree.empty)
         )

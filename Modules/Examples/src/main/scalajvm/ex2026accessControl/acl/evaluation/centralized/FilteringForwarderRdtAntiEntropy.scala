@@ -5,10 +5,10 @@ import ex2026accessControl.acl.Debug
 import ex2026accessControl.acl.HashDag.Encoder
 import ex2026accessControl.acl.sync.{AclAntiEntropy, AntiEntropyCommunicator, FilteredRdtAntiEntropy, SignedDelta}
 import rdts.base.{Bottom, Decompose, Lattice}
-import rdts.filters.Filter
+import rdts.filters.Permits
 import rdts.time.Dots
 
-class FilteringForwarderRdtAntiEntropy[State: {Decompose, Lattice, Bottom, Filter}](
+class FilteringForwarderRdtAntiEntropy[State: {Decompose, Lattice, Bottom, Permits}](
     localIdentity: PrivateIdentity,
     network: AntiEntropyCommunicator[State],
     aclAntiEntropy: AclAntiEntropy,

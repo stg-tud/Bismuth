@@ -11,14 +11,14 @@ import channels.authz.AuthzEvent
 import channels.routing.authz.AuthzProtocol
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import rdts.base.{Bottom, Decompose, Lattice}
-import rdts.filters.{Filter, PermissionTree}
+import rdts.filters.{Permits, PermissionTree}
 
 import java.net.{InetAddress, InetSocketAddress}
 
 /** [[Sync]] via the [[channels.routing.authz.AuthzProtocol]] over mutually authenticated TLS. Peers learn about each other's addresses
   * through the full mesh overlay, and connect to all of them.
   */
-class SyncImpl[State: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
+class SyncImpl[State: {Lattice, Bottom, JsonValueCodec, Permits, Decompose}](
     private val localIdentity: PrivateIdentity,
     genesis: Hash,
     genesisEvent: Option[AuthzEvent] = None,

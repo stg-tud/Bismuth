@@ -5,13 +5,13 @@ import channels.crypto.Commitment.RevealedValue
 import channels.crypto.{Hash, PublicIdentity}
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
 import rdts.base.{Bottom, Lattice}
-import rdts.filters.Filter
+import rdts.filters.Permits
 
 import scala.util.Try
 
 object AuthzDeltas {
 
-  def empty[RDT: {Lattice, Bottom, JsonValueCodec, Filter}]: AuthzDeltas[RDT] =
+  def empty[RDT: {Lattice, Bottom, JsonValueCodec, Permits}]: AuthzDeltas[RDT] =
     AuthzDeltas(DeltaValueStore(), Bottom[RDT].empty, Map.empty, None)
 
   /** State as of an event index, to rematerialize from after revocations that invalidate only later deltas. */
@@ -23,7 +23,7 @@ object AuthzDeltas {
   * Knows nothing about events itself: operations take the [[AuthzEventGraph]] the values belong to, which decides
   * whether a value is acceptable, and which values a revocation invalidates.
   */
-final case class AuthzDeltas[RDT: {Lattice, Bottom, JsonValueCodec, Filter}](
+final case class AuthzDeltas[RDT: {Lattice, Bottom, JsonValueCodec, Permits}](
     /** The delta values this replica accepted. */
     store: DeltaValueStore[RDT],
     /** The merge of the accepted delta values. */

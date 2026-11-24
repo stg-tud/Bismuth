@@ -6,25 +6,12 @@ import rdts.filters.FilterDerivation.TerminalFilter
 import rdts.filters.Permission.*
 import rdts.time.{ArrayRanges, Dots}
 
-import scala.compiletime.{constValue, erasedValue, summonAll}
+import scala.compiletime.summonAll
 import scala.deriving.Mirror
 
-trait Filter[T] {
+/** A [[Permits]] that can additionally remove the parts of a delta that are not permitted. */
+trait Filter[T] extends Permits[T] {
   def filter(delta: T, permission: PermissionTree): T
-
-  def isAllowed(delta: T, permissionTree: PermissionTree): Boolean
-
-  /** Checks whether the permission tree is valid.
-    * <li> Not DENY & ALLOW on the same level
-    * <li> All fields exist
-    *
-    * @param permissionTree The tree to check
-    * @return Success(the validated permission tree) or a Failure(with the cause).
-    */
-  def validatePermissionTree(permissionTree: PermissionTree): Unit
-
-  def minimizePermissionTree(permissionTree: PermissionTree): PermissionTree
-
 }
 
 object Filter {
@@ -32,17 +19,11 @@ object Filter {
 
   def ofTerminalValue[T: Bottom]: Filter[T] = TerminalFilter[T]()
 
-  // From https://blog.philipp-martini.de/blog/magic-mirror-scala3/
-  private inline def getElementNames[A <: Tuple]: List[String] = inline erasedValue[A] match {
-    case _: EmptyTuple => Nil
-    case _: (t *: ts)  => constValue[t].toString :: getElementNames[ts]
-  }
-
   inline def derived[T](using m: Mirror.Of[T], productBottom: Bottom[T]): Filter[T] = {
     // Element is either a factor of a product or an element in a sum
     val elementBottoms = summonAll[Tuple.Map[m.MirroredElemTypes, Bottom]].toIArray.map(_.asInstanceOf[Bottom[Any]])
     val elementFilters = summonAll[Tuple.Map[m.MirroredElemTypes, Filter]].toIArray.map(_.asInstanceOf[Filter[Any]])
-    val elementNames   = getElementNames[m.MirroredElemLabels]
+    val elementNames   = Permits.getElementNames[m.MirroredElemLabels]
     require(elementNames.toSet.size == elementNames.length) // Ensure uniqueness of element names
     inline m match
         case prodMirror: Mirror.ProductOf[T] =>

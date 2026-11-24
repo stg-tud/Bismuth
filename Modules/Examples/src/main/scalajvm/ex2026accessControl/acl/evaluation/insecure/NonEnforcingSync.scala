@@ -8,10 +8,10 @@ import ex2026accessControl.acl.sync.{AclAntiEntropy, AclEnforcingSync, ChannelCo
 import ex2026accessControl.acl.{Acl, BftDelta}
 import ex2026accessControl.authz.evaluation.ConnectionManager
 import rdts.base.{Bottom, Decompose, Lattice}
-import rdts.filters.Filter
+import rdts.filters.Permits
 import rdts.time.Dots
 
-class NonEnforcingSync[State: {JsonValueCodec, Bottom, Decompose, Lattice, Filter}](
+class NonEnforcingSync[State: {JsonValueCodec, Bottom, Decompose, Lattice, Permits}](
     localIdentity: PrivateIdentity,
     connectionManagerProvider: (PrivateIdentity, MessageReceiver[MessageBuffer]) => ConnectionManager =
       (id, receiver) => ChannelConnectionManager(id, receiver),

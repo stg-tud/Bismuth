@@ -5,10 +5,10 @@ import channels.crypto.Commitment.RevealedValue
 import channels.crypto.{Hash, PublicIdentity}
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray}
 import rdts.base.{Bottom, Lattice}
-import rdts.filters.Filter
+import rdts.filters.Permits
 
 object Authorization {
-  def materialize[T: {Lattice, Bottom, Filter}](
+  def materialize[T: {Lattice, Bottom, Permits}](
       eventGraph: AuthzEventGraph,
       deltaValueStore: DeltaValueStore[T]
   ): T =
@@ -40,7 +40,7 @@ object Authorization {
       case (left, _) => left
     }
 
-  private[authz] def mayRead[T: {JsonValueCodec, Filter}](
+  private[authz] def mayRead[T: {JsonValueCodec, Permits}](
       replicaId: PublicIdentity,
       deltaEventHash: Hash,
       deltaValue: RevealedValue,
@@ -54,7 +54,7 @@ object Authorization {
     }
 
   // assumes that delta matches hash and that the corresponding event is in the graph
-  private[authz] def mayReadAssumingCommitmentHolds[T: Filter](
+  private[authz] def mayReadAssumingCommitmentHolds[T: Permits](
       replicaId: PublicIdentity,
       deltaEventHash: Hash,
       delta: T,
@@ -62,13 +62,13 @@ object Authorization {
   ): Boolean =
     eventGraph.capabilities(replicaId)
       .exists((capabilityEventHash, capability) =>
-        Filter[T].isAllowed(delta, capability.read) &&
+        Permits[T].isAllowed(delta, capability.read) &&
         eventGraph
           .revocations(capabilityEventHash)
           .forall(revocation => !eventGraph.causallyBefore(revocation, deltaEventHash))
       )
 
-  def mayWrite[T: {JsonValueCodec, Filter}](
+  def mayWrite[T: {JsonValueCodec, Permits}](
       eventGraph: AuthzEventGraph,
       deltaEventHash: Hash,
       deltaValue: RevealedValue
@@ -77,7 +77,7 @@ object Authorization {
     mayWrite(eventGraph, deltaEventHash, deltaEvent, deltaValue)
   }
 
-  private def mayWrite[T: {JsonValueCodec, Filter}](
+  private def mayWrite[T: {JsonValueCodec, Permits}](
       eventGraph: AuthzEventGraph,
       deltaEventHash: Hash,
       deltaEvent: AuthzEvent,
@@ -91,7 +91,7 @@ object Authorization {
       case _ => throw IllegalArgumentException(s"$deltaEvent is not a delta commitment")
     }
 
-  private[authz] def mayWriteAssumingCommitmentHolds[T: {Filter}](
+  private[authz] def mayWriteAssumingCommitmentHolds[T: {Permits}](
       eventGraph: AuthzEventGraph,
       deltaEventHash: Hash,
       deltaEvent: AuthzEvent,
@@ -100,7 +100,7 @@ object Authorization {
     // Delegation & revocation validity and validity of capability use are invariants of eventgraph, thus not checked here
     eventGraph.events(deltaEvent.authorization)._1.payload match {
       case Capability(_, _, write) =>
-        Filter[T].isAllowed(delta, write)
+        Permits[T].isAllowed(delta, write)
         && eventGraph // All revocations for cap must be causally after deltaEvent
           .revocations(deltaEvent.authorization)
           .forall(revocation => eventGraph.causallyBefore(deltaEventHash, revocation))

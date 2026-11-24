@@ -5,7 +5,7 @@ import channels.crypto.Commitment.RevealedValue
 import channels.crypto.{Commitment, Hash, PrivateIdentity, PublicIdentity, Signature}
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
 import rdts.base.Decompose
-import rdts.filters.{Filter, PermissionTree}
+import rdts.filters.{Permits, PermissionTree}
 
 import scala.annotation.tailrec
 
@@ -17,9 +17,9 @@ import scala.annotation.tailrec
 object AuthzAuthoring {
 
   /** An active capability of `identity` that allows writing `delta`. */
-  def writeCapability[RDT: Filter](graph: AuthzEventGraph, identity: PublicIdentity, delta: RDT): Hash =
+  def writeCapability[RDT: Permits](graph: AuthzEventGraph, identity: PublicIdentity, delta: RDT): Hash =
     graph.capabilities(identity).find { (hash, capability) =>
-      Filter[RDT].isAllowed(delta, capability.write) && graph.revocations(hash).isEmpty
+      Permits[RDT].isAllowed(delta, capability.write) && graph.revocations(hash).isEmpty
     } match
         case Some((hash, _)) => hash
         case None            => throw IllegalArgumentException(s"Insufficient permissions for mutation: $delta")
@@ -27,7 +27,7 @@ object AuthzAuthoring {
   /** Write `delta` using the capability `capabilityHash`. Decomposed deltas become a chain of events, each with the
     * value its commitment reveals.
     */
-  def write[RDT: {JsonValueCodec, Filter, Decompose}](
+  def write[RDT: {JsonValueCodec, Permits, Decompose}](
       graph: AuthzEventGraph,
       identity: PrivateIdentity,
       delta: RDT,
@@ -36,7 +36,7 @@ object AuthzAuthoring {
     require(graph.revocations(capabilityHash).isEmpty)
     require(graph.events.get(capabilityHash) match
         case Some((AuthzEvent(Capability(holder, _, write), _, _, _, _), _)) =>
-          holder == identity.getPublic && Filter[RDT].isAllowed(delta, write)
+          holder == identity.getPublic && Permits[RDT].isAllowed(delta, write)
         case _ => false)
 
     val (_, created) =

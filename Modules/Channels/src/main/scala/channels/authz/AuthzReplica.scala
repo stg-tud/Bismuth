@@ -5,7 +5,7 @@ import channels.crypto.Commitment.RevealedValue
 import channels.crypto.{Hash, PrivateIdentity, PublicIdentity, Verifier}
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray, writeToArray}
 import rdts.base.{Bottom, Decompose, Lattice}
-import rdts.filters.{Filter, PermissionTree}
+import rdts.filters.{Permits, PermissionTree}
 
 import scala.annotation.tailrec
 import scala.util.Try
@@ -13,7 +13,7 @@ import scala.util.Try
 object AuthzReplica {
 
   /** A replica that only knows the hash of the genesis event; it learns the event itself from its peers. */
-  def initial[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
+  def initial[RDT: {Lattice, Bottom, JsonValueCodec, Permits, Decompose}](
       self: PublicIdentity,
       genesis: Hash
   )(using Verifier): AuthzReplica[RDT] =
@@ -44,7 +44,7 @@ object AuthzReplica {
 /** Immutable state of an authorization-aware replica: the [[AuthzEventGraph]], the events waiting for missing
   * predecessors, and the delta values this replica may read ([[AuthzDeltas]]). Disseminated by [[channels.routing.authz.AuthzProtocol]].
   */
-final case class AuthzReplica[RDT: {Lattice, Bottom, JsonValueCodec, Filter, Decompose}](
+final case class AuthzReplica[RDT: {Lattice, Bottom, JsonValueCodec, Permits, Decompose}](
     self: PublicIdentity,
     eventGraph: AuthzEventGraph,
     deltas: AuthzDeltas[RDT],

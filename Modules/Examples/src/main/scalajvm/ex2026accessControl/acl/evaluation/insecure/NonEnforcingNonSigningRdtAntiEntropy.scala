@@ -5,13 +5,13 @@ import ex2026accessControl.acl.Acl
 import ex2026accessControl.acl.HashDag.Encoder
 import ex2026accessControl.acl.sync.{AclAntiEntropy, AntiEntropyCommunicator, FilteredRdtAntiEntropy, SignedDelta}
 import rdts.base.{Bottom, Decompose, Lattice}
-import rdts.filters.Filter
+import rdts.filters.Permits
 import rdts.time.{Dot, Dots}
 
 import scala.annotation.unused
 import scala.language.unsafeNulls
 
-class NonEnforcingNonSigningRdtAntiEntropy[State: {Decompose, Lattice, Bottom, Filter}](
+class NonEnforcingNonSigningRdtAntiEntropy[State: {Decompose, Lattice, Bottom, Permits}](
     localIdentity: PrivateIdentity,
     onRdtChange: (Dots, State) => Unit,
     network: AntiEntropyCommunicator[State],

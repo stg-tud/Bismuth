@@ -3,7 +3,7 @@ package ex2026accessControl.authz.travelplanner.view
 import ex2026accessControl.authz.travelplanner.TravelPlan
 import ex2026accessControl.authz.travelplanner.view.PermissionTreePane.{ExpensePermCheckBoxes, ExpensePermEntryCheckBoxes, wiredReadWriteCheckboxes}
 import rdts.filters.Permission.{ALLOW, PARTIAL}
-import rdts.filters.{Filter, KeyAsString, PermissionTree}
+import rdts.filters.{Permits, KeyAsString, PermissionTree}
 import rdts.time.Dot
 import scalafx.beans.property.BooleanProperty
 import scalafx.geometry.{Insets, Pos}
@@ -187,7 +187,7 @@ class PermissionTreePane(
         }
   }
 
-  def selectionToPermissions(using filter: Filter[TravelPlan]): (PermissionTree, PermissionTree) = {
+  def selectionToPermissions(using filter: Permits[TravelPlan]): (PermissionTree, PermissionTree) = {
     extension (permissionTree: PermissionTree)
         private def allowIfSelected(checkBox: CheckBox, paths: String*): PermissionTree =
           if checkBox.isSelected then permissionTree.merge(PermissionTree.fromPathSet(paths.toSet))

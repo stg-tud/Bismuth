@@ -2,7 +2,7 @@ package ex2026accessControl.authz.evaluation
 
 import channels.authz.AuthzEvent.Payload.{Capability, DeltaCommitment, Revocation}
 import channels.crypto.Hash
-import rdts.filters.{Filter, PermissionTree}
+import rdts.filters.{Permits, PermissionTree}
 
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Path, Paths}
@@ -50,7 +50,7 @@ class TraceVisualization(generated: GeneratedBenchmarkRdtEventGraph) {
       case Some(revealed) =>
         val delta = revealed.delta
         BenchmarkRdt.leafPaths.filter(path =>
-          Filter[BenchmarkRdt].isAllowed(delta, PermissionTree.fromPath(path))
+          Permits[BenchmarkRdt].isAllowed(delta, PermissionTree.fromPath(path))
         ) match {
           case Seq(leaf) => leaf
           case _         => "?"

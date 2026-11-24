@@ -4,12 +4,12 @@ import channels.crypto.{Hash, PrivateIdentity, PublicIdentity}
 import ex2026accessControl.acl.HashDag.Encoder
 import ex2026accessControl.acl.sync.{AclAntiEntropy, AntiEntropyCommunicator, SignedDelta}
 import rdts.base.{Bottom, Decompose, Lattice}
-import rdts.filters.Filter
+import rdts.filters.Permits
 import rdts.time.Dots
 
 import scala.annotation.unused
 
-class NonFilteringForwarderRdtAntiEntropy[State: {Decompose, Lattice, Bottom, Filter}](
+class NonFilteringForwarderRdtAntiEntropy[State: {Decompose, Lattice, Bottom, Permits}](
     localIdentity: PrivateIdentity,
     network: AntiEntropyCommunicator[State],
     aclAntiEntropy: AclAntiEntropy,
