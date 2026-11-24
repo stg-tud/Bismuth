@@ -52,7 +52,7 @@ final class AuthzKnowledge[RDT] extends PlumtreeKnowledge {
 }
 
 /** Authorization-aware replication: the events of an [[channels.authz.AuthzReplica]] are disseminated by [[Plumtree]], and the delta
-  * values follow the events they belong to, filtered for what each receiver may read. Delivers the materialized state
+  * values follow the events they belong to, filtered for what each receiver may read ([[DeltaBackfill]]). Delivers the materialized state
   * whenever it changes. `identity` signs local events.
   *
   * Only authenticated peers ([[channels.connection.Peer.Authenticated]]) take part: their uid is their
@@ -65,13 +65,14 @@ final class AuthzProtocol[RDT](val identity: PrivateIdentity) extends Routing {
 
   type Result = Step[State, Msg, Out]
 
-  private val events = Plumtree(AuthzKnowledge[RDT]())
+  private val events   = Plumtree(AuthzKnowledge[RDT]())
+  private val backfill = DeltaBackfill[RDT]()
 
   def addPeer(state: State, peer: Peer): Result = identityOf(peer) match
       case None    => Step(state, Nil)
       case Some(_) =>
         val step = lift(state, events.addPeer(state, peer))
-        step.copy(events = step.events ++ requestDeltas(step.state, List(peer)))
+        step.copy(events = step.events ++ backfill.peerAdded(step.state.store.replica, peer))
 
   def removePeer(state: State, peer: Peer): Result = lift(state, events.removePeer(state, peer))
 
@@ -83,14 +84,10 @@ final class AuthzProtocol[RDT](val identity: PrivateIdentity) extends Routing {
         message match
             case AuthzMessage.Events(message)       => lift(state, events.handleMessage(state, from, message))
             case AuthzMessage.Deltas(values) =>
-              // forward the newly accepted deltas, the events may have been forwarded before the deltas arrived
-              val before   = state.store.replica
-              val after    = before.receiveDeltas(values)
-              val accepted = values.map(_.event).filter(hash => before.delta(hash).isEmpty && after.delta(hash).nonEmpty)
-              val forward  = (state.peerRoles.keySet - from).toList.flatMap(deltasFor(after, accepted, _))
+              val (after, forward) = backfill.received(state.store.replica, from, state.peerRoles.keySet, values)
               changed(state, withReplica(state, after), forward)
             case AuthzMessage.RequestDeltas(hashes) =>
-              Step(state, deltasFor(state.store.replica, hashes.toList, from))
+              Step(state, backfill.requested(state.store.replica, from, hashes))
 
   // ------------------------------------------------------------------------------------------------
   // local operations, throw if not permitted
@@ -143,29 +140,14 @@ final class AuthzProtocol[RDT](val identity: PrivateIdentity) extends Routing {
       case Effect.StartTimer(timer) => List(Effect.StartTimer(timer))
       case Effect.Deliver(_)        => Nil
     }
-    val deltas = pushed.toList.flatMap((peer, hashes) => deltasFor(replica, hashes, peer))
-    // a new capability may make deltas readable that were withheld from us, ask everyone for them
-    val capabilitiesBefore = before.store.replica.eventGraph.capabilities(replica.self).map(_._1)
-    val gained             = replica.eventGraph.capabilities(replica.self).exists((hash, _) => !capabilitiesBefore(hash))
-    val requests           = if gained then requestDeltas(step.state, step.state.peerRoles.keys.toList) else Nil
+    val deltas   = backfill.eventsPushed(replica, pushed)
+    val requests = backfill.replicaChanged(before.store.replica, replica, step.state.peerRoles.keys)
     changed(before, step.state, sends ++ deltas ++ requests)
   }
 
   private def changed(before: State, after: State, effects: Seq[Effect[Msg, Out]]): Result =
     val state = after.store.replica.state
     Step(after, if state != before.store.replica.state then effects :+ Effect.Deliver(state) else effects)
-
-  /** Ask `peers` for the deltas we do not have (they answer with those we may read). */
-  private def requestDeltas(state: State, peers: List[Peer]): List[Effect[Msg, Out]] =
-    val wanted = state.store.replica.deltasWithoutValue
-    if wanted.isEmpty || peers.isEmpty then Nil else List(Effect.Send(peers, AuthzMessage.RequestDeltas(wanted)))
-
-  /** The stored deltas of `hashes` that `peer` may read, as a single message (if any). */
-  private def deltasFor(replica: AuthzReplica[RDT], hashes: List[Hash], peer: Peer): List[Effect[Msg, Out]] =
-    identityOf(peer).toList.flatMap { reader =>
-      val readable = replica.readableDeltas(reader, hashes.filter(replica.containsEvent))
-      Option.when(readable.nonEmpty)(Effect.Send(List(peer), AuthzMessage.Deltas(readable)))
-    }
 }
 
 object AuthzProtocol {
