@@ -1,26 +1,30 @@
 package channels.authz
 
 import AuthzEvent.Payload.{Capability, DeltaCommitment, Revocation}
-import CausalOrder.*
-import channels.crypto.{Hash, PublicIdentity, Signature, Verifier}
-import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray}
+import channels.crypto.{Hash, PublicIdentity, Verifier}
 import rdts.base.Lattice
 import rdts.filters.PermissionTree
 
 import scala.collection.mutable
 
 case class AuthzEventGraph(
-    genesis: Hash,
-    heads: Set[Hash],
-    events: Map[Hash, (AuthzEvent, Int)],
+    dag: AuthzDag,
     private[authz] val revocationCache: Map[Hash, Set[Hash]],
     private[authz] val capabilityCache: Map[PublicIdentity, Set[(Hash, Capability)]],
-    nextEventIndex: Int,
-    // By event index: the index of the latest cut in the causal past of the event, the event itself included. A cut is
-    // an event that was the only head right after it was received, and thus has every event received before it in its
-    // causal past. Receiving further events never changes these, since they don't change any event's causal past.
-    private[authz] val latestCuts: Vector[Int]
 ) {
+  export dag.{
+    genesis,
+    heads,
+    events,
+    nextEventIndex,
+    latestCutBefore,
+    notBefore,
+    causallyBefore,
+    causallyAfter,
+    concurrent,
+    causalOrder,
+    allEventsInCausalOrder
+  }
 
   /** Adds an event to the event graph unless the event is invalid or causally-before events are missing from the graph.
     *
@@ -33,23 +37,9 @@ case class AuthzEventGraph(
     val eventHash = Hash.compute(encodedEvent)
     if events.contains(eventHash) then return Right(this)
 
-    val event: AuthzEvent = readFromArray(encodedEvent)
     // Ensure that no invalid events are stored
-    // Signature verification: (need to blank signature and re-encode for verification)
-    require(verifier.verify(
-      event.author,
-      writeToArray(event.copy(signature = Signature.allZeroSignature)),
-      event.signature
-    ))
-
-    // All events need predecessors except the genesis event
-    if eventHash != genesis then {
-      require(event.parents.nonEmpty)
-    } else {
-      require(event.parents.isEmpty)
-      require(event.authorization == Hash.allZeroHash)
-      require(event.payload.isInstanceOf[Capability])
-    }
+    val event = dag.verified(eventHash, encodedEvent)
+    if eventHash == genesis then require(event.payload.isInstanceOf[Capability])
 
     // Used capability is locally known (implies validity) and both holder and event author are the same
     val authorizingCapability: Capability = events.get(event.authorization) match {
@@ -83,15 +73,8 @@ case class AuthzEventGraph(
     }
 
     // Event is valid, update graph and return
-    val concurrentHeads = heads -- event.parents
     Right(copy(
-      heads = concurrentHeads + eventHash,
-      events = events + (eventHash -> (event, nextEventIndex)),
-      nextEventIndex = nextEventIndex + 1,
-      latestCuts = latestCuts :+ (
-        if concurrentHeads.isEmpty then nextEventIndex
-        else latestCutBefore(event.parents)
-      ),
+      dag = dag.added(eventHash, event),
       revocationCache = event.payload match {
         case DeltaCommitment(_)            => revocationCache
         case Revocation(revokedCapability) =>
@@ -119,12 +102,6 @@ case class AuthzEventGraph(
       }
     ))
   }
-
-  /** The index of the latest cut in the causal past of any of `parents`, or -1 if there is none: every event with an
-    * index up to it is causally before an event built on top of `parents`.
-    */
-  def latestCutBefore(parents: Set[Hash]): Int =
-    parents.iterator.map(parent => latestCuts(events(parent)._2)).maxOption.getOrElse(-1)
 
   /** The indices of the delta events that `revocationEventHash` invalidates: uses of a revoked capability that are not
     * in the causal past of the revocation.
@@ -160,70 +137,6 @@ case class AuthzEventGraph(
     }
   }
 
-  /** The events not in the causal past of the known part of `hashes`, in the order they were received.
-    * Every event up to the latest cut before `hashes` is in their causal past, so only the later ones are searched.
-    */
-  def notBefore(hashes: Set[Hash]): List[Hash] = {
-    val known      = hashes.filter(events.contains)
-    val cutoff     = latestCutBefore(known)
-    val causalPast = mutable.BitSet()
-    val toVisit    = mutable.Stack.from(known)
-    while toVisit.nonEmpty do {
-      val (event, index) = events(toVisit.pop())
-      if index > cutoff && !causalPast.contains(index) then
-          causalPast += index
-          toVisit.pushAll(event.parents)
-    }
-    events.iterator.collect { case (hash, (_, index)) if index > cutoff && !causalPast.contains(index) => index -> hash }
-      .toList.sortBy(_._1).map(_._2)
-  }
-
-  /** Whether `event1` is causally before `event2`, searching the causal past of `event2` backwards.
-    *
-    * An event received after `event2` cannot be causally before it. If `event1` is at most as old as the latest cut in the
-    * causal past of `event2`, or of any event on the way, it is before it as well. Only events received after `event1`
-    * need to be searched.
-    */
-  def causallyBefore(event1: Hash, event2: Hash): Boolean = {
-    if event1 == event2 then return false
-
-    val (index1, ev2, index2) = (events.get(event1), events.get(event2)) match {
-      case (Some((_, index1)), Some((ev2, index2))) => (index1, ev2, index2)
-      case _                                        => return false
-    }
-
-    if index1 > index2 then return false
-    if index1 <= latestCuts(index2) then return true
-
-    val visited = mutable.BitSet(index2)
-    val toVisit = mutable.Stack.from(ev2.parents)
-    while toVisit.nonEmpty do {
-      val next = toVisit.pop()
-      if next == event1 then return true
-      val (nextEv, nextIndex) = events(next)
-      if nextIndex > index1 && !visited.contains(nextIndex) then {
-        if index1 <= latestCuts(nextIndex) then return true
-        visited += nextIndex
-        toVisit.pushAll(nextEv.parents)
-      }
-    }
-
-    false
-  }
-
-  def causallyAfter(event1: Hash, event2: Hash): Boolean = causallyBefore(event2, event1)
-
-  def concurrent(event1: Hash, event2: Hash): Boolean =
-    events.contains(event1) && events.contains(event2) &&
-    !causallyAfter(event1, event2) && !causallyAfter(event2, event1)
-
-  def causalOrder(event1: Hash, event2: Hash): CausalOrder =
-    if !events.contains(event1) || !events.contains(event2) then UNKNOWN
-    else if event1 == event2 then EQUAL
-    else if causallyBefore(event1, event2) then BEFORE
-    else if causallyBefore(event2, event1) then AFTER
-    else CONCURRENT
-
   def authorizationChain(capHash: Hash): Seq[Hash] =
     if capHash == genesis then Seq(genesis)
     else capHash +: authorizationChain(events(capHash)._1.authorization) // assumes that chain is in local event graph
@@ -242,31 +155,15 @@ case class AuthzEventGraph(
   def activeCapabilitiesOf(publicIdentity: PublicIdentity): Set[(Hash, Capability)] =
     capabilityCache.getOrElse(publicIdentity, Set.empty).filter((hash, _) => revocations(hash).isEmpty)
 
-  def allEventsInCausalOrder: Array[(Hash, AuthzEvent)] = {
-    val sortedEvents = Array.ofDim[(Hash, AuthzEvent)](events.size)
-    events.foreach { case (hash, (event, i)) => sortedEvents(i) = hash -> event }
-    sortedEvents
-  }
 }
 
 object AuthzEventGraph {
-  def apply(genesis: AuthzEvent): AuthzEventGraph = {
-    val hash = genesis.hash
+  def apply(genesis: AuthzEvent): AuthzEventGraph =
     genesis.payload match {
       case cap @ Capability(holder, _, _) =>
-        AuthzEventGraph(
-          hash,
-          Set(hash),
-          Map(hash -> (genesis, 0)),
-          Map.empty,
-          Map(holder -> Set((hash, cap))),
-          1,
-          Vector(0)
-        )
+        AuthzEventGraph(AuthzDag(genesis), Map.empty, Map(holder -> Set((genesis.hash, cap))))
       case _ => ???
     }
-  }
 
-  def apply(genesis: Hash): AuthzEventGraph =
-    AuthzEventGraph(genesis, Set.empty, Map.empty, Map.empty, Map.empty, 0, Vector.empty)
+  def apply(genesis: Hash): AuthzEventGraph = AuthzEventGraph(AuthzDag(genesis), Map.empty, Map.empty)
 }

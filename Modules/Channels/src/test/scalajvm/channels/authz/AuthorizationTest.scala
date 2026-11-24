@@ -302,11 +302,7 @@ class AuthorizationTest extends FunSuite {
     // is only reachable by fabricating the graph directly rather than going through receive().
     val (secondDelta, secondRevealed) =
       buildDeltaEvent(Set(2), holder, holderKey, Set(firstDelta.hash), firstDelta.hash)
-    val fabricatedGraph = graph1.copy(
-      heads = Set(secondDelta.hash),
-      events = graph1.events + (secondDelta.hash -> (secondDelta, graph1.nextEventIndex)),
-      nextEventIndex = graph1.nextEventIndex + 1
-    )
+    val fabricatedGraph = graph1.copy(dag = graph1.dag.added(secondDelta.hash, secondDelta))
 
     assert(!Authorization.mayWrite[Set[Int]](fabricatedGraph, secondDelta.hash, secondRevealed))
   }
