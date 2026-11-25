@@ -174,6 +174,66 @@ class KnowledgeGroupRouting extends munit.FunSuite {
     assertEquals(receivers(compartmentalized, follower1, vote1), Set.empty[Uid])
   }
 
+  test("compartmentalized: a vote covering slots of both parities is routed by the parity of its first slot") {
+    // follower2 holds open slots 0 to 5, the leader starts a new election in slot 0. The vote also covers the open
+    // slots above 0 (SlotElections.views). Routing only looks at the parity of `slots.headOption`, whose position
+    // depends on the iteration order of the map, not on the slot of the election.
+    val e   = elected()
+    val s   = (0L until 6L).foldLeft(e)((s, i) => s.merge(proposalDelta(s, i, Request(Uid.predefined(s"r$i"), s"$i"))))
+    val acc = s.merge(as(follower2)(s.upkeep))
+    val st0   = acc.merge(as(leader)(acc.startLeaderElection(0)))
+    val vote0 = as(follower2)(st0.upkeep)
+    assertEquals(vote0.slots.keySet, Set(0L, 1L, 2L, 3L, 4L, 5L))
+    assert(vote0.slots.forall((_, p) => !p.currentRoundHasProposal))
+    assertEquals(vote0.slots.head._1, 0L) // happens to be the election slot
+    assertEquals(receivers(compartmentalized, follower2, vote0), Set(proxy2, follower4))
+    assertEquals(receivers(compartmentalized, proxy2, vote0), Set(leader, follower2, follower4))
+  }
+
+  /** Known bug (liveness). The leader has proposed values for slots 0 to 6, none is decided. It starts a new election
+    * in slot 2, which goes to the even compartment (proxy2, follower2, follower4). A phase-1b vote for slot 2 also
+    * covers every open slot above 2, so it holds slots 2 to 6. The routing picks the compartment by the parity of the
+    * first slot in the map, which is slot 5 here (HashMap order). follower2 and follower4 are only in the even
+    * compartment, so their votes match no group and are sent to no one. The odd followers never see the election, so
+    * the leader gets no quorum and the election never completes.
+    *
+    * The setup is checked by the precondition test, the bug test is marked `.fail`. When the routing is fixed (e.g.
+    * route by the lowest slot), munit reports that the `.fail` test passed; then remove `.fail`.
+    */
+  object evenVoteHeadedByOddSlot {
+    val proposed: MP = (0L until 7L).foldLeft(elected()) { (state, i) =>
+      state.merge(proposalDelta(state, i, Request(Uid.predefined(s"r$i"), s"$i")))
+    }
+    val election: MP = as(leader)(proposed.startLeaderElection(2))
+
+    /** The phase-1b vote of `follower` in the new election, after it accepted the proposals (phase 2b). */
+    def vote(follower: Uid): MP =
+        val accepted = proposed.merge(as(follower)(proposed.upkeep))
+        as(follower)(accepted.merge(election).upkeep)
+
+    val voters: List[Uid] = List(follower2, follower4)
+  }
+
+  test("compartmentalized: precondition, an even-slot vote spanning both parities is headed by an odd slot") {
+    import evenVoteHeadedByOddSlot.*
+    assertEquals(receivers(compartmentalized, leader, election), Set(proxy2)) // the election itself is routed fine
+    for follower <- voters do
+        val v = vote(follower)
+        assertEquals(v.slots.keySet, Set(2L, 3L, 4L, 5L, 6L), s"vote of $follower")
+        val firstSlot = v.slots.head._1
+        assert(firstSlot % 2 == 1, s"the vote of $follower starts with slot $firstSlot, the test needs an odd one")
+  }
+
+  test("compartmentalized: an even-slot vote headed by an odd slot reaches the even compartment".fail) {
+    import evenVoteHeadedByOddSlot.*
+    for follower <- voters do
+        assertEquals(
+          receivers(compartmentalized, follower, vote(follower)),
+          Set(proxy2, follower2, follower4) - follower,
+          s"vote of $follower"
+        )
+  }
+
   test("compartmentalized: requests only flow before any slot exists") {
     val request = as(client)(empty.request(req0))
     assertEquals(receivers(compartmentalized, client, request), Set(leader))
