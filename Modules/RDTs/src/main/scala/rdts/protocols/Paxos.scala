@@ -170,12 +170,21 @@ case class Paxos[A](
     * precedence over a round with duplicate votes: `Invalid` is returned only if no round is decided.
     */
   def decision(using Participants): Agreement[A] =
-      val decisions = rounds.view.mapValues(_.proposals.decision).toList
-      decisions
-        .collect { case (ballotNum, d @ Decided(_)) => (ballotNum, d) }
-        .minByOption(_._1)
-        .map(_._2)
-        .getOrElse(if decisions.exists(_._2 == Invalid) then Invalid else Undecided)
+      // one pass over the rounds; a round without proposal votes is `Undecided` and is skipped
+      var lowestDecided: Option[(BallotNum, Agreement[A])] = None
+      var invalid                                          = false
+      rounds.foreach { (ballotNum, round) =>
+        if round.proposals.votes.nonEmpty then
+            round.proposals.decision match
+                case d @ Decided(_) =>
+                  if lowestDecided.forall((lowest, _) => Ordering[BallotNum].lt(ballotNum, lowest)) then
+                      lowestDecided = Some((ballotNum, d))
+                case Invalid   => invalid = true
+                case Undecided => ()
+      }
+      lowestDecided match
+          case Some((_, d)) => d
+          case None         => if invalid then Invalid else Undecided
 
   // helper functions
   def nextBallotNum(using replicaId: ReplicaId): BallotNum =

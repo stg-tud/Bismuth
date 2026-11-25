@@ -14,37 +14,60 @@ enum MultipaxosPhase:
     case Voting
     case Idle // Leader is elected but no votes have been cast yet
 
-/** Multi-Paxos: one Paxos instance per log slot, with leader elections that are shared by all slots.
+/** The leader election of the highest ballot that a replica knows.
+  *
+  * The merge keeps the election of the higher ballot and merges the votes of equal ballots.
+  */
+case class NewestElection(ballotNum: BallotNum, votes: LeaderElection)
+
+object NewestElection:
+    given Lattice[NewestElection] = (left, right) =>
+        val order = Ordering[BallotNum].compare(left.ballotNum, right.ballotNum)
+        if order < 0 then right
+        else if order > 0 then left
+        else NewestElection(left.ballotNum, left.votes.merge(right.votes))
+
+/** Multi-Paxos: one Paxos instance per log slot, with a leader election that is shared by all slots.
   *
   * A vote in the leader election of a ballot (phase 1b) is a promise not to accept proposals of a
-  * lower ballot in any slot. The elections are therefore kept outside of the `Epoch`: the `Epoch`
+  * lower ballot in any slot. The election is therefore kept outside of the `Epoch`: the `Epoch`
   * drops the state of a slot when the next slot is opened, and the promises must survive that.
   * An elected leader can propose in every later slot without a new phase 1.
   *
-  * @param rounds    the proposals of the current slot (`rounds.counter`); the leader elections of
-  *                  this `Paxos` are empty
-  * @param log       the decided value of each closed slot
-  * @param elections the leader election of each ballot, for all slots
+  * Only the election of the highest known ballot is stored, so the state does not grow with the
+  * number of leader elections. The lower elections are not needed: the api functions of `Paxos`
+  * act on the highest ballot of `currentPaxos` only (`currentRound`, `currentBallotNum`), and
+  * `nextBallotNum` reads only the highest counter. A replica that knows an election of ballot `b`
+  * therefore never votes for a lower ballot, whether or not it still stores the lower elections.
+  *
+  * @param rounds   the proposals of the current slot (`rounds.counter`); the leader elections of
+  *                 this `Paxos` are empty
+  * @param log      the decided value of each closed slot
+  * @param election the leader election of the highest known ballot, for all slots
   */
 case class MultiPaxos[A](
     rounds: Epoch[Paxos[A]] = Epoch.empty[Paxos[A]],
     log: Map[Long, A] = Map.empty,
-    elections: Map[BallotNum, LeaderElection] = Map.empty
+    election: Option[NewestElection] = None
 ):
 
     // private helper functions
 
-    /** The Paxos instance of the current slot: its proposals together with the shared leader elections. */
-    private lazy val currentPaxos: Paxos[A] =
-      Paxos(elections.view.mapValues(election => PaxosRound[A](leaderElection = election)).toMap).merge(rounds.value)
+    /** The Paxos instance of the current slot: its proposals together with the shared leader election. */
+    private lazy val currentPaxos: Paxos[A] = election match
+        case None                                   => rounds.value
+        case Some(NewestElection(ballotNum, votes)) =>
+          val slot  = rounds.value.rounds
+          val round = PaxosRound[A](leaderElection = votes)
+          Paxos(slot.updated(ballotNum, slot.get(ballotNum).fold(round)(_.merge(round))))
 
-    /** Places a delta of `currentPaxos` in this state: the votes in leader elections count for all
-      * slots, the votes on proposals for the current slot.
+    /** Places a delta of `currentPaxos` in this state: the votes in the leader election count for
+      * all slots, the votes on proposals for the current slot. Of the election votes only those of
+      * the highest ballot are kept (phase 1b repeats the round of the last accepted value).
       */
     private def embed(delta: Paxos[A]): MultiPaxos[A] =
-        val electionVotes = delta.rounds.collect {
-          case (ballotNum, PaxosRound(leaderElection, _)) if leaderElection.votes.nonEmpty =>
-            ballotNum -> leaderElection
+        val electionVotes = delta.rounds.filter(_._2.leaderElection.votes.nonEmpty).maxOption.map {
+          (ballotNum, round) => NewestElection(ballotNum, round.leaderElection)
         }
         val proposalVotes = delta.rounds.collect {
           case (ballotNum, PaxosRound(_, proposals)) if proposals.votes.nonEmpty =>
@@ -52,7 +75,7 @@ case class MultiPaxos[A](
         }
         MultiPaxos(
           rounds = if proposalVotes.isEmpty then Epoch.empty else rounds.write(Paxos(proposalVotes)),
-          elections = electionVotes
+          election = electionVotes
         )
 
     def closedRounds: Map[Long, A] = log
@@ -91,7 +114,7 @@ case class MultiPaxos[A](
       currentPaxos.merge(deltaPaxos).result match
           case Some(decision) =>
             // The current slot is decided: append its value to the log and open the next slot.
-            // The next slot starts without proposals. The leader elections stay as they are,
+            // The next slot starts without proposals. The leader election stays as it is,
             // so the current leader can propose in the next slot at once.
             delta.copy(
               rounds = rounds.epocheWrite(Paxos[A]()),
