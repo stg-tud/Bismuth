@@ -10,8 +10,8 @@ import scala.collection.mutable
 /** Ballot reuse in `knowledgeGroups.MultiPaxos` when replicas exchange only the deltas that the
   * operations return, not their full states.
   *
-  * Known bug, the agreement tests are marked `.fail`. It is the bug of
-  * [[ParallelMultiPaxosBallotReuseTest]]. `startLeaderElection(index)` takes the next ballot from
+  * Regression test for the bug of [[ParallelMultiPaxosBallotReuseTest]], which
+  * `SlotElections.withReports` fixed. `startLeaderElection(index)` takes the next ballot from
   * `SlotElections.view(slots, index)`, which contains only the elections of the slots up to
   * `index`. A replica that first starts an election in slot 1 and then in slot 0 uses the same
   * ballot twice. A voter then votes for that ballot twice, in two deltas: first in slot 1, where it
@@ -20,17 +20,17 @@ import scala.collection.mutable
   * The second delta alone makes the candidate leader of slot 1, because a vote in slot 0 counts for
   * all later slots.
   *
-  * On the trace below (3 replicas), `v` is chosen in slot 1 in ballot (A,0) by A and B, and C gets
-  * `w` chosen in slot 1 in ballot (C,1) by C and A. A logs `w` and B logs `v` for slot 1.
+  * On the trace below (3 replicas), `v` is chosen in slot 1 in ballot (A,0) by A and B. Before the
+  * fix, C got `w` chosen in slot 1 in ballot (C,1) by C and A, and A logged `w` and B logged `v`
+  * for slot 1. Now the delta of A's vote in slot 0 also contains the round in which A accepted `v`
+  * in slot 1, so C proposes `v`. C still uses the ballot (C,1) twice; that alone is harmless.
   *
   * The trace does not use the bug of [[KnowledgeGroupMultiPaxosDeltaAgreementTest]], where a voter
   * has already logged a slot and so does not report it. The only voter for C is A, and A has not
-  * logged slot 1 when it votes in slot 1 and in slot 0 (B's vote for `v` never reaches A). If C's
-  * second election used a fresh ballot (C,2), `upkeep` at A would vote in slot 1 as well and report
-  * `v`, and C would propose `v`.
+  * logged slot 1 when it votes in slot 1 and in slot 0 (B's vote for `v` never reaches A).
   *
-  * With full-state merges the trace is safe: A's state contains its vote for `v` in slot 1, and C
-  * proposes `v`.
+  * With full-state merges the trace was always safe: A's state contains its vote for `v` in slot 1,
+  * and C proposes `v`.
   *
   * The only caller in the repository, `ex2026keyValuePrdtBench.MultiPaxosReplica`, calls
   * `startLeaderElection(state.log.size)`. The log only grows, so the index never goes down at a
@@ -113,12 +113,12 @@ class KnowledgeGroupMultiPaxosBallotReuseTest extends munit.FunSuite {
     assertEquals(st("B").log.get(1L), Some("v"))
   }
 
-  test("two ballots never choose different values in one slot".fail) {
+  test("two ballots never choose different values in one slot") {
     val st = runTrace().states
     assertEquals(chosen(st.values, 1), Set("v"))
   }
 
-  test("two replicas never log different values for the same slot".fail) {
+  test("two replicas never log different values for the same slot") {
     val st = runTrace().states
     for
         slot <- 0L to 1L
@@ -129,7 +129,7 @@ class KnowledgeGroupMultiPaxosBallotReuseTest extends munit.FunSuite {
     do assertEquals(vx, vy, s"replicas $x and $y disagree on slot $slot")
   }
 
-  test("merging the states of two replicas does not throw".fail) {
+  test("merging the states of two replicas does not throw") {
     val st = runTrace().states
     Lattice.merge(st("A"), st("B"))
   }

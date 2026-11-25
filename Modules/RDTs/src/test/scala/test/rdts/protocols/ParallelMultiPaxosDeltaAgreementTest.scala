@@ -158,7 +158,8 @@ class ParallelMultiPaxosDeltaAgreementTest extends munit.FunSuite {
   }
 }
 
-/** Known bug of `spanner.ParallelMultiPaxos` with delta exchange, the test is marked `.fail`.
+/** Regression test for a bug of `spanner.ParallelMultiPaxos` with delta exchange, fixed by
+  * `SlotElections.withReports`.
   *
   * `startLeaderElection(index)` takes the next ballot from the elections of the slots up to
   * `index`. A replica that first starts an election in slot 1 and then in slot 0 uses the same
@@ -166,9 +167,10 @@ class ParallelMultiPaxosDeltaAgreementTest extends munit.FunSuite {
   * reports the value it accepted in slot 1, and later in slot 0, where it has nothing to report. The
   * second delta alone makes the candidate leader of slot 1.
   *
-  * On the trace below (3 replicas), `v` is chosen in slot 1 in ballot (A,0) by A and B, and C gets
-  * `w` chosen in slot 1 in ballot (C,1) by C and B. With full-state merges the trace is safe: B's
-  * state contains its vote for `v`.
+  * On the trace below (3 replicas), `v` is chosen in slot 1 in ballot (A,0) by A and B. Before the
+  * fix, C got `w` chosen in slot 1 in ballot (C,1) by C and B. Now the delta of B's vote in slot 0
+  * also contains the round in which B accepted `v` in slot 1, so C proposes `v`. With full-state
+  * merges the trace was always safe: B's state contains its vote for `v`.
   */
 class ParallelMultiPaxosBallotReuseTest extends munit.FunSuite {
 
@@ -218,7 +220,7 @@ class ParallelMultiPaxosBallotReuseTest extends munit.FunSuite {
     assert(chosen(runTrace()("B"), 1).contains("v"))
   }
 
-  test("two ballots never choose different values in one slot".fail) {
+  test("two ballots never choose different values in one slot") {
     assertEquals(chosen(runTrace()("B"), 1), Set("v"))
   }
 }

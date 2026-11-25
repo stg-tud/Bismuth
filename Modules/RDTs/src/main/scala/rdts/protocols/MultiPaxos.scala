@@ -55,6 +55,11 @@ object NewestElection:
   * upwards, so different slots can still have different leaders (a later slot may elect a higher
   * ballot without affecting the earlier ones). Only the newest election below `i` is added, for
   * the same reason as in [[MultiPaxos]].
+  *
+  * A promise for several slots needs a report for several slots: the delta of a vote in the
+  * election of slot `k` must contain what the voter accepted in every slot from `k` on, or a
+  * leader elected by that vote could propose a second value in a later slot. `upkeep` therefore
+  * passes its per-slot deltas through `withReports`.
   */
 object SlotElections:
 
@@ -79,6 +84,34 @@ object SlotElections:
               below = Some(below.fold(election)(Lattice.merge(_, election)))
             }
         result.result()
+
+    /** Completes the phase-1b votes in `deltas`, the per-slot deltas of one `upkeep` of a replica
+      * with the state `slots`.
+      *
+      * A vote in the leader election of slot `k` is a promise for all slots from `k` on, so it
+      * must report what the voter accepted in all of them. The phase-1b delta of slot `k` reports
+      * slot `k` only. If `deltas` contains an election vote of this replica, the newest round with
+      * a proposal of every known slot above the lowest such vote is added. The vote and the
+      * reports are then in one delta: whoever learns the vote learns the reports.
+      *
+      * Without an election vote in `deltas` (the common case) this returns `deltas` unchanged.
+      */
+    def withReports[A](slots: Map[Long, Paxos[A]], deltas: Map[Long, Paxos[A]])(using
+        replicaId: ReplicaId
+    ): Map[Long, Paxos[A]] =
+        val lowestVote = deltas.iterator.collect {
+          case (index, paxos)
+              if paxos.rounds.valuesIterator.exists(_.leaderElection.votes.exists(_.voter == replicaId.uid)) => index
+        }.minOption
+        lowestVote match
+            case None       => deltas
+            case Some(from) =>
+              val reports = slots.iterator.flatMap { (index, paxos) =>
+                if index > from then
+                    paxos.lastValueVote.map((ballotNum, round) => index -> Paxos(Map(ballotNum -> round)))
+                else None
+              }.toMap
+              deltas.merge(reports)
 
 /** Multi-Paxos: one Paxos instance per log slot, with a leader election that is shared by all slots.
   *

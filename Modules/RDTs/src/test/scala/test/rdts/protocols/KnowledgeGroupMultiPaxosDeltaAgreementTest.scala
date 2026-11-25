@@ -9,16 +9,16 @@ import scala.collection.mutable
 /** Agreement of `knowledgeGroups.MultiPaxos` when replicas exchange only the deltas that the
   * operations return, not their full states.
   *
-  * Known bug, the tests are marked `.fail`. A vote in a leader election (phase 1b) is a promise
-  * for its slot and all later slots, but `upkeep` runs phase 1b only in the open slots, and the
-  * phase-1b delta of a slot carries only the values accepted in that slot. The log of this variant
-  * need not be a prefix: C can log slot 2 while slot 0 is still open. C then votes for E in slot 0,
-  * and that vote also makes E leader of slot 2, but it does not tell E that C accepted `true` in
-  * slot 2. On the trace below, `true` is chosen in slot 2 in ballot (A,0) by A, B and C, and E
-  * gets `false` chosen in slot 2 in ballot (E,0) by E, B and D.
+  * Regression test. A vote in a leader election (phase 1b) is a promise for its slot and all later
+  * slots, but `upkeep` runs phase 1b only in the open slots, and the phase-1b delta of a slot
+  * carries only the values accepted in that slot. The log of this variant need not be a prefix: C
+  * can log slot 2 while slot 0 is still open. C then votes for E in slot 0, and that vote also
+  * makes E leader of slot 2. Before `SlotElections.withReports`, the vote did not tell E that C
+  * accepted `true` in slot 2: `true` was chosen in slot 2 in ballot (A,0) by A, B and C, and E got
+  * `false` chosen in slot 2 in ballot (E,0) by E, B and D.
   *
-  * With full-state merges the trace is safe: C's state, and so every state that contains C's vote,
-  * contains C's vote for `true` in slot 2.
+  * `upkeep` now adds to a delta with an election vote the newest accepted round of every known
+  * slot above the vote, so C's vote reports `true` and E proposes `true` in slot 2.
   */
 class KnowledgeGroupMultiPaxosDeltaAgreementTest extends munit.FunSuite {
 
@@ -73,7 +73,7 @@ class KnowledgeGroupMultiPaxosDeltaAgreementTest extends munit.FunSuite {
     assertEquals(st("C").log.get(0L), None)
   }
 
-  test("two replicas never log different values for the same slot".fail) {
+  test("two replicas never log different values for the same slot") {
     val st = runTrace()
     for
         slot <- 0L to 2L
@@ -84,7 +84,7 @@ class KnowledgeGroupMultiPaxosDeltaAgreementTest extends munit.FunSuite {
     do assertEquals(vx, vy, s"replicas $x and $y disagree on slot $slot")
   }
 
-  test("merging the states of two replicas does not throw".fail) {
+  test("merging the states of two replicas does not throw") {
     val st = runTrace()
     Lattice.merge(st("C"), st("D"))
   }

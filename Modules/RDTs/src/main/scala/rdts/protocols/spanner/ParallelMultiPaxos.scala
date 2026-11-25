@@ -117,9 +117,12 @@ case class ParallelMultiPaxos[A](
       val open = NumericRange(commitIndex + 1, slotBound, 1L).view.map(index =>
         index
       )
-      val paxosDeltas = SlotElections.views(rounds, open).map {
-        case (index, paxos) => (index, paxos.upkeep())
-      }.toMap
+      val paxosDeltas = SlotElections.withReports(
+        rounds,
+        SlotElections.views(rounds, open).map {
+          case (index, paxos) => (index, paxos.upkeep())
+        }.toMap
+      )
       val newPaxosMap = rounds.merge(paxosDeltas)
 
       // move commit index

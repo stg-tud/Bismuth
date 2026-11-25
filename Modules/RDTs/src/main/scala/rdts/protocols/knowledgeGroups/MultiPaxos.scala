@@ -99,12 +99,15 @@ case class MultiPaxos[A](
   def upkeep(using replicaId: ReplicaId, participants: Participants): MultiPaxos[A] = {
     val openSlots = slots.keySet -- log.keySet
     // perform upkeep in open rounds
-    val paxosDeltas = SlotElections.views(slots, openSlots).collect {
-      case (index, paxos)
-          if paxos.currentRound.forall(
-            !_.proposals.votes.map(_.voter).contains(replicaId.uid)
-          ) => (index, paxos.upkeep())
-    } // .filter((i, p) => !p.currentRound.contains(PaxosRound()) && !(p == Paxos()))
+    val paxosDeltas = SlotElections.withReports(
+      slots,
+      SlotElections.views(slots, openSlots).collect {
+        case (index, paxos)
+            if paxos.currentRound.forall(
+              !_.proposals.votes.map(_.voter).contains(replicaId.uid)
+            ) => (index, paxos.upkeep())
+      }
+    ) // .filter((i, p) => !p.currentRound.contains(PaxosRound()) && !(p == Paxos()))
     val newPaxosMap = slots.merge(paxosDeltas)
 
     // move decisions to log
