@@ -112,6 +112,11 @@ case class MultiPaxos[A](
     /** Places a delta of `currentPaxos` in this state: the votes in the leader election count for
       * all slots, the votes on proposals for the current slot. Of the election votes only those of
       * the highest ballot are kept (phase 1b repeats the round of the last accepted value).
+      *
+      * A non-empty delta always carries the current slot (`rounds.counter`), also if it contains
+      * only election votes. A phase-1b vote reports only the values accepted in the voter's current
+      * slot, so a receiver in an earlier slot must move to that slot before it can use the vote
+      * (see `MultiPaxosDeltaAgreementTest`). Only the empty delta is `MultiPaxos()`.
       */
     private def embed(delta: Paxos[A]): MultiPaxos[A] =
         val electionVotes = NewestElection.of(delta)
@@ -120,7 +125,9 @@ case class MultiPaxos[A](
             ballotNum -> PaxosRound(proposals = proposals)
         }
         MultiPaxos(
-          rounds = if proposalVotes.isEmpty then Epoch.empty else rounds.write(Paxos(proposalVotes)),
+          rounds =
+            if proposalVotes.isEmpty && electionVotes.isEmpty then Epoch.empty
+            else rounds.write(Paxos(proposalVotes)),
           election = electionVotes
         )
 
