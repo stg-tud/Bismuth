@@ -24,8 +24,12 @@ case class ParallelMultiPaxos[A](
     private def view(index: Long): Paxos[A] = SlotElections.view(rounds, index)
     private def currentPaxos: Option[Paxos[A]] =
       List(commitIndex + 1, commitIndex).find(rounds.contains).map(view)
+    /** The slot after the highest known slot. The known slots need not be a prefix
+      * `0 until rounds.size`: deltas can arrive in any order.
+      */
+    private def slotBound: Long = rounds.keysIterator.maxOption.fold(0L)(_ + 1)
     private def nextSlot: Long                 = {
-      val numRounds = rounds.size
+      val numRounds = slotBound
       rounds.get(numRounds - 1) match {
         case Some(paxos) => paxos.currentRound match {
             // reuse slot if there are no votes yet or only votes by somebody else
@@ -73,10 +77,10 @@ case class ParallelMultiPaxos[A](
       readDecisionsSince(0)
 
     def readDecisionsSince(time: Long)(using Participants): List[A] =
-      NumericRange(time, rounds.size.toLong, 1L).view.flatMap(rounds.get)
-        // .filter(_.result.isDefined)
-        .takeWhile(_.result.isDefined) // return log until first undecided round
-        .map(_.result.get)
+      NumericRange(time, slotBound, 1L).view.map(rounds.get)
+        // return log until the first slot that is unknown or undecided
+        .takeWhile(_.exists(_.result.isDefined))
+        .map(_.get.result.get)
         .toList
 
     def startLeaderElection(index: Long)(using ReplicaId): ParallelMultiPaxos[A] =
@@ -110,7 +114,7 @@ case class ParallelMultiPaxos[A](
 
     def upkeep(using ReplicaId, Participants): ParallelMultiPaxos[A] = {
       // perform upkeep in open rounds
-      val open = NumericRange(commitIndex + 1, rounds.size.toLong, 1L).view.map(index =>
+      val open = NumericRange(commitIndex + 1, slotBound, 1L).view.map(index =>
         index
       )
       val paxosDeltas = SlotElections.views(rounds, open).map {
@@ -123,7 +127,7 @@ case class ParallelMultiPaxos[A](
       // .takeWhile(_.result.isDefined) // return log until first undecided round
 
       // move decisions to log
-      val newLogEntries = NumericRange(commitIndex + 1, rounds.size.toLong, 1L).view.flatMap(i =>
+      val newLogEntries = NumericRange(commitIndex + 1, slotBound, 1L).view.flatMap(i =>
         newPaxosMap.get(i).map(p => (i, p))
       ).takeWhile(_._2.result.isDefined).map((i, p) => (i, p.result.get)) // return log until first undecided round
 
