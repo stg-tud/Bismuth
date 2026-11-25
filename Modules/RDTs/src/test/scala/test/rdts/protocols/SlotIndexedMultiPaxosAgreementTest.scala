@@ -10,16 +10,18 @@ import scala.collection.mutable
 /** Agreement of the slot-indexed MultiPaxos variants: two replicas must never log different values
   * for the same slot.
   *
-  * Known bug, the tests are marked `.fail`. `proposeIfLeader(index, value)` opens a new slot with a
-  * copy of the leader election of the local `newestBallotWithLeader` of slot `index - 1`, so that
-  * leader can skip phase 1. Two replicas can copy different elections, and the new slot holds no
-  * phase-1b promises: a replica that voted for the higher ballot in slot 0 can still accept a
-  * proposal of the lower ballot in slot 1. On the trace below, which uses only the public API and
-  * full-state merges, leader A gets `true` chosen in ballot (A,0) and leader E gets `false` chosen
-  * in ballot (E,0), both in slot 1.
+  * Regression test. `proposeIfLeader(index, value)` used to open a new slot with a copy of the
+  * leader election of the local `newestBallotWithLeader` of slot `index - 1`, so that leader could
+  * skip phase 1. Two replicas could copy different elections, and the new slot held no phase-1b
+  * promises: a replica that voted for the higher ballot in slot 0 could still accept a proposal of
+  * the lower ballot in slot 1. On the trace below, which uses only the public API and full-state
+  * merges, leader A got `true` chosen in ballot (A,0) and leader E got `false` chosen in ballot
+  * (E,0), both in slot 1.
   *
-  * This is the trace of [[MultiPaxosAgreementTest]] with explicit slot indices. `rdts.protocols.MultiPaxos`
-  * avoids the bug by sharing the leader elections between all slots.
+  * This is the trace of [[MultiPaxosAgreementTest]] with explicit slot indices. A vote in a leader
+  * election now counts for its slot and all later slots (`rdts.protocols.SlotElections`), so D's
+  * vote for E in ballot (E,0) in slot 0 keeps D from accepting A's proposal of ballot (A,0) in
+  * slot 1.
   */
 abstract class SlotIndexedMultiPaxosAgreementTest[S: Lattice] extends munit.FunSuite {
 
@@ -58,7 +60,7 @@ abstract class SlotIndexedMultiPaxosAgreementTest[S: Lattice] extends munit.FunS
     merge("D", "E"); up("D"); merge("B", "D"); up("B")
     // Slot 1
     merge("A", "C"); propose("A", 1, true)             // A opens slot 1 with the election of (A,0)
-    merge("C", "A"); up("C"); merge("D", "C"); up("D") // D logs slot 1 -> true
+    merge("C", "A"); up("C"); merge("D", "C"); up("D") // before the fix: D logs slot 1 -> true
     merge("E", "B"); propose("E", 1, false)            // E opens slot 1 with the election of (E,0)
     merge("B", "E"); up("B"); merge("C", "B"); up("C") // C logs slot 1 -> false
     st.toMap
@@ -68,7 +70,7 @@ abstract class SlotIndexedMultiPaxosAgreementTest[S: Lattice] extends munit.FunS
     assert(Paxos.given_Ordering_BallotNum.gt(BallotNum(Uid.predefined("E"), 0), BallotNum(Uid.predefined("A"), 0)))
   }
 
-  test("two replicas never log different values for the same slot".fail) {
+  test("two replicas never log different values for the same slot") {
     val st = runTrace()
     for
         slot <- 0L to 1L
@@ -79,7 +81,7 @@ abstract class SlotIndexedMultiPaxosAgreementTest[S: Lattice] extends munit.FunS
     do assertEquals(vx, vy, s"replicas $x and $y disagree on slot $slot")
   }
 
-  test("merging the states of two replicas does not throw".fail) {
+  test("merging the states of two replicas does not throw") {
     val st = runTrace()
     Lattice.merge(st("C"), st("D"))
   }

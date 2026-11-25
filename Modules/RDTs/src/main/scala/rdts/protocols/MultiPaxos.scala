@@ -27,6 +27,59 @@ object NewestElection:
         else if order > 0 then left
         else NewestElection(left.ballotNum, left.votes.merge(right.votes))
 
+    /** The leader election of the highest ballot of `paxos` that has votes, if any. */
+    def of[A](paxos: Paxos[A]): Option[NewestElection] =
+      paxos.rounds.filter(_._2.leaderElection.votes.nonEmpty).maxOption.map {
+        (ballotNum, round) => NewestElection(ballotNum, round.leaderElection)
+      }
+
+    /** Adds the votes of `election` to the round of its ballot in `paxos`. */
+    def addTo[A](paxos: Paxos[A], election: Option[NewestElection]): Paxos[A] = election match
+        case None                                   => paxos
+        case Some(NewestElection(ballotNum, votes)) =>
+          val round = PaxosRound[A](leaderElection = votes)
+          Paxos(paxos.rounds.updated(ballotNum, paxos.rounds.get(ballotNum).fold(round)(_.merge(round))))
+
+/** Leader elections of Multi-Paxos variants that keep one `Paxos` instance per log slot in a map
+  * (`spanner.ParallelMultiPaxos`, `knowledgeGroups.MultiPaxos`).
+  *
+  * A leader that is elected in ballot `b` in slot `k` may propose in the later slots without a new
+  * phase 1. This is safe only if a vote in the election of `b` in slot `k` (phase 1b) is also a
+  * promise for all later slots: the voter must not accept proposals of a ballot below `b` in any
+  * slot above `k`. The protocol actions of slot `i` therefore act on `view(slots, i)`, which adds
+  * the newest leader election of the slots below `i` to slot `i`. Without that, two leaders could
+  * get different values chosen in the same slot (see `SlotIndexedMultiPaxosAgreementTest`).
+  *
+  * The elections stay in the slots where they were started, so a replica that only knows some of
+  * the slots still has all of its own promises: they are in slots it knows. Elections only count
+  * upwards, so different slots can still have different leaders (a later slot may elect a higher
+  * ballot without affecting the earlier ones). Only the newest election below `i` is added, for
+  * the same reason as in [[MultiPaxos]].
+  */
+object SlotElections:
+
+    /** The newest leader election in the slots below `index`. */
+    def below[A](slots: Map[Long, Paxos[A]], index: Long): Option[NewestElection] =
+      slots.iterator.collect { case (i, paxos) if i < index => NewestElection.of(paxos) }.flatten
+        .reduceOption(Lattice.merge)
+
+    /** The Paxos instance on which the protocol actions of slot `index` act. */
+    def view[A](slots: Map[Long, Paxos[A]], index: Long): Paxos[A] =
+      NewestElection.addTo(slots.getOrElse(index, Paxos[A]()), below(slots, index))
+
+    /** `view(slots, i)` for every `i` in `indices`, computed in one pass over the slots. */
+    def views[A](slots: Map[Long, Paxos[A]], indices: Iterable[Long]): Map[Long, Paxos[A]] =
+        val wanted                        = indices.toSet
+        var below: Option[NewestElection] = None
+        val result                        = Map.newBuilder[Long, Paxos[A]]
+        for index <- (slots.keySet ++ wanted).toVector.sorted do
+            if wanted.contains(index) then
+                result += index -> NewestElection.addTo(slots.getOrElse(index, Paxos[A]()), below)
+            slots.get(index).flatMap(NewestElection.of).foreach { election =>
+              below = Some(below.fold(election)(Lattice.merge(_, election)))
+            }
+        result.result()
+
 /** Multi-Paxos: one Paxos instance per log slot, with a leader election that is shared by all slots.
   *
   * A vote in the leader election of a ballot (phase 1b) is a promise not to accept proposals of a
@@ -54,21 +107,14 @@ case class MultiPaxos[A](
     // private helper functions
 
     /** The Paxos instance of the current slot: its proposals together with the shared leader election. */
-    private lazy val currentPaxos: Paxos[A] = election match
-        case None                                   => rounds.value
-        case Some(NewestElection(ballotNum, votes)) =>
-          val slot  = rounds.value.rounds
-          val round = PaxosRound[A](leaderElection = votes)
-          Paxos(slot.updated(ballotNum, slot.get(ballotNum).fold(round)(_.merge(round))))
+    private lazy val currentPaxos: Paxos[A] = NewestElection.addTo(rounds.value, election)
 
     /** Places a delta of `currentPaxos` in this state: the votes in the leader election count for
       * all slots, the votes on proposals for the current slot. Of the election votes only those of
       * the highest ballot are kept (phase 1b repeats the round of the last accepted value).
       */
     private def embed(delta: Paxos[A]): MultiPaxos[A] =
-        val electionVotes = delta.rounds.filter(_._2.leaderElection.votes.nonEmpty).maxOption.map {
-          (ballotNum, round) => NewestElection(ballotNum, round.leaderElection)
-        }
+        val electionVotes = NewestElection.of(delta)
         val proposalVotes = delta.rounds.collect {
           case (ballotNum, PaxosRound(_, proposals)) if proposals.votes.nonEmpty =>
             ballotNum -> PaxosRound(proposals = proposals)

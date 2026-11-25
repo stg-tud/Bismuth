@@ -4,10 +4,16 @@ import rdts.base.Lattice.syntax
 import rdts.base.{Bottom, Lattice, ReplicaId, Uid}
 import rdts.protocols.Paxos.given
 import rdts.protocols.Util.{Agreement, precondition}
-import rdts.protocols.{MultipaxosPhase, Participants, Paxos, PaxosRound, Voting}
+import rdts.protocols.{MultipaxosPhase, Participants, Paxos, PaxosRound, SlotElections}
 
 import scala.collection.immutable.NumericRange
 
+/** Multi-Paxos with one Paxos instance per log slot; several slots can be open at once.
+  *
+  * The protocol actions of slot `i` act on `SlotElections.view(rounds, i)`: a vote in a leader
+  * election is a promise for its slot and all later slots, so an elected leader can propose in the
+  * later slots without a new phase 1.
+  */
 case class ParallelMultiPaxos[A](
     rounds: Map[Long, Paxos[A]] = Map.empty[Long, Paxos[A]],
     commitIndex: Long = -1,
@@ -15,7 +21,9 @@ case class ParallelMultiPaxos[A](
 ):
 
     // private helper functions
-    private def currentPaxos: Option[Paxos[A]] = rounds.get(commitIndex + 1).orElse(rounds.get(commitIndex))
+    private def view(index: Long): Paxos[A] = SlotElections.view(rounds, index)
+    private def currentPaxos: Option[Paxos[A]] =
+      List(commitIndex + 1, commitIndex).find(rounds.contains).map(view)
     private def nextSlot: Long                 = {
       val numRounds = rounds.size
       rounds.get(numRounds - 1) match {
@@ -73,9 +81,8 @@ case class ParallelMultiPaxos[A](
 
     def startLeaderElection(index: Long)(using ReplicaId): ParallelMultiPaxos[A] =
       precondition(index == 0L || rounds.contains(index - 1)) {
-        val currentPaxos = rounds.getOrElse(index, Paxos[A]())
         ParallelMultiPaxos(
-          Map(index -> currentPaxos.phase1a)
+          Map(index -> view(index).phase1a)
         ) // start new Paxos round with self proposed as leader
       }
 
@@ -84,20 +91,9 @@ case class ParallelMultiPaxos[A](
 
     def proposeIfLeader(index: Long, value: A)(using ReplicaId, Participants): ParallelMultiPaxos[A] =
       precondition(index == 0L || rounds.contains(index - 1)) {
-        def openNextSlot =
-          // opens a new slot for the next log entry, either by reusing the old ballot or starting a new one
-          rounds.get(index - 1).flatMap(_.newestBallotWithLeader) match
-              case Some((ballotNum, PaxosRound(leaderElection, _))) =>
-                // reuse the old ballot, but empty proposals
-                Paxos(rounds =
-                  Map(ballotNum -> PaxosRound(
-                    leaderElection = leaderElection,
-                    proposals = Voting[A]()
-                  ))
-                )
-              case None => Paxos[A]()
-        val paxos =
-          rounds.getOrElse(index, openNextSlot)
+        // The view contains the newest election of the earlier slots, so a leader elected there can
+        // propose here. The delta copies that election into the slot.
+        val paxos = view(index)
 
         val paxosVote = paxos.phase2a(value)
 
@@ -115,9 +111,9 @@ case class ParallelMultiPaxos[A](
     def upkeep(using ReplicaId, Participants): ParallelMultiPaxos[A] = {
       // perform upkeep in open rounds
       val open = NumericRange(commitIndex + 1, rounds.size.toLong, 1L).view.map(index =>
-        (index, rounds.getOrElse(index, Paxos()))
+        index
       )
-      val paxosDeltas = open.map {
+      val paxosDeltas = SlotElections.views(rounds, open).map {
         case (index, paxos) => (index, paxos.upkeep())
       }.toMap
       val newPaxosMap = rounds.merge(paxosDeltas)
