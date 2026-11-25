@@ -14,13 +14,46 @@ enum MultipaxosPhase:
     case Voting
     case Idle // Leader is elected but no votes have been cast yet
 
+/** Multi-Paxos: one Paxos instance per log slot, with leader elections that are shared by all slots.
+  *
+  * A vote in the leader election of a ballot (phase 1b) is a promise not to accept proposals of a
+  * lower ballot in any slot. The elections are therefore kept outside of the `Epoch`: the `Epoch`
+  * drops the state of a slot when the next slot is opened, and the promises must survive that.
+  * An elected leader can propose in every later slot without a new phase 1.
+  *
+  * @param rounds    the proposals of the current slot (`rounds.counter`); the leader elections of
+  *                  this `Paxos` are empty
+  * @param log       the decided value of each closed slot
+  * @param elections the leader election of each ballot, for all slots
+  */
 case class MultiPaxos[A](
     rounds: Epoch[Paxos[A]] = Epoch.empty[Paxos[A]],
-    log: Map[Long, A] = Map.empty
+    log: Map[Long, A] = Map.empty,
+    elections: Map[BallotNum, LeaderElection] = Map.empty
 ):
 
     // private helper functions
-    private def currentPaxos = rounds.value
+
+    /** The Paxos instance of the current slot: its proposals together with the shared leader elections. */
+    private lazy val currentPaxos: Paxos[A] =
+      Paxos(elections.view.mapValues(election => PaxosRound[A](leaderElection = election)).toMap).merge(rounds.value)
+
+    /** Places a delta of `currentPaxos` in this state: the votes in leader elections count for all
+      * slots, the votes on proposals for the current slot.
+      */
+    private def embed(delta: Paxos[A]): MultiPaxos[A] =
+        val electionVotes = delta.rounds.collect {
+          case (ballotNum, PaxosRound(leaderElection, _)) if leaderElection.votes.nonEmpty =>
+            ballotNum -> leaderElection
+        }
+        val proposalVotes = delta.rounds.collect {
+          case (ballotNum, PaxosRound(_, proposals)) if proposals.votes.nonEmpty =>
+            ballotNum -> PaxosRound(proposals = proposals)
+        }
+        MultiPaxos(
+          rounds = if proposalVotes.isEmpty then Epoch.empty else rounds.write(Paxos(proposalVotes)),
+          elections = electionVotes
+        )
 
     def closedRounds: Map[Long, A] = log
     def nextDecisionRound          = rounds.counter
@@ -45,40 +78,28 @@ case class MultiPaxos[A](
       NumericRange(time, rounds.counter, 1L).view.flatMap(log.get)
 
     def startLeaderElection(using ReplicaId): MultiPaxos[A] =
-      MultiPaxos(rounds.write(currentPaxos.phase1a)) // start new Paxos round with self proposed as leader
+      embed(currentPaxos.phase1a) // start new Paxos round with self proposed as leader
 
     def proposeIfLeader(value: A)(using ReplicaId, Participants): MultiPaxos[A] =
-      MultiPaxos(rounds = rounds.write(currentPaxos.phase2a(value))) // phase 2a already checks if I am the leader
+      embed(currentPaxos.phase2a(value)) // phase 2a already checks if I am the leader
 
     def upkeep(using ReplicaId, Participants): MultiPaxos[A] = {
       // perform upkeep in Paxos
       val deltaPaxos = currentPaxos.upkeep()
-      val newPaxos   = currentPaxos.merge(deltaPaxos)
+      val delta      = embed(deltaPaxos)
 
-      (newPaxos.result, newPaxos.newestBallotWithLeader) match
-          case (Some(decision), Some((ballotNum, PaxosRound(leaderElection, _)))) =>
-            // we are voting on proposals and there is a decision
-
-            val newLog = Map(rounds.counter -> decision) // append log
-            // create new Paxos where leader is already elected
-            val newPaxos = Paxos(rounds =
-              Map(ballotNum -> PaxosRound(
-                leaderElection = leaderElection,
-                proposals = Voting[A]()
-              ))
+      currentPaxos.merge(deltaPaxos).result match
+          case Some(decision) =>
+            // The current slot is decided: append its value to the log and open the next slot.
+            // The next slot starts without proposals. The leader elections stay as they are,
+            // so the current leader can propose in the next slot at once.
+            delta.copy(
+              rounds = rounds.epocheWrite(Paxos[A]()),
+              log = Map(rounds.counter -> decision)
             )
-            // return new Multipaxos with: appended log
-            MultiPaxos(
-              rounds = rounds.epocheWrite(newPaxos),
-              log = newLog
-            )
-          case _ =>
-            // nothing to do, return upkeep result
-            if deltaPaxos == Paxos() then
-                // filter empty deltas
-                MultiPaxos()
-            else
-                MultiPaxos(rounds = rounds.write(deltaPaxos))
+          case None =>
+            // nothing to do, return upkeep result (an empty Paxos delta gives the empty MultiPaxos)
+            delta
     }
 
     override def toString: String =

@@ -63,7 +63,10 @@ case class Paxos[A](
   def phase1a(using ReplicaId): Paxos[A] =
     phase1a(nextBallotNum)
   def phase1a(value: A)(using ReplicaId): Paxos[A] =
-    phase1a(nextBallotNum, value)
+    // The value is stored only once: a second vote of this replica in the round `BallotNum(me, -1)`
+    // would be a duplicate vote, and that round would become `Invalid`.
+    if myValue.isEmpty then phase1a(nextBallotNum, value)
+    else phase1a(nextBallotNum)
 
   // actual protocol action:
   def phase1b(
@@ -162,12 +165,17 @@ case class Paxos[A](
         case _ => Paxos()
 
   // decision function
+  /** The value of the lowest round, in ballot order, whose proposals are decided.
+    * The result does not depend on the iteration order of `rounds`, and a decided round takes
+    * precedence over a round with duplicate votes: `Invalid` is returned only if no round is decided.
+    */
   def decision(using Participants): Agreement[A] =
-    rounds.collectFirst {
-      case (b, PaxosRound(_, proposals))
-          if proposals.decision != Undecided =>
-        proposals.decision
-    }.getOrElse(Undecided)
+      val decisions = rounds.view.mapValues(_.proposals.decision).toList
+      decisions
+        .collect { case (ballotNum, d @ Decided(_)) => (ballotNum, d) }
+        .minByOption(_._1)
+        .map(_._2)
+        .getOrElse(if decisions.exists(_._2 == Invalid) then Invalid else Undecided)
 
   // helper functions
   def nextBallotNum(using replicaId: ReplicaId): BallotNum =

@@ -9,12 +9,14 @@ import scala.collection.mutable
 /** Stability of the single-decree Paxos decision: once a replica has decided, its decision
   * must not change.
   *
-  * `phase1a(value)` writes `voteValue(value)` into the round `BallotNum(me, -1)`, but
-  * `voteValue` checks `hasNotVoted` on `currentRound`, not on that round. A second
-  * `phase1a(value)` (which `Consensus.propose` issues on every retry) therefore adds a second
-  * vote of the same replica, and that round becomes `Invalid`. `Paxos.decision` returns the first
-  * non-`Undecided` round in `Map` iteration order, so it can return `Invalid` instead of the
-  * real decision, and the result depends on the iteration order of the `Map`.
+  * Regression test. `phase1a(value)` stores the value as a vote in the round `BallotNum(me, -1)`.
+  * A second `phase1a(value)` (which `Consensus.propose` issues on every retry) used to add a
+  * second vote of the same replica, so that round became `Invalid`. `Paxos.decision` returned the
+  * first non-`Undecided` round in `Map` iteration order, so it could return `Invalid` instead of
+  * the real decision.
+  *
+  * Now `phase1a(value)` stores the value only once, and `decision` returns the decided round that
+  * is lowest in ballot order, whatever the other rounds contain.
   */
 class PaxosDecisionStabilityTest extends munit.FunSuite {
 
@@ -48,7 +50,7 @@ class PaxosDecisionStabilityTest extends munit.FunSuite {
     assertEquals(decided().st("A").decision, Agreement.Decided(false))
   }
 
-  test("a decided replica stays decided after calling phase1a(value) again".fail) {
+  test("a decided replica stays decided after calling phase1a(value) again") {
     val r = decided()
     import r.*
     doOp("A")(_.phase1a)
@@ -56,7 +58,7 @@ class PaxosDecisionStabilityTest extends munit.FunSuite {
     assertEquals(st("A").decision, Agreement.Decided(false))
   }
 
-  test("merging another replica's state does not change a decision".fail) {
+  test("merging another replica's state does not change a decision") {
     val r = decided()
     import r.*
     doOp("A")(_.phase1a)
