@@ -101,10 +101,12 @@ object KnowledgeGroups {
     KnowledgeGroup( // leader and followers share slots
       ids = Set(leader, follower1, follower2, follower3, follower4),
       path = m => MultiPaxos[Request](slots = m.slots),
+      // `exists`, not `forall`: a phase-1b vote also carries reports of the slots above it
+      // (SlotElections.withReports), and a decided reported slot has a proposal in its newest
+      // round. Requiring no proposal in every slot would drop such a vote. Some slot without
+      // a proposal still keeps this group disjoint from group 3.
       enabled = m =>
-        m.slots.forall((_, paxos) =>
-          !paxos.currentRoundHasProposal // this is necessary such that this does not overlap with group 3
-        )
+        m.slots.exists((_, paxos) => !paxos.currentRoundHasProposal)
     ),
     KnowledgeGroup( // client and leader share requests
       ids = Set(client, leader),

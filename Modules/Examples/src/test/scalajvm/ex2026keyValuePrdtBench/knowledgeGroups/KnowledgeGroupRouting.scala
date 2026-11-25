@@ -206,11 +206,32 @@ class KnowledgeGroupRouting extends munit.FunSuite {
     assertEquals(receivers(occamsRazor, client, p), acceptors)
   }
 
-  test("occamsRazor: a delta mixing open and proposed slots matches no slot group") {
+  test("occamsRazor: a delta mixing open and proposed slots goes to the acceptors, not the client") {
     val e0    = decided(elected(), 0, req0)
     val open1 = electionDelta(e0, 1)
     val mixed = MultiPaxos[Request](slots = e0.slots).merge(open1)
-    assertEquals(receivers(occamsRazor, leader, mixed), Set.empty[Uid])
+    assertEquals(receivers(occamsRazor, leader, mixed), followers)
+  }
+
+  test("occamsRazor: a vote that reports a decided slot above still reaches the acceptors") {
+    // follower1 accepts slots 0 and 1; slot 1 is decided, slot 0 is not
+    val e  = elected()
+    val s0 = e.merge(proposalDelta(e, 0, req0))
+    val s1 = s0.merge(proposalDelta(s0, 1, req1))
+    val a1 = s1.merge(as(follower1)(s1.upkeep))
+    val a2 = (acceptors - follower1).foldLeft(a1) { (s, id) =>
+      val d = as(id)(s.upkeep)
+      s.merge(MultiPaxos[Request](slots = d.slots.filter(_._1 == 1L)))
+    }
+    val decided1 = a2.merge(as(follower1)(a2.upkeep))
+    assertEquals(decided1.log.keySet, Set(1L))
+    // follower2 starts a new election in slot 0; follower1's vote reports slot 1
+    val st   = decided1.merge(as(follower2)(decided1.startLeaderElection(0)))
+    val vote = as(follower1)(st.upkeep)
+    assertEquals(vote.slots.keySet, Set(0L, 1L))
+    assert(!vote.slots(0).currentRoundHasProposal)
+    assert(vote.slots(1).currentRoundHasProposal)
+    assertEquals(receivers(occamsRazor, follower1, vote), acceptors - follower1)
   }
 }
 
