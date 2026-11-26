@@ -18,7 +18,7 @@
  * The algorithm is unchanged.
  */
 
-package channels.crypto
+package channels.crypto.vendored
 
 /** Quite ugly but fast enough implementation of SHA-1.
   *

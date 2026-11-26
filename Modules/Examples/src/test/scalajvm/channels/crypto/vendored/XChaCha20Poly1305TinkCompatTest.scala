@@ -1,4 +1,4 @@
-package channels.crypto
+package channels.crypto.vendored
 
 import munit.FunSuite
 

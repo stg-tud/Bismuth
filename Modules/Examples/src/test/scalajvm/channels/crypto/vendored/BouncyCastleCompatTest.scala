@@ -1,4 +1,4 @@
-package channels.crypto
+package channels.crypto.vendored
 
 import munit.FunSuite
 import org.bouncycastle.crypto.macs.Poly1305 as BcPoly1305

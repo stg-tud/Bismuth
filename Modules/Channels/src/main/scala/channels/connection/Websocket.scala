@@ -5,7 +5,7 @@ import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
 import java.util.Base64
-import channels.crypto.Sha1
+import channels.crypto.vendored.Sha1
 
 sealed trait WebsocketFrame
 

@@ -2,10 +2,10 @@
 // via the Scala port https://github.com/ckuessner/unofficial-tink-scala.
 // Copyright 2018 Google Inc., 2021 Google LLC, licensed under the Apache License, Version 2.0
 // (http://www.apache.org/licenses/LICENSE-2.0). Modified: condensed into a single minimal implementation.
-package channels.crypto
+package channels.crypto.vendored
 
 import channels.connection.MessageBuffer
-import channels.crypto.SecureRandomBytes
+import channels.crypto.{Aead, SecureRandomBytes}
 
 import java.nio.ByteBuffer
 import scala.util.Try
