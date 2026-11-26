@@ -252,6 +252,7 @@ lazy val rdts = projectMatrix.in(file("Modules/RDTs"))
   .settings(
     Settings.strictScalacFlags,
     publishSonatype,
+    libraryDependencies += "pt.kcry" %% "blake3" % "3.1.2",
   )
   .jvmPlatform(scalaVersions = Seq(s3v))
   .jsPlatform(scalaVersions = Seq(s3v))
