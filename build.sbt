@@ -10,12 +10,12 @@ libraryDependencies ++= Seq(
   "org.scalameta" %% "munit-scalacheck" % "1.3.1" % Test,
 )
 
-def decline    = "com.monovore"  %% "decline"     % "2.6.2"
-def pprint     = "com.lihaoyi"   %% "pprint"      % "0.9.6"
-def scalajsDom = "org.scala-js"  %% "scalajs-dom" % "2.8.1"
-def slips      = "de.rmgk.slips" %% "slips"       % "0.20.0"
-def scalafx    = "org.scalafx"   %% "scalafx"     % "27.0.0-R39"
-def upickle    = "com.lihaoyi"   %% "upickle"     % "4.4.3"
+def decline      = "com.monovore"    %% "decline"        % "2.6.2"
+def pprint       = "com.lihaoyi"     %% "pprint"         % "0.9.6"
+def scalajsDom   = "org.scala-js"    %% "scalajs-dom"    % "2.8.1"
+def slips        = "de.rmgk.slips"   %% "slips"          % "0.20.0"
+def scalafx      = "org.scalafx"     %% "scalafx"        % "27.0.0-R39"
+def upickle      = "com.lihaoyi"     %% "upickle"        % "4.4.3"
 def bouncyCastle = "org.bouncycastle" % "bcpkix-jdk18on" % "1.87"
 
 def jsoniterScala = Seq(
@@ -75,7 +75,7 @@ lazy val channels = projectMatrix.in(file("Modules/Channels"))
   .jvmPlatform(
     scalaVersions = Seq(s3v),
     settings = Seq(
-      Test / fork                               := true,
+      Test / fork := true,
       // independent implementation to check our Ed25519 and certificate encodings against
       libraryDependencies += bouncyCastle % Test,
     )
@@ -125,21 +125,21 @@ lazy val examples = projectMatrix.in(file("Modules/Examples"))
       libraryDependencies ++= {
         val jettyVersion = "12.1.15"
         Seq(
-          "com.github.alexandrnikitin"     % "bloom-filter_2.13"            % "0.13.1",
-          "com.google.crypto.tink"         % "tink"                         % "1.24.0",
-          "com.softwaremill.sttp.client4" %% "core"                         % "4.1.3",
-          "io.bullet"                     %% "borer-core"                   % "1.19.0",
-          "io.bullet"                     %% "borer-derivation"             % "1.19.0",
-          "io.etcd"                        % "jetcd-core"                   % "0.8.8",
-          "site.ycsb"                      % "core"                         % "0.17.0",
+          "com.github.alexandrnikitin"     % "bloom-filter_2.13" % "0.13.1",
+          "com.google.crypto.tink"         % "tink"              % "1.24.0",
+          "com.softwaremill.sttp.client4" %% "core"              % "4.1.3",
+          "io.bullet"                     %% "borer-core"        % "1.19.0",
+          "io.bullet"                     %% "borer-derivation"  % "1.19.0",
+          "io.etcd"                        % "jetcd-core"        % "0.8.8",
+          "site.ycsb"                      % "core"              % "0.17.0",
           bouncyCastle,
-          "org.conscrypt"                  % "conscrypt-openjdk-uber"       % "2.9.0",
-          "org.eclipse.jetty.websocket"    % "jetty-websocket-jetty-api"    % jettyVersion,
-          "org.eclipse.jetty.websocket"    % "jetty-websocket-jetty-client" % jettyVersion,
-          "org.eclipse.jetty.websocket"    % "jetty-websocket-jetty-server" % jettyVersion,
-          "org.scala-lang.modules"        %% "scala-swing"                  % "3.0.0",
-          "org.scala-lang.modules"        %% "scala-xml"                    % "2.5.0",
-          "org.slf4j"                      % "slf4j-nop"                    % "2.0.20" % Test,
+          "org.conscrypt"               % "conscrypt-openjdk-uber"       % "2.10.0",
+          "org.eclipse.jetty.websocket" % "jetty-websocket-jetty-api"    % jettyVersion,
+          "org.eclipse.jetty.websocket" % "jetty-websocket-jetty-client" % jettyVersion,
+          "org.eclipse.jetty.websocket" % "jetty-websocket-jetty-server" % jettyVersion,
+          "org.scala-lang.modules"     %% "scala-swing"                  % "3.0.0",
+          "org.scala-lang.modules"     %% "scala-xml"                    % "2.5.0",
+          "org.slf4j"                   % "slf4j-nop"                    % "2.0.20" % Test,
           decline,
           scalafx,
           slips,
