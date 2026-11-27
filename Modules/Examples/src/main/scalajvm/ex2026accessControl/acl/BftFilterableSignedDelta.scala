@@ -1,7 +1,6 @@
 package ex2026accessControl.acl
 
-import channels.crypto.Ed25519.{publicKey, verify}
-import channels.crypto.{Hash, PrivateIdentity, PublicIdentity, Signature}
+import channels.crypto.{Ed25519, Hash, PrivateIdentity, PublicIdentity, Signature}
 import ex2026accessControl.acl.HashDag.{Delta, Encoder, Hashable}
 import rdts.base.Bottom
 
@@ -14,7 +13,7 @@ case class BftFilterableSignedDelta[RDT: Bottom](
   // TODO: Replace with method that applies filter according to the specified permissions
   def filtered: BftFilterableSignedDelta[RDT]                                          = this.copy(payload = None)
   def isSignatureValid(using encoder: Encoder[BftFilterableSignedDelta[RDT]]): Boolean =
-    signature.nn.verify(author.publicKey, encoder(this.copy(signature = null)))
+    Ed25519.verifier.verify(author, encoder(this.copy(signature = null)), signature.nn)
   override def state: RDT = payload.getOrElse(Bottom[RDT].empty)
 }
 

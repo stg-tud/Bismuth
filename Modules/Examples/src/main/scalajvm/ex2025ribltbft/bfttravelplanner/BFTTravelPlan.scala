@@ -1,6 +1,6 @@
 package ex2025ribltbft.bfttravelplanner
 
-import channels.crypto.Ed25519Util
+import channels.crypto.jvm.Ed25519Util
 import ex2025ribltbft.dag.{Event, HashDAG}
 import ex2026accessControl.authz.travelplanner.TravelPlan
 import ex2026accessControl.authz.travelplanner.TravelPlan.UniqueId

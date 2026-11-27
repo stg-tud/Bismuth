@@ -1,7 +1,6 @@
 package ex2026accessControl.authz.evaluation
 
-import channels.crypto.Ed25519.{publicKey, verify}
-import channels.crypto.{Hash, PrivateIdentity, PublicIdentity, Signature}
+import channels.crypto.{Ed25519, Hash, PrivateIdentity, PublicIdentity, Signature}
 import com.github.plokhotnyuk.jsoniter_scala.core.*
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import rdts.base.{Bottom, Lattice}
@@ -68,7 +67,7 @@ case class SignedHashDagEntry[P](
 ) extends HashDagEntry[P]:
     override def hash(using JsonValueCodec[P]): Hash       = Hash.compute(writeToArray(this))
     override def isValid(using JsonValueCodec[P]): Boolean =
-      signature.verify(author.publicKey, writeToArray(copy(signature = Signature.allZeroSignature)))
+      Ed25519.verifier.verify(author, writeToArray(copy(signature = Signature.allZeroSignature)), signature)
 
 case class UnsignedHashDagEntry[P](
     payload: P,

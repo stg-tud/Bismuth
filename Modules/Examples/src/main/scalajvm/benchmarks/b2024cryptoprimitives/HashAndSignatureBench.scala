@@ -1,6 +1,6 @@
 package benchmarks.b2024cryptoprimitives
 
-import channels.crypto.Ed25519Util
+import channels.crypto.jvm.Ed25519Util
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.openjdk.jmh.annotations.*
 import org.openjdk.jmh.infra.Blackhole

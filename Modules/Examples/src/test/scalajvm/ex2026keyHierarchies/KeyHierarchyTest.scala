@@ -1,7 +1,7 @@
 package ex2026keyHierarchies
 
-import channels.crypto.Ed25519.fromPublicKey
-import channels.crypto.{Ed25519Util, PublicIdentity}
+import channels.crypto.PublicIdentity
+import channels.crypto.jvm.Ed25519Util
 import com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import ex2026keyHierarchies.{DeltaSurgeon, FullKeyHierarchy, KeyDerivationKey, KeyHierarchy}
@@ -22,7 +22,7 @@ class KeyHierarchyTest extends FunSuite {
     DeltaSurgeon.lwwDeltaSurgeon[Option[String]]
   }
 
-  private val replicaId        = PublicIdentity.fromPublicKey(Ed25519Util.generateNewKeyPair.getPublic)
+  private val replicaId        = PublicIdentity(Ed25519Util.publicKeyToPublicKeyBytesBase64Encoded(Ed25519Util.generateNewKeyPair.getPublic))
   private val fullKeyHierarchy = FullKeyHierarchy(KeyDerivationKey())
 
   test("FullKeyHierarchy with LastWriterWins[String]") {

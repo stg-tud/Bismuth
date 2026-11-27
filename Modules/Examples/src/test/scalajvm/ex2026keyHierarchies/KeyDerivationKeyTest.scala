@@ -1,6 +1,7 @@
 package ex2026keyHierarchies
 
-import channels.crypto.{Ed25519Util, PublicIdentity}
+import channels.crypto.PublicIdentity
+import channels.crypto.jvm.Ed25519Util
 import com.google.crypto.tink.subtle.ChaCha20Poly1305
 import ex2026keyHierarchies.KeyDerivationKey
 import ex2026keyHierarchies.KeyDerivationKeyTest.{keysAreEqualAccordingToSignatureSubkey, testData}

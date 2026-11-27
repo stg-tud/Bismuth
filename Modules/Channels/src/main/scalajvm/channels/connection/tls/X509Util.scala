@@ -1,6 +1,7 @@
 package channels.connection.tls
 
-import channels.crypto.{Ed25519PrivateIdentity, Ed25519Util, PrivateIdentity, PublicIdentity}
+import channels.crypto.{Ed25519PrivateIdentity, PrivateIdentity, PublicIdentity}
+import channels.crypto.jvm.Ed25519Util
 
 import java.io.ByteArrayInputStream
 import java.math.BigInteger

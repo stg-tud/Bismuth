@@ -1,6 +1,6 @@
 package channels.crypto.vendored
 
-import channels.crypto.Ed25519Util
+import channels.crypto.jvm.Ed25519Util
 
 import scala.util.Random
 

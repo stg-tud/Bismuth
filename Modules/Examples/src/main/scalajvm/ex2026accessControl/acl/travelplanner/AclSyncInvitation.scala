@@ -1,6 +1,7 @@
 package ex2026accessControl.acl.travelplanner
 
-import channels.crypto.{Ed25519Util, PublicIdentity}
+import channels.crypto.PublicIdentity
+import channels.crypto.jvm.Ed25519Util
 import com.github.plokhotnyuk.jsoniter_scala.core
 import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray}
 import ex2026accessControl.acl.AclRdt.given_JsonValueCodec_BftDelta

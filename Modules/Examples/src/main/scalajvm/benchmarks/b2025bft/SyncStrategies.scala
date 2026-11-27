@@ -1,7 +1,7 @@
 package benchmarks.b2025bft
 
 import bloomfilter.mutable.BloomFilter
-import channels.crypto.Ed25519Util
+import channels.crypto.jvm.Ed25519Util
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonKeyCodec, JsonReader, JsonValueCodec, JsonWriter, readFromArray, writeToArray}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import ex2025ribltbft.dag.Event

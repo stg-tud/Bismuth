@@ -1,6 +1,7 @@
 package ex2026accessControl.authz.travelplanner
 
-import channels.crypto.{Ed25519Util, Hash, PublicIdentity}
+import channels.crypto.{Hash, PublicIdentity}
+import channels.crypto.jvm.Ed25519Util
 import com.github.plokhotnyuk.jsoniter_scala.core
 import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray}
 import ex2026accessControl.authz.travelplanner.Invitation

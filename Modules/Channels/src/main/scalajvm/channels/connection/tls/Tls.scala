@@ -1,7 +1,8 @@
 package channels.connection.tls
 
 import channels.connection.{Abort, Connection, ConnectionDescriptor, Connector, Listener, Receive}
-import channels.crypto.{Ed25519Util, PrivateIdentity}
+import channels.crypto.PrivateIdentity
+import channels.crypto.jvm.Ed25519Util
 import de.rmgk.delay.Async
 import rdts.base.Uid
 

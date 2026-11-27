@@ -1,6 +1,7 @@
 package channels.connection.tls
 
-import channels.crypto.{Ed25519PrivateIdentity, Ed25519Util, PrivateIdentity, PublicIdentity, Signature}
+import channels.crypto.{Ed25519PrivateIdentity, PrivateIdentity, PublicIdentity, Signature}
+import channels.crypto.jvm.Ed25519Util
 import munit.FunSuite
 import org.bouncycastle.asn1.x500.style.BCStyle
 import org.bouncycastle.cert.X509CertificateHolder

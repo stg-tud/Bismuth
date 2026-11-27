@@ -1,7 +1,6 @@
 package ex2026accessControl.acl.sync
 
-import channels.crypto.Ed25519.{publicKey, verify}
-import channels.crypto.{PrivateIdentity, PublicIdentity, Signature}
+import channels.crypto.{Ed25519, PrivateIdentity, PublicIdentity, Signature}
 import ex2026accessControl.acl.HashDag.Encoder
 import rdts.time.Dot
 
@@ -11,7 +10,7 @@ case class SignedDelta[State](
     payload: State
 ) {
   def isSignatureValid(using encoder: Encoder[SignedDelta[State]]): Boolean =
-    signature.get.verify(PublicIdentity(dot.place.delegate).publicKey, encoder(this.copy(signature = None)))
+    Ed25519.verifier.verify(PublicIdentity(dot.place.delegate), encoder(this.copy(signature = None)), signature.get)
 }
 
 object SignedDelta {

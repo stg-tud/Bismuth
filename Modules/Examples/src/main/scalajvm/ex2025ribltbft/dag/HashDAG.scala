@@ -1,6 +1,6 @@
 package ex2025ribltbft.dag
 
-import channels.crypto.Ed25519Util
+import channels.crypto.jvm.Ed25519Util
 
 import java.security.{PrivateKey, PublicKey}
 import scala.annotation.{tailrec, unused}

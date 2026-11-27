@@ -1,6 +1,6 @@
 package ex2026accessControl.authz.travelplanner.view
 
-import channels.crypto.Ed25519.fromPublicKey
+import channels.crypto.jvm.Ed25519Util
 import channels.crypto.PublicIdentity
 import ex2026accessControl.authz.travelplanner.model.TravelPlanModel
 import ex2026accessControl.authz.travelplanner.{Invitation, TravelPlan}
@@ -45,7 +45,7 @@ class InvitationDialogScene(invitation: Invitation, travelPlanModel: TravelPlanM
         val perms = permissionTreePane.selectionToPermissions
         ExecutionContext.global.execute { () =>
           travelPlanModel.grantPermission(
-            PublicIdentity.fromPublicKey(invitation.identityKey.getPublic),
+            PublicIdentity(Ed25519Util.publicKeyToPublicKeyBytesBase64Encoded(invitation.identityKey.getPublic)),
             perms._1,
             perms._2
           )

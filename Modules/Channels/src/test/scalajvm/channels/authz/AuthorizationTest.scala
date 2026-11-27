@@ -2,8 +2,8 @@ package channels.authz
 
 import channels.authz.AuthzEvent.Payload.{Capability, Revocation}
 import channels.authz.AuthzTestSupport.{*, given}
-import channels.crypto.Ed25519.verify
 import channels.crypto.{Commitment, Hash, Signature}
+import channels.crypto.jvm.Ed25519Util
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray}
 import munit.FunSuite
@@ -24,9 +24,10 @@ class AuthorizationTest extends FunSuite {
     assertEquals(genesis.parents, Set.empty[Hash])
     assertEquals(genesis.authorization, Hash.allZeroHash)
     assert(
-      genesis.signature.verify(
-        rootIdentity.getPublicKey,
-        writeToArray(genesis.copy(signature = Signature.allZeroSignature))
+      Ed25519Util.checkEd25519Signature(
+        writeToArray(genesis.copy(signature = Signature.allZeroSignature)),
+        genesis.signature.toArray,
+        rootIdentity.getPublicKey
       )
     )
   }

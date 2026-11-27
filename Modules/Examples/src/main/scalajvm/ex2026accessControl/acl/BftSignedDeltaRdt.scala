@@ -1,7 +1,6 @@
 package ex2026accessControl.acl
 
-import channels.crypto.Ed25519.{publicKey, verify}
-import channels.crypto.{Hash, PrivateIdentity}
+import channels.crypto.{Ed25519, Hash, PrivateIdentity}
 import ex2026accessControl.acl.HashDag
 import ex2026accessControl.acl.HashDag.{Delta, Encoder, Hashable}
 
@@ -53,7 +52,7 @@ class BftSignedDeltaRdt[State](private val privateIdentity: PrivateIdentity)(usi
     }
 
   private inline def isSignatureValid(delta: BftDelta[State]): Boolean =
-    delta.signature.get.verify(delta.author.publicKey, encoder(delta.copy(signature = None)))
+    Ed25519.verifier.verify(delta.author, encoder(delta.copy(signature = None)), delta.signature.get)
 
 }
 

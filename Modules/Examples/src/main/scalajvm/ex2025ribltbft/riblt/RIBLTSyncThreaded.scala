@@ -1,5 +1,5 @@
 package ex2025ribltbft.riblt
-import channels.crypto.Ed25519Util
+import channels.crypto.jvm.Ed25519Util
 import com.github.plokhotnyuk.jsoniter_scala.core.*
 import com.github.plokhotnyuk.jsoniter_scala.macros.*
 import ex2025ribltbft.dag.Event

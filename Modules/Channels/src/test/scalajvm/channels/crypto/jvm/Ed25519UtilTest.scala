@@ -1,4 +1,4 @@
-package channels.crypto
+package channels.crypto.jvm
 
 import munit.FunSuite
 import org.bouncycastle.jce.provider.BouncyCastleProvider

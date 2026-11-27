@@ -1,6 +1,7 @@
 package ex2026accessControl.acl.evaluation
 
-import channels.crypto.{Ed25519Util, IdentityFactory, PrivateIdentity}
+import channels.crypto.{IdentityFactory, PrivateIdentity}
+import channels.crypto.jvm.Ed25519Util
 import com.github.plokhotnyuk.jsoniter_scala.core.*
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import ex2026accessControl.acl.{Acl, BftDelta}

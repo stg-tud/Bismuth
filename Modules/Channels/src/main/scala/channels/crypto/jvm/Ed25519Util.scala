@@ -1,11 +1,13 @@
-package channels.crypto
+package channels.crypto.jvm
+
+import channels.crypto.PublicIdentity
 
 import java.security.*
 import java.security.interfaces.EdECPrivateKey
 import java.security.spec.{NamedParameterSpec, PKCS8EncodedKeySpec, X509EncodedKeySpec}
 import java.util.Base64
 
-/** Ed25519 keys and signatures using the JDK (SunEC). Keys of other providers are accepted where they use the
+/** JVM only: Ed25519 keys and signatures using the JDK (SunEC). Keys of other providers are accepted where they use the
   * standard encodings.
   */
 object Ed25519Util {

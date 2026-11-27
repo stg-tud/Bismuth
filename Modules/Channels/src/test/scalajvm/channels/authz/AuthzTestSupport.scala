@@ -2,8 +2,8 @@ package channels.authz
 
 import channels.authz.AuthzEvent.Payload.{Capability, DeltaCommitment}
 import channels.crypto.Commitment.RevealedValue
-import channels.crypto.Ed25519.fromPublicKey
-import channels.crypto.{Ed25519PrivateIdentity, Ed25519Util, IdentityFactory, PublicIdentity, *}
+import channels.crypto.{Ed25519PrivateIdentity, IdentityFactory, PublicIdentity, *}
+import channels.crypto.jvm.Ed25519Util
 import channels.crypto.Ed25519.given
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
@@ -18,7 +18,7 @@ object AuthzTestSupport extends munit.Assertions {
 
   def newIdentity(): (PublicIdentity, PrivateKey) = {
     val keyPair: KeyPair = Ed25519Util.generateNewKeyPair
-    (PublicIdentity.fromPublicKey(keyPair.getPublic), keyPair.getPrivate)
+    (PublicIdentity(Ed25519Util.publicKeyToPublicKeyBytesBase64Encoded(keyPair.getPublic)), keyPair.getPrivate)
   }
 
   def buildEvent(
@@ -29,7 +29,7 @@ object AuthzTestSupport extends munit.Assertions {
       authorization: Hash
   ): AuthzEvent = {
     val unsigned  = AuthzEvent(payload, author, parents, Signature.allZeroSignature, authorization)
-    val signature = Ed25519.sign(writeToArray(unsigned), authorPrivateKey)
+    val signature = Signature.unsafeFromArray(Ed25519Util.sign(writeToArray(unsigned), authorPrivateKey))
     unsigned.copy(signature = signature)
   }
 
