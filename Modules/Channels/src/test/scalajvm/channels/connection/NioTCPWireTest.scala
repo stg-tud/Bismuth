@@ -5,12 +5,11 @@ import de.rmgk.delay.Async
 import java.io.{DataInputStream, InputStream, OutputStream}
 import java.net.{InetSocketAddress, ServerSocket, Socket}
 import java.nio.ByteBuffer
-import java.nio.channels.{ServerSocketChannel, SocketChannel}
 import java.nio.charset.StandardCharsets
 import java.util.concurrent.{LinkedBlockingQueue, TimeUnit}
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Promise}
-import scala.util.{Failure, Success, Try}
+import scala.util.Try
 
 /** Checks the bytes on the wire of [[NioTCP]] (plain length-prefixed framing and websockets), against raw sockets,
   * including messages split across or combined within reads.
