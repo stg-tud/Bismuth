@@ -25,9 +25,7 @@ case class PoSBlockchain[T](inner: Map[String, Block[T]]) extends Blockchain[T, 
     if proposerUid == Uid.zero || proposerUid == newBlock.dot.place then {
       PoSBlockchain(inner + (newBlock.hash -> newBlock))
     } else {
-      println(
-        f"tried to add block $newBlock with proposer $proposerUid but origin is not proposer ${newBlock.dot.place}"
-      )
+      // origin is not the selected proposer, reject the block
       PoSBlockchain(Map.empty)
     }
   }
