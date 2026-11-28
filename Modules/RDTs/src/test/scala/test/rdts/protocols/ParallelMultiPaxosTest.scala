@@ -398,7 +398,6 @@ class ParallelMultiPaxosTest extends munit.FunSuite {
     state = state.merge(state.startLeaderElection(0)(using id2))
     state = runUpkeepRound(state)
 
-    println(state)
     assert(state.rounds(1).currentLeaderElection.exists(_.result.contains(id1.uid)))
     assert(!state.rounds(0).currentLeaderElection.exists(_.result.contains(id2.uid)))
 
