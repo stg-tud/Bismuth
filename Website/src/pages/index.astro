@@ -11,52 +11,52 @@ const byId = (id: string) => projects.find((p) => p.id === id)!;
 		<div class="container">
 			<h1>Programming foundations for distributed software</h1>
 			<p class="lead">
-				Bismuth brings together several research strands of the{" "}
-				<a href="https://www.stg.tu-darmstadt.de/">Software Technology Group</a> at TU Darmstadt:{" "}
+				Bismuth is a research project of the{" "}
+				<a href="https://www.stg.tu-darmstadt.de/">Software Technology Group</a> at TU Darmstadt. It covers three directions:{" "}
 				<span class="strand track-teal">distributed reactive programming</span>,{" "}
 				<span class="strand track-magenta">replicated data types and protocols</span>, and{" "}
 				<span class="strand track-orange">trust without a central authority</span>.
 			</p>
 			<div class="summary">
 				<div class="card card-padded summary-card">
-					<h3>Abstracted distribution</h3>
-					<p>Developers work with ordinary data types and reactive signals. The platform takes care of replication and synchronization.</p>
+					<h3>Replication is automatic</h3>
+					<p>Applications use ordinary data types and reactive signals. Replication and synchronization are handled by the platform, not by application code.</p>
 				</div>
 				<div class="card card-padded summary-card">
-					<h3>Local state, global consistency</h3>
-					<p>Each device works on its local state and synchronizes when it can. Coordination is only added where an application needs it.</p>
+					<h3>Local-first operation</h3>
+					<p>Every device works on its local copy and stays usable offline. Coordination is added only where an application needs stronger guarantees.</p>
 				</div>
 				<div class="card card-padded summary-card">
 					<h3>Correct by composition</h3>
-					<p>Replicated data types, reactive dataflow, and access control compose. Programs built from them inherit their guarantees.</p>
+					<p>Replicated data types, reactive dataflow, and access control can be combined. Properties of the individual parts also hold for the combination.</p>
 				</div>
 			</div>
 			<details class="card summary-details">
 				<summary>Research overview</summary>
 				<div class="abstract-body">
 				<p>
-					Most distributed applications today are built in one of two ways. Either developers write the communication
-					themselves, and then also have to work out consistency, fault tolerance, and security for each application. Or
-					they use cloud services, which handle these concerns but decide them for the application, and require all data
-					to pass through the provider.
+					Distributed applications are built in one of two ways. Either the developers write the communication
+					themselves, and then also have to solve consistency, fault tolerance, and security for each application. Or they
+					use cloud services, which handle these problems but are non-programmable black-boxes that route all
+					data through the provider.
 				</p>
 				<p>
 					Bismuth explores a third option. Distribution is handled by programming abstractions that developers already
-					know. Replicated data types are ordinary algebraic data types, and the merge of concurrent changes is derived from
-					their structure. Reactive signals describe how values depend on each other, and updates propagate through these
-					dependencies across devices. Access control and encryption are part of the replicated data itself, so no trusted
-					server is needed.
+					already use. Replicated data types are ordinary algebraic data types, and the merge of concurrent changes is
+					derived from their structure. Reactive signals describe how values depend on each other, and updates propagate
+					along these dependencies across devices. Access control and encryption are part of the replicated data itself,
+					so no trusted server is needed.
 				</p>
 				<p>
-					Each device works on its local copy and stays usable without a network connection. Changes are synchronized
-					when possible and all copies converge to the same state. Where an application needs stronger guarantees, for
-					example to keep an invariant like a non-negative balance, coordination is added only for the affected operations.
-					Consensus protocols themselves can be built from the same replicated data types.
+					Devices keep working on their local copy without a network connection. Changes are synchronized when possible,
+					and all copies converge to the same state. Where an application needs stronger guarantees, say to keep an
+					invariant such as a non-negative balance, coordination is added only for the affected operations. Consensus
+					protocols can be built from the same replicated data types.
 				</p>
 				<p>
-					The building blocks are designed to compose. Properties such as convergence or the safety of a protocol are
-					proven for each building block, often mechanized in Lean, and then hold for programs built from them. The
-					timeline below lists the individual projects and papers.
+					The building blocks are meant to be combined. Properties such as convergence, or the safety of a protocol, are
+					proven for each block, often machine-checked in Lean, so that programs built from them inherit these guarantees.
+					The timeline below lists the projects and papers.
 				</p>
 				</div>
 			</details>
@@ -113,7 +113,7 @@ const byId = (id: string) => projects.find((p) => p.id === id)!;
 		<div class="container">
 			<h2>Get involved</h2>
 			<p class="lead">
-				Bismuth is developed at the Software Technology Group of TU Darmstadt. Anyone is welcome to join our matrix channel if you want to know more about our research or the Bismuth library.
+				Bismuth is developed at the Software Technology Group of TU Darmstadt. To learn more about our research or the Bismuth library, you may join our Matrix channel.
 			</p>
 			<div class="buttons">
 				<a class="hero" href="https://matrix.to/#/#difosys:matrix.tu-darmstadt.de">Join the chat</a>
