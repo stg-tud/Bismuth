@@ -3,37 +3,34 @@ package channels.authz
 import channels.authz.AuthzEvent.Payload.{Capability, DeltaCommitment}
 import channels.crypto.Commitment.RevealedValue
 import channels.crypto.{Ed25519PrivateIdentity, IdentityFactory, PublicIdentity, *}
-import channels.crypto.jvm.Ed25519Util
 import channels.crypto.Ed25519.given
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, writeToArray}
 import com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker
 import rdts.filters.{Permits, PermissionTree}
 
-import java.security.{KeyPair, PrivateKey}
-
 object AuthzTestSupport extends munit.Assertions {
   given JsonValueCodec[Set[Int]] = JsonCodecMaker.make
   given Permits[Set[Int]]        = Permits.terminalSetPermits[Int]
 
-  def newIdentity(): (PublicIdentity, PrivateKey) = {
-    val keyPair: KeyPair = Ed25519Util.generateNewKeyPair
-    (PublicIdentity(Ed25519Util.publicKeyToPublicKeyBytesBase64Encoded(keyPair.getPublic)), keyPair.getPrivate)
+  def newIdentity(): (PublicIdentity, PrivateIdentity) = {
+    val identity = Ed25519PrivateIdentity.generate()
+    (identity.getPublic, identity)
   }
 
   def buildEvent(
       payload: AuthzEvent.Payload,
       author: PublicIdentity,
-      authorPrivateKey: PrivateKey,
+      authorPrivateIdentity: PrivateIdentity,
       parents: Set[Hash],
       authorization: Hash
   ): AuthzEvent = {
     val unsigned  = AuthzEvent(payload, author, parents, Signature.allZeroSignature, authorization)
-    val signature = Signature.unsafeFromArray(Ed25519Util.sign(writeToArray(unsigned), authorPrivateKey))
+    val signature = authorPrivateIdentity.sign(writeToArray(unsigned))
     unsigned.copy(signature = signature)
   }
 
-  def buildGenesis(holder: PublicIdentity, holderKey: PrivateKey): AuthzEvent =
+  def buildGenesis(holder: PublicIdentity, holderKey: PrivateIdentity): AuthzEvent =
     buildEvent(
       Capability(holder, PermissionTree.allow, PermissionTree.allow),
       holder,
@@ -48,7 +45,7 @@ object AuthzTestSupport extends munit.Assertions {
       case Left(missing)  => fail(s"expected ${event.hash} to be accepted, but graph reported missing: $missing")
     }
 
-  def freshGraph(): (AuthzEventGraph, PublicIdentity, PrivateKey, AuthzEvent) = {
+  def freshGraph(): (AuthzEventGraph, PublicIdentity, PrivateIdentity, AuthzEvent) = {
     val (holder, holderKey) = newIdentity()
     val genesis             = buildGenesis(holder, holderKey)
     (AuthzEventGraph(genesis), holder, holderKey, genesis)
@@ -59,13 +56,13 @@ object AuthzTestSupport extends munit.Assertions {
   def buildDeltaEvent(
       delta: Set[Int],
       author: PublicIdentity,
-      authorPrivateKey: PrivateKey,
+      authorPrivateIdentity: PrivateIdentity,
       parents: Set[Hash],
       authorization: Hash
   ): (AuthzEvent, RevealedValue) = {
     val revealed = Commitment.commit(author.id, writeToArray(delta))
     val event    =
-      buildEvent(DeltaCommitment(revealed.commitment(author.id)), author, authorPrivateKey, parents, authorization)
+      buildEvent(DeltaCommitment(revealed.commitment(author.id)), author, authorPrivateIdentity, parents, authorization)
     (event, revealed)
   }
 

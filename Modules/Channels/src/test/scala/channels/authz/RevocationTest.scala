@@ -3,14 +3,13 @@ package channels.authz
 import channels.authz.AuthzEvent.Payload.{Capability, Revocation}
 import channels.authz.AuthzTestSupport.{*, given}
 import channels.crypto.Commitment.RevealedValue
-import channels.crypto.{Ed25519PrivateIdentity, Hash, PublicIdentity}
+import channels.crypto.{Ed25519PrivateIdentity, Hash, PrivateIdentity, PublicIdentity}
 import channels.crypto.Ed25519.given
 
 import com.github.plokhotnyuk.jsoniter_scala.core.{readFromArray, writeToArray}
 import munit.{FunSuite, Location}
 import rdts.filters.PermissionTree
 
-import java.security.PrivateKey
 import scala.collection.mutable
 
 /** Tests how receiving a revocation invalidates the deltas of the revoked capabilities that are not causally before it.
@@ -28,7 +27,7 @@ class RevocationTest extends FunSuite {
   final private class Fixture {
     private val rootIdentity: Ed25519PrivateIdentity = newPrivateIdentity()
 
-    val root: Principal    = Principal(rootIdentity.getPublic, rootIdentity.identityKey.getPrivate)
+    val root: Principal    = Principal(rootIdentity.getPublic, rootIdentity)
     val genesis: AuthzEvent = AuthzEvent.createGenesis(rootIdentity)
 
     private var everyDelta: DeltaValueStore[Set[Int]] = DeltaValueStore[Set[Int]]()
@@ -620,7 +619,7 @@ class RevocationTest extends FunSuite {
 }
 
 object RevocationTest {
-  final case class Principal(id: PublicIdentity, key: PrivateKey)
+  final case class Principal(id: PublicIdentity, key: PrivateIdentity)
 
   /** A delta event together with its delta value */
   final case class Write(event: AuthzEvent, revealed: RevealedValue) {

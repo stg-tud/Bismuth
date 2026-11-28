@@ -41,7 +41,7 @@ class AuthzReplicaTest extends FunSuite {
     buildEvent(
       Revocation(capability.hash),
       identity.getPublic,
-      identity.identityKey.getPrivate,
+      identity,
       parents,
       capability.hash
     )
@@ -71,7 +71,7 @@ class AuthzReplicaTest extends FunSuite {
     val (deltaEvent, _)                       = buildDeltaEvent(
       Set(1),
       rootIdentity.getPublic,
-      rootIdentity.identityKey.getPrivate,
+      rootIdentity,
       Set(genesisEvent.hash),
       genesisEvent.hash
     )
@@ -86,14 +86,14 @@ class AuthzReplicaTest extends FunSuite {
     val (missingParentEvent, _)               = buildDeltaEvent(
       Set(1),
       rootIdentity.getPublic,
-      rootIdentity.identityKey.getPrivate,
+      rootIdentity,
       Set(genesisEvent.hash),
       genesisEvent.hash
     )
     val (deltaEvent, _) = buildDeltaEvent(
       Set(2),
       rootIdentity.getPublic,
-      rootIdentity.identityKey.getPrivate,
+      rootIdentity,
       Set(missingParentEvent.hash),
       genesisEvent.hash
     )
@@ -114,7 +114,7 @@ class AuthzReplicaTest extends FunSuite {
     val (deltaEvent, _)                       = buildDeltaEvent(
       Set(1),
       rootIdentity.getPublic,
-      rootIdentity.identityKey.getPrivate,
+      rootIdentity,
       Set(genesisEvent.hash),
       genesisEvent.hash
     )
@@ -129,7 +129,7 @@ class AuthzReplicaTest extends FunSuite {
     val (deltaEvent, revealed)                = buildDeltaEvent(
       Set(1, 2),
       rootIdentity.getPublic,
-      rootIdentity.identityKey.getPrivate,
+      rootIdentity,
       Set(genesisEvent.hash),
       genesisEvent.hash
     )
@@ -145,7 +145,7 @@ class AuthzReplicaTest extends FunSuite {
     val (deltaEvent, revealed)                = buildDeltaEvent(
       Set(1, 2),
       rootIdentity.getPublic,
-      rootIdentity.identityKey.getPrivate,
+      rootIdentity,
       Set(genesisEvent.hash),
       genesisEvent.hash
     )
@@ -163,14 +163,14 @@ class AuthzReplicaTest extends FunSuite {
     val delegation = buildEvent(
       Capability(restrictedIdentity.getPublic, PermissionTree.empty, PermissionTree.allow),
       rootIdentity.getPublic,
-      rootIdentity.identityKey.getPrivate,
+      rootIdentity,
       Set(genesisEvent.hash),
       genesisEvent.hash
     )
     val (deltaEvent, revealed) = buildDeltaEvent(
       Set(1),
       restrictedIdentity.getPublic,
-      restrictedIdentity.identityKey.getPrivate,
+      restrictedIdentity,
       Set(delegation.hash),
       delegation.hash
     )
@@ -238,7 +238,7 @@ class AuthzReplicaTest extends FunSuite {
     val selfDelegation                        = buildEvent(
       Capability(rootIdentity.getPublic, PermissionTree.allow, PermissionTree.empty),
       rootIdentity.getPublic,
-      rootIdentity.identityKey.getPrivate,
+      rootIdentity,
       Set(genesisEvent.hash),
       genesisEvent.hash
     )
@@ -270,7 +270,7 @@ class AuthzReplicaTest extends FunSuite {
     val narrowSelfDelegation                  = buildEvent(
       Capability(rootIdentity.getPublic, PermissionTree.fromPath("a"), PermissionTree.empty),
       rootIdentity.getPublic,
-      rootIdentity.identityKey.getPrivate,
+      rootIdentity,
       Set(genesisEvent.hash),
       genesisEvent.hash
     )
@@ -296,7 +296,7 @@ class AuthzReplicaTest extends FunSuite {
     val (deltaEvent, _)                       = buildDeltaEvent(
       Set(1),
       rootIdentity.getPublic,
-      rootIdentity.identityKey.getPrivate,
+      rootIdentity,
       Set(genesisEvent.hash),
       genesisEvent.hash
     )
@@ -353,7 +353,7 @@ class AuthzReplicaTest extends FunSuite {
     val (readableDelta, readableRevealed)     = buildDeltaEvent(
       Set.empty[Int],
       rootIdentity.getPublic,
-      rootIdentity.identityKey.getPrivate,
+      rootIdentity,
       Set(genesisEvent.hash),
       genesisEvent.hash
     )
@@ -363,14 +363,14 @@ class AuthzReplicaTest extends FunSuite {
     val delegation         = buildEvent(
       Capability(restrictedIdentity.getPublic, PermissionTree.empty, PermissionTree.allow),
       rootIdentity.getPublic,
-      rootIdentity.identityKey.getPrivate,
+      rootIdentity,
       Set(readableDelta.hash),
       genesisEvent.hash
     )
     val (unreadableDelta, unreadableRevealed) = buildDeltaEvent(
       Set(2),
       restrictedIdentity.getPublic,
-      restrictedIdentity.identityKey.getPrivate,
+      restrictedIdentity,
       Set(delegation.hash),
       delegation.hash
     )
