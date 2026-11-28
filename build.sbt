@@ -3,7 +3,10 @@ import org.scalajs.linker.interface.{ESVersion, ModuleInitializer, ModuleSplitSt
 // for some reason, project matrix REALLY likes to require this everywhere
 lazy val s3v = "3.10.1"
 scalaVersion := s3v
-Settings.defaultScalacFlags
+Settings.strictScalacFlags
+Settings.javaOutputVersion(21)
+
+
 
 libraryDependencies ++= Seq(
   "org.scalameta" %% "munit"            % "1.3.6" % Test,
@@ -23,7 +26,7 @@ def jsoniterScala = Seq(
   "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % "2.43.0" % Provided
 )
 
-lazy val bismuth = project.in(file(".")).settings(Settings.strictScalacFlags).aggregate(
+lazy val bismuth = project.in(file(".")).aggregate(
   channels.js(s3v),
   channels.jvm(s3v),
   examples.js(s3v),
@@ -41,7 +44,6 @@ lazy val bismuth = project.in(file(".")).settings(Settings.strictScalacFlags).ag
 
 lazy val publishedProjects =
   project.in(file("target/PhonyBuilds/publishedProjects")).settings(
-    Settings.strictScalacFlags,
     publish / skip := true
   )
     .aggregate(
@@ -64,7 +66,6 @@ lazy val publishedProjects =
 lazy val channels = projectMatrix.in(file("Modules/Channels"))
   .dependsOn(rdts % "compile->compile;test->test")
   .settings(
-    Settings.strictScalacFlags,
     publishSonatype,
     libraryDependencies ++= jsoniterScala,
     libraryDependencies ++= Seq(
@@ -104,11 +105,9 @@ lazy val examples = projectMatrix.in(file("Modules/Examples"))
     channels % "compile->compile;test->test",
   )
   .settings(
-    Settings.strictScalacFlags,
     publish / skip := true,
     // there are some quite hard to fix warnings in the swing code, and problems related to macro inlining for the reactive operators
     scalacOptions += "-Wconf:msg=initialized|initialization&src=.*(scala/swing|reactives/operator)/.*:s",
-    Settings.javaOutputVersion(21),
     fork := true,
     libraryDependencies ++= jsoniterScala,
     libraryDependencies += pprint,
@@ -196,7 +195,6 @@ lazy val examples = projectMatrix.in(file("Modules/Examples"))
 lazy val lore = projectMatrix.in(file("Modules/Lore"))
   .dependsOn(reactives)
   .settings(
-    Settings.javaOutputVersion(17),
     libraryDependencies ++= jsoniterScala,
     libraryDependencies ++= Seq(
       "com.lihaoyi"    %% "fansi"           % "0.5.1",
@@ -213,7 +211,6 @@ lazy val lore = projectMatrix.in(file("Modules/Lore"))
 lazy val loreCompilerPlugin = project.in(file("Modules/LoRe Compiler Plugin"))
   .dependsOn(lore.jvm(s3v))
   .settings(
-    Settings.javaOutputVersion(17),
     libraryDependencies ++= Seq(
       upickle,
       "org.scala-lang" %% "scala3-compiler" % scalaVersion.value % "provided",
@@ -224,7 +221,6 @@ lazy val loreCompilerPluginExamples = project.in(file("Modules/LoRe Compiler Plu
   .dependsOn(lore.jvm(s3v))
   .dependsOn(loreCompilerPlugin)
   .settings(
-    Settings.javaOutputVersion(17),
     scalacOptions += {
       val converter       = fileConverter.value
       val pluginClasspath = (loreCompilerPlugin / Compile / fullClasspathAsJars).value
@@ -245,7 +241,6 @@ lazy val scripts = project.in(file("Modules/scripts"))
 
 lazy val rdts = projectMatrix.in(file("Modules/RDTs"))
   .settings(
-    Settings.strictScalacFlags,
     publishSonatype,
     libraryDependencies += "pt.kcry" %% "blake3" % "3.1.2",
   )
@@ -255,7 +250,6 @@ lazy val rdts = projectMatrix.in(file("Modules/RDTs"))
 
 lazy val reactives = projectMatrix.in(file("Modules/Reactives"))
   .settings(
-    Settings.strictScalacFlags,
     // scaladoc
     autoAPIMappings := true,
     Compile / doc / scalacOptions += "-groups",
