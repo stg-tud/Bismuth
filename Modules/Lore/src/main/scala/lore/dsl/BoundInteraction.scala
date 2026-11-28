@@ -1,5 +1,6 @@
 package lore.dsl
 
+import scala.annotation.publicInBinary
 import reactives.SelectedScheduler.State as BundleState
 import reactives.core.ReSource
 import reactives.default.*
@@ -42,11 +43,11 @@ object BoundInteraction {
 }
 
 case class BoundInteraction[ST <: Tuple, S <: Tuple, A] private[dsl] (
-    private[dsl] val requires: Seq[Requires[ST, A]] = Seq.empty,
-    private[dsl] val ensures: Seq[Ensures[ST, A]] = Seq.empty,
-    private[dsl] val executes: (ST, A) => ST,
-    private[dsl] val modifies: S,
-    private[dsl] val event: Event[A]
+    @publicInBinary private[dsl] val requires: Seq[Requires[ST, A]] = Seq.empty,
+    @publicInBinary private[dsl] val ensures: Seq[Ensures[ST, A]] = Seq.empty,
+    @publicInBinary private[dsl] val executes: (ST, A) => ST,
+    @publicInBinary private[dsl] val modifies: S,
+    @publicInBinary private[dsl] val event: Event[A]
 ) extends Interaction[ST, A] {
 
   type T[_, _] = BoundInteraction[ST, S, A]

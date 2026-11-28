@@ -203,7 +203,10 @@ lazy val lore = projectMatrix.in(file("Modules/Lore"))
       "org.typelevel"  %% "cats-parse"      % "1.1.0",
       decline,
     ),
-    Compile / mainClass := Some("lore.Compiler")
+    Compile / mainClass := Some("lore.Compiler"),
+    // inline/macro code calls the synthesized copy/apply of case classes with private[dsl] constructors,
+    // which cannot be annotated with @publicInBinary
+    scalacOptions += "-Wconf:id=E192&src=.*lore/dsl/.*:s"
   )
   .jvmPlatform(scalaVersions = Seq(s3v))
   .jsPlatform(scalaVersions = Seq(s3v))

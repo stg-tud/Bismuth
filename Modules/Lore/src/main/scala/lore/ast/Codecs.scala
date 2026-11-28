@@ -24,7 +24,7 @@ object Codecs {
     def encodeValue(l: NonEmptyList[A], out: JsonWriter): Unit =
       listCodec.encodeValue(l.toList, out)
 
-    override def nullValue: NonEmptyList[A] = null
+    override def nullValue: NonEmptyList[A] = null.asInstanceOf[NonEmptyList[A]]
   }
 
   given JsonValueCodec[List[Type]] = JsonCodecMaker.make(
@@ -39,13 +39,13 @@ object Codecs {
   given sourceFileC: JsonValueCodec[SourceFile] = new JsonValueCodec[SourceFile]:
       override def decodeValue(in: JsonReader, default: SourceFile): SourceFile = default
       override def encodeValue(x: SourceFile, out: JsonWriter): Unit            = ()
-      override def nullValue: SourceFile                                        = null
+      override def nullValue: SourceFile                                        = null.asInstanceOf[SourceFile]
 
   // dummy codec to prevent compilation error. We do not want to serialize source positions
   given SourcePositionCodec: JsonValueCodec[SourcePosition] = new JsonValueCodec[SourcePosition]:
       override def decodeValue(in: JsonReader, default: SourcePosition): SourcePosition = default
       override def encodeValue(x: SourcePosition, out: JsonWriter): Unit                = ()
-      override def nullValue: SourcePosition                                            = null
+      override def nullValue: SourcePosition                                            = null.asInstanceOf[SourcePosition]
 
   given targTListC: JsonValueCodec[List[TArgT]] = JsonCodecMaker.make(
     CodecMakerConfig
@@ -65,7 +65,7 @@ object Codecs {
 
     def encodeValue(p: Path, out: JsonWriter): Unit = out.writeVal(p.toString)
 
-    override def nullValue: Path = null
+    override def nullValue: Path = null.asInstanceOf[Path]
   }
 
   given JsonValueCodec[Term] = JsonCodecMaker.make(

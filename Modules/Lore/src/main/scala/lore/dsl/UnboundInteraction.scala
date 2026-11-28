@@ -1,5 +1,6 @@
 package lore.dsl
 
+import scala.annotation.publicInBinary
 import reactives.SelectedScheduler.State as BundleState
 import reactives.core.ReSource
 import reactives.operator.Event
@@ -41,8 +42,8 @@ object UnboundInteraction {
 }
 
 case class UnboundInteraction[S <: Tuple, A] private[dsl] (
-    private[dsl] val requires: Seq[Requires[S, A]] = Seq.empty,
-    private[dsl] val ensures: Seq[Ensures[S, A]] = Seq.empty
+    @publicInBinary private[dsl] val requires: Seq[Requires[S, A]] = Seq.empty,
+    @publicInBinary private[dsl] val ensures: Seq[Ensures[S, A]] = Seq.empty
 ) extends Interaction[S, A] with CanExecute[S, A] with CanAct[S, A] {
   type T[_, _]  = UnboundInteraction[S, A]
   type E[_, _]  = InteractionWithExecutes[S, A]

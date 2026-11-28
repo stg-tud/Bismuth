@@ -1,5 +1,6 @@
 package lore.dsl
 
+import scala.annotation.publicInBinary
 import reactives.SelectedScheduler.State as BundleState
 import reactives.core.ReSource
 import reactives.operator.Event
@@ -43,10 +44,10 @@ object InteractionWithModifiesAndActs {
 }
 
 case class InteractionWithModifiesAndActs[ST <: Tuple, S <: Tuple, A] private[dsl] (
-    private[dsl] val requires: Seq[Requires[ST, A]] = Seq.empty,
-    private[dsl] val ensures: Seq[Ensures[ST, A]] = Seq.empty,
-    private[dsl] val modifies: S,
-    private[dsl] val event: Event[A]
+    @publicInBinary private[dsl] val requires: Seq[Requires[ST, A]] = Seq.empty,
+    @publicInBinary private[dsl] val ensures: Seq[Ensures[ST, A]] = Seq.empty,
+    @publicInBinary private[dsl] val modifies: S,
+    @publicInBinary private[dsl] val event: Event[A]
 ) extends Interaction[ST, A] with CanExecute[ST, A] {
   type T[_, _] = InteractionWithModifiesAndActs[ST, S, A]
   type E[_, _] = BoundInteraction[ST, S, A]
