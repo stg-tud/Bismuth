@@ -104,7 +104,12 @@ lazy val examples = projectMatrix.in(file("Modules/Examples"))
     channels % "compile->compile;test->test",
   )
   .settings(
+    Settings.strictScalacFlags,
     publish / skip := true,
+    // there are some quite hard to fix warnings in the swing code, and problems related to macro inlining for the reactive operators
+    scalacOptions += "-Wconf:msg=initialized|initialization&src=.*(scala/swing|reactives/operator)/.*:s",
+    Settings.javaOutputVersion(21),
+    fork := true,
     libraryDependencies ++= jsoniterScala,
     libraryDependencies += pprint,
   )
@@ -112,15 +117,6 @@ lazy val examples = projectMatrix.in(file("Modules/Examples"))
     scalaVersions = Seq(s3v),
     axisValues = Nil,
     configure = _.enablePlugins(JmhPlugin).settings(
-      Settings.strictScalacFlags,
-      // Init-checker warnings positioned in library code, where no local @nowarn reaches:
-      // - scala-swing's constructors pass `this` to listeners before subclasses are initialized,
-      //   so every subclass of a scala-swing component is flagged
-      // - reactive networks defined in constructors that reference fields defined later (cyclic signals) are flagged
-      //   inside the inlined reactives macros
-      scalacOptions += "-Wconf:msg=initialized|initialization&src=.*(scala/swing|reactives/operator)/.*:s",
-      Settings.javaOutputVersion(21),
-      fork := true,
       Settings.jolSettings,
       libraryDependencies ++= {
         val jettyVersion = "12.1.15"
@@ -157,7 +153,6 @@ lazy val examples = projectMatrix.in(file("Modules/Examples"))
     scalaVersions = Seq(s3v),
     axisValues = Nil,
     configure = _.settings(
-      Settings.strictScalacFlags,
       libraryDependencies ++= Seq(
         "com.github.japgolly.scalajs-react" %% "core"                      % "3.0.0",
         "com.github.japgolly.scalajs-react" %% "extra"                     % "3.0.0",
