@@ -71,10 +71,11 @@ export const projects: Project[] = [
 		short: "Access Control",
 		year: "2024 – ongoing",
 		tracks: ["sec", "rdt"],
-		title: "Decentralized Access Control for Replicated Data Types",
+		title: "GUARDTs: Decentralized Access Control for Replicated Data Types",
 		related: ["ardts", "ardts-security"],
 		summary:
-			"Access control for replicated data types without a central authority. Permissions follow the structure of the data and can be delegated and revoked at runtime. The permissions themselves are replicated as a tamper-evident hash DAG. Every replica checks them locally when exchanging updates, which keeps data confidential and intact even if some replicas are malicious.",
+			"Access control for replicated data types without a central authority. Permissions follow the structure of the data and can be delegated and revoked at runtime. The permissions themselves are replicated as a tamper-evident hash DAG. Every replica checks them locally when exchanging updates. This guarantees confidentiality, integrity, and availability even if some replicas are malicious.",
+		links: [{ label: "arXiv preprint", href: "https://arxiv.org/abs/2611.08083" }],
 		publications: [],
 	},
 	{
