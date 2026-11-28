@@ -1,7 +1,7 @@
 export const site = {
 	title: "Bismuth",
 	description:
-		"Bismuth is the research monorepo of the Programming Foundations for Distributed Software at the Software Technology Group, TU Darmstadt.",
+		"Bismuth is a research project of the Software Technology Group at TU Darmstadt that explores programming foundations for distributed software.",
 	repo: "https://github.com/stg-tud/bismuth",
 };
 
@@ -52,7 +52,7 @@ export const projects: Project[] = [
 		title: "Protocol Replicated Data Types",
 		related: ["ardts"],
 		summary:
-			"Consensus protocols built from replicated data types. Each replica accumulates knowledge until agreement is reached. Protocols are composed from small building blocks, and their safety is verified automatically.",
+			"Consensus protocols built from replicated data types. Each replica accumulates knowledge until agreement is reached. The protocols are composed from building blocks whose safety is verified automatically.",
 		publications: [{ key: "10.1145/3839522", venue: "OOPSLA 2026", artifact: "HaasPRDTArtifact2026" }],
 	},
 	{
@@ -63,7 +63,7 @@ export const projects: Project[] = [
 		title: "Overview: A Programming Model for Decentralized Applications",
 		related: ["ardts", "lore", "ardts-security", "prdts"],
 		summary:
-			"Shows how the research strands fit together into one programming model. Replicated data types provide authentication and confidentiality, reactive function calls connect them into distributed dataflows, and automated reasoning finds where coordination is needed. Developers reason about local state, and the runtime makes sure all devices converge.",
+			"Shows how the research directions fit together into one programming model. Replicated data types provide authentication and confidentiality, reactive function calls connect them into distributed dataflows, and automated reasoning finds where coordination is needed. Application code only deals with local state, and the runtime ensures that all devices converge.",
 		publications: [{ key: "HaasThinkLocally2025", venue: "IEEE Internet Computing 2025" }],
 	},
 	{
@@ -109,7 +109,7 @@ export const projects: Project[] = [
 		tracks: ["rdt"],
 		title: "Algebraic Replicated Data Types",
 		summary:
-			"Developers replicate the data types they already use for their application logic, instead of picking from a fixed set of CRDTs. Every ARDT is a lattice, and merging is derived automatically from the structure of the type. Most other work in Bismuth builds on ARDTs, including LoRe, PRDTs, secure replication, and access control.",
+			"Developers replicate the data types they already use for their application logic, instead of choosing from a fixed set of CRDTs. Every ARDT is a lattice, and merging is derived automatically from the structure of the type. Most other work in Bismuth builds on ARDTs, including LoRe, PRDTs, secure replication, and access control.",
 		links: [{ label: "documentation", href: manualPath("Algebraic Replicated Data Types") }],
 		publications: [{ key: "DBLP:conf/ecoop/KuessnerMWM23", venue: "ECOOP 2023", artifact: "KuessnerARDTArtifact2023" }],
 	},
