@@ -108,7 +108,6 @@ lazy val examples = projectMatrix.in(file("Modules/Examples"))
     publish / skip := true,
     // there are some quite hard to fix warnings in the swing code, and problems related to macro inlining for the reactive operators
     scalacOptions += "-Wconf:msg=initialized|initialization&src=.*(scala/swing|reactives/operator)/.*:s",
-    fork := true,
     libraryDependencies ++= jsoniterScala,
     libraryDependencies += pprint,
   )
@@ -116,6 +115,7 @@ lazy val examples = projectMatrix.in(file("Modules/Examples"))
     scalaVersions = Seq(s3v),
     axisValues = Nil,
     configure = _.enablePlugins(JmhPlugin).settings(
+      fork := true,
       Settings.jolSettings,
       libraryDependencies ++= {
         val jettyVersion = "12.1.15"
