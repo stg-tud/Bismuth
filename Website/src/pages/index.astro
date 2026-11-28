@@ -91,7 +91,7 @@ const byId = (id: string) => projects.find((p) => p.id === id)!;
 										const e = cite(pub.key);
 										return (
 											<li>
-												<span class="venue">{pub.venue}</span> — {e.url ? <a href={e.url}>{e.title}</a> : e.title}
+												<span class="venue">{pub.venue}</span>: {e.url ? <a href={e.url}>{e.title}</a> : e.title}
 												<div class="authors">
 													{e.authors.join(", ")}
 													{pub.artifact && <> · <a href={cite(pub.artifact).url}>research artifact</a></>}
