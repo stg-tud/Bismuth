@@ -218,6 +218,8 @@ lazy val loreCompilerPlugin = project.in(file("Modules/LoRe Compiler Plugin"))
       upickle,
       "org.scala-lang" %% "scala3-compiler" % scalaVersion.value % "provided",
     ),
+    // compiler internals define `type Untyped = Null`, which breaks tree type inference under explicit nulls
+    Seq(Compile / compile, Test / compile).map(c => c / scalacOptions -= "-Yexplicit-nulls"),
   )
 
 lazy val loreCompilerPluginExamples = project.in(file("Modules/LoRe Compiler Plugin/examples"))
